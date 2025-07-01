@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,19 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// PickFirst brand colors
+				yellow: {
+					50: '#fffef7',
+					100: '#fffceb',
+					200: '#fff8c5',
+					300: '#fff39e',
+					400: '#ffcc00', // Main PickFirst brand color rgb(255, 204, 0)
+					500: '#f5c200',
+					600: '#d69e00',
+					700: '#b17c00',
+					800: '#8f5f00',
+					900: '#754d00',
 				}
 			},
 			borderRadius: {
@@ -89,6 +103,9 @@ export default {
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out'
+			},
+			fontFamily: {
+				'inter': ['Inter', 'sans-serif'],
 			}
 		}
 	},
