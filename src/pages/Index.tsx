@@ -155,12 +155,12 @@ const Index = () => {
           
           {/* Buyer Registration */}
           <Card className="shadow-2xl border-0 bg-gradient-to-br from-white via-blue-50 to-indigo-50 hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 ring-2 ring-blue-100 hover:ring-blue-200">
-            <CardHeader className="text-center pb-4 sm:pb-6 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-t-lg">
+            <CardHeader className="text-center pb-4 sm:pb-6 bg-gradient-to-r from-yellow-400 via-yellow-300 to-amber-400 text-white rounded-t-lg">
               <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-xl">
-                <Users className="w-7 h-7 sm:w-8 sm:h-8 text-blue-600" />
+                <Users className="w-7 h-7 sm:w-8 sm:h-8 text-yellow-600" />
               </div>
-              <CardTitle className="text-xl sm:text-2xl font-bold">Join as a Buyer</CardTitle>
-              <CardDescription className="text-blue-100 text-sm sm:text-base px-2 font-medium">
+              <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">Join as a Buyer</CardTitle>
+              <CardDescription className="text-gray-800 text-sm sm:text-base px-2 font-medium">
                 Get exclusive access to off-market properties before they hit the public market
               </CardDescription>
             </CardHeader>
@@ -244,12 +244,12 @@ const Index = () => {
 
           {/* Agent Registration */}
           <Card className="shadow-2xl border-0 bg-gradient-to-br from-white via-emerald-50 to-green-50 hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 ring-2 ring-emerald-100 hover:ring-emerald-200">
-            <CardHeader className="text-center pb-4 sm:pb-6 bg-gradient-to-br from-emerald-500 to-green-600 text-white rounded-t-lg">
+            <CardHeader className="text-center pb-4 sm:pb-6 bg-gradient-to-r from-yellow-400 via-yellow-300 to-amber-400 text-white rounded-t-lg">
               <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-xl">
-                <Briefcase className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-600" />
+                <Briefcase className="w-7 h-7 sm:w-8 sm:h-8 text-yellow-600" />
               </div>
-              <CardTitle className="text-xl sm:text-2xl font-bold">Join as an Agent</CardTitle>
-              <CardDescription className="text-emerald-100 text-sm sm:text-base px-2 font-medium">
+              <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">Join as an Agent</CardTitle>
+              <CardDescription className="text-gray-800 text-sm sm:text-base px-2 font-medium">
                 Connect with serious buyers and move your off-market properties faster
               </CardDescription>
             </CardHeader>
