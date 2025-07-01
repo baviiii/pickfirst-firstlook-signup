@@ -233,7 +233,7 @@ const Index = () => {
 
                 <Button 
                   type="submit" 
-                  className="w-full h-11 sm:h-12 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold text-base sm:text-lg transition-all duration-200 transform hover:scale-105 shadow-xl hover:shadow-2xl border-0 rounded-xl"
+                  className="w-full h-11 sm:h-12 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-white font-bold text-base sm:text-lg transition-all duration-200 transform hover:scale-105 shadow-xl hover:shadow-2xl border-0 rounded-xl"
                 >
                   <Mail className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   Register as Buyer
@@ -354,7 +354,7 @@ const Index = () => {
 
                 <Button 
                   type="submit" 
-                  className="w-full h-11 sm:h-12 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-bold text-base sm:text-lg transition-all duration-200 transform hover:scale-105 shadow-xl hover:shadow-2xl border-0 rounded-xl"
+                  className="w-full h-11 sm:h-12 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-white font-bold text-base sm:text-lg transition-all duration-200 transform hover:scale-105 shadow-xl hover:shadow-2xl border-0 rounded-xl"
                 >
                   <Building className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   Register as Agent
