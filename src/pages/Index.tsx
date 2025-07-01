@@ -1,12 +1,12 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Home, Users, Mail, MapPin, Building, Briefcase } from "lucide-react";
+import { Home, Users, Mail, MapPin, Building, Briefcase, StickyNote } from "lucide-react";
 
 const Index = () => {
   const { toast } = useToast();
@@ -15,7 +15,8 @@ const Index = () => {
   const [buyerForm, setBuyerForm] = useState({
     name: '',
     email: '',
-    state: ''
+    state: '',
+    notes: ''
   });
 
   // Agent form state
@@ -24,7 +25,8 @@ const Index = () => {
     email: '',
     state: '',
     businessName: '',
-    position: ''
+    position: '',
+    notes: ''
   });
 
   const australianStates = [
@@ -70,7 +72,7 @@ const Index = () => {
     });
 
     // Reset form
-    setBuyerForm({ name: '', email: '', state: '' });
+    setBuyerForm({ name: '', email: '', state: '', notes: '' });
   };
 
   const handleAgentSubmit = (e: React.FormEvent) => {
@@ -101,7 +103,7 @@ const Index = () => {
     });
 
     // Reset form
-    setAgentForm({ name: '', email: '', state: '', businessName: '', position: '' });
+    setAgentForm({ name: '', email: '', state: '', businessName: '', position: '', notes: '' });
   };
 
   return (
@@ -215,6 +217,20 @@ const Index = () => {
                   </Select>
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="buyer-notes" className="text-gray-700 font-semibold text-sm sm:text-base flex items-center gap-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    Additional Notes
+                  </Label>
+                  <Textarea
+                    id="buyer-notes"
+                    placeholder="Tell us about your property preferences, budget range, or any specific requirements..."
+                    value={buyerForm.notes}
+                    onChange={(e) => setBuyerForm({...buyerForm, notes: e.target.value})}
+                    className="min-h-[100px] border-2 border-yellow-200 focus:border-yellow-500 focus:ring-yellow-500 focus:ring-2 transition-all duration-200 bg-yellow-50/50"
+                  />
+                </div>
+
                 <Button 
                   type="submit" 
                   className="w-full h-11 sm:h-12 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold text-base sm:text-lg transition-all duration-200 transform hover:scale-105 shadow-xl hover:shadow-2xl border-0 rounded-xl"
@@ -319,6 +335,20 @@ const Index = () => {
                     onChange={(e) => setAgentForm({...agentForm, position: e.target.value})}
                     className="h-11 sm:h-12 border-2 border-emerald-200 focus:border-emerald-500 focus:ring-emerald-500 focus:ring-2 transition-all duration-200 bg-emerald-50/50"
                     required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="agent-notes" className="text-gray-700 font-semibold text-sm sm:text-base flex items-center gap-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    Additional Notes
+                  </Label>
+                  <Textarea
+                    id="agent-notes"
+                    placeholder="Tell us about your off-market properties, target areas, or how you'd like to partner with us..."
+                    value={agentForm.notes}
+                    onChange={(e) => setAgentForm({...agentForm, notes: e.target.value})}
+                    className="min-h-[100px] border-2 border-yellow-200 focus:border-yellow-500 focus:ring-yellow-500 focus:ring-2 transition-all duration-200 bg-yellow-50/50"
                   />
                 </div>
 
