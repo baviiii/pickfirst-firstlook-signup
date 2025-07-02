@@ -116,7 +116,7 @@ const Index = () => {
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-black rounded-2xl flex items-center justify-center shadow-2xl border-2 border-yellow-600 overflow-hidden">
                 <img 
-                  src="/logo.jpg" 
+                  src={`${import.meta.env.BASE_URL}logo.jpg`}
                   alt="PickFirst Logo" 
                   className="w-full h-full object-cover"
                 />
