@@ -113,8 +113,12 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="flex items-center justify-center">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-2xl flex items-center justify-center shadow-2xl border-2 border-yellow-600">
-                <Home className="w-7 h-7 sm:w-9 sm:h-9 text-yellow-600" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-black rounded-2xl flex items-center justify-center shadow-2xl border-2 border-yellow-600 overflow-hidden">
+                <img 
+                  src="/logo.jpg" 
+                  alt="PickFirst Logo" 
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="text-center sm:text-left">
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 drop-shadow-sm">PickFirst</h1>
