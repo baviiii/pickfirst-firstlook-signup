@@ -165,7 +165,7 @@ const Index = () => {
           <div className="text-center">
            
             
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
               <span className="block">BE FIRST</span>
               <span className="block">SAVE TIME</span>
               <span className="block bg-gradient-to-r bg-clip-text text-transparent whitespace-nowrap" style={{backgroundImage: 'linear-gradient(90deg, rgb(255, 204, 0), rgb(255, 180, 0))'}}>SAVE THOUSANDS</span>
