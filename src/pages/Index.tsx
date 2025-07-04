@@ -168,7 +168,7 @@ const Index = () => {
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
               <span className="block">BE FIRST</span>
               <span className="block">SAVE TIME</span>
-              <span className="block bg-gradient-to-r bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(90deg, rgb(255, 204, 0), rgb(255, 180, 0))'}}>SAVE THOUSANDS</span>
+              <span className="block bg-gradient-to-r bg-clip-text text-transparent whitespace-nowrap" style={{backgroundImage: 'linear-gradient(90deg, rgb(255, 204, 0), rgb(255, 180, 0))'}}>SAVE THOUSANDS</span>
             </h1>
             
             <p className="text-xl text-gray-300 mb-4 max-w-3xl mx-auto leading-relaxed">
