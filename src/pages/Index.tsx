@@ -169,14 +169,34 @@ const Index = () => {
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-              Access Properties
+              Be First. Save Time.
               <span className="block bg-gradient-to-r bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(90deg, rgb(255, 204, 0), rgb(255, 180, 0))'}}>
-                Before Everyone Else
+                Save Thousands.
               </span>
             </h1>
             
-            <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
-              The exclusive network connecting serious buyers with off-market properties. No bidding wars. No endless inspections. Just first access to Australia's hidden property opportunities.
+            <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+              The faster, smarter way to secure your next property.
+              <br />
+              Avoid buyer's agents, listing fees, and wasted time.
+              <br />
+              Join the serious buyers skipping the line — Save thousands in fees.
+            </p>
+
+            <Button 
+              className="inline-flex items-center px-8 py-4 text-black font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl rounded-xl border-0 hover:opacity-90 mb-12"
+              style={{ backgroundColor: 'rgb(255, 204, 0)' }}
+            >
+              <Star className="w-5 h-5 mr-2" />
+              Join Smart Property Investors
+            </Button>
+
+            <p className="text-lg text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+              Australia's early-access network connecting buyers with high-quality property deals before they hit the major portals.
+              <br />
+              No bidding wars. No inspection marathons. No middlemen.
+              <br />
+              Just smarter buying — with first-mover advantage.
             </p>
 
             {/* Benefits Grid */}
