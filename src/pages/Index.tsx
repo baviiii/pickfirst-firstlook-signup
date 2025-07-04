@@ -166,18 +166,19 @@ const Index = () => {
            
             
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-              Be First. Save Time.
-              <span className="block bg-gradient-to-r bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(90deg, rgb(255, 204, 0), rgb(255, 180, 0))'}}>
-                Save Thousands.
-              </span>
+              <span className="block">BE FIRST</span>
+              <span className="block">SAVE TIME</span>
+              <span className="block bg-gradient-to-r bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(90deg, rgb(255, 204, 0), rgb(255, 180, 0))'}}>SAVE THOUSANDS</span>
             </h1>
             
             <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
               The faster, smarter way to secure your next property.
-              <br />
+            </p>
+            <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
               Avoid buyer's agents, listing fees, and wasted time.
-              <br />
-              Join the serious buyers skipping the line — Save thousands in fees.
+            </p>
+            <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+              Join the serious buyers skipping the line. Save thousands in fees.
             </p>
 
             <Button 
@@ -190,10 +191,12 @@ const Index = () => {
 
             <p className="text-lg text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
               Australia's early-access network connecting buyers with high-quality property deals before they hit the major portals.
-              <br />
+            </p>
+            <p className="text-lg text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
               No bidding wars. No inspection marathons. No middlemen.
-              <br />
-              Just smarter buying — with first-mover advantage.
+            </p>
+            <p className="text-lg text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+              Just smarter buying with first-mover advantage.
             </p>
 
             {/* Benefits Grid */}
@@ -488,12 +491,18 @@ const Index = () => {
             <h2 className="text-3xl font-bold text-white mb-8 text-center">
               Redefining Property Discovery in Australia
             </h2>
-            <div className="prose prose-lg prose-invert max-w-none">
+            <div className="prose prose-lg prose-invert max-w-none text-center">
               <p className="text-gray-300 leading-relaxed mb-6">
-                At PickFirst, we're revolutionizing how Australians discover and secure property by unlocking the exclusive off-market world — traditionally reserved for industry insiders. We believe the best opportunities shouldn't be buried in agent inboxes or delayed by outdated listing systems.
+                At PickFirst, we're revolutionizing how Australians discover and secure property by unlocking the exclusive off-market world. This world was traditionally reserved for industry insiders.
               </p>
               <p className="text-gray-300 leading-relaxed mb-6">
-                Our platform connects serious buyers directly with off-market properties the moment they become available. No bidding wars. No wasted time. No middlemen charging thousands in fees. Just first access to Australia's hidden property opportunities.
+                We believe the best opportunities shouldn't be buried in agent inboxes or delayed by outdated listing systems.
+              </p>
+              <p className="text-gray-300 leading-relaxed mb-6">
+                Our platform connects serious buyers directly with off-market properties the moment they become available.
+              </p>
+              <p className="text-gray-300 leading-relaxed mb-6">
+                No bidding wars. No wasted time. No middlemen charging thousands in fees. Just first access to Australia's hidden property opportunities.
               </p>
               <p className="text-white font-semibold text-center text-xl bg-gradient-to-r bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(90deg, rgb(255, 204, 0), rgb(255, 180, 0))'}}>
                 PickFirst isn't just another property platform — it's your competitive advantage in the market.
