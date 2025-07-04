@@ -501,7 +501,10 @@ const Index = () => {
                 No bidding wars. No wasted time. No middlemen charging thousands in fees. Just first access to Australia's hidden property opportunities.
               </p>
               <p className="text-white font-semibold text-center text-xl bg-gradient-to-r bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(90deg, rgb(255, 204, 0), rgb(255, 180, 0))'}}>
-                PickFirst isn't just another property platform — it's your competitive advantage in the market.
+                PickFirst isn't just another property platform.
+              </p>
+              <p className="text-white font-semibold text-center text-xl bg-gradient-to-r bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(90deg, rgb(255, 204, 0), rgb(255, 180, 0))'}}>
+                It's your competitive advantage in the market.
               </p>
             </div>
           </div>
