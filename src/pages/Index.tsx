@@ -149,7 +149,7 @@ const Index = () => {
                 <h1 className="text-2xl font-bold text-white flex items-center gap-2">PickFirst
                   <span className="ml-1 px-2 py-0.5 rounded bg-yellow-400 text-black text-xs font-bold shadow">Initial First Look</span>
                 </h1>
-                <p className="text-sm text-gray-300">Off-Market Property Access</p>
+                {/* <p className="text-sm text-gray-300">Off-Market Property Access</p> */}
               </div>
             </div>
             <div className="hidden md:flex items-center space-x-8">
@@ -163,10 +163,7 @@ const Index = () => {
       <div className={`relative z-10 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center">
-            <div className="inline-flex items-center px-4 py-2 border rounded-full mb-8" style={{backgroundColor: 'rgba(255, 204, 0, 0.2)', borderColor: 'rgba(255, 204, 0, 0.3)'}}>
-              <Star className="w-4 h-4 mr-2" style={{color: 'rgb(255, 204, 0)'}} />
-              <span className="text-sm font-medium" style={{color: 'rgb(255, 204, 0)'}}>Join Smart Property Investors</span>
-            </div>
+           
             
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
               Be First. Save Time.
