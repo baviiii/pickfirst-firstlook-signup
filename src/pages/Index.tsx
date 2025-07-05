@@ -5,17 +5,29 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { Home, Users, Mail, MapPin, Building, Briefcase, StickyNote, Eye, Clock, Shield, Star, ArrowRight, CheckCircle } from "lucide-react";
+import emailjs from '@emailjs/browser';
 
 const Index = () => {
-  const { toast } = useToast();
   const [isVisible, setIsVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('buyer');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toasts, setToasts] = useState([]);
 
   useEffect(() => {
     setIsVisible(true);
+    // Initialize EmailJS
+    emailjs.init("WveKDid7bVqkDUkcK");
   }, []);
+
+  // Toast system
+  const addToast = (toast) => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { ...toast, id }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 5000);
+  };
 
   // Buyer form state
   const [buyerForm, setBuyerForm] = useState({
@@ -50,9 +62,39 @@ const Index = () => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  const handleBuyerSubmit = () => {
+  // Real email sending with EmailJS
+  const sendEmail = async (emailData) => {
+    try {
+      const templateParams = {
+        to_name: 'PickFirst Admin',
+        to_email: emailData.to_email,
+        from_name: emailData.from_name,
+        from_email: emailData.from_email,
+        subject: emailData.subject,
+        message: emailData.message,
+        reply_to: emailData.from_email
+      };
+
+      const response = await emailjs.send(
+        'service_tmh9j23', // Your EmailJS service ID
+        'template_dh6ba8e', // Your EmailJS template ID
+        templateParams,
+        'WveKDid7bVqkDUkcK' // Your EmailJS public key
+      );
+
+      console.log('Email sent successfully:', response);
+      console.log('Template params sent:', templateParams);
+      return { status: 'success' };
+    } catch (error) {
+      console.error('Email send failed:', error);
+      console.error('Error details:', error.text || error.message);
+      throw error;
+    }
+  };
+
+  const handleBuyerSubmit = async () => {
     if (!buyerForm.name || !buyerForm.email || !buyerForm.state) {
-      toast({
+      addToast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
         variant: "destructive"
@@ -61,7 +103,7 @@ const Index = () => {
     }
 
     if (!validateEmail(buyerForm.email)) {
-      toast({
+      addToast({
         title: "Invalid Email",
         description: "Please enter a valid email address.",
         variant: "destructive"
@@ -69,18 +111,51 @@ const Index = () => {
       return;
     }
 
-    console.log('Buyer Registration:', buyerForm);
-    toast({
-      title: "Welcome to PickFirst! 🎉",
-      description: "Your exclusive access is being set up. We'll contact you soon.",
-    });
+    setIsSubmitting(true);
 
-    setBuyerForm({ name: '', email: '', state: '', notes: '' });
+    try {
+      const emailData = {
+        to_email: 'bavindud11@gmail.com',
+        from_name: buyerForm.name,
+        from_email: buyerForm.email,
+        subject: 'New Buyer Registration - PickFirst',
+        message: `
+New buyer registration received:
+
+Name: ${buyerForm.name}
+Email: ${buyerForm.email}
+State: ${buyerForm.state}
+Notes: ${buyerForm.notes || 'No additional notes provided'}
+
+Registration Type: Buyer
+        `.trim()
+      };
+
+      await sendEmail(emailData);
+
+      console.log('Buyer Registration:', buyerForm);
+      addToast({
+        title: "Welcome to PickFirst! 🎉",
+        description: "Your exclusive access is being set up. We'll contact you soon.",
+        variant: "success"
+      });
+
+      setBuyerForm({ name: '', email: '', state: '', notes: '' });
+    } catch (error) {
+      console.error('Registration error:', error);
+      addToast({
+        title: "Registration Failed",
+        description: "There was an issue with your registration. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleAgentSubmit = () => {
+  const handleAgentSubmit = async () => {
     if (!agentForm.name || !agentForm.email || !agentForm.state || !agentForm.businessName || !agentForm.position) {
-      toast({
+      addToast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
         variant: "destructive"
@@ -89,7 +164,7 @@ const Index = () => {
     }
 
     if (!validateEmail(agentForm.email)) {
-      toast({
+      addToast({
         title: "Invalid Email",
         description: "Please enter a valid email address.",
         variant: "destructive"
@@ -97,13 +172,48 @@ const Index = () => {
       return;
     }
 
-    console.log('Agent Registration:', agentForm);
-    toast({
-      title: "Partnership Request Received! 🤝",
-      description: "Our team will review your application and contact you soon.",
-    });
+    setIsSubmitting(true);
 
-    setAgentForm({ name: '', email: '', state: '', businessName: '', position: '', notes: '' });
+    try {
+      const emailData = {
+        to_email: 'bavindud11@gmail.com',
+        from_name: agentForm.name,
+        from_email: agentForm.email,
+        subject: 'New Agent Partnership Request - PickFirst',
+        message: `
+New agent partnership request received:
+
+Name: ${agentForm.name}
+Email: ${agentForm.email}
+State: ${agentForm.state}
+Agency: ${agentForm.businessName}
+Position: ${agentForm.position}
+Notes: ${agentForm.notes || 'No additional notes provided'}
+
+Registration Type: Agent
+        `.trim()
+      };
+
+      await sendEmail(emailData);
+
+      console.log('Agent Registration:', agentForm);
+      addToast({
+        title: "Partnership Request Received! 🤝",
+        description: "Our team will review your application and contact you soon.",
+        variant: "success"
+      });
+
+      setAgentForm({ name: '', email: '', state: '', businessName: '', position: '', notes: '' });
+    } catch (error) {
+      console.error('Registration error:', error);
+      addToast({
+        title: "Registration Failed",
+        description: "There was an issue with your registration. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const benefits = [
@@ -126,6 +236,23 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black relative overflow-hidden">
+      {/* Toast Container */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`p-4 rounded-lg shadow-lg border backdrop-blur-sm transition-all duration-300 ${
+              toast.variant === 'destructive' 
+                ? 'bg-red-500/20 border-red-500/30 text-red-100' 
+                : 'bg-green-500/20 border-green-500/30 text-green-100'
+            }`}
+          >
+            <div className="font-semibold">{toast.title}</div>
+            <div className="text-sm opacity-90">{toast.description}</div>
+          </div>
+        ))}
+      </div>
+
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{backgroundColor: 'rgb(255, 204, 0)'}}></div>
@@ -138,18 +265,13 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-xl" style={{backgroundColor: 'black'}}>
-                <img
-                  src={`${import.meta.env.BASE_URL}logo.jpg`}
-                  alt="PickFirst Logo"
-                  className="w-full h-full object-cover rounded-xl"
-                />
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-xl bg-yellow-400">
+                <Home className="w-6 h-6 text-black" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white flex items-center gap-2">PickFirst
                   <span className="ml-1 px-2 py-0.5 rounded bg-yellow-400 text-black text-xs font-bold shadow">Initial First Look</span>
                 </h1>
-                {/* <p className="text-sm text-gray-300">Off-Market Property Access</p> */}
               </div>
             </div>
             <div className="hidden md:flex items-center space-x-8">
@@ -163,8 +285,6 @@ const Index = () => {
       <div className={`relative z-10 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center">
-           
-            
             <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
               <span className="block">GET IN FIRST</span>
               <span className="block">BUY SMARTER </span>
@@ -331,11 +451,21 @@ const Index = () => {
 
                   <Button 
                     onClick={handleBuyerSubmit}
-                    className="w-full h-14 text-black font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl rounded-xl border-0 hover:opacity-90"
+                    disabled={isSubmitting}
+                    className="w-full h-14 text-black font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl rounded-xl border-0 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ backgroundColor: 'rgb(255, 204, 0)' }}
                   >
-                    <ArrowRight className="w-5 h-5 mr-2" />
-                    Get Exclusive Access Now
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black mr-2"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowRight className="w-5 h-5 mr-2" />
+                        Get Exclusive Access Now
+                      </>
+                    )}
                   </Button>
 
                   <p className="text-center text-gray-400 text-sm mt-4">
@@ -465,11 +595,21 @@ const Index = () => {
 
                   <Button 
                     onClick={handleAgentSubmit}
-                    className="w-full h-14 text-black font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl rounded-xl border-0 hover:opacity-90"
+                    disabled={isSubmitting}
+                    className="w-full h-14 text-black font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl rounded-xl border-0 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ backgroundColor: 'rgb(255, 204, 0)' }}
                   >
-                    <ArrowRight className="w-5 h-5 mr-2" />
-                    Apply for Partnership
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black mr-2"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowRight className="w-5 h-5 mr-2" />
+                        Apply for Partnership
+                      </>
+                    )}
                   </Button>
 
                   <p className="text-center text-gray-400 text-sm mt-4">
