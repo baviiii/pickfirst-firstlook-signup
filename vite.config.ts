@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? '/pickfirst-firstlook-signup/' : '/',
+  base: process.env.DEPLOY_ENV === 'GH_PAGES' ? '/pickfirst-firstlook-signup/' : '/',
   server: {
     host: "::",
     port: 8080,
