@@ -14,7 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          role: string
+          subscription_expires_at: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          role?: string
+          subscription_expires_at?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          role?: string
+          subscription_expires_at?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          advanced_analytics: boolean | null
+          created_at: string | null
+          featured_listings_included: number | null
+          features: Json
+          id: string
+          max_listings: number | null
+          name: string
+          price_monthly: number | null
+          price_yearly: number | null
+          priority_support: boolean | null
+        }
+        Insert: {
+          advanced_analytics?: boolean | null
+          created_at?: string | null
+          featured_listings_included?: number | null
+          features?: Json
+          id?: string
+          max_listings?: number | null
+          name: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          priority_support?: boolean | null
+        }
+        Update: {
+          advanced_analytics?: boolean | null
+          created_at?: string | null
+          featured_listings_included?: number | null
+          features?: Json
+          id?: string
+          max_listings?: number | null
+          name?: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          priority_support?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
