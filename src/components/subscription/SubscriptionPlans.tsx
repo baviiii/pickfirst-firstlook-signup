@@ -102,7 +102,7 @@ export const SubscriptionPlans = () => {
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {plans.map((plan) => (
+        {plans.slice(0, 3).map((plan) => (
           <Card 
             key={plan.id} 
             className={`relative transition-all hover:shadow-lg bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105 ${
