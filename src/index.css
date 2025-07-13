@@ -48,9 +48,28 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* PickFirst brand colors */
-    --pickfirst-yellow: 51 100% 50%;
-    --pickfirst-yellow-hover: 51 100% 45%;
+    /* PickFirst brand colors - Single Source of Truth */
+    --pickfirst-yellow: 45 100% 51%; /* yellow-400 */
+    --pickfirst-yellow-hover: 43 96% 56%; /* yellow-300 */
+    --pickfirst-amber: 43 96% 56%; /* amber-500 */
+    --pickfirst-gray: 222 47% 11%; /* gray-900 */
+    --pickfirst-black: 0 0% 0%; /* black */
+    
+    /* PickFirst color RGB values for gradients */
+    --pickfirst-yellow-rgb: 250 204 21; /* yellow-400 */
+    --pickfirst-yellow-hover-rgb: 253 224 71; /* yellow-300 */
+    --pickfirst-amber-rgb: 245 158 11; /* amber-500 */
+    --pickfirst-gray-rgb: 17 24 39; /* gray-900 */
+    
+    /* PickFirst background gradients */
+    --pickfirst-bg-from: 222 47% 11%; /* gray-900 */
+    --pickfirst-bg-via: 0 0% 0%; /* black */
+    --pickfirst-bg-to: 222 47% 4%; /* darker gray */
+    
+    /* PickFirst glassmorphism */
+    --pickfirst-glass-bg: 0 0% 0% / 0.4;
+    --pickfirst-glass-border: 45 100% 51% / 0.2; /* yellow-400 with opacity */
+    --pickfirst-glass-blur: blur(16px);
   }
 
   .dark {
@@ -103,11 +122,109 @@ All colors MUST be HSL.
   }
 }
 
-/* Custom styles for PickFirst */
-.pickfirst-yellow {
-  background-color: rgb(255, 204, 0);
-}
-
-.pickfirst-yellow-hover:hover {
-  background-color: rgb(245, 194, 0);
+/* PickFirst Design System - Single Source of Truth */
+@layer components {
+  .pickfirst-bg {
+    background: linear-gradient(to bottom right, hsl(var(--pickfirst-bg-from)), hsl(var(--pickfirst-bg-via)), hsl(var(--pickfirst-bg-to)));
+  }
+  
+  .pickfirst-bg-enhanced {
+    background: linear-gradient(to bottom right, hsl(var(--pickfirst-gray)), hsl(var(--pickfirst-black)), hsl(222 47% 4%));
+  }
+  
+  .pickfirst-gradient-yellow-amber {
+    background: linear-gradient(to right, hsl(var(--pickfirst-yellow)), hsl(var(--pickfirst-amber)));
+  }
+  
+  .pickfirst-gradient-yellow-amber-text {
+    background: linear-gradient(to right, hsl(var(--pickfirst-yellow)), hsl(var(--pickfirst-amber)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .pickfirst-glass {
+    background: hsl(var(--pickfirst-glass-bg));
+    backdrop-filter: var(--pickfirst-glass-blur);
+    border: 1px solid hsl(var(--pickfirst-glass-border));
+  }
+  
+  .pickfirst-yellow {
+    background-color: hsl(var(--pickfirst-yellow));
+  }
+  
+  .pickfirst-yellow-hover:hover {
+    background-color: hsl(var(--pickfirst-yellow-hover));
+  }
+  
+  .pickfirst-yellow-text {
+    color: hsl(var(--pickfirst-yellow));
+  }
+  
+  .pickfirst-yellow-border {
+    border-color: hsl(var(--pickfirst-yellow));
+  }
+  
+  .pickfirst-yellow-ring {
+    --tw-ring-color: hsl(var(--pickfirst-yellow));
+  }
+  
+  .pickfirst-amber {
+    background-color: hsl(var(--pickfirst-amber));
+  }
+  
+  .pickfirst-amber-text {
+    color: hsl(var(--pickfirst-amber));
+  }
+  
+  .pickfirst-gray {
+    background-color: hsl(var(--pickfirst-gray));
+  }
+  
+  .pickfirst-gray-text {
+    color: hsl(var(--pickfirst-gray));
+  }
+  
+  .pickfirst-black {
+    background-color: hsl(var(--pickfirst-black));
+  }
+  
+  .pickfirst-black-text {
+    color: hsl(var(--pickfirst-black));
+  }
+  
+  .pickfirst-animated-bg {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .pickfirst-animated-bg::before {
+    content: '';
+    position: absolute;
+    top: -10rem;
+    right: -10rem;
+    width: 20rem;
+    height: 20rem;
+    border-radius: 50%;
+    background: hsl(var(--pickfirst-yellow));
+    mix-blend-mode: multiply;
+    filter: blur(3rem);
+    opacity: 0.2;
+    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .pickfirst-animated-bg::after {
+    content: '';
+    position: absolute;
+    bottom: -10rem;
+    left: -10rem;
+    width: 20rem;
+    height: 20rem;
+    border-radius: 50%;
+    background: hsl(var(--pickfirst-amber));
+    mix-blend-mode: multiply;
+    filter: blur(3rem);
+    opacity: 0.15;
+    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
 }

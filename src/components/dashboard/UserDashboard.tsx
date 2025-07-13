@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { Home, Search, MessageSquare, Settings, Crown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const UserDashboard = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
 
   const getSubscriptionBadge = () => {
     const tier = profile?.subscription_tier || 'free';
@@ -45,6 +47,13 @@ export const UserDashboard = () => {
         </div>
         <div className="flex items-center gap-2">
           {getSubscriptionBadge()}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate('/about')}
+          >
+            About Us
+          </Button>
           <Button variant="outline" size="sm">
             Upgrade Plan
           </Button>

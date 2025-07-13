@@ -63,18 +63,17 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// PickFirst brand colors
-				yellow: {
-					50: '#fffef7',
-					100: '#fffceb',
-					200: '#fff8c5',
-					300: '#fff39e',
-					400: '#ffcc00', // Main PickFirst brand color rgb(255, 204, 0)
-					500: '#f5c200',
-					600: '#d69e00',
-					700: '#b17c00',
-					800: '#8f5f00',
-					900: '#754d00',
+				// PickFirst brand colors - Single Source of Truth
+				pickfirst: {
+					yellow: 'hsl(var(--pickfirst-yellow))',
+					'yellow-hover': 'hsl(var(--pickfirst-yellow-hover))',
+					amber: 'hsl(var(--pickfirst-amber))',
+					gray: 'hsl(var(--pickfirst-gray))',
+					black: 'hsl(var(--pickfirst-black))',
+					'yellow-rgb': 'rgb(var(--pickfirst-yellow-rgb))',
+					'yellow-hover-rgb': 'rgb(var(--pickfirst-yellow-hover-rgb))',
+					'amber-rgb': 'rgb(var(--pickfirst-amber-rgb))',
+					'gray-rgb': 'rgb(var(--pickfirst-gray-rgb))',
 				}
 			},
 			borderRadius: {
