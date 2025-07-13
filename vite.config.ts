@@ -7,6 +7,7 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   base: process.env.DEPLOY_ENV === 'GH_PAGES' ? '/pickfirst-firstlook-signup/' : '/',
   server: {
+    
     host: "::",
     port: 8080,
   },
