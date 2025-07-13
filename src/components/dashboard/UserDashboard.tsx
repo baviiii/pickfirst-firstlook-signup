@@ -14,13 +14,13 @@ export const UserDashboard = () => {
     const tier = profile?.subscription_tier || 'free';
     const colors = {
       free: 'bg-gray-500',
-      basic: 'bg-blue-500',
-      premium: 'bg-purple-500',
-      pro: 'bg-gold-500'
+      basic: 'bg-pickfirst-yellow',
+      premium: 'bg-pickfirst-amber',
+      pro: 'bg-pickfirst-yellow'
     };
     
     return (
-      <Badge className={`${colors[tier as keyof typeof colors]} text-white`}>
+      <Badge className={`${colors[tier as keyof typeof colors]} text-black`}>
         {tier.charAt(0).toUpperCase() + tier.slice(1)}
         {tier === 'pro' && <Crown className="w-3 h-3 ml-1" />}
       </Badge>
@@ -30,16 +30,16 @@ export const UserDashboard = () => {
   const getRoleBadge = () => {
     const role = profile?.role || 'buyer';
     const roleConfig = {
-      buyer: { color: 'bg-green-500', icon: Users, label: 'Buyer' },
-      agent: { color: 'bg-blue-500', icon: Building, label: 'Agent' },
-      super_admin: { color: 'bg-red-500', icon: Shield, label: 'Super Admin' }
+      buyer: { color: 'bg-pickfirst-yellow', icon: Users, label: 'Buyer' },
+      agent: { color: 'bg-pickfirst-amber', icon: Building, label: 'Agent' },
+      super_admin: { color: 'bg-pickfirst-yellow', icon: Shield, label: 'Super Admin' }
     };
     
     const config = roleConfig[role as keyof typeof roleConfig];
     const Icon = config.icon;
     
     return (
-      <Badge className={`${config.color} text-white`}>
+      <Badge className={`${config.color} text-black`}>
         <Icon className="w-3 h-3 mr-1" />
         {config.label}
       </Badge>
@@ -89,10 +89,10 @@ export const UserDashboard = () => {
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">
             Welcome back, {profile?.full_name || 'User'}!
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-gray-300">
             {getWelcomeMessage()}
           </p>
         </div>
@@ -103,10 +103,15 @@ export const UserDashboard = () => {
             variant="outline" 
             size="sm"
             onClick={() => navigate('/about')}
+            className="text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-all duration-300 border border-white/20 hover:border-pickfirst-yellow/30"
           >
             About Us
           </Button>
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-all duration-300 border border-white/20 hover:border-pickfirst-yellow/30"
+          >
             Upgrade Plan
           </Button>
         </div>
@@ -116,17 +121,17 @@ export const UserDashboard = () => {
         {quickActions.map((action, index) => {
           const Icon = action.icon;
           return (
-            <Card key={index} className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card key={index} className="hover:shadow-md transition-shadow cursor-pointer bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105">
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Icon className="h-5 w-5 text-primary" />
+                  <div className="p-2 rounded-lg bg-pickfirst-yellow/10">
+                    <Icon className="h-5 w-5 text-pickfirst-yellow" />
                   </div>
-                  <CardTitle className="text-base">{action.label}</CardTitle>
+                  <CardTitle className="text-base text-white">{action.label}</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                <CardDescription className="text-sm">
+                <CardDescription className="text-sm text-gray-300">
                   {action.description}
                 </CardDescription>
               </CardContent>
@@ -136,53 +141,53 @@ export const UserDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+            <CardTitle className="text-white">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                <div className="h-2 w-2 rounded-full bg-pickfirst-yellow"></div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium">
+                  <p className="text-sm font-medium text-white">
                     {profile?.role === 'agent' ? 'New listing created' : 'Property search saved'}
                   </p>
-                  <p className="text-xs text-muted-foreground">2 hours ago</p>
+                  <p className="text-xs text-gray-400">2 hours ago</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                <div className="h-2 w-2 rounded-full bg-pickfirst-amber"></div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium">
+                  <p className="text-sm font-medium text-white">
                     {profile?.role === 'super_admin' ? 'User profile updated' : 'Message from agent'}
                   </p>
-                  <p className="text-xs text-muted-foreground">1 day ago</p>
+                  <p className="text-xs text-gray-400">1 day ago</p>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
           <CardHeader>
-            <CardTitle>Your Statistics</CardTitle>
+            <CardTitle className="text-white">Your Statistics</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 rounded-lg bg-primary/5">
-                <div className="text-2xl font-bold text-primary">
+              <div className="text-center p-4 rounded-lg bg-pickfirst-yellow/10">
+                <div className="text-2xl font-bold text-pickfirst-yellow">
                   {profile?.role === 'agent' ? '5' : profile?.role === 'super_admin' ? '150' : '12'}
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-gray-300">
                   {profile?.role === 'agent' ? 'Active Listings' : profile?.role === 'super_admin' ? 'Total Users' : 'Properties Viewed'}
                 </div>
               </div>
-              <div className="text-center p-4 rounded-lg bg-secondary/5">
-                <div className="text-2xl font-bold text-secondary">
+              <div className="text-center p-4 rounded-lg bg-pickfirst-amber/10">
+                <div className="text-2xl font-bold text-pickfirst-amber">
                   {profile?.role === 'agent' ? '23' : profile?.role === 'super_admin' ? '89' : '3'}
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-gray-300">
                   {profile?.role === 'agent' ? 'Inquiries' : profile?.role === 'super_admin' ? 'Active Listings' : 'Saved Searches'}
                 </div>
               </div>
