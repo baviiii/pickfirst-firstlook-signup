@@ -11,6 +11,7 @@ const Dashboard = () => {
 
   const handleSignOut = async () => {
     await signOut();
+    navigate('/');
   };
 
   return (
