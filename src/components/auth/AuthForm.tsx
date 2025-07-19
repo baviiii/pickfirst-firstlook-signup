@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { Loader2, User, Building, Shield } from 'lucide-react';
 
 export const AuthForm = () => {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [signInData, setSignInData] = useState({
@@ -66,6 +66,13 @@ export const AuthForm = () => {
     if (error) {
       toast.error(error.message);
     } else {
+      // Wait for profile creation and ensure role is set correctly
+      setTimeout(async () => {
+        const updateResult = await updateProfile({ role: signUpData.userType });
+        if (updateResult.error) {
+          console.error('Failed to update profile role:', updateResult.error);
+        }
+      }, 2000);
       toast.success('Registration successful! Please check your email to verify your account.');
     }
     setLoading(false);

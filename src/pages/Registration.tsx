@@ -43,18 +43,18 @@ const Registration = () => {
     
     setLoading(true);
     let error;
-    if (formData.userType) {
-      // First sign up, then update profile with userType
-      const result = await signUp(formData.email, formData.password, formData.fullName);
-      error = result.error;
-      if (!error) {
-        // Try to update profile with userType
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for profile to be created
-        await updateProfile({ role: formData.userType });
+    
+    // Sign up with user type in metadata
+    const result = await signUp(formData.email, formData.password, formData.fullName, formData.userType);
+    error = result.error;
+    
+    if (!error) {
+      // Wait a bit for the profile to be created, then ensure the role is correct
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      const updateResult = await updateProfile({ role: formData.userType });
+      if (updateResult.error) {
+        console.error('Failed to update profile role:', updateResult.error);
       }
-    } else {
-      const result = await signUp(formData.email, formData.password, formData.fullName);
-      error = result.error;
     }
     if (error) {
       toast.error(error.message);
@@ -74,8 +74,8 @@ const Registration = () => {
         return 'I want to find and purchase properties';
       case 'agent':
         return 'I am a real estate agent looking to list properties';
-      case 'broker':
-        return 'I am a broker managing multiple agents and properties';
+      case 'super_admin':
+        return 'I am a system administrator';
       default:
         return '';
     }
@@ -170,10 +170,10 @@ const Registration = () => {
                         Real Estate Agent
                       </div>
                     </SelectItem>
-                    <SelectItem value="broker" className="text-white hover:bg-white/10">
+                    <SelectItem value="super_admin" className="text-white hover:bg-white/10">
                       <div className="flex items-center gap-2">
                         <Shield className="w-4 h-4 text-pickfirst-yellow" />
-                        Broker
+                        Super Admin
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -201,8 +201,8 @@ const Registration = () => {
                 />
               </div>
 
-              {/* Company (for agents/brokers) */}
-              {(formData.userType === 'agent' || formData.userType === 'broker') && (
+              {/* Company (for agents/super_admins) */}
+              {(formData.userType === 'agent' || formData.userType === 'super_admin') && (
                 <div className="space-y-3">
                   <Label htmlFor="company" className="text-white font-semibold flex items-center gap-2">
                     <Building className="w-4 h-4 text-pickfirst-yellow" />

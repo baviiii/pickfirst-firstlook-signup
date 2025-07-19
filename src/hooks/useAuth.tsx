@@ -88,6 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     });
+    
     return { error };
   };
 

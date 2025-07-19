@@ -22,10 +22,6 @@ export const UserDashboard = () => {
     refetchProfile();
   }, [refetchProfile]);
 
-  // Debug: Log the profile data
-  console.log('UserDashboard - Profile data:', profile);
-  console.log('UserDashboard - Profile role:', profile?.role);
-
   // Route to the appropriate dashboard based on user role
   switch (profile?.role) {
     case 'buyer':
@@ -35,7 +31,6 @@ export const UserDashboard = () => {
     case 'super_admin':
       return <SuperAdminDashboard />;
     default:
-      console.log('UserDashboard - Defaulting to buyer dashboard, role was:', profile?.role);
       return <BuyerDashboard />; // Default to buyer dashboard
   }
 };
