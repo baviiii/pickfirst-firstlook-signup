@@ -12,6 +12,8 @@ import Dashboard from "./pages/Dashboard";
 import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 import About from "./pages/About";
+import AdminPropertyManagementPage from './pages/AdminPropertyManagement';
+import AdminUserManagementPage from './pages/AdminUserManagement';
 
 const queryClient = new QueryClient();
 
@@ -29,6 +31,8 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/about" element={<About />} />
+            <Route path="/admin-properties" element={<AdminPropertyManagementPage />} />
+            <Route path="/admin-users" element={<AdminUserManagementPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

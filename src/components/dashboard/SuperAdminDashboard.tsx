@@ -1,16 +1,56 @@
 
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { Users, Building, Shield, Settings, BarChart3, Database, AlertTriangle, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { PropertyService, PropertyListing } from '@/services/propertyService';
+import { toast } from 'sonner';
 
 export const SuperAdminDashboard = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
+  const [listings, setListings] = useState<PropertyListing[]>([]);
+  const [loadingListings, setLoadingListings] = useState(true);
+  const [showAllModal, setShowAllModal] = useState(false);
+
+  useEffect(() => {
+    const fetchListings = async () => {
+      setLoadingListings(true);
+      const { data } = await PropertyService.getAllListings();
+      setListings(data || []);
+      setLoadingListings(false);
+    };
+    fetchListings();
+  }, []);
+
+  const handleApprove = async (id: string) => {
+    const { error } = await PropertyService.approveListing(id);
+    if (error) {
+      toast.error(error.message || 'Failed to approve listing');
+    } else {
+      toast.success('Listing approved!');
+      setListings(listings => listings.map(l => l.id === id ? { ...l, status: 'approved' } : l));
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    const reason = prompt('Enter rejection reason:');
+    if (!reason) return;
+    const { error } = await PropertyService.rejectListing(id, reason);
+    if (error) {
+      toast.error(error.message || 'Failed to reject listing');
+    } else {
+      toast.success('Listing rejected.');
+      setListings(listings => listings.map(l => l.id === id ? { ...l, status: 'rejected', rejection_reason: reason } : l));
+    }
+  };
 
   const adminActions = [
-    { icon: Users, label: 'Manage Users', description: 'View and manage all users', color: 'bg-blue-500/10 text-blue-500' },
-    { icon: Building, label: 'Property Management', description: 'Oversee all property listings', color: 'bg-green-500/10 text-green-500' },
+    { icon: Users, label: 'Manage Users', description: 'View and manage all users', color: 'bg-blue-500/10 text-blue-500', onClick: () => navigate('/admin-users') },
+    { icon: Building, label: 'Property Management', description: 'Oversee all property listings', color: 'bg-green-500/10 text-green-500', onClick: () => navigate('/admin-properties') },
     { icon: Shield, label: 'Security & Permissions', description: 'Manage user roles and access', color: 'bg-red-500/10 text-red-500' },
     { icon: BarChart3, label: 'Platform Analytics', description: 'View system-wide metrics', color: 'bg-purple-500/10 text-purple-500' },
     { icon: Database, label: 'Database Management', description: 'Monitor database health', color: 'bg-indigo-500/10 text-indigo-500' },
@@ -18,6 +58,9 @@ export const SuperAdminDashboard = () => {
     { icon: Activity, label: 'System Logs', description: 'View platform activity', color: 'bg-cyan-500/10 text-cyan-500' },
     { icon: Settings, label: 'Platform Settings', description: 'Configure system settings', color: 'bg-gray-500/10 text-gray-500' }
   ];
+
+  // Only show pending listings in the management section
+  const pendingListings = listings.filter(l => l.status === 'pending');
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
@@ -107,12 +150,55 @@ export const SuperAdminDashboard = () => {
         </Card>
       </div>
 
+      {/* Pending Property Listings Management */}
+      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+        <CardHeader>
+          <CardTitle className="text-white">Pending Property Listings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingListings ? (
+            <div className="text-gray-300">Loading property listings...</div>
+          ) : pendingListings.length === 0 ? (
+            <div className="text-gray-400">No pending property listings.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {pendingListings.map(listing => (
+                <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-pickfirst-yellow">{listing.title}</CardTitle>
+                    <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-white font-bold text-xl mb-2">${listing.price.toLocaleString()}</div>
+                    <div className="text-gray-400 text-sm mb-2">{listing.property_type.replace(/\b\w/g, l => l.toUpperCase())}</div>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {listing.bedrooms !== null && <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded">{listing.bedrooms} Bed</span>}
+                      {listing.bathrooms !== null && <span className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded">{listing.bathrooms} Bath</span>}
+                      {listing.square_feet !== null && <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded">{listing.square_feet} Sq Ft</span>}
+                    </div>
+                    <div className="text-xs text-gray-400 mb-2">Status: <span className="text-yellow-400">Pending</span></div>
+                    <div className="flex gap-2 mt-2">
+                      <Button size="sm" className="bg-green-500 text-white hover:bg-green-600" onClick={() => handleApprove(listing.id)}>
+                        Approve
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-500/10" onClick={() => handleReject(listing.id)}>
+                        Reject
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Admin Actions Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {adminActions.map((action, index) => {
           const Icon = action.icon;
           return (
-            <Card key={index} className="hover:shadow-md transition-all cursor-pointer bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105">
+            <Card key={index} className="hover:shadow-md transition-all cursor-pointer bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105" onClick={action.onClick}>
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-lg ${action.color}`}>
@@ -130,6 +216,50 @@ export const SuperAdminDashboard = () => {
           );
         })}
       </div>
+
+      {/* All Listings Modal */}
+      {showAllModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-pickfirst-yellow/20 rounded-xl shadow-2xl max-w-5xl w-full p-8 relative">
+            <button className="absolute top-4 right-4 text-white text-2xl" onClick={() => setShowAllModal(false)}>&times;</button>
+            <h2 className="text-2xl font-bold text-pickfirst-yellow mb-6">All Property Listings</h2>
+            {loadingListings ? (
+              <div className="text-gray-300">Loading property listings...</div>
+            ) : listings.length === 0 ? (
+              <div className="text-gray-400">No property listings found.</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {listings.map(listing => (
+                  <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10">
+                    <CardHeader>
+                      <CardTitle className="text-lg text-pickfirst-yellow">{listing.title}</CardTitle>
+                      <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-white font-bold text-xl mb-2">${listing.price.toLocaleString()}</div>
+                      <div className="text-gray-400 text-sm mb-2">{listing.property_type.replace(/\b\w/g, l => l.toUpperCase())}</div>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {listing.bedrooms !== null && <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded">{listing.bedrooms} Bed</span>}
+                        {listing.bathrooms !== null && <span className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded">{listing.bathrooms} Bath</span>}
+                        {listing.square_feet !== null && <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded">{listing.square_feet} Sq Ft</span>}
+                      </div>
+                      <div className="text-xs text-gray-400 mb-2">Status: <span className={
+                        listing.status === 'approved' ? 'text-green-400' :
+                        listing.status === 'pending' ? 'text-yellow-400' :
+                        listing.status === 'rejected' ? 'text-red-400' :
+                        'text-gray-400'
+                      }>{listing.status.charAt(0).toUpperCase() + listing.status.slice(1)}</span></div>
+                      {listing.status === 'rejected' && listing.rejection_reason && (
+                        <div className="text-xs text-red-400">Reason: {listing.rejection_reason}</div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Detailed Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

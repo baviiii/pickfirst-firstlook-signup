@@ -1,12 +1,26 @@
 
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { Search, Heart, MessageSquare, Settings, Home, MapPin, Filter } from 'lucide-react';
+import { PropertyService, PropertyListing } from '@/services/propertyService';
 
 export const BuyerDashboard = () => {
   const { profile } = useAuth();
+  const [listings, setListings] = useState<PropertyListing[]>([]);
+  const [loadingListings, setLoadingListings] = useState(true);
+
+  useEffect(() => {
+    const fetchListings = async () => {
+      setLoadingListings(true);
+      const { data } = await PropertyService.getApprovedListings();
+      setListings(data || []);
+      setLoadingListings(false);
+    };
+    fetchListings();
+  }, []);
 
   const getSubscriptionBadge = () => {
     const tier = profile?.subscription_tier || 'free';
@@ -78,6 +92,40 @@ export const BuyerDashboard = () => {
           );
         })}
       </div>
+
+      {/* Approved Property Listings for Buyers */}
+      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+        <CardHeader>
+          <CardTitle className="text-white">Available Properties</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingListings ? (
+            <div className="text-gray-300">Loading properties...</div>
+          ) : listings.length === 0 ? (
+            <div className="text-gray-400">No properties available at the moment.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {listings.map(listing => (
+                <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-pickfirst-yellow">{listing.title}</CardTitle>
+                    <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-white font-bold text-xl mb-2">${listing.price.toLocaleString()}</div>
+                    <div className="text-gray-400 text-sm mb-2">{listing.property_type.replace(/\b\w/g, l => l.toUpperCase())}</div>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {listing.bedrooms !== null && <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded">{listing.bedrooms} Bed</span>}
+                      {listing.bathrooms !== null && <span className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded">{listing.bathrooms} Bath</span>}
+                      {listing.square_feet !== null && <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded">{listing.square_feet} Sq Ft</span>}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Property Stats and Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
