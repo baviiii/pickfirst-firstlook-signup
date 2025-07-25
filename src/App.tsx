@@ -14,6 +14,9 @@ import NotFound from "./pages/NotFound";
 import About from "./pages/About";
 import AdminPropertyManagementPage from './pages/AdminPropertyManagement';
 import AdminUserManagementPage from './pages/AdminUserManagement';
+import DatabaseManagementPage from './pages/DatabaseManagement';
+import SystemAlertsPage from './pages/SystemAlerts';
+import SystemLogsPage from './pages/SystemLogs';
 
 const queryClient = new QueryClient();
 
@@ -33,6 +36,9 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/admin-properties" element={<AdminPropertyManagementPage />} />
             <Route path="/admin-users" element={<AdminUserManagementPage />} />
+            <Route path="/database-management" element={<DatabaseManagementPage />} />
+            <Route path="/system-alerts" element={<SystemAlertsPage />} />
+            <Route path="/system-logs" element={<SystemLogsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
