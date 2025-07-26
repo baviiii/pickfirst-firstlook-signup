@@ -17,6 +17,9 @@ import AdminUserManagementPage from './pages/AdminUserManagement';
 import DatabaseManagementPage from './pages/DatabaseManagement';
 import SystemAlertsPage from './pages/SystemAlerts';
 import SystemLogsPage from './pages/SystemLogs';
+import PlatformSettingsPage from './pages/PlatformSettings';
+import SecurityPermissionsPage from './pages/SecurityPermissions';
+import PlatformAnalyticsPage from './pages/PlatformAnalytics';
 
 const queryClient = new QueryClient();
 
@@ -39,6 +42,9 @@ const App = () => (
             <Route path="/database-management" element={<DatabaseManagementPage />} />
             <Route path="/system-alerts" element={<SystemAlertsPage />} />
             <Route path="/system-logs" element={<SystemLogsPage />} />
+            <Route path="/platform-settings" element={<PlatformSettingsPage />} />
+            <Route path="/security-permissions" element={<SecurityPermissionsPage />} />
+            <Route path="/platform-analytics" element={<PlatformAnalyticsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
