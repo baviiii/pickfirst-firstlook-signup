@@ -20,6 +20,8 @@ import SystemLogsPage from './pages/SystemLogs';
 import PlatformSettingsPage from './pages/PlatformSettings';
 import SecurityPermissionsPage from './pages/SecurityPermissions';
 import PlatformAnalyticsPage from './pages/PlatformAnalytics';
+import MyClientsPage from './pages/MyClients';
+import AppointmentsPage from './pages/Appointments';
 
 const queryClient = new QueryClient();
 
@@ -45,6 +47,8 @@ const App = () => (
             <Route path="/platform-settings" element={<PlatformSettingsPage />} />
             <Route path="/security-permissions" element={<SecurityPermissionsPage />} />
             <Route path="/platform-analytics" element={<PlatformAnalyticsPage />} />
+            <Route path="/my-clients" element={<MyClientsPage />} />
+            <Route path="/appointments" element={<AppointmentsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

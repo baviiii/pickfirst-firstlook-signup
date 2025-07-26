@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { Home, Users, MessageSquare, Settings, PlusCircle, BarChart3, Calendar, Phone, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { PropertyListingForm } from '@/components/property/PropertyListingForm';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 
 export const AgentDashboard = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [myListings, setMyListings] = useState<PropertyListing[]>([]);
   const [loadingListings, setLoadingListings] = useState(true);
@@ -56,12 +58,12 @@ export const AgentDashboard = () => {
     }
   };
 
-  // Only the Add New Listing card is clickable for opening the form
+  // Agent action cards with navigation
   const agentActions = [
     { icon: PlusCircle, label: 'Add New Listing', description: 'Create a new property listing', color: 'bg-green-500/10 text-green-500', onClick: () => setShowForm(true) },
     { icon: Home, label: 'My Listings', description: 'Manage your properties', color: 'bg-blue-500/10 text-blue-500' },
-    { icon: Users, label: 'My Clients', description: 'Manage client relationships', color: 'bg-purple-500/10 text-purple-500' },
-    { icon: Calendar, label: 'Appointments', description: 'View scheduled showings', color: 'bg-orange-500/10 text-orange-500' },
+    { icon: Users, label: 'My Clients', description: 'Manage client relationships', color: 'bg-purple-500/10 text-purple-500', onClick: () => navigate('/my-clients') },
+    { icon: Calendar, label: 'Appointments', description: 'View scheduled showings', color: 'bg-orange-500/10 text-orange-500', onClick: () => navigate('/appointments') },
     { icon: BarChart3, label: 'Analytics', description: 'View performance metrics', color: 'bg-indigo-500/10 text-indigo-500' },
     { icon: MessageSquare, label: 'Messages', description: 'Client communications', color: 'bg-pickfirst-yellow/10 text-pickfirst-yellow' },
     { icon: Phone, label: 'Leads', description: 'Follow up with prospects', color: 'bg-pink-500/10 text-pink-500' },
@@ -95,13 +97,15 @@ export const AgentDashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {agentActions.map((action, index) => {
           const Icon = action.icon;
-          // Only Add New Listing card is clickable
+          const isClickable = action.onClick;
           const isAddListing = action.label === 'Add New Listing';
           return (
             <Card
               key={index}
-              className={`hover:shadow-md transition-all cursor-pointer bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105 ${isAddListing ? 'ring-2 ring-pickfirst-yellow/40' : ''}`}
-              onClick={isAddListing ? action.onClick : undefined}
+              className={`hover:shadow-md transition-all bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105 ${
+                isClickable ? 'cursor-pointer' : 'cursor-default'
+              } ${isAddListing ? 'ring-2 ring-pickfirst-yellow/40' : ''}`}
+              onClick={isClickable ? action.onClick : undefined}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
