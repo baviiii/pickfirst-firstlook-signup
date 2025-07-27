@@ -22,6 +22,7 @@ import SecurityPermissionsPage from './pages/SecurityPermissions';
 import PlatformAnalyticsPage from './pages/PlatformAnalytics';
 import MyClientsPage from './pages/MyClients';
 import AppointmentsPage from './pages/Appointments';
+import ProfileSettingsPage from './pages/ProfileSettings';
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/platform-analytics" element={<PlatformAnalyticsPage />} />
             <Route path="/my-clients" element={<MyClientsPage />} />
             <Route path="/appointments" element={<AppointmentsPage />} />
+            <Route path="/profile-settings" element={<ProfileSettingsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
