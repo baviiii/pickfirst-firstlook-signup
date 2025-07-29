@@ -22,6 +22,10 @@ import SecurityPermissionsPage from './pages/SecurityPermissions';
 import PlatformAnalyticsPage from './pages/PlatformAnalytics';
 import MyClientsPage from './pages/MyClients';
 import AppointmentsPage from './pages/Appointments';
+import AgentAnalyticsPage from './pages/AgentAnalytics';
+import AgentMessagesPage from './pages/AgentMessages';
+import AgentLeadsPage from './pages/AgentLeads';
+import AgentProfilePage from './pages/AgentProfile';
 
 const queryClient = new QueryClient();
 
@@ -49,6 +53,10 @@ const App = () => (
             <Route path="/platform-analytics" element={<PlatformAnalyticsPage />} />
             <Route path="/my-clients" element={<MyClientsPage />} />
             <Route path="/appointments" element={<AppointmentsPage />} />
+            <Route path="/agent-analytics" element={<AgentAnalyticsPage />} />
+            <Route path="/agent-messages" element={<AgentMessagesPage />} />
+            <Route path="/agent-leads" element={<AgentLeadsPage />} />
+            <Route path="/agent-profile" element={<AgentProfilePage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

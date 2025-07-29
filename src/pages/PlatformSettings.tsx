@@ -1,5 +1,12 @@
-import { PlatformSettings as PlatformSettingsComponent } from '@/components/admin/PlatformSettings';
+import { PageWrapper } from '@/components/ui/page-wrapper';
+import { PlatformSettings } from '@/components/admin/PlatformSettings';
 
-export default function PlatformSettings() {
-  return <PlatformSettingsComponent />;
-}
+const PlatformSettingsPage = () => {
+  return (
+    <PageWrapper title="Platform Settings">
+      <PlatformSettings />
+    </PageWrapper>
+  );
+};
+
+export default PlatformSettingsPage;

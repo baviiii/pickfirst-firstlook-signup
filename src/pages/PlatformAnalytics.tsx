@@ -1,5 +1,12 @@
-import { PlatformAnalytics as PlatformAnalyticsComponent } from '@/components/admin/PlatformAnalytics';
+import { PageWrapper } from '@/components/ui/page-wrapper';
+import { PlatformAnalytics } from '@/components/admin/PlatformAnalytics';
 
-export default function PlatformAnalytics() {
-  return <PlatformAnalyticsComponent />;
-}
+const PlatformAnalyticsPage = () => {
+  return (
+    <PageWrapper title="Platform Analytics">
+      <PlatformAnalytics />
+    </PageWrapper>
+  );
+};
+
+export default PlatformAnalyticsPage;

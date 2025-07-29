@@ -1,5 +1,12 @@
-import { SecurityPermissions as SecurityPermissionsComponent } from '@/components/admin/SecurityPermissions';
+import { PageWrapper } from '@/components/ui/page-wrapper';
+import { SecurityPermissions } from '@/components/admin/SecurityPermissions';
 
-export default function SecurityPermissions() {
-  return <SecurityPermissionsComponent />;
-}
+const SecurityPermissionsPage = () => {
+  return (
+    <PageWrapper title="Security & Permissions">
+      <SecurityPermissions />
+    </PageWrapper>
+  );
+};
+
+export default SecurityPermissionsPage;
