@@ -26,6 +26,7 @@ import AgentAnalyticsPage from './pages/AgentAnalytics';
 import AgentMessagesPage from './pages/AgentMessages';
 import AgentLeadsPage from './pages/AgentLeads';
 import AgentProfilePage from './pages/AgentProfile';
+import MyListingsPage from './pages/MyListings';
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/agent-messages" element={<AgentMessagesPage />} />
             <Route path="/agent-leads" element={<AgentLeadsPage />} />
             <Route path="/agent-profile" element={<AgentProfilePage />} />
+            <Route path="/my-listings" element={<MyListingsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
