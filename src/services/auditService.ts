@@ -24,7 +24,14 @@ export type AuditAction =
   | 'LOGOUT' 
   | 'SEARCH' 
   | 'EXPORT' 
-  | 'IMPORT';
+  | 'IMPORT'
+  | 'RATE_LIMIT_EXCEEDED'
+  | 'VALIDATION_ERROR'
+  | 'IMAGE_UPLOAD_START'
+  | 'IMAGE_UPLOAD_SUCCESS'
+  | 'IMAGE_UPLOAD_FAILED'
+  | 'CREATE_FAILED'
+  | 'SYSTEM_ERROR';
 
 class AuditService {
   private queue: AuditLog[] = [];

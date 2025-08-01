@@ -161,17 +161,136 @@ export class PropertyService {
         return { data: null, error: new Error('User not authenticated') };
       }
 
+      // Check rate limit for property creation
+      const rateLimit = await rateLimitService.checkRateLimit(user.id, 'property:create');
+      if (!rateLimit.allowed) {
+        // Log rate limit violation
+        await auditService.log(user.id, 'RATE_LIMIT_EXCEEDED', 'property_listings', {
+          newValues: {
+            message: 'attempted property creation with images',
+            rateLimitType: 'property:create',
+            resetTime: rateLimit.resetTime,
+            imageCount: imageFiles.length
+          }
+        });
+        
+        return { 
+          data: null, 
+          error: { 
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimit.resetTime - Date.now()) / 1000)} seconds.` 
+          } 
+        };
+      }
+
+      // Validate and sanitize input
+      if (!listingData.title || listingData.title.trim().length < 3) {
+        await auditService.log(user.id, 'VALIDATION_ERROR', 'property_listings', {
+          newValues: {
+            error: 'title too short',
+            title: listingData.title
+          },
+          recordId: 'validation_failed'
+        });
+        return { data: null, error: { message: 'Property title must be at least 3 characters long' } };
+      }
+
+      if (listingData.price <= 0) {
+        await auditService.log(user.id, 'VALIDATION_ERROR', 'property_listings', {
+          newValues: {
+            error: 'invalid price',
+            price: listingData.price
+          },
+          recordId: 'validation_failed'
+        });
+        return { data: null, error: { message: 'Property price must be greater than 0' } };
+      }
+
+      if (listingData.contact_email && !validateEmail(listingData.contact_email)) {
+        await auditService.log(user.id, 'VALIDATION_ERROR', 'property_listings', {
+          newValues: {
+            error: 'invalid email format',
+            email: listingData.contact_email
+          },
+          recordId: 'validation_failed'
+        });
+        return { data: null, error: { message: 'Invalid contact email format' } };
+      }
+
+      if (listingData.contact_phone && !validatePhone(listingData.contact_phone)) {
+        await auditService.log(user.id, 'VALIDATION_ERROR', 'property_listings', {
+          newValues: {
+            error: 'invalid phone format',
+            phone: listingData.contact_phone
+          },
+          recordId: 'validation_failed'
+        });
+        return { data: null, error: { message: 'Invalid contact phone format' } };
+      }
+
+      // Validate image files
+      if (imageFiles.length > 10) {
+        await auditService.log(user.id, 'VALIDATION_ERROR', 'property_listings', {
+          newValues: {
+            error: 'too many images',
+            imageCount: imageFiles.length,
+            maxAllowed: 10
+          },
+          recordId: 'validation_failed'
+        });
+        return { data: null, error: { message: 'Maximum 10 images allowed per property' } };
+      }
+
+      // Log image upload attempt
+      await auditService.log(user.id, 'IMAGE_UPLOAD_START', 'property_listings', {
+        newValues: {
+          message: 'starting image upload for property creation',
+          imageCount: imageFiles.length,
+          totalSize: imageFiles.reduce((sum, file) => sum + file.size, 0),
+          fileNames: imageFiles.map(f => f.name)
+        }
+      });
+
       // Upload images first
       const { data: imageUrls, error: uploadError } = await this.uploadImages(imageFiles);
       if (uploadError) {
+        // Log image upload failure
+        await auditService.log(user.id, 'IMAGE_UPLOAD_FAILED', 'property_listings', {
+          newValues: {
+            error: uploadError.message || 'Unknown upload error',
+            imageCount: imageFiles.length
+          }
+        });
         return { data: null, error: uploadError };
       }
+
+      // Log successful image upload
+      await auditService.log(user.id, 'IMAGE_UPLOAD_SUCCESS', 'property_listings', {
+        newValues: {
+          message: 'images uploaded successfully for property creation',
+          imageCount: imageUrls?.length || 0,
+          uploadedUrls: imageUrls
+        }
+      });
+
+      // Sanitize inputs
+      const sanitizedData = {
+        ...listingData,
+        title: sanitizeInput(listingData.title),
+        description: listingData.description ? sanitizeInput(listingData.description) : undefined,
+        address: sanitizeInput(listingData.address),
+        city: sanitizeInput(listingData.city),
+        state: sanitizeInput(listingData.state),
+        zip_code: sanitizeInput(listingData.zip_code),
+        contact_phone: listingData.contact_phone ? sanitizeInput(listingData.contact_phone) : undefined,
+        contact_email: listingData.contact_email ? sanitizeInput(listingData.contact_email) : undefined,
+        showing_instructions: listingData.showing_instructions ? sanitizeInput(listingData.showing_instructions) : undefined,
+      };
 
       // Create listing with uploaded image URLs
       const { data, error } = await supabase
         .from('property_listings')
         .insert({
-          ...listingData,
+          ...sanitizedData,
           agent_id: user.id,
           status: 'pending',
           images: imageUrls || []
@@ -179,9 +298,54 @@ export class PropertyService {
         .select()
         .single();
 
+      // Log the property creation action
+      if (!error && data) {
+        await auditService.log(user.id, 'CREATE', 'property_listings', {
+          recordId: data.id,
+          newValues: {
+            title: data.title,
+            price: data.price,
+            property_type: data.property_type,
+            address: data.address,
+            city: data.city,
+            state: data.state,
+            action: 'created new property listing with images',
+            image_count: data.images?.length || 0,
+            status: data.status,
+            created_at: data.created_at
+          }
+        });
+      } else if (error) {
+        // Log property creation failure
+        await auditService.log(user.id, 'CREATE_FAILED', 'property_listings', {
+          newValues: {
+            error: error.message || 'Unknown database error',
+            title: sanitizedData.title,
+            imageCount: imageUrls?.length || 0
+          }
+        });
+      }
+
       return { data, error };
     } catch (error) {
       console.error('Error creating listing with images:', error);
+      
+      // Log unexpected error
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await auditService.log(user.id, 'SYSTEM_ERROR', 'property_listings', {
+            newValues: {
+              description: 'unexpected error during property creation with images',
+              error: error instanceof Error ? error.message : 'Unknown error',
+              stack: error instanceof Error ? error.stack : undefined
+            }
+          });
+        }
+      } catch (auditError) {
+        console.error('Failed to log system error:', auditError);
+      }
+      
       return { data: null, error };
     }
   }
