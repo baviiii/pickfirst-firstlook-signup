@@ -268,18 +268,50 @@ class ClientService {
       }
 
       const sanitizedEmail = email.trim().toLowerCase();
+      
+      // First, try to find the user by email (without role restriction)
       const { data, error } = await supabase
         .from('profiles')
         .select('id, email, full_name, role, created_at')
         .eq('email', sanitizedEmail)
-        .eq('role', 'buyer')
         .single();
+
+      // If user is found, validate they can be added as a client
+      if (data) {
+        // Check if the user is an agent or admin (they shouldn't be added as clients)
+        if (data.role === 'agent' || data.role === 'admin' || data.role === 'super_admin') {
+          return { 
+            data: null, 
+            error: { 
+              message: `Cannot add ${data.role} as a client. Only buyers can be added as clients.` 
+            } 
+          };
+        }
+        
+        // Check if this user is already a client of the current agent
+        const { data: existingClient } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('id', data.id)
+          .eq('agent_id', user.id)
+          .single();
+          
+        if (existingClient) {
+          return { 
+            data: null, 
+            error: { 
+              message: 'This user is already your client.' 
+            } 
+          };
+        }
+      }
 
       // Log the search action with better context
       await auditService.log(user.id, 'SEARCH', 'profiles', {
         newValues: { 
           searchEmail: sanitizedEmail, 
           found: !!data,
+          userRole: data?.role || 'not found',
           action: 'searched for user by email',
           result: data ? 'user found' : 'user not found'
         }
@@ -287,7 +319,24 @@ class ClientService {
 
       return { data, error };
     } catch (error) {
-      return { data: null, error };
+      console.error('Error searching for user by email:', error);
+      
+      // Provide better error messages
+      if (error.code === 'PGRST116') {
+        return { 
+          data: null, 
+          error: { 
+            message: 'No user found with this email address. Please check the email and try again.' 
+          } 
+        };
+      }
+      
+      return { 
+        data: null, 
+        error: { 
+          message: error.message || 'Failed to search for user. Please try again.' 
+        } 
+      };
     }
   }
 
