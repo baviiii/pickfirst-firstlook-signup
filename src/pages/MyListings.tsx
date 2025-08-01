@@ -57,6 +57,23 @@ const MyListingsPage = () => {
             {listings.map(listing => (
               <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10 flex flex-col h-full">
                 <CardHeader className="pb-2 border-b border-white/10">
+                  <div className="aspect-video bg-gray-700 rounded-md mb-3 overflow-hidden">
+                    {listing.images && listing.images.length > 0 ? (
+                      <img
+                        src={listing.images[0]}
+                        alt={listing.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to placeholder if image fails to load
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-full h-full bg-gray-700 flex items-center justify-center ${listing.images && listing.images.length > 0 ? 'hidden' : ''}`}>
+                      <span className="text-gray-500 text-sm">No Image</span>
+                    </div>
+                  </div>
                   <CardTitle className="text-lg text-pickfirst-yellow mb-1">{listing.title}</CardTitle>
                   <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
                 </CardHeader>
