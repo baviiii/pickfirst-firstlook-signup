@@ -7,15 +7,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PropertyService, CreatePropertyListingData } from '@/services/propertyService';
 import { toast } from 'sonner';
-import { Loader2, Home, MapPin, DollarSign, Bed, Bath, Ruler, Calendar, Phone, Mail } from 'lucide-react';
+import { Loader2, Home, MapPin, DollarSign, Bed, Bath, Ruler, Calendar, Phone, Mail, Upload, X, ImageIcon } from 'lucide-react';
+import { withErrorBoundary } from '@/components/ui/error-boundary';
 
 interface PropertyListingFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-export const PropertyListingForm = ({ onSuccess, onCancel }: PropertyListingFormProps) => {
+const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFormProps) => {
   const [loading, setLoading] = useState(false);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [formData, setFormData] = useState<CreatePropertyListingData>({
     title: '',
     description: '',
@@ -67,15 +70,56 @@ export const PropertyListingForm = ({ onSuccess, onCancel }: PropertyListingForm
     }));
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length + imageFiles.length > 10) {
+      toast.error('Maximum 10 images allowed');
+      return;
+    }
+
+    const newFiles = [...imageFiles, ...files];
+    setImageFiles(newFiles);
+
+    // Create previews
+    const newPreviews = [...imagePreviews];
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        newPreviews.push(e.target?.result as string);
+        setImagePreviews([...newPreviews]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number) => {
+    const newFiles = imageFiles.filter((_, i) => i !== index);
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    setImageFiles(newFiles);
+    setImagePreviews(newPreviews);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { data, error } = await PropertyService.createListing(formData);
+      let result;
       
-      if (error) {
-        toast.error(error.message || 'Failed to create listing');
+      if (imageFiles.length > 0) {
+        // Use the new method with image upload
+        const { images, ...listingDataWithoutImages } = formData;
+        result = await PropertyService.createListingWithImages(
+          listingDataWithoutImages,
+          imageFiles
+        );
+      } else {
+        // Use the regular method without images
+        result = await PropertyService.createListing(formData);
+      }
+      
+      if (result.error) {
+        toast.error(result.error.message || 'Failed to create listing');
       } else {
         toast.success('Property listing created successfully! It will be reviewed by our team.');
         onSuccess?.();
@@ -267,6 +311,55 @@ export const PropertyListingForm = ({ onSuccess, onCancel }: PropertyListingForm
             </div>
           </div>
 
+          {/* Images Upload */}
+          <div className="space-y-4">
+            <Label className="text-white font-semibold flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-pickfirst-yellow" />
+              Property Images
+            </Label>
+            <div className="space-y-4">
+              <Label htmlFor="images" className="cursor-pointer">
+                <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center hover:border-pickfirst-yellow/40 transition-colors">
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-gray-400">Click to upload images (max 10)</p>
+                  <p className="text-xs text-gray-500 mt-1">JPG, PNG, GIF up to 5MB each</p>
+                </div>
+              </Label>
+              <Input
+                id="images"
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </div>
+
+            {/* Image Previews */}
+            {imagePreviews.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {imagePreviews.map((preview, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={preview}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-24 object-cover rounded-lg border border-white/20"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                      onClick={() => removeImage(index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Contact Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -358,4 +451,7 @@ export const PropertyListingForm = ({ onSuccess, onCancel }: PropertyListingForm
       </CardContent>
     </Card>
   );
-}; 
+};
+
+// Export with error boundary
+export const PropertyListingForm = withErrorBoundary(PropertyListingFormComponent); 

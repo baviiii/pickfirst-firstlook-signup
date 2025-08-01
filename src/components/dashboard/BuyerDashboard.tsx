@@ -7,8 +7,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { Search, Heart, MessageSquare, Settings, Home, MapPin, Filter } from 'lucide-react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { useNavigate } from 'react-router-dom';
+import { withErrorBoundary } from '@/components/ui/error-boundary';
 
-export const BuyerDashboard = () => {
+const BuyerDashboardComponent = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [listings, setListings] = useState<PropertyListing[]>([]);
@@ -110,6 +111,23 @@ export const BuyerDashboard = () => {
               {listings.map(listing => (
                 <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10">
                   <CardHeader>
+                    <div className="aspect-video bg-gray-700 rounded-md mb-3 overflow-hidden">
+                      {listing.images && listing.images.length > 0 ? (
+                        <img
+                          src={listing.images[0]}
+                          alt={listing.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to placeholder if image fails to load
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-full h-full bg-gray-700 flex items-center justify-center ${listing.images && listing.images.length > 0 ? 'hidden' : ''}`}>
+                        <span className="text-gray-500 text-sm">No Image</span>
+                      </div>
+                    </div>
                     <CardTitle className="text-lg text-pickfirst-yellow">{listing.title}</CardTitle>
                     <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
                   </CardHeader>
@@ -201,12 +219,30 @@ export const BuyerDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-                <div className="aspect-video bg-gray-700 rounded-md mb-3"></div>
-                <h3 className="font-semibold text-white mb-1">Modern Family Home</h3>
-                <p className="text-sm text-gray-400 mb-2">3 bed • 2 bath • 2,100 sq ft</p>
-                <p className="text-lg font-bold text-pickfirst-yellow">$450,000</p>
+            {listings.slice(0, 3).map((listing) => (
+              <div key={listing.id} className="p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+                <div className="aspect-video bg-gray-700 rounded-md mb-3 overflow-hidden">
+                  {listing.images && listing.images.length > 0 ? (
+                    <img
+                      src={listing.images[0]}
+                      alt={listing.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback to placeholder if image fails to load
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-full h-full bg-gray-700 flex items-center justify-center ${listing.images && listing.images.length > 0 ? 'hidden' : ''}`}>
+                    <span className="text-gray-500 text-sm">No Image</span>
+                  </div>
+                </div>
+                <h3 className="font-semibold text-white mb-1">{listing.title}</h3>
+                <p className="text-sm text-gray-400 mb-2">
+                  {listing.bedrooms} bed • {listing.bathrooms} bath • {listing.square_feet} sq ft
+                </p>
+                <p className="text-lg font-bold text-pickfirst-yellow">${listing.price.toLocaleString()}</p>
               </div>
             ))}
           </div>
@@ -215,3 +251,6 @@ export const BuyerDashboard = () => {
     </div>
   );
 };
+
+// Export with error boundary
+export const BuyerDashboard = withErrorBoundary(BuyerDashboardComponent);

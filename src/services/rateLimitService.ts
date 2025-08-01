@@ -27,6 +27,18 @@ class RateLimitService {
     this.configs.set('client:create', { maxRequests: 5, windowMs: 60000 }); // 5 creates per minute
     this.configs.set('client:delete', { maxRequests: 3, windowMs: 60000 }); // 3 deletes per minute
     
+    // Property management rate limits
+    this.configs.set('property:create', { maxRequests: 3, windowMs: 60000 }); // 3 property creates per minute
+    this.configs.set('property:view', { maxRequests: 20, windowMs: 60000 }); // 20 property views per minute
+    this.configs.set('property:delete', { maxRequests: 2, windowMs: 60000 }); // 2 property deletes per minute
+    this.configs.set('property:update', { maxRequests: 5, windowMs: 60000 }); // 5 property updates per minute
+    this.configs.set('property:upload', { maxRequests: 10, windowMs: 60000 }); // 10 image uploads per minute
+    
+    // Admin rate limits
+    this.configs.set('admin:users:view', { maxRequests: 10, windowMs: 60000 }); // 10 user views per minute
+    this.configs.set('admin:users:delete', { maxRequests: 5, windowMs: 60000 }); // 5 user deletes per minute
+    this.configs.set('admin:properties:approve', { maxRequests: 10, windowMs: 60000 }); // 10 property approvals per minute
+    
     // General API rate limits
     this.configs.set('api:general', { maxRequests: 100, windowMs: 60000 }); // 100 requests per minute
     this.configs.set('api:auth', { maxRequests: 5, windowMs: 300000 }); // 5 auth attempts per 5 minutes

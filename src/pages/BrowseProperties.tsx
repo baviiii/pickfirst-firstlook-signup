@@ -4,8 +4,9 @@ import { ArrowLeft, Search, Filter, SortAsc } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
+import { withErrorBoundary } from '@/components/ui/error-boundary';
 
-const BrowsePropertiesPage = () => {
+const BrowsePropertiesPageComponent = () => {
   const navigate = useNavigate();
   const [listings, setListings] = useState<PropertyListing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +72,23 @@ const BrowsePropertiesPage = () => {
               {listings.map(listing => (
                 <Card key={listing.id} className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20 hover:border-primary/40 transition-all hover:scale-105 cursor-pointer">
                   <CardHeader>
-                    <div className="aspect-video bg-gray-700 rounded-md mb-3"></div>
+                    <div className="aspect-video bg-gray-700 rounded-md mb-3 overflow-hidden">
+                      {listing.images && listing.images.length > 0 ? (
+                        <img
+                          src={listing.images[0]}
+                          alt={listing.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to placeholder if image fails to load
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-full h-full bg-gray-700 flex items-center justify-center ${listing.images && listing.images.length > 0 ? 'hidden' : ''}`}>
+                        <span className="text-gray-500 text-sm">No Image</span>
+                      </div>
+                    </div>
                     <CardTitle className="text-lg text-primary">{listing.title}</CardTitle>
                     <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
                   </CardHeader>
@@ -102,5 +119,7 @@ const BrowsePropertiesPage = () => {
     </div>
   );
 };
+
+const BrowsePropertiesPage = withErrorBoundary(BrowsePropertiesPageComponent);
 
 export default BrowsePropertiesPage;

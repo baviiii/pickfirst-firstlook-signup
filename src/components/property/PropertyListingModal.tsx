@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { PropertyService, CreatePropertyListingData } from '@/services/propertyService';
 import { toast } from 'sonner';
 import { Loader2, Upload, X, ImageIcon } from 'lucide-react';
+import { withErrorBoundary } from '@/components/ui/error-boundary';
 
 interface PropertyListingModalProps {
   open: boolean;
@@ -16,7 +17,7 @@ interface PropertyListingModalProps {
   onSuccess?: () => void;
 }
 
-export const PropertyListingModal = ({ open, onOpenChange, onSuccess }: PropertyListingModalProps) => {
+const PropertyListingModalComponent = ({ open, onOpenChange, onSuccess }: PropertyListingModalProps) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<CreatePropertyListingData>({
     title: '',
@@ -94,17 +95,22 @@ export const PropertyListingModal = ({ open, onOpenChange, onSuccess }: Property
 
     setLoading(true);
     try {
-      // For now, we'll simulate image upload URLs
-      // In a real app, you'd upload to Supabase Storage or another service
-      const imageUrls = imageFiles.map((_, index) => `https://placeholder-image-${index}.jpg`);
+      let result;
       
-      const { error } = await PropertyService.createListing({
-        ...formData,
-        images: imageUrls
-      });
+      if (imageFiles.length > 0) {
+        // Use the new method with image upload
+        const { images, ...listingDataWithoutImages } = formData;
+        result = await PropertyService.createListingWithImages(
+          listingDataWithoutImages,
+          imageFiles
+        );
+      } else {
+        // Use the regular method without images
+        result = await PropertyService.createListing(formData);
+      }
 
-      if (error) {
-        toast.error(error.message || 'Failed to create listing');
+      if (result.error) {
+        toast.error(result.error.message || 'Failed to create listing');
       } else {
         toast.success('Property listing created successfully!');
         onSuccess?.();
@@ -416,3 +422,6 @@ export const PropertyListingModal = ({ open, onOpenChange, onSuccess }: Property
     </Dialog>
   );
 };
+
+// Export with error boundary
+export const PropertyListingModal = withErrorBoundary(PropertyListingModalComponent);

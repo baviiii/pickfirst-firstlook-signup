@@ -1,5 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
+import { auditService } from './auditService';
+import { rateLimitService } from './rateLimitService';
 
 export type PropertyListing = Tables<'property_listings'>;
 export type PropertyFavorite = Tables<'property_favorites'>;
@@ -44,35 +46,269 @@ export interface PropertyFilters {
   features?: string[];
 }
 
+// Validation utilities
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const sanitizeInput = (input: string): string => {
+  return input.trim().replace(/[<>]/g, '');
+};
+
+const validatePhone = (phone: string): boolean => {
+  const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+  return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
+};
+
 export class PropertyService {
+  // Upload images to Supabase Storage
+  static async uploadImages(files: File[]): Promise<{ data: string[] | null; error: any }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { data: null, error: new Error('User not authenticated') };
+      }
+
+      const uploadedUrls: string[] = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Validate file size (5MB limit)
+        if (file.size > 5 * 1024 * 1024) {
+          return { 
+            data: null, 
+            error: new Error(`File ${file.name} is too large. Maximum size is 5MB.`) 
+          };
+        }
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          return { 
+            data: null, 
+            error: new Error(`File ${file.name} is not an image.`) 
+          };
+        }
+
+        // Generate unique filename
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}-${i}.${fileExt}`;
+        const filePath = `property-images/${fileName}`;
+
+        // Upload to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('property-images')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          return { data: null, error: uploadError };
+        }
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('property-images')
+          .getPublicUrl(filePath);
+
+        uploadedUrls.push(urlData.publicUrl);
+      }
+
+      return { data: uploadedUrls, error: null };
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      return { data: null, error };
+    }
+  }
+
+  // Delete images from Supabase Storage
+  static async deleteImages(imageUrls: string[]): Promise<{ error: any }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { error: new Error('User not authenticated') };
+      }
+
+      // Extract file paths from URLs
+      const filePaths = imageUrls.map(url => {
+        const urlParts = url.split('/');
+        return urlParts.slice(-2).join('/'); // Get user-id/filename
+      });
+
+      // Delete from storage
+      const { error } = await supabase.storage
+        .from('property-images')
+        .remove(filePaths);
+
+      return { error };
+    } catch (error) {
+      console.error('Error deleting images:', error);
+      return { error };
+    }
+  }
+
+  // Create a new property listing with image upload
+  static async createListingWithImages(
+    listingData: Omit<CreatePropertyListingData, 'images'>, 
+    imageFiles: File[]
+  ): Promise<{ data: PropertyListing | null; error: any }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { data: null, error: new Error('User not authenticated') };
+      }
+
+      // Upload images first
+      const { data: imageUrls, error: uploadError } = await this.uploadImages(imageFiles);
+      if (uploadError) {
+        return { data: null, error: uploadError };
+      }
+
+      // Create listing with uploaded image URLs
+      const { data, error } = await supabase
+        .from('property_listings')
+        .insert({
+          ...listingData,
+          agent_id: user.id,
+          status: 'pending',
+          images: imageUrls || []
+        })
+        .select()
+        .single();
+
+      return { data, error };
+    } catch (error) {
+      console.error('Error creating listing with images:', error);
+      return { data: null, error };
+    }
+  }
+
   // Create a new property listing
   static async createListing(listingData: CreatePropertyListingData): Promise<{ data: PropertyListing | null; error: any }> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { data: null, error: new Error('User not authenticated') };
-    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { data: null, error: new Error('User not authenticated') };
+      }
 
-    const { data, error } = await supabase
-      .from('property_listings')
-      .insert({
+      // Check rate limit
+      const rateLimit = await rateLimitService.checkRateLimit(user.id, 'property:create');
+      if (!rateLimit.allowed) {
+        return { 
+          data: null, 
+          error: { 
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimit.resetTime - Date.now()) / 1000)} seconds.` 
+          } 
+        };
+      }
+
+      // Validate and sanitize input
+      if (!listingData.title || listingData.title.trim().length < 3) {
+        return { data: null, error: { message: 'Property title must be at least 3 characters long' } };
+      }
+
+      if (listingData.price <= 0) {
+        return { data: null, error: { message: 'Property price must be greater than 0' } };
+      }
+
+      if (listingData.contact_email && !validateEmail(listingData.contact_email)) {
+        return { data: null, error: { message: 'Invalid contact email format' } };
+      }
+
+      if (listingData.contact_phone && !validatePhone(listingData.contact_phone)) {
+        return { data: null, error: { message: 'Invalid contact phone format' } };
+      }
+
+      // Sanitize inputs
+      const sanitizedData = {
         ...listingData,
-        agent_id: user.id,
-        status: 'pending'
-      })
-      .select()
-      .single();
+        title: sanitizeInput(listingData.title),
+        description: listingData.description ? sanitizeInput(listingData.description) : undefined,
+        address: sanitizeInput(listingData.address),
+        city: sanitizeInput(listingData.city),
+        state: sanitizeInput(listingData.state),
+        zip_code: sanitizeInput(listingData.zip_code),
+        contact_phone: listingData.contact_phone ? sanitizeInput(listingData.contact_phone) : undefined,
+        contact_email: listingData.contact_email ? sanitizeInput(listingData.contact_email) : undefined,
+        showing_instructions: listingData.showing_instructions ? sanitizeInput(listingData.showing_instructions) : undefined,
+      };
 
-    return { data, error };
+      const { data, error } = await supabase
+        .from('property_listings')
+        .insert({
+          ...sanitizedData,
+          agent_id: user.id,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      // Log the action
+      if (!error && data) {
+        await auditService.log(user.id, 'CREATE', 'property_listings', {
+          recordId: data.id,
+          newValues: {
+            title: data.title,
+            price: data.price,
+            property_type: data.property_type,
+            address: data.address,
+            city: data.city,
+            state: data.state,
+            action: 'created new property listing',
+            image_count: data.images?.length || 0
+          }
+        });
+      }
+
+      return { data, error };
+    } catch (error) {
+      console.error('Error creating property listing:', error);
+      return { data: null, error };
+    }
   }
 
   // Get all listings for the current user (agent)
   static async getMyListings(): Promise<{ data: PropertyListing[] | null; error: any }> {
-    const { data, error } = await supabase
-      .from('property_listings')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { data: null, error: new Error('User not authenticated') };
+      }
 
-    return { data, error };
+      // Check rate limit
+      const rateLimit = await rateLimitService.checkRateLimit(user.id, 'property:view');
+      if (!rateLimit.allowed) {
+        return { 
+          data: null, 
+          error: { 
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimit.resetTime - Date.now()) / 1000)} seconds.` 
+          } 
+        };
+      }
+
+      const { data, error } = await supabase
+        .from('property_listings')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      // Log the action
+      if (!error) {
+        await auditService.log(user.id, 'VIEW', 'property_listings', {
+          newValues: {
+            count: data?.length || 0,
+            action: 'viewed my property listings'
+          }
+        });
+      }
+
+      return { data, error };
+    } catch (error) {
+      console.error('Error fetching my listings:', error);
+      return { data: null, error };
+    }
   }
 
   // Get all approved listings (for buyers)
@@ -102,10 +338,7 @@ export class PropertyService {
         query = query.ilike('city', `%${filters.city}%`);
       }
       if (filters.state) {
-        query = query.eq('state', filters.state);
-      }
-      if (filters.features && filters.features.length > 0) {
-        query = query.overlaps('features', filters.features);
+        query = query.ilike('state', `%${filters.state}%`);
       }
     }
 
@@ -113,32 +346,26 @@ export class PropertyService {
     return { data, error };
   }
 
-  // Get all listings (for super admins)
+  // Get all listings (for admins)
   static async getAllListings(): Promise<{ data: PropertyListing[] | null; error: any }> {
     const { data, error } = await supabase
       .from('property_listings')
       .select(`
         *,
-        profiles!property_listings_agent_id_fkey (
-          full_name,
-          email
-        )
+        agent:profiles!property_listings_agent_id_fkey(full_name, email)
       `)
       .order('created_at', { ascending: false });
 
     return { data, error };
   }
 
-  // Get a single listing by ID
+  // Get a specific listing by ID
   static async getListingById(id: string): Promise<{ data: PropertyListing | null; error: any }> {
     const { data, error } = await supabase
       .from('property_listings')
       .select(`
         *,
-        profiles!property_listings_agent_id_fkey (
-          full_name,
-          email
-        )
+        agent:profiles!property_listings_agent_id_fkey(full_name, email)
       `)
       .eq('id', id)
       .single();
@@ -148,27 +375,71 @@ export class PropertyService {
 
   // Update a listing
   static async updateListing(id: string, data: UpdatePropertyListingData): Promise<{ data: PropertyListing | null; error: any }> {
-    const { data: listing, error } = await supabase
+    const { data: result, error } = await supabase
       .from('property_listings')
       .update(data)
       .eq('id', id)
       .select()
       .single();
 
-    return { data: listing, error };
+    return { data: result, error };
   }
 
   // Delete a listing
   static async deleteListing(id: string): Promise<{ error: any }> {
-    const { error } = await supabase
-      .from('property_listings')
-      .delete()
-      .eq('id', id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { error: new Error('User not authenticated') };
+      }
 
-    return { error };
+      // Check rate limit
+      const rateLimit = await rateLimitService.checkRateLimit(user.id, 'property:delete');
+      if (!rateLimit.allowed) {
+        return { 
+          error: { 
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimit.resetTime - Date.now()) / 1000)} seconds.` 
+          } 
+        };
+      }
+
+      // Get the listing first to delete associated images and for audit log
+      const { data: listing } = await this.getListingById(id);
+      
+      if (listing?.images && listing.images.length > 0) {
+        await this.deleteImages(listing.images);
+      }
+
+      const { error } = await supabase
+        .from('property_listings')
+        .delete()
+        .eq('id', id);
+
+      // Log the action
+      if (!error && listing) {
+        await auditService.log(user.id, 'DELETE', 'property_listings', {
+          recordId: id,
+          oldValues: {
+            title: listing.title,
+            price: listing.price,
+            property_type: listing.property_type,
+            address: listing.address,
+            city: listing.city,
+            state: listing.state,
+            action: 'deleted property listing',
+            image_count: listing.images?.length || 0
+          }
+        });
+      }
+
+      return { error };
+    } catch (error) {
+      console.error('Error deleting listing:', error);
+      return { error };
+    }
   }
 
-  // Approve a listing (super admin only)
+  // Approve a listing (admin only)
   static async approveListing(id: string): Promise<{ data: PropertyListing | null; error: any }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -189,7 +460,7 @@ export class PropertyService {
     return { data, error };
   }
 
-  // Reject a listing (super admin only)
+  // Reject a listing (admin only)
   static async rejectListing(id: string, reason: string): Promise<{ data: PropertyListing | null; error: any }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -209,7 +480,7 @@ export class PropertyService {
     return { data, error };
   }
 
-  // Add to favorites
+  // Add property to favorites
   static async addToFavorites(propertyId: string): Promise<{ data: PropertyFavorite | null; error: any }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -228,7 +499,7 @@ export class PropertyService {
     return { data, error };
   }
 
-  // Remove from favorites
+  // Remove property from favorites
   static async removeFromFavorites(propertyId: string): Promise<{ error: any }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -244,21 +515,26 @@ export class PropertyService {
     return { error };
   }
 
-  // Get user's favorites
+  // Get user's favorite properties
   static async getFavorites(): Promise<{ data: PropertyListing[] | null; error: any }> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { data: null, error: new Error('User not authenticated') };
+    }
+
     const { data, error } = await supabase
       .from('property_favorites')
       .select(`
-        property_listings (*)
+        property:property_listings(*)
       `)
-      .order('created_at', { ascending: false });
+      .eq('buyer_id', user.id);
 
-    if (data) {
-      const favorites = data.map(item => item.property_listings as PropertyListing);
-      return { data: favorites, error: null };
+    if (error) {
+      return { data: null, error };
     }
 
-    return { data: null, error };
+    const properties = data?.map(item => item.property).filter(Boolean) || [];
+    return { data: properties, error: null };
   }
 
   // Check if property is favorited
@@ -278,7 +554,7 @@ export class PropertyService {
     return { data: !!data, error };
   }
 
-  // Create an inquiry
+  // Create property inquiry
   static async createInquiry(propertyId: string, message: string, contactPreference?: string): Promise<{ data: PropertyInquiry | null; error: any }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -288,8 +564,8 @@ export class PropertyService {
     const { data, error } = await supabase
       .from('property_inquiries')
       .insert({
-        buyer_id: user.id,
         property_id: propertyId,
+        buyer_id: user.id,
         message,
         contact_preference: contactPreference
       })
@@ -299,16 +575,13 @@ export class PropertyService {
     return { data, error };
   }
 
-  // Get inquiries for a property (agent)
+  // Get inquiries for a specific property (agent only)
   static async getPropertyInquiries(propertyId: string): Promise<{ data: PropertyInquiry[] | null; error: any }> {
     const { data, error } = await supabase
       .from('property_inquiries')
       .select(`
         *,
-        profiles!property_inquiries_buyer_id_fkey (
-          full_name,
-          email
-        )
+        buyer:profiles!property_inquiries_buyer_id_fkey(full_name, email)
       `)
       .eq('property_id', propertyId)
       .order('created_at', { ascending: false });
@@ -316,30 +589,30 @@ export class PropertyService {
     return { data, error };
   }
 
-  // Get user's inquiries (buyer)
+  // Get user's own inquiries
   static async getMyInquiries(): Promise<{ data: PropertyInquiry[] | null; error: any }> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { data: null, error: new Error('User not authenticated') };
+    }
+
     const { data, error } = await supabase
       .from('property_inquiries')
       .select(`
         *,
-        property_listings (
-          title,
-          address,
-          city,
-          state
-        )
+        property:property_listings(title, address)
       `)
+      .eq('buyer_id', user.id)
       .order('created_at', { ascending: false });
 
     return { data, error };
   }
 
-  // Respond to an inquiry (agent)
+  // Respond to an inquiry (agent only)
   static async respondToInquiry(inquiryId: string, response: string): Promise<{ data: PropertyInquiry | null; error: any }> {
     const { data, error } = await supabase
       .from('property_inquiries')
       .update({
-        status: 'responded',
         agent_response: response,
         responded_at: new Date().toISOString()
       })
