@@ -5,16 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { Home, Users, MessageSquare, Settings, PlusCircle, BarChart3, Calendar, Phone, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { PropertyListingForm } from '@/components/property/PropertyListingForm';
-import { PropertyService, PropertyListing } from '@/services/propertyService';
+import { PropertyListingModal } from '@/components/property/PropertyListingModal';
 
 export const AgentDashboard = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const [showForm, setShowForm] = useState(false);
-  const [myListings, setMyListings] = useState<PropertyListing[]>([]);
-  const [loadingListings, setLoadingListings] = useState(true);
-  const [activeComponent, setActiveComponent] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
 
   const getSubscriptionBadge = () => {
     const tier = profile?.subscription_tier || 'free';
@@ -32,36 +28,14 @@ export const AgentDashboard = () => {
     );
   };
 
-  const fetchListings = async () => {
-    setLoadingListings(true);
-    const { data } = await PropertyService.getMyListings();
-    setMyListings(data || []);
-    setLoadingListings(false);
-  };
-
-  useEffect(() => {
-    fetchListings();
-  }, []);
-
   const handleListingCreated = () => {
-    setShowForm(false);
-    fetchListings();
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this listing? This action cannot be undone.')) return;
-    const { error } = await PropertyService.deleteListing(id);
-    if (error) {
-      alert(error.message || 'Failed to delete listing');
-    } else {
-      setMyListings(listings => listings.filter(l => l.id !== id));
-    }
+    setShowModal(false);
   };
 
   // Agent action cards with navigation
   const agentActions = [
-    { icon: PlusCircle, label: 'Add New Listing', description: 'Create a new property listing', color: 'bg-green-500/10 text-green-500', onClick: () => setShowForm(true) },
-    { icon: Home, label: 'My Listings', description: 'Manage your properties', color: 'bg-blue-500/10 text-blue-500' },
+    { icon: PlusCircle, label: 'Add New Listing', description: 'Create a new property listing', color: 'bg-green-500/10 text-green-500', onClick: () => setShowModal(true) },
+    { icon: Home, label: 'My Listings', description: 'Manage your properties', color: 'bg-blue-500/10 text-blue-500', onClick: () => navigate('/my-listings') },
     { icon: Users, label: 'My Clients', description: 'Manage client relationships', color: 'bg-purple-500/10 text-purple-500', onClick: () => navigate('/my-clients') },
     { icon: Calendar, label: 'Appointments', description: 'View scheduled showings', color: 'bg-orange-500/10 text-orange-500', onClick: () => navigate('/appointments') },
     { icon: BarChart3, label: 'Analytics', description: 'View performance metrics', color: 'bg-indigo-500/10 text-indigo-500', onClick: () => navigate('/agent-analytics') },
@@ -125,60 +99,12 @@ export const AgentDashboard = () => {
         })}
       </div>
 
-      {/* Property Listing Form (shown when Add New Listing card is clicked) */}
-      {showForm && (
-        <div className="py-6">
-          <PropertyListingForm onSuccess={handleListingCreated} onCancel={() => setShowForm(false)} />
-        </div>
-      )}
-
-      {/* My Listings */}
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
-            <CardHeader>
-              <CardTitle className="text-white">My Listings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loadingListings ? (
-                <div className="text-gray-300">Loading your listings...</div>
-              ) : myListings.length === 0 ? (
-                <div className="text-gray-400">You have no property listings yet.</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {myListings.map(listing => (
-                    <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10">
-                      <CardHeader>
-                        <CardTitle className="text-lg text-pickfirst-yellow">{listing.title}</CardTitle>
-                        <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-white font-bold text-xl mb-2">${listing.price.toLocaleString()}</div>
-                        <div className="text-gray-400 text-sm mb-2">{listing.property_type.replace(/\b\w/g, l => l.toUpperCase())}</div>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {listing.bedrooms !== null && <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded">{listing.bedrooms} Bed</span>}
-                          {listing.bathrooms !== null && <span className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded">{listing.bathrooms} Bath</span>}
-                          {listing.square_feet !== null && <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded">{listing.square_feet} Sq Ft</span>}
-                        </div>
-                        <div className="text-xs text-gray-400 mb-2">Status: <span className={
-                          listing.status === 'approved' ? 'text-green-400' :
-                          listing.status === 'pending' ? 'text-yellow-400' :
-                          listing.status === 'rejected' ? 'text-red-400' :
-                          'text-gray-400'
-                        }>{listing.status.charAt(0).toUpperCase() + listing.status.slice(1)}</span></div>
-                        {listing.status === 'rejected' && listing.rejection_reason && (
-                          <div className="text-xs text-red-400">Reason: {listing.rejection_reason}</div>
-                        )}
-                        <div className="flex gap-2 mt-4 flex-wrap">
-                          <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-500/10 flex items-center" onClick={() => handleDelete(listing.id)}>
-                            <Trash2 className="h-4 w-4 mr-1" /> Delete
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      {/* Property Listing Modal */}
+      <PropertyListingModal 
+        open={showModal} 
+        onOpenChange={setShowModal} 
+        onSuccess={handleListingCreated} 
+      />
 
           {/* Performance Metrics */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

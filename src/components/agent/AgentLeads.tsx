@@ -234,7 +234,7 @@ export const AgentLeads = () => {
       <div className="flex justify-end">
         <Button 
           onClick={() => setIsAddingLead(true)}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
+          className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber transition-colors"
         >
           <Plus className="h-4 w-4 mr-2" />
           Add New Lead
@@ -282,22 +282,22 @@ export const AgentLeads = () => {
       </div>
 
       {/* Filters and Search */}
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-xl">
+      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   placeholder="Search leads by name or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                 />
               </div>
             </div>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[180px] bg-white/5 border-white/20 text-white">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -311,7 +311,7 @@ export const AgentLeads = () => {
               </SelectContent>
             </Select>
             <Select value={filterSource} onValueChange={setFilterSource}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[180px] bg-white/5 border-white/20 text-white">
                 <SelectValue placeholder="Filter by source" />
               </SelectTrigger>
               <SelectContent>
@@ -339,8 +339,8 @@ export const AgentLeads = () => {
                     <AvatarFallback>{lead.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle className="text-lg">{lead.name}</CardTitle>
-                    <CardDescription>{lead.email}</CardDescription>
+                    <CardTitle className="text-white text-lg">{lead.name}</CardTitle>
+                    <CardDescription className="text-gray-300">{lead.email}</CardDescription>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1">
@@ -349,7 +349,7 @@ export const AgentLeads = () => {
                   </Badge>
                   <div className="flex items-center gap-1">
                     <span className="text-xs">{getSourceIcon(lead.source)}</span>
-                    <span className="text-xs text-muted-foreground">{lead.source}</span>
+                    <span className="text-xs text-gray-400">{lead.source}</span>
                   </div>
                 </div>
               </div>
@@ -358,7 +358,7 @@ export const AgentLeads = () => {
                   {renderStars(lead.rating)}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Score:</span>
+                  <span className="text-sm text-gray-400">Score:</span>
                   <span className={`text-sm font-bold ${getLeadScoreColor(lead.lead_score)}`}>
                     {lead.lead_score}
                   </span>
@@ -367,26 +367,23 @@ export const AgentLeads = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Budget:</span>
-                  <span>{lead.budget_range}</span>
+                <div className="text-gray-300">
+                  <span className="text-white font-medium">Budget:</span> {lead.budget_range}
+                </div>
+                <div className="text-gray-300">
+                  <span className="text-white font-medium">Property:</span> {lead.property_type}
+                </div>
+                <div className="text-gray-300">
+                  <span className="text-white font-medium">Areas:</span> {lead.preferred_areas.join(', ')}
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Property:</span>
-                  <span>{lead.property_type}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Areas:</span>
-                  <span className="text-right">{lead.preferred_areas.join(', ')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Urgency:</span>
+                  <span className="text-white font-medium">Urgency:</span>
                   <Badge className={getUrgencyColor(lead.urgency)} variant="secondary">
                     {lead.urgency}
                   </Badge>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Next Follow-up:</span>
+                <div className="text-gray-300">
+                  <span className="text-white font-medium">Next Follow-up:</span>{' '}
                   <span className={isDueForFollowUp(lead.next_follow_up) ? 'text-red-500 font-bold' : ''}>
                     {new Date(lead.next_follow_up).toLocaleDateString()}
                   </span>
@@ -394,14 +391,14 @@ export const AgentLeads = () => {
               </div>
               
               {lead.notes && (
-                <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">
+                <div className="text-sm text-gray-400 bg-white/5 p-2 rounded">
                   {lead.notes}
                 </div>
               )}
 
               <div className="space-y-2">
                 <Select value={lead.status} onValueChange={(value) => handleStatusChange(lead.id, value)}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full bg-white/5 border-white/20 text-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -414,7 +411,7 @@ export const AgentLeads = () => {
                   </SelectContent>
                 </Select>
 
-                <div className="flex gap-1">
+                <div className="flex gap-2 pt-2">
                   <Button
                     size="sm"
                     variant="outline"

@@ -6,9 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { Search, Heart, MessageSquare, Settings, Home, MapPin, Filter } from 'lucide-react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
+import { useNavigate } from 'react-router-dom';
 
 export const BuyerDashboard = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [listings, setListings] = useState<PropertyListing[]>([]);
   const [loadingListings, setLoadingListings] = useState(true);
 
@@ -39,12 +41,12 @@ export const BuyerDashboard = () => {
   };
 
   const buyerActions = [
-    { icon: Search, label: 'Browse Properties', description: 'Find your perfect home', color: 'bg-blue-500/10 text-blue-500' },
-    { icon: Heart, label: 'Saved Properties', description: 'View your favorite listings', color: 'bg-red-500/10 text-red-500' },
-    { icon: MapPin, label: 'Property Map', description: 'Explore properties on map', color: 'bg-green-500/10 text-green-500' },
-    { icon: Filter, label: 'Search Filters', description: 'Set your preferences', color: 'bg-purple-500/10 text-purple-500' },
-    { icon: MessageSquare, label: 'Messages', description: 'Chat with agents', color: 'bg-pickfirst-yellow/10 text-pickfirst-yellow' },
-    { icon: Settings, label: 'Account Settings', description: 'Update your profile', color: 'bg-gray-500/10 text-gray-500' }
+    { icon: Search, label: 'Browse Properties', description: 'Find your perfect home', color: 'bg-blue-500/10 text-blue-500', onClick: () => navigate('/browse-properties') },
+    { icon: Heart, label: 'Saved Properties', description: 'View your favorite listings', color: 'bg-red-500/10 text-red-500', onClick: () => navigate('/saved-properties') },
+    { icon: MapPin, label: 'Property Map', description: 'Explore properties on map', color: 'bg-green-500/10 text-green-500', onClick: () => navigate('/property-map') },
+    { icon: Filter, label: 'Search Filters', description: 'Set your preferences', color: 'bg-purple-500/10 text-purple-500', onClick: () => navigate('/search-filters') },
+    { icon: MessageSquare, label: 'Messages', description: 'Chat with agents', color: 'bg-pickfirst-yellow/10 text-pickfirst-yellow', onClick: () => navigate('/buyer-messages') },
+    { icon: Settings, label: 'Account Settings', description: 'Update your profile', color: 'bg-gray-500/10 text-gray-500', onClick: () => navigate('/buyer-account-settings') }
   ];
 
   return (
@@ -74,7 +76,7 @@ export const BuyerDashboard = () => {
         {buyerActions.map((action, index) => {
           const Icon = action.icon;
           return (
-            <Card key={index} className="hover:shadow-md transition-all cursor-pointer bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105">
+            <Card key={index} className="hover:shadow-md transition-all cursor-pointer bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105" onClick={action.onClick}>
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-lg ${action.color}`}>
