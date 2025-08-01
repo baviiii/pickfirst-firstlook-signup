@@ -1,4 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
+import { ipDetectionService } from './ipDetectionService';
+import { userContextService } from './userContextService';
 
 export interface AuditLog {
   id?: string;
@@ -50,23 +52,71 @@ class AuditService {
       userAgent?: string;
     } = {}
   ): Promise<void> {
-    const auditLog: AuditLog = {
-      user_id: userId,
-      action,
-      table_name: tableName,
-      record_id: options.recordId,
-      old_values: options.oldValues,
-      new_values: options.newValues,
-      ip_address: options.ipAddress || this.getClientIP(),
-      user_agent: options.userAgent || navigator.userAgent,
-    };
+    try {
+      // Get comprehensive user context and client info
+      const [userContext, clientInfo] = await Promise.all([
+        userContextService.getUserContext(userId),
+        ipDetectionService.getClientInfo()
+      ]);
 
-    // Add to queue
-    this.queue.push(auditLog);
+      // Get client IP asynchronously
+      const clientIP = options.ipAddress || clientInfo.ip;
+      
+      const auditLog: AuditLog = {
+        user_id: userId,
+        action,
+        table_name: tableName,
+        record_id: options.recordId,
+        old_values: options.oldValues,
+        new_values: {
+          ...options.newValues,
+          // Add comprehensive user context
+          user_context: userContext ? {
+            full_name: userContext.full_name,
+            email: userContext.email,
+            role: userContext.role,
+            subscription_tier: userContext.subscription_tier,
+            subscription_status: userContext.subscription_status,
+            session_id: userContext.session_id
+          } : null,
+          // Add client context
+          client_context: {
+            ip_address: clientIP,
+            user_agent: clientInfo.userAgent,
+            session_id: clientInfo.sessionId,
+            timestamp: clientInfo.timestamp
+          }
+        },
+        ip_address: clientIP,
+        user_agent: options.userAgent || clientInfo.userAgent,
+      };
 
-    // Flush immediately if queue is getting large
-    if (this.queue.length >= this.batchSize) {
-      await this.flush();
+      // Add to queue
+      this.queue.push(auditLog);
+
+      // Flush immediately if queue is getting large
+      if (this.queue.length >= this.batchSize) {
+        await this.flush();
+      }
+    } catch (error) {
+      console.error('Error creating audit log:', error);
+      // Fallback to basic logging if enhanced logging fails
+      const fallbackLog: AuditLog = {
+        user_id: userId,
+        action,
+        table_name: tableName,
+        record_id: options.recordId,
+        old_values: options.oldValues,
+        new_values: options.newValues,
+        ip_address: 'error-detecting-ip',
+        user_agent: options.userAgent || 'unknown',
+      };
+      
+      this.queue.push(fallbackLog);
+      
+      if (this.queue.length >= this.batchSize) {
+        await this.flush();
+      }
     }
   }
 
@@ -95,10 +145,15 @@ class AuditService {
     }
   }
 
-  private getClientIP(): string {
-    // In a real app, this would come from the server
-    // For now, we'll use a placeholder
-    return 'client-ip-placeholder';
+  private async getClientIP(): Promise<string> {
+    try {
+      // Use the production-ready IP detection service
+      const clientInfo = await ipDetectionService.getClientInfo();
+      return clientInfo.ip;
+    } catch (error) {
+      console.error('Error getting client IP:', error);
+      return 'error-detecting-ip';
+    }
   }
 
   // Get audit logs for a user
@@ -178,6 +233,76 @@ class AuditService {
 
       const { data, error } = await query;
       return { data: data || [], error };
+    } catch (error) {
+      return { data: [], error };
+    }
+  }
+
+  // Get all audit logs for admin monitoring (with user details)
+  async getAllAuditLogs(options: {
+    limit?: number;
+    offset?: number;
+    action?: AuditAction;
+    tableName?: string;
+    userId?: string;
+    startDate?: string;
+    endDate?: string;
+    search?: string;
+  } = {}): Promise<{ data: (AuditLog & { user_email?: string; user_full_name?: string })[]; error: any }> {
+    try {
+      let query = supabase
+        .from('audit_logs')
+        .select(`
+          *,
+          profiles!audit_logs_user_id_fkey (
+            email,
+            full_name
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (options.action) {
+        query = query.eq('action', options.action);
+      }
+
+      if (options.tableName) {
+        query = query.eq('table_name', options.tableName);
+      }
+
+      if (options.userId) {
+        query = query.eq('user_id', options.userId);
+      }
+
+      if (options.startDate) {
+        query = query.gte('created_at', options.startDate);
+      }
+
+      if (options.endDate) {
+        query = query.lte('created_at', options.endDate);
+      }
+
+      if (options.limit) {
+        query = query.limit(options.limit);
+      }
+
+      if (options.offset) {
+        query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) {
+        return { data: [], error };
+      }
+
+      // Transform the data to flatten the user details
+      const transformedData = (data || []).map(log => ({
+        ...log,
+        user_email: log.profiles?.email,
+        user_full_name: log.profiles?.full_name
+      }));
+
+      return { data: transformedData, error: null };
     } catch (error) {
       return { data: [], error };
     }

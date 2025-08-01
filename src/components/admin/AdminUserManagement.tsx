@@ -6,35 +6,97 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2, Shield, User } from 'lucide-react';
+import { ArrowLeft, Trash2, Shield, User, Activity, Loader2 } from 'lucide-react';
+import { auditService } from '@/services/auditService';
+import { rateLimitService } from '@/services/rateLimitService';
+import { withErrorBoundary } from '@/components/ui/error-boundary';
 
-export const AdminUserManagement = () => {
+const AdminUserManagementComponent = () => {
   const [users, setUsers] = useState<Tables<'profiles'>[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUsers = async () => {
       setLoading(true);
-      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-      if (error) {
+      try {
+        // Get current user for rate limiting
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          toast.error('Authentication required');
+          return;
+        }
+
+        // Rate limiting check
+        const rateLimit = await rateLimitService.checkRateLimit(user.id, 'admin:users:view');
+        if (!rateLimit.allowed) {
+          toast.error('Rate limit exceeded. Please try again later.');
+          return;
+        }
+
+        const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+        if (error) {
+          toast.error('Failed to fetch users');
+        } else {
+          setUsers(data || []);
+          
+          // Audit logging
+          await auditService.log(user.id, 'VIEW', 'profiles', {
+            recordId: 'all',
+            newValues: { count: data?.length || 0 }
+          });
+        }
+      } catch (error) {
         toast.error('Failed to fetch users');
-      } else {
-        setUsers(data || []);
+        console.error('Error fetching users:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchUsers();
   }, []);
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
-    const { error } = await supabase.from('profiles').delete().eq('id', id);
-    if (error) {
-      toast.error(error.message || 'Failed to delete user');
-    } else {
-      toast.success('User deleted.');
-      setUsers(users => users.filter(u => u.id !== id));
+    
+    setDeletingUser(id);
+    try {
+      // Get current user for rate limiting and audit
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Authentication required');
+        return;
+      }
+
+      // Rate limiting check
+      const rateLimit = await rateLimitService.checkRateLimit(user.id, 'admin:users:delete');
+      if (!rateLimit.allowed) {
+        toast.error('Rate limit exceeded. Please try again later.');
+        return;
+      }
+
+      // Get user data before deletion for audit
+      const userToDelete = users.find(u => u.id === id);
+      
+      const { error } = await supabase.from('profiles').delete().eq('id', id);
+      if (error) {
+        toast.error(error.message || 'Failed to delete user');
+      } else {
+        toast.success('User deleted successfully.');
+        setUsers(users => users.filter(u => u.id !== id));
+        
+        // Audit logging
+        await auditService.log(user.id, 'DELETE', 'profiles', {
+          recordId: id,
+          oldValues: userToDelete
+        });
+      }
+    } catch (error) {
+      toast.error('Failed to delete user');
+      console.error('Error deleting user:', error);
+    } finally {
+      setDeletingUser(null);
     }
   };
 
@@ -56,7 +118,11 @@ export const AdminUserManagement = () => {
           </Card>
         ) : users.length === 0 ? (
           <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-pickfirst-yellow/20">
-            <CardContent className="py-12 text-center text-gray-400 text-lg">No users found.</CardContent>
+            <CardContent className="py-12 text-center text-gray-400 text-lg">
+              <Activity className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <p>No users found.</p>
+              <p className="text-sm text-gray-500 mt-2">All user activities are being monitored and logged.</p>
+            </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -86,8 +152,19 @@ export const AdminUserManagement = () => {
                     <div className="text-xs text-gray-400 mb-2">Joined: {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</div>
                   </div>
                   <div className="flex gap-2 mt-4 flex-wrap">
-                    <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-500/10 flex items-center" onClick={() => handleDelete(user.id)}>
-                      <Trash2 className="h-4 w-4 mr-1" /> Delete
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="text-red-500 border-red-500 hover:bg-red-500/10 flex items-center" 
+                      onClick={() => handleDelete(user.id)}
+                      disabled={deletingUser === user.id}
+                    >
+                      {deletingUser === user.id ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4 mr-1" />
+                      )}
+                      {deletingUser === user.id ? 'Deleting...' : 'Delete'}
                     </Button>
                   </div>
                 </CardContent>
@@ -98,4 +175,7 @@ export const AdminUserManagement = () => {
       </div>
     </div>
   );
-}; 
+};
+
+// Export with error boundary
+export const AdminUserManagement = withErrorBoundary(AdminUserManagementComponent); 

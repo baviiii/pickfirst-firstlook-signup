@@ -223,11 +223,17 @@ class ClientService {
         .select()
         .single();
 
-      // Log the action
+      // Log the action with better context
       if (!error && data) {
         await auditService.log(user.id, 'CREATE', 'clients', {
           recordId: data.id,
-          newValues: { email: sanitizedEmail, status: clientData.status }
+          newValues: { 
+            email: sanitizedEmail, 
+            status: clientData.status,
+            action: 'created new client',
+            client_name: data.name,
+            client_email: data.email
+          }
         });
       }
 
@@ -269,9 +275,14 @@ class ClientService {
         .eq('role', 'buyer')
         .single();
 
-      // Log the search action
+      // Log the search action with better context
       await auditService.log(user.id, 'SEARCH', 'profiles', {
-        newValues: { searchEmail: sanitizedEmail, found: !!data }
+        newValues: { 
+          searchEmail: sanitizedEmail, 
+          found: !!data,
+          action: 'searched for user by email',
+          result: data ? 'user found' : 'user not found'
+        }
       });
 
       return { data, error };
@@ -326,11 +337,16 @@ class ClientService {
         .delete()
         .eq('id', id);
 
-      // Log the action
+      // Log the action with better context
       if (!error && clientData) {
         await auditService.log(user.id, 'DELETE', 'clients', {
           recordId: id,
-          oldValues: clientData
+          oldValues: {
+            ...clientData,
+            action: 'deleted client',
+            client_name: clientData.name,
+            client_email: clientData.email
+          }
         });
       }
 
