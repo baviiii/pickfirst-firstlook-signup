@@ -287,6 +287,208 @@ export interface Database {
           }
         ]
       }
+      clients: {
+        Row: {
+          id: string
+          agent_id: string
+          name: string
+          email: string | null
+          phone: string | null
+          status: string
+          budget_range: string | null
+          preferred_areas: string[] | null
+          property_type: string | null
+          rating: number
+          notes: string | null
+          last_contact: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          agent_id: string
+          name: string
+          email?: string | null
+          phone?: string | null
+          status?: string
+          budget_range?: string | null
+          preferred_areas?: string[] | null
+          property_type?: string | null
+          rating?: number
+          notes?: string | null
+          last_contact?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          agent_id?: string
+          name?: string
+          email?: string | null
+          phone?: string | null
+          status?: string
+          budget_range?: string | null
+          preferred_areas?: string[] | null
+          property_type?: string | null
+          rating?: number
+          notes?: string | null
+          last_contact?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      client_notes: {
+        Row: {
+          id: string
+          client_id: string
+          agent_id: string
+          note_type: string
+          content: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          agent_id: string
+          note_type?: string
+          content: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          agent_id?: string
+          note_type?: string
+          content?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_notes_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      client_interactions: {
+        Row: {
+          id: string
+          client_id: string
+          agent_id: string
+          interaction_type: string
+          subject: string | null
+          content: string | null
+          duration_minutes: number | null
+          outcome: string | null
+          next_follow_up: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          agent_id: string
+          interaction_type: string
+          subject?: string | null
+          content?: string | null
+          duration_minutes?: number | null
+          outcome?: string | null
+          next_follow_up?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          agent_id?: string
+          interaction_type?: string
+          subject?: string | null
+          content?: string | null
+          duration_minutes?: number | null
+          outcome?: string | null
+          next_follow_up?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_interactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_interactions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      audit_logs: {
+        Row: {
+          id: string
+          user_id: string
+          action: string
+          table_name: string
+          record_id: string | null
+          old_values: Json | null
+          new_values: Json | null
+          ip_address: string | null
+          user_agent: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          action: string
+          table_name: string
+          record_id?: string | null
+          old_values?: Json | null
+          new_values?: Json | null
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          action?: string
+          table_name?: string
+          record_id?: string | null
+          old_values?: Json | null
+          new_values?: Json | null
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -6,80 +6,59 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Search, Plus, Phone, Mail, MessageSquare, Calendar, Star, Edit, Trash2 } from 'lucide-react';
+import { Users, Search, Plus, Phone, Mail, MessageSquare, Calendar, Star, Edit, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  status: 'active' | 'inactive' | 'lead' | 'past_client';
-  budget_range: string;
-  preferred_areas: string[];
-  property_type: string;
-  rating: number;
-  notes: string;
-  last_contact: string;
-  created_at: string;
-}
+import { clientService, Client, ClientFilters } from '@/services/clientService';
+import { withErrorBoundary } from '@/components/ui/error-boundary';
 
 export const MyClients = () => {
-  const [clients, setClients] = useState<Client[]>([
-    {
-      id: '1',
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@email.com',
-      phone: '(555) 123-4567',
-      status: 'active',
-      budget_range: '$400,000 - $600,000',
-      preferred_areas: ['Downtown', 'Midtown'],
-      property_type: 'Single Family Home',
-      rating: 5,
-      notes: 'Looking for move-in ready home with good schools nearby. Has pre-approval letter.',
-      last_contact: '2024-01-24',
-      created_at: '2024-01-10'
-    },
-    {
-      id: '2',
-      name: 'Mike & Lisa Chen',
-      email: 'mike.chen@email.com',
-      phone: '(555) 987-6543',
-      status: 'lead',
-      budget_range: '$800,000 - $1,200,000',
-      preferred_areas: ['West End', 'North Hills'],
-      property_type: 'Luxury Condo',
-      rating: 4,
-      notes: 'First time buyers, need guidance through process. Interested in modern amenities.',
-      last_contact: '2024-01-23',
-      created_at: '2024-01-20'
-    },
-    {
-      id: '3',
-      name: 'Robert Davis',
-      email: 'robert.davis@email.com',
-      phone: '(555) 456-7890',
-      status: 'past_client',
-      budget_range: '$300,000 - $450,000',
-      preferred_areas: ['South Side'],
-      property_type: 'Townhouse',
-      rating: 5,
-      notes: 'Successfully closed on property. Great referral source.',
-      last_contact: '2024-01-15',
-      created_at: '2023-12-01'
-    }
-  ]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isAddingClient, setIsAddingClient] = useState(false);
-
-  const filteredClients = clients.filter(client => {
-    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || client.status === filterStatus;
-    return matchesSearch && matchesStatus;
+  const [newClient, setNewClient] = useState({
+    email: '',
+    phone: '',
+    status: 'lead' as const,
+    budget_range: '',
+    preferred_areas: [] as string[],
+    property_type: '',
+    rating: 0,
+    notes: ''
   });
+  const [searchingUser, setSearchingUser] = useState(false);
+  const [foundUser, setFoundUser] = useState<any>(null);
+
+  // Load clients on component mount
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    setLoading(true);
+    const filters: ClientFilters = {};
+    if (filterStatus !== 'all') filters.status = filterStatus;
+    if (searchTerm) filters.search = searchTerm;
+
+    const { data, error } = await clientService.getClients(filters);
+    if (error) {
+      toast.error('Failed to load clients');
+      console.error('Error loading clients:', error);
+    } else {
+      setClients(data);
+    }
+    setLoading(false);
+  };
+
+  // Refetch clients when filters change
+  useEffect(() => {
+    fetchClients();
+  }, [filterStatus, searchTerm]);
+
+  // Use clients directly since filtering is now done at database level
+  const filteredClients = clients;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -118,10 +97,63 @@ export const MyClients = () => {
     setIsAddingClient(true);
   };
 
-  const handleDeleteClient = (clientId: string) => {
+  const handleDeleteClient = async (clientId: string) => {
     if (window.confirm('Are you sure you want to delete this client?')) {
-      setClients(clients.filter(c => c.id !== clientId));
-      toast.success('Client deleted successfully');
+      const { error } = await clientService.deleteClient(clientId);
+      if (error) {
+        toast.error('Failed to delete client');
+        console.error('Error deleting client:', error);
+      } else {
+        setClients(clients.filter(c => c.id !== clientId));
+        toast.success('Client deleted successfully');
+      }
+    }
+  };
+
+  const handleSearchUser = async () => {
+    if (!newClient.email) {
+      toast.error('Please enter an email address');
+      return;
+    }
+
+    setSearchingUser(true);
+    const { data, error } = await clientService.getUserByEmail(newClient.email);
+    setSearchingUser(false);
+
+    if (error) {
+      toast.error('User not found. Please ensure the email is registered in the system.');
+      setFoundUser(null);
+    } else {
+      setFoundUser(data);
+      toast.success(`Found user: ${data.full_name || data.email}`);
+    }
+  };
+
+  const handleCreateClient = async () => {
+    if (!foundUser) {
+      toast.error('Please search for a user first');
+      return;
+    }
+
+    const { data, error } = await clientService.createClientByEmail(newClient.email, newClient);
+    if (error) {
+      toast.error(error.message || 'Failed to create client');
+      console.error('Error creating client:', error);
+    } else {
+      setClients([data!, ...clients]);
+      setIsAddingClient(false);
+      setNewClient({
+        email: '',
+        phone: '',
+        status: 'lead' as const,
+        budget_range: '',
+        preferred_areas: [],
+        property_type: '',
+        rating: 0,
+        notes: ''
+      });
+      setFoundUser(null);
+      toast.success('Client added successfully');
     }
   };
 
@@ -206,8 +238,26 @@ export const MyClients = () => {
       </div>
 
       {/* Client List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredClients.map((client) => (
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-pickfirst-yellow" />
+          <span className="ml-2 text-gray-300">Loading clients...</span>
+        </div>
+      ) : filteredClients.length === 0 ? (
+        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+          <CardContent className="p-8 text-center">
+            <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-semibold text-white mb-2">No clients found</h3>
+            <p className="text-gray-300 mb-4">Start by adding your first client to manage your relationships.</p>
+            <Button onClick={() => setIsAddingClient(true)} className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Your First Client
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredClients.map((client) => (
           <Card key={client.id} className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 hover:shadow-lg hover:shadow-pickfirst-yellow/10 transition-all">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -290,27 +340,123 @@ export const MyClients = () => {
             </CardContent>
           </Card>
         ))}
-      </div>
-
-      {filteredClients.length === 0 && (
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
-          <CardContent className="p-8 text-center">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-white mb-2">No clients found</h3>
-            <p className="text-gray-400 mb-4">
-              {searchTerm || filterStatus !== 'all' 
-                ? 'No clients match your current filters.' 
-                : 'You haven\'t added any clients yet.'}
-            </p>
-            {!searchTerm && filterStatus === 'all' && (
-              <Button onClick={handleAddClient} className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Your First Client
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        </div>
       )}
+
+      {/* Add Client Dialog */}
+      <Dialog open={isAddingClient} onOpenChange={setIsAddingClient}>
+        <DialogContent className="bg-gray-900/95 backdrop-blur-xl border border-pickfirst-yellow/20 text-white">
+          <DialogHeader>
+            <DialogTitle>Add New Client</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Enter the client's information to add them to your client list.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-300">Email Address *</label>
+              <div className="flex gap-2">
+                <Input
+                  value={newClient.email}
+                  onChange={(e) => setNewClient({...newClient, email: e.target.value})}
+                  className="bg-white/5 border-white/20 text-white"
+                  placeholder="Enter registered user's email"
+                />
+                <Button 
+                  onClick={handleSearchUser}
+                  disabled={!newClient.email || searchingUser}
+                  variant="outline"
+                  className="whitespace-nowrap"
+                >
+                  {searchingUser ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Search User'
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {foundUser && (
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+                <div className="text-sm text-green-400 font-medium">User Found:</div>
+                <div className="text-sm text-gray-300">
+                  <div><strong>Name:</strong> {foundUser.full_name || 'Not provided'}</div>
+                  <div><strong>Email:</strong> {foundUser.email}</div>
+                  <div><strong>Member since:</strong> {new Date(foundUser.created_at).toLocaleDateString()}</div>
+                </div>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-300">Phone</label>
+                <Input
+                  value={newClient.phone}
+                  onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
+                  className="bg-white/5 border-white/20 text-white"
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-300">Status</label>
+                <Select value={newClient.status} onValueChange={(value) => setNewClient({...newClient, status: value as any})}>
+                  <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="lead">Lead</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="past_client">Past Client</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-300">Budget Range</label>
+                <Input
+                  value={newClient.budget_range}
+                  onChange={(e) => setNewClient({...newClient, budget_range: e.target.value})}
+                  className="bg-white/5 border-white/20 text-white"
+                  placeholder="$300,000 - $500,000"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-300">Property Type</label>
+                <Input
+                  value={newClient.property_type}
+                  onChange={(e) => setNewClient({...newClient, property_type: e.target.value})}
+                  className="bg-white/5 border-white/20 text-white"
+                  placeholder="Single Family Home"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-300">Notes</label>
+              <Textarea
+                value={newClient.notes}
+                onChange={(e) => setNewClient({...newClient, notes: e.target.value})}
+                className="bg-white/5 border-white/20 text-white"
+                placeholder="Any additional notes about this client..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setIsAddingClient(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateClient}
+              disabled={!foundUser}
+              className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber"
+            >
+              Add Client
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
