@@ -100,21 +100,56 @@ const AdminPropertyManagementComponent = () => {
             {listings.map(listing => (
               <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10 flex flex-col h-full">
                 <CardHeader className="pb-2 border-b border-white/10">
-                  <div className="aspect-video bg-gray-700 rounded-md mb-3 overflow-hidden">
-                    {listing.images && listing.images.length > 0 ? (
+                  <div className="aspect-video bg-gray-700 rounded-md mb-3 overflow-hidden relative">
+                    {/* Debug info - remove in production */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1 rounded z-10">
+                        Images: {listing.images ? listing.images.length : 'null'}
+                      </div>
+                    )}
+                    
+                    {listing.images && Array.isArray(listing.images) && listing.images.length > 0 ? (
                       <img
                         src={listing.images[0]}
                         alt={listing.title}
                         className="w-full h-full object-cover"
                         onError={(e) => {
+                          console.error('Image failed to load:', listing.images[0], 'for listing:', listing.title);
                           // Fallback to placeholder if image fails to load
-                          e.currentTarget.style.display = 'none';
-                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          const target = e.currentTarget as HTMLImageElement;
+                          target.style.display = 'none';
+                          const placeholder = target.nextElementSibling as HTMLElement;
+                          if (placeholder) {
+                            placeholder.classList.remove('hidden');
+                          }
+                        }}
+                        onLoad={() => {
+                          console.log('Image loaded successfully:', listing.images[0], 'for listing:', listing.title);
                         }}
                       />
-                    ) : null}
-                    <div className={`w-full h-full bg-gray-700 flex items-center justify-center ${listing.images && listing.images.length > 0 ? 'hidden' : ''}`}>
-                      <span className="text-gray-500 text-sm">No Image</span>
+                    ) : (
+                      <div className="w-full h-full bg-gray-700 flex items-center justify-center">
+                        <div className="text-center">
+                          <span className="text-gray-500 text-sm block">No Image Available</span>
+                          {process.env.NODE_ENV === 'development' && (
+                            <span className="text-gray-600 text-xs block mt-1">
+                              Status: {listing.status} | Images: {JSON.stringify(listing.images)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Fallback placeholder that shows when image fails to load */}
+                    <div className="hidden w-full h-full bg-gray-700 flex items-center justify-center absolute inset-0">
+                      <div className="text-center">
+                        <span className="text-gray-500 text-sm block">Image Failed to Load</span>
+                        {process.env.NODE_ENV === 'development' && (
+                          <span className="text-gray-600 text-xs block mt-1">
+                            URL: {listing.images?.[0]}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <CardTitle className="text-lg text-pickfirst-yellow mb-1">{listing.title}</CardTitle>
