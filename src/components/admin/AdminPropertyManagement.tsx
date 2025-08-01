@@ -4,13 +4,15 @@ import { Button } from '@/components/ui/button';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { Trash2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const AdminPropertyManagementComponent = () => {
   const [listings, setListings] = useState<PropertyListing[]>([]);
   const [loadingListings, setLoadingListings] = useState(true);
+  const [selectedListing, setSelectedListing] = useState<PropertyListing | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,6 +55,23 @@ const AdminPropertyManagementComponent = () => {
     } else {
       toast.success('Listing deleted.');
       setListings(listings => listings.filter(l => l.id !== id));
+    }
+  };
+
+  const handleViewDetails = (listing: PropertyListing) => {
+    setSelectedListing(listing);
+    setCurrentImageIndex(0);
+  };
+
+  const nextImage = () => {
+    if (selectedListing?.images && selectedListing.images.length > 1) {
+      setCurrentImageIndex((prev) => (prev + 1) % selectedListing.images.length);
+    }
+  };
+
+  const prevImage = () => {
+    if (selectedListing?.images && selectedListing.images.length > 1) {
+      setCurrentImageIndex((prev) => (prev - 1 + selectedListing.images.length) % selectedListing.images.length);
     }
   };
 
@@ -131,6 +150,9 @@ const AdminPropertyManagementComponent = () => {
                         </Button>
                       </>
                     )}
+                    <Button size="sm" variant="outline" className="text-blue-500 border-blue-500 hover:bg-blue-500/10 flex items-center" onClick={() => handleViewDetails(listing)}>
+                      <Eye className="h-4 w-4 mr-1" /> View Details
+                    </Button>
                     <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-500/10 flex items-center" onClick={() => handleDelete(listing.id)}>
                       <Trash2 className="h-4 w-4 mr-1" /> Delete
                     </Button>
@@ -141,9 +163,153 @@ const AdminPropertyManagementComponent = () => {
           </div>
         )}
       </div>
+
+      {/* View Details Modal */}
+      <Dialog open={!!selectedListing} onOpenChange={() => setSelectedListing(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 border border-pickfirst-yellow/20">
+          <DialogHeader>
+            <DialogTitle className="text-pickfirst-yellow text-xl">{selectedListing?.title}</DialogTitle>
+          </DialogHeader>
+          
+          {selectedListing && (
+            <div className="space-y-6">
+              {/* Image Gallery */}
+              {selectedListing.images && selectedListing.images.length > 0 && (
+                <div className="relative">
+                  <div className="aspect-video bg-gray-700 rounded-lg overflow-hidden">
+                    <img
+                      src={selectedListing.images[currentImageIndex]}
+                      alt={`${selectedListing.title} - Image ${currentImageIndex + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzc0MTUxIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIE5vdCBGb3VuZDwvdGV4dD48L3N2Zz4=';
+                      }}
+                    />
+                  </div>
+                  
+                  {selectedListing.images.length > 1 && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 border-white/20 text-white hover:bg-black/70"
+                        onClick={prevImage}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 border-white/20 text-white hover:bg-black/70"
+                        onClick={nextImage}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black/50 px-2 py-1 rounded text-white text-sm">
+                        {currentImageIndex + 1} / {selectedListing.images.length}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+              
+              {/* Property Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Basic Information</h3>
+                    <div className="space-y-2 text-gray-300">
+                      <p><span className="text-gray-400">Address:</span> {selectedListing.address}</p>
+                      <p><span className="text-gray-400">City:</span> {selectedListing.city}</p>
+                      <p><span className="text-gray-400">State:</span> {selectedListing.state}</p>
+                      <p><span className="text-gray-400">ZIP:</span> {selectedListing.zip_code}</p>
+                      <p><span className="text-gray-400">Property Type:</span> {selectedListing.property_type?.replace(/\b\w/g, l => l.toUpperCase())}</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Pricing & Details</h3>
+                    <div className="space-y-2 text-gray-300">
+                      <p><span className="text-gray-400">Price:</span> <span className="text-white font-bold text-xl">${selectedListing.price.toLocaleString()}</span></p>
+                      {selectedListing.bedrooms !== null && <p><span className="text-gray-400">Bedrooms:</span> {selectedListing.bedrooms}</p>}
+                      {selectedListing.bathrooms !== null && <p><span className="text-gray-400">Bathrooms:</span> {selectedListing.bathrooms}</p>}
+                      {selectedListing.square_feet !== null && <p><span className="text-gray-400">Square Feet:</span> {selectedListing.square_feet.toLocaleString()}</p>}
+                      {selectedListing.lot_size !== null && <p><span className="text-gray-400">Lot Size:</span> {selectedListing.lot_size.toLocaleString()} sq ft</p>}
+                      {selectedListing.year_built !== null && <p><span className="text-gray-400">Year Built:</span> {selectedListing.year_built}</p>}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Status & Contact</h3>
+                    <div className="space-y-2 text-gray-300">
+                      <p><span className="text-gray-400">Status:</span> <span className={`font-semibold ${
+                        selectedListing.status === 'approved' ? 'text-green-400' :
+                        selectedListing.status === 'pending' ? 'text-yellow-400' :
+                        selectedListing.status === 'rejected' ? 'text-red-400' :
+                        'text-gray-400'
+                      }`}>{selectedListing.status?.charAt(0).toUpperCase() + selectedListing.status?.slice(1)}</span></p>
+                      {selectedListing.status === 'rejected' && selectedListing.rejection_reason && (
+                        <p><span className="text-gray-400">Rejection Reason:</span> <span className="text-red-400">{selectedListing.rejection_reason}</span></p>
+                      )}
+                      {selectedListing.contact_phone && <p><span className="text-gray-400">Phone:</span> {selectedListing.contact_phone}</p>}
+                      {selectedListing.contact_email && <p><span className="text-gray-400">Email:</span> {selectedListing.contact_email}</p>}
+                    </div>
+                  </div>
+                  
+                  {selectedListing.features && selectedListing.features.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Features</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedListing.features.map((feature, index) => (
+                          <span key={index} className="bg-blue-500/10 text-blue-400 px-2 py-1 rounded text-sm">
+                            {feature}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {selectedListing.description && (
+                <div>
+                  <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Description</h3>
+                  <p className="text-gray-300 leading-relaxed">{selectedListing.description}</p>
+                </div>
+              )}
+              
+              {selectedListing.showing_instructions && (
+                <div>
+                  <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Showing Instructions</h3>
+                  <p className="text-gray-300 leading-relaxed">{selectedListing.showing_instructions}</p>
+                </div>
+              )}
+              
+              {/* Admin Actions */}
+              <div className="flex gap-2 pt-4 border-t border-gray-700">
+                {selectedListing.status === 'pending' && (
+                  <>
+                    <Button className="bg-green-500 text-white hover:bg-green-600" onClick={() => { handleApprove(selectedListing.id); setSelectedListing(null); }}>
+                      Approve Listing
+                    </Button>
+                    <Button variant="outline" className="text-red-500 border-red-500 hover:bg-red-500/10" onClick={() => { handleReject(selectedListing.id); setSelectedListing(null); }}>
+                      Reject Listing
+                    </Button>
+                  </>
+                )}
+                <Button variant="outline" className="text-red-500 border-red-500 hover:bg-red-500/10" onClick={() => { handleDelete(selectedListing.id); setSelectedListing(null); }}>
+                  <Trash2 className="h-4 w-4 mr-1" /> Delete Listing
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
 // Export with error boundary
-export const AdminPropertyManagement = withErrorBoundary(AdminPropertyManagementComponent); 
+export const AdminPropertyManagement = withErrorBoundary(AdminPropertyManagementComponent);
