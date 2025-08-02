@@ -456,6 +456,7 @@ export class PropertyService {
       const { data, error } = await supabase
         .from('property_listings')
         .select('*')
+        .eq('agent_id', user.id)  // Filter by the current user's ID
         .order('created_at', { ascending: false });
 
       // Log the action
@@ -466,12 +467,17 @@ export class PropertyService {
             action: 'viewed my property listings'
           }
         });
+
+        // If no listings found, return empty array instead of null
+        if (!data || data.length === 0) {
+          return { data: [], error: null };
+        }
       }
 
-      return { data, error };
+      return { data: data || [], error };
     } catch (error) {
       console.error('Error fetching my listings:', error);
-      return { data: null, error };
+      return { data: [], error };
     }
   }
 

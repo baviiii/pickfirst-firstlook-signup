@@ -138,8 +138,19 @@ class ClientService {
     }
   }
 
+
+
   // Create a new client by linking to an existing user
-  async createClientByEmail(email: string, clientData: Omit<ClientInsert, 'agent_id' | 'id' | 'name' | 'email'>): Promise<{ data: Client | null; error: any }> {
+  async createClientByEmail(
+    email: string, 
+    clientData: Omit<ClientInsert, 'agent_id' | 'id' | 'name' | 'email' | 'created_at' | 'updated_at'> & {
+      phone?: string;
+      status?: string;
+      budget_range?: string;
+      preferred_areas?: string[];
+      property_type?: string;
+    }
+  ): Promise<{ data: Client | null; error: any }> {
     try {
       // Validate email format
       if (!validateEmail(email)) {
@@ -189,18 +200,23 @@ class ClientService {
       if (userProfile.role !== 'buyer') {
         return { data: null, error: { message: 'Only registered buyers can be added as clients.' } };
       }
-
-      // Check if client relationship already exists
-      const { data: existingClient } = await supabase
+             // Check if client relationship already exists
+      const { data: existingClient, error: clientCheckError } = await supabase
         .from('clients')
         .select('id')
         .eq('agent_id', user.id)
-        .eq('id', userProfile.id)
-        .single();
+        .eq('user_id', userProfile.id)
+        .maybeSingle();
 
-      if (existingClient) {
-        return { data: null, error: { message: 'This user is already your client.' } };
-      }
+        if (clientCheckError) {
+          console.error('Error checking existing client:', clientCheckError);
+          return { data: null, error: { message: 'Error checking client relationship' } };
+        }
+
+        if (existingClient) {
+          return { data: null, error: { message: 'This user is already your client.' } };
+        }
+     
 
       // Create the client relationship
       const newClient: ClientInsert = {
