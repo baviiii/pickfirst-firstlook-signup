@@ -185,9 +185,19 @@ class ClientService {
         return { data: null, error: { message: 'Invalid phone number format' } };
       }
 
-      // First, find the user profile by email
+      // First, let's check what user is making this request
+      console.log('Current authenticated user:', user.id, user.email);
       console.log('Searching for user with email:', sanitizedEmail);
       
+      // Try to get all profiles first to see if we can read any
+      const { data: allProfiles, error: allProfilesError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, role')
+        .limit(5);
+      
+      console.log('Can we read profiles at all?', { allProfiles, allProfilesError });
+      
+      // Now try the specific email search
       const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
         .select('id, email, full_name, role')
