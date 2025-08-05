@@ -8,16 +8,7 @@ import { SuperAdminDashboard } from './SuperAdminDashboard';
 export const UserDashboard = () => {
   const { profile, refetchProfile } = useAuth();
 
-  // Refetch profile data every 5 seconds to catch role changes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      refetchProfile();
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [refetchProfile]);
-
-  // Also refetch when component mounts
+  // Only refetch when component mounts, not continuously
   useEffect(() => {
     refetchProfile();
   }, [refetchProfile]);
