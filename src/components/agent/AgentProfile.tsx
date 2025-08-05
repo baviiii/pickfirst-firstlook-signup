@@ -111,21 +111,21 @@ export const AgentProfile = () => {
       {/* Action Button */}
       <div className="flex justify-end">
         {isEditing ? (
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setIsEditing(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveProfile} className="bg-primary text-primary-foreground hover:bg-primary/90">
-              <Save className="h-4 w-4 mr-2" />
-              Save Changes
-            </Button>
+        <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setIsEditing(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveProfile} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                <Save className="h-4 w-4 mr-2" />
+                Save Changes
+              </Button>
           </div>
-        ) : (
-          <Button onClick={() => setIsEditing(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Settings className="h-4 w-4 mr-2" />
-            Edit Profile
-          </Button>
-        )}
+          ) : (
+            <Button onClick={() => setIsEditing(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Settings className="h-4 w-4 mr-2" />
+              Edit Profile
+            </Button>
+          )}
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">

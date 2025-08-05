@@ -76,25 +76,25 @@ export const AgentAnalytics = () => {
     <div className="space-y-6">
       {/* Controls */}
       <div className="flex items-center justify-end gap-3">
-        <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger className="w-32 bg-background/50 border-border">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7d">7 Days</SelectItem>
-            <SelectItem value="30d">30 Days</SelectItem>
-            <SelectItem value="90d">90 Days</SelectItem>
-            <SelectItem value="1y">1 Year</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-        <Button onClick={handleExport} className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Download className="h-4 w-4 mr-2" />
-          Export
-        </Button>
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger className="w-32 bg-background/50 border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">7 Days</SelectItem>
+              <SelectItem value="30d">30 Days</SelectItem>
+              <SelectItem value="90d">90 Days</SelectItem>
+              <SelectItem value="1y">1 Year</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button onClick={handleExport} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
       </div>
 
       {/* Key Metrics */}

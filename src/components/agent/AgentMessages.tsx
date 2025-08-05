@@ -218,42 +218,42 @@ export const AgentMessages = () => {
     <div className="space-y-6">
       {/* Action Button */}
       <div className="flex justify-end">
-        <Dialog open={isComposing} onOpenChange={setIsComposing}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-              <Plus className="h-4 w-4 mr-2" />
-              New Message
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Compose New Message</DialogTitle>
-              <DialogDescription>Send a message to your clients</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select recipient" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sarah">Sarah Johnson</SelectItem>
-                  <SelectItem value="mike">Mike Chen</SelectItem>
-                  <SelectItem value="lisa">Lisa Rodriguez</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input placeholder="Subject" />
-              <Textarea placeholder="Type your message..." rows={6} />
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsComposing(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={() => setIsComposing(false)}>
-                  Send Message
-                </Button>
+          <Dialog open={isComposing} onOpenChange={setIsComposing}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                <Plus className="h-4 w-4 mr-2" />
+                New Message
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Compose New Message</DialogTitle>
+                <DialogDescription>Send a message to your clients</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select recipient" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sarah">Sarah Johnson</SelectItem>
+                    <SelectItem value="mike">Mike Chen</SelectItem>
+                    <SelectItem value="lisa">Lisa Rodriguez</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input placeholder="Subject" />
+                <Textarea placeholder="Type your message..." rows={6} />
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setIsComposing(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={() => setIsComposing(false)}>
+                    Send Message
+                  </Button>
+                </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[800px]">
