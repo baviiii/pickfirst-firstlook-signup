@@ -186,14 +186,39 @@ class ClientService {
       }
 
       // First, find the user profile by email
+      console.log('Searching for user with email:', sanitizedEmail);
+      
       const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
         .select('id, email, full_name, role')
         .eq('email', sanitizedEmail)
-        .single();
+        .maybeSingle();
 
-      if (profileError || !userProfile) {
-        return { data: null, error: { message: 'User not found. Please ensure the email is registered in the system.' } };
+      console.log('Profile search result:', { userProfile, profileError });
+
+      // Handle the "no rows" case specifically
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Database error searching for profile:', profileError);
+        return { data: null, error: { message: 'Database error occurred while searching for user.' } };
+      }
+
+      if (!userProfile) {
+        // Try a case-insensitive search as backup
+        console.log('Trying case-insensitive search...');
+        const { data: userProfileInsensitive, error: profileErrorInsensitive } = await supabase
+          .from('profiles')
+          .select('id, email, full_name, role')
+          .ilike('email', sanitizedEmail)
+          .maybeSingle();
+        
+        console.log('Case-insensitive search result:', { userProfileInsensitive, profileErrorInsensitive });
+        
+        if (!userProfileInsensitive) {
+          return { data: null, error: { message: `User not found with email: ${sanitizedEmail}. Please ensure the email is registered in the system.` } };
+        }
+        
+        // Use the result from case-insensitive search
+        const userProfile = userProfileInsensitive;
       }
 
       // Check if user is a buyer
