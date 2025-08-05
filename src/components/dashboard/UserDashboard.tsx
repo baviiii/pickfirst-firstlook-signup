@@ -22,15 +22,23 @@ export const UserDashboard = () => {
     refetchProfile();
   }, [refetchProfile]);
 
+  // Debug logging
+  console.log('UserDashboard - Profile:', profile);
+  console.log('UserDashboard - Role:', profile?.role);
+
   // Route to the appropriate dashboard based on user role
   switch (profile?.role) {
     case 'buyer':
+      console.log('Rendering BuyerDashboard');
       return <BuyerDashboard />;
     case 'agent':
+      console.log('Rendering AgentDashboard');
       return <AgentDashboard />;
     case 'super_admin':
+      console.log('Rendering SuperAdminDashboard');
       return <SuperAdminDashboard />;
     default:
+      console.log('Defaulting to BuyerDashboard - Role was:', profile?.role);
       return <BuyerDashboard />; // Default to buyer dashboard
   }
 };
