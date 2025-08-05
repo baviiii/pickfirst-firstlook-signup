@@ -8,10 +8,10 @@ import { SuperAdminDashboard } from './SuperAdminDashboard';
 export const UserDashboard = () => {
   const { profile, refetchProfile } = useAuth();
 
-  // Only refetch when component mounts, not continuously
+  // Only refetch when component mounts
   useEffect(() => {
     refetchProfile();
-  }, [refetchProfile]);
+  }, []); // Empty dependency array - only run once on mount
 
   // Route to the appropriate dashboard based on user role
   switch (profile?.role) {
