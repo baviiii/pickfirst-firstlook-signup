@@ -60,42 +60,16 @@ class AuditService {
     } = {}
   ): Promise<void> {
     try {
-      // Get comprehensive user context and client info
-      const [userContext, clientInfo] = await Promise.all([
-        userContextService.getUserContext(userId),
-        ipDetectionService.getClientInfo()
-      ]);
-
-      // Get client IP asynchronously
-      const clientIP = options.ipAddress || clientInfo.ip;
-      
+      // Simple audit log without external API calls to prevent infinite loops
       const auditLog: AuditLog = {
         user_id: userId,
         action,
         table_name: tableName,
         record_id: options.recordId,
         old_values: options.oldValues,
-        new_values: {
-          ...options.newValues,
-          // Add comprehensive user context
-          user_context: userContext ? {
-            full_name: userContext.full_name,
-            email: userContext.email,
-            role: userContext.role,
-            subscription_tier: userContext.subscription_tier,
-            subscription_status: userContext.subscription_status,
-            session_id: userContext.session_id
-          } : null,
-          // Add client context
-          client_context: {
-            ip_address: clientIP,
-            user_agent: clientInfo.userAgent,
-            session_id: clientInfo.sessionId,
-            timestamp: clientInfo.timestamp
-          }
-        },
-        ip_address: clientIP,
-        user_agent: options.userAgent || clientInfo.userAgent,
+        new_values: options.newValues,
+        ip_address: options.ipAddress || 'client-ip',
+        user_agent: options.userAgent || navigator.userAgent || 'unknown',
       };
 
       // Add to queue
@@ -107,7 +81,7 @@ class AuditService {
       }
     } catch (error) {
       console.error('Error creating audit log:', error);
-      // Fallback to basic logging if enhanced logging fails
+      // Fallback to minimal logging
       const fallbackLog: AuditLog = {
         user_id: userId,
         action,
@@ -115,8 +89,8 @@ class AuditService {
         record_id: options.recordId,
         old_values: options.oldValues,
         new_values: options.newValues,
-        ip_address: 'error-detecting-ip',
-        user_agent: options.userAgent || 'unknown',
+        ip_address: 'unknown',
+        user_agent: 'unknown',
       };
       
       this.queue.push(fallbackLog);
