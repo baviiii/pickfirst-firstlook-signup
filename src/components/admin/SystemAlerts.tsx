@@ -2,115 +2,101 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertTriangle, CheckCircle, XCircle, Clock, Bell, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface SystemAlert {
-  id: string;
-  title: string;
-  description: string;
-  severity: 'critical' | 'warning' | 'info';
-  category: 'security' | 'performance' | 'database' | 'system' | 'user';
-  timestamp: Date;
-  acknowledged: boolean;
-  resolved: boolean;
-  source: string;
-}
+import { systemAlertsService, SystemAlert, AlertStats } from '@/services/systemAlertsService';
 
 export const SystemAlerts = () => {
+  const { profile } = useAuth();
   const [alerts, setAlerts] = useState<SystemAlert[]>([]);
+  const [stats, setStats] = useState<AlertStats>({ critical: 0, warning: 0, info: 0, unresolved: 0, resolved: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unresolved' | 'critical'>('unresolved');
   const navigate = useNavigate();
 
+  // Check if user is super admin
+  const isSuperAdmin = profile?.role === 'super_admin';
+
   useEffect(() => {
-    // Generate mock alerts for demonstration
-    const mockAlerts: SystemAlert[] = [
-      {
-        id: '1',
-        title: 'High Database Connection Usage',
-        description: 'Database connections are at 89% capacity. Consider scaling or optimizing queries.',
-        severity: 'warning',
-        category: 'database',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-        acknowledged: false,
-        resolved: false,
-        source: 'Database Monitor'
-      },
-      {
-        id: '2',
-        title: 'Multiple Failed Login Attempts',
-        description: 'User account john.doe@example.com has 5 failed login attempts in the last 10 minutes.',
-        severity: 'critical',
-        category: 'security',
-        timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15 minutes ago
-        acknowledged: true,
-        resolved: false,
-        source: 'Auth System'
-      },
-      {
-        id: '3',
-        title: 'API Response Time Degradation',
-        description: 'Average API response time has increased to 2.3 seconds over the last hour.',
-        severity: 'warning',
-        category: 'performance',
-        timestamp: new Date(Date.now() - 1000 * 60 * 45), // 45 minutes ago
-        acknowledged: false,
-        resolved: false,
-        source: 'Performance Monitor'
-      },
-      {
-        id: '4',
-        title: 'Storage Space Warning',
-        description: 'Database storage is at 78% capacity. Consider archiving old data or expanding storage.',
-        severity: 'warning',
-        category: 'system',
-        timestamp: new Date(Date.now() - 1000 * 60 * 120), // 2 hours ago
-        acknowledged: true,
-        resolved: true,
-        source: 'System Monitor'
-      },
-      {
-        id: '5',
-        title: 'Unusual User Activity Pattern',
-        description: 'Detected unusually high registration rate: 50 new users in the last hour.',
-        severity: 'info',
-        category: 'user',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60), // 1 hour ago
-        acknowledged: false,
-        resolved: false,
-        source: 'User Analytics'
+    if (!isSuperAdmin) {
+      toast.error('Access denied. Super admin privileges required.');
+      navigate('/dashboard');
+      return;
+    }
+    fetchAlerts();
+  }, [filter, isSuperAdmin, navigate]);
+
+  const fetchAlerts = async () => {
+    setLoading(true);
+    try {
+      const { data, error, stats: alertStats } = await systemAlertsService.getAllAlerts({
+        filter,
+        limit: 50
+      });
+      
+      if (error) {
+        toast.error('Failed to fetch system alerts');
+        console.error('Error fetching alerts:', error);
+      } else {
+        setAlerts(data);
+        setStats(alertStats);
       }
-    ];
-
-    setAlerts(mockAlerts);
-    setLoading(false);
-  }, []);
-
-  const filteredAlerts = alerts.filter(alert => {
-    if (filter === 'critical') return alert.severity === 'critical';
-    if (filter === 'unresolved') return !alert.resolved;
-    return true;
-  });
-
-  const acknowledgeAlert = (id: string) => {
-    setAlerts(alerts.map(alert => 
-      alert.id === id ? { ...alert, acknowledged: true } : alert
-    ));
-    toast.success('Alert acknowledged');
+    } catch (error) {
+      toast.error('Failed to fetch system alerts');
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const resolveAlert = (id: string) => {
-    setAlerts(alerts.map(alert => 
-      alert.id === id ? { ...alert, resolved: true, acknowledged: true } : alert
-    ));
-    toast.success('Alert resolved');
+  const acknowledgeAlert = async (id: string) => {
+    try {
+      const { error } = await systemAlertsService.acknowledgeAlert(id);
+      if (error) {
+        toast.error('Failed to acknowledge alert');
+        console.error('Error acknowledging alert:', error);
+      } else {
+        toast.success('Alert acknowledged');
+        fetchAlerts(); // Refresh the alerts
+      }
+    } catch (error) {
+      toast.error('Failed to acknowledge alert');
+      console.error('Error:', error);
+    }
   };
 
-  const deleteAlert = (id: string) => {
-    setAlerts(alerts.filter(alert => alert.id !== id));
-    toast.success('Alert deleted');
+  const resolveAlert = async (id: string) => {
+    try {
+      const { error } = await systemAlertsService.resolveAlert(id);
+      if (error) {
+        toast.error('Failed to resolve alert');
+        console.error('Error resolving alert:', error);
+      } else {
+        toast.success('Alert resolved');
+        fetchAlerts(); // Refresh the alerts
+      }
+    } catch (error) {
+      toast.error('Failed to resolve alert');
+      console.error('Error:', error);
+    }
+  };
+
+  const deleteAlert = async (id: string) => {
+    try {
+      const { error } = await systemAlertsService.deleteAlert(id);
+      if (error) {
+        toast.error('Failed to delete alert');
+        console.error('Error deleting alert:', error);
+      } else {
+        toast.success('Alert deleted');
+        fetchAlerts(); // Refresh the alerts
+      }
+    } catch (error) {
+      toast.error('Failed to delete alert');
+      console.error('Error:', error);
+    }
   };
 
   const getSeverityIcon = (severity: string) => {
@@ -142,9 +128,10 @@ export const SystemAlerts = () => {
     }
   };
 
-  const criticalCount = alerts.filter(a => a.severity === 'critical' && !a.resolved).length;
-  const warningCount = alerts.filter(a => a.severity === 'warning' && !a.resolved).length;
-  const unresolvedCount = alerts.filter(a => !a.resolved).length;
+  // Don't render if not super admin
+  if (!isSuperAdmin) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black relative overflow-x-hidden">
@@ -171,7 +158,7 @@ export const SystemAlerts = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-500">{criticalCount}</div>
+              <div className="text-2xl font-bold text-red-500">{stats.critical}</div>
               <div className="text-xs text-gray-400">Immediate attention</div>
             </CardContent>
           </Card>
@@ -186,7 +173,7 @@ export const SystemAlerts = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-500">{warningCount}</div>
+              <div className="text-2xl font-bold text-yellow-500">{stats.warning}</div>
               <div className="text-xs text-gray-400">Requires attention</div>
             </CardContent>
           </Card>
@@ -201,7 +188,7 @@ export const SystemAlerts = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-500">{unresolvedCount}</div>
+              <div className="text-2xl font-bold text-orange-500">{stats.unresolved}</div>
               <div className="text-xs text-gray-400">Total pending</div>
             </CardContent>
           </Card>
@@ -216,7 +203,7 @@ export const SystemAlerts = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-500">{alerts.filter(a => a.resolved).length}</div>
+              <div className="text-2xl font-bold text-green-500">{stats.resolved}</div>
               <div className="text-xs text-gray-400">Today</div>
             </CardContent>
           </Card>
@@ -234,7 +221,7 @@ export const SystemAlerts = () => {
                   onClick={() => setFilter('all')}
                   className={filter === 'all' ? 'bg-pickfirst-yellow text-black' : 'text-gray-300'}
                 >
-                  All ({alerts.length})
+                  All ({stats.total})
                 </Button>
                 <Button 
                   variant={filter === 'unresolved' ? 'default' : 'outline'}
@@ -242,7 +229,7 @@ export const SystemAlerts = () => {
                   onClick={() => setFilter('unresolved')}
                   className={filter === 'unresolved' ? 'bg-pickfirst-yellow text-black' : 'text-gray-300'}
                 >
-                  Unresolved ({unresolvedCount})
+                  Unresolved ({stats.unresolved})
                 </Button>
                 <Button 
                   variant={filter === 'critical' ? 'default' : 'outline'}
@@ -250,7 +237,7 @@ export const SystemAlerts = () => {
                   onClick={() => setFilter('critical')}
                   className={filter === 'critical' ? 'bg-pickfirst-yellow text-black' : 'text-gray-300'}
                 >
-                  Critical ({criticalCount})
+                  Critical ({stats.critical})
                 </Button>
               </div>
             </div>
@@ -258,11 +245,11 @@ export const SystemAlerts = () => {
           <CardContent>
             {loading ? (
               <div className="text-center text-gray-300 py-8">Loading alerts...</div>
-            ) : filteredAlerts.length === 0 ? (
+            ) : alerts.length === 0 ? (
               <div className="text-center text-gray-400 py-8">No alerts found for the selected filter.</div>
             ) : (
               <div className="space-y-4">
-                {filteredAlerts.map((alert) => (
+                {alerts.map((alert) => (
                   <Card key={alert.id} className={`bg-white/5 border ${alert.resolved ? 'border-green-500/20' : alert.acknowledged ? 'border-yellow-500/20' : 'border-red-500/20'}`}>
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
@@ -292,7 +279,7 @@ export const SystemAlerts = () => {
                           </div>
                         </div>
                         <div className="text-right text-sm text-gray-400">
-                          <div>{alert.timestamp.toLocaleString()}</div>
+                          <div>{new Date(alert.created_at).toLocaleString()}</div>
                           <div className="text-xs">Source: {alert.source}</div>
                         </div>
                       </div>

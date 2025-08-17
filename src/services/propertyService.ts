@@ -724,11 +724,34 @@ export class PropertyService {
     return { data: !!data, error };
   }
 
+  // Check if user has already inquired about a property
+  static async hasInquired(propertyId: string): Promise<{ data: PropertyInquiry | null; error: any }> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { data: null, error: new Error('User not authenticated') };
+    }
+
+    const { data, error } = await supabase
+      .from('property_inquiries')
+      .select('*')
+      .eq('property_id', propertyId)
+      .eq('buyer_id', user.id)
+      .maybeSingle();
+
+    return { data, error };
+  }
+
   // Create property inquiry
   static async createInquiry(propertyId: string, message: string, contactPreference?: string): Promise<{ data: PropertyInquiry | null; error: any }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return { data: null, error: new Error('User not authenticated') };
+    }
+
+    // Check if user has already inquired
+    const { data: existingInquiry } = await this.hasInquired(propertyId);
+    if (existingInquiry) {
+      return { data: null, error: new Error('You have already inquired about this property') };
     }
 
     const { data, error } = await supabase

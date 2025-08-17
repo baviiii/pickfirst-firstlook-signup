@@ -27,6 +27,14 @@ import AgentMessagesPage from './pages/AgentMessages';
 import AgentLeadsPage from './pages/AgentLeads';
 import AgentProfilePage from './pages/AgentProfile';
 import MyListingsPage from './pages/MyListings';
+import BuyerMessagesPage from './pages/BuyerMessages';
+import BrowsePropertiesPage from './pages/BrowseProperties';
+import SavedPropertiesPage from './pages/SavedProperties';
+import PropertyMapPage from './pages/PropertyMap';
+import SearchFiltersPage from './pages/SearchFilters';
+import BuyerAccountSettingsPage from './pages/BuyerAccountSettings';
+import ProfileSettingsPage from './pages/ProfileSettings';
+import PropertyDetails from './pages/PropertyDetails';
 
 const queryClient = new QueryClient();
 
@@ -59,6 +67,14 @@ const App = () => (
             <Route path="/agent-leads" element={<AgentLeadsPage />} />
             <Route path="/agent-profile" element={<AgentProfilePage />} />
             <Route path="/my-listings" element={<MyListingsPage />} />
+            <Route path="/buyer-messages" element={<BuyerMessagesPage />} />
+            <Route path="/browse-properties" element={<BrowsePropertiesPage />} />
+            <Route path="/saved-properties" element={<SavedPropertiesPage />} />
+            <Route path="/property-map" element={<PropertyMapPage />} />
+            <Route path="/search-filters" element={<SearchFiltersPage />} />
+            <Route path="/buyer-account-settings" element={<BuyerAccountSettingsPage />} />
+            <Route path="/profile-settings" element={<ProfileSettingsPage />} />
+            <Route path="/property/:id" element={<PropertyDetails />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

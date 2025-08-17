@@ -50,7 +50,12 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   handleGoHome = () => {
-    window.location.href = '/';
+    // Use React Router navigation instead of window.location
+    import('react-router-dom').then(({ useNavigate }) => {
+      // This is a workaround since we can't use hooks in class components
+      window.history.pushState({}, '', '/');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
   };
 
   render() {

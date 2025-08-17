@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { 
   Shield, 
   Users, 
@@ -18,130 +19,109 @@ import {
   Edit, 
   Trash2,
   Plus,
-  Search
+  Search,
+  RefreshCw,
+  Clock,
+  Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: string;
-  lastLogin: string;
-  permissions: string[];
-}
-
-interface Role {
-  id: string;
-  name: string;
-  description: string;
-  permissions: string[];
-  userCount: number;
-}
-
-interface Permission {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-}
+import { securityService, SecurityUser, SecurityRole, SecurityPermission, SecurityPolicy } from '@/services/securityService';
+import { useAuth } from '@/hooks/useAuth';
 
 export const SecurityPermissions = () => {
-  const [users] = useState<User[]>([
-    {
-      id: '1',
-      name: 'John Smith',
-      email: 'john@example.com',
-      role: 'agent',
-      status: 'active',
-      lastLogin: '2024-01-15T10:30:00Z',
-      permissions: ['property.create', 'property.edit', 'inquiry.view']
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      email: 'sarah@example.com',
-      role: 'buyer',
-      status: 'active',
-      lastLogin: '2024-01-14T15:45:00Z',
-      permissions: ['property.view', 'inquiry.create']
-    },
-    {
-      id: '3',
-      name: 'Mike Wilson',
-      email: 'mike@example.com',
-      role: 'agent',
-      status: 'suspended',
-      lastLogin: '2024-01-10T09:15:00Z',
-      permissions: ['property.create', 'property.edit']
-    },
-  ]);
-
-  const [roles] = useState<Role[]>([
-    {
-      id: '1',
-      name: 'Super Admin',
-      description: 'Full system access and control',
-      permissions: ['*'],
-      userCount: 2
-    },
-    {
-      id: '2',
-      name: 'Agent',
-      description: 'Property management and client interaction',
-      permissions: ['property.create', 'property.edit', 'property.delete', 'inquiry.view', 'inquiry.respond'],
-      userCount: 389
-    },
-    {
-      id: '3',
-      name: 'Buyer',
-      description: 'Property viewing and inquiry submission',
-      permissions: ['property.view', 'inquiry.create', 'favorite.manage'],
-      userCount: 856
-    },
-  ]);
-
-  const [permissions] = useState<Permission[]>([
-    { id: '1', name: 'property.view', description: 'View property listings', category: 'Properties' },
-    { id: '2', name: 'property.create', description: 'Create new property listings', category: 'Properties' },
-    { id: '3', name: 'property.edit', description: 'Edit property listings', category: 'Properties' },
-    { id: '4', name: 'property.delete', description: 'Delete property listings', category: 'Properties' },
-    { id: '5', name: 'inquiry.view', description: 'View property inquiries', category: 'Inquiries' },
-    { id: '6', name: 'inquiry.create', description: 'Create property inquiries', category: 'Inquiries' },
-    { id: '7', name: 'inquiry.respond', description: 'Respond to inquiries', category: 'Inquiries' },
-    { id: '8', name: 'user.manage', description: 'Manage user accounts', category: 'Users' },
-    { id: '9', name: 'system.admin', description: 'System administration', category: 'System' },
-    { id: '10', name: 'analytics.view', description: 'View analytics and reports', category: 'Analytics' },
-  ]);
-
+  const { user: authUser } = useAuth();
+  const [users, setUsers] = useState<SecurityUser[]>([]);
+  const [roles, setRoles] = useState<SecurityRole[]>([]);
+  const [permissions, setPermissions] = useState<SecurityPermission[]>([]);
+  const [securityPolicy, setSecurityPolicy] = useState<SecurityPolicy | null>(null);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
-  const [sessionTimeout, setSessionTimeout] = useState('24h');
-  const [passwordPolicy, setPasswordPolicy] = useState({
-    minLength: 8,
-    requireUppercase: true,
-    requireNumbers: true,
-    requireSpecialChars: true,
-    maxAge: 90
-  });
+  const [activeTab, setActiveTab] = useState('users');
+
+  // Load initial data
+  useEffect(() => {
+    loadSecurityData();
+  }, []);
+
+  const loadSecurityData = async () => {
+    setLoading(true);
+    try {
+      const [usersRes, rolesRes, policyRes] = await Promise.all([
+        securityService.getAllUsers({ limit: 100 }),
+        securityService.getRoles(),
+        securityService.getSecurityPolicy()
+      ]);
+
+      if (!usersRes.error) setUsers(usersRes.data);
+      if (!rolesRes.error) setRoles(rolesRes.data);
+      if (!policyRes.error && policyRes.data) setSecurityPolicy(policyRes.data);
+      
+      setPermissions(securityService.getPermissions());
+    } catch (error) {
+      console.error('Error loading security data:', error);
+      toast.error('Failed to load security data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   ).filter(user => selectedRole === 'all' || user.role === selectedRole);
 
-  const handleUserAction = (action: string, userId: string) => {
-    toast.success(`User ${action} successfully`);
+  const handleUserAction = async (action: string, userId: string, newValue?: any) => {
+    try {
+      let result;
+      if (action === 'suspend' || action === 'activate') {
+        const status = action === 'suspend' ? 'suspended' : 'active';
+        result = await securityService.updateUserStatus(userId, status);
+      } else if (action === 'role-change') {
+        result = await securityService.updateUserRole(userId, newValue);
+      }
+
+      if (result && !result.error) {
+        toast.success(`User ${action} successful`);
+        await loadSecurityData(); // Refresh data
+      } else {
+        throw new Error(result?.error?.message || 'Action failed');
+      }
+    } catch (error) {
+      console.error(`Error ${action} user:`, error);
+      toast.error(`Failed to ${action} user`);
+    }
   };
 
-  const handleRoleAction = (action: string, roleId: string) => {
-    toast.success(`Role ${action} successfully`);
+  const handlePolicyUpdate = async (updates: Partial<SecurityPolicy>) => {
+    try {
+      const result = await securityService.updateSecurityPolicy(updates);
+      if (!result.error) {
+        setSecurityPolicy(prev => prev ? { ...prev, ...updates } : null);
+        toast.success('Security policy updated');
+      } else {
+        throw new Error(result.error?.message || 'Update failed');
+      }
+    } catch (error) {
+      console.error('Error updating policy:', error);
+      toast.error('Failed to update security policy');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto p-6 flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto text-pickfirst-yellow" />
+          <p className="text-gray-300">Loading security data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <ErrorBoundary>
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -152,18 +132,23 @@ export const SecurityPermissions = () => {
           <p className="text-gray-300 mt-2">Manage user roles, permissions, and security settings</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="text-gray-300 hover:text-white">
-            <Plus className="h-4 w-4 mr-2" />
-            Add User
+          <Button 
+            variant="outline" 
+            className="text-gray-300 hover:text-white"
+            onClick={loadSecurityData}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
           </Button>
-          <Button className="bg-red-500 text-white hover:bg-red-600">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Role
-          </Button>
+          <Badge variant="secondary" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            {users.length} Total Users
+          </Badge>
         </div>
       </div>
 
-      <Tabs defaultValue="users" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-gray-800 border-gray-700">
           <TabsTrigger value="users" className="data-[state=active]:bg-pickfirst-yellow data-[state=active]:text-black">
             <Users className="h-4 w-4 mr-2" />
@@ -215,38 +200,68 @@ export const SecurityPermissions = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {filteredUsers.map(user => (
-                  <div key={user.id} className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-gray-700">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                        {user.name.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="text-white font-medium">{user.name}</div>
-                        <div className="text-gray-400 text-sm">{user.email}</div>
-                        <div className="flex gap-2 mt-1">
-                          <Badge variant={user.role === 'super_admin' ? 'destructive' : user.role === 'agent' ? 'default' : 'secondary'}>
-                            {user.role.replace('_', ' ').toUpperCase()}
-                          </Badge>
-                          <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
-                            {user.status.toUpperCase()}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="outline" onClick={() => handleUserAction('viewed', user.id)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleUserAction('edited', user.id)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-red-500 hover:bg-red-500/10" onClick={() => handleUserAction('suspended', user.id)}>
-                        <AlertTriangle className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                 {filteredUsers.map(user => (
+                   <div key={user.id} className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-gray-700">
+                     <div className="flex items-center gap-4">
+                       <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                         {user.full_name?.charAt(0) || user.email.charAt(0)}
+                       </div>
+                       <div>
+                         <div className="text-white font-medium">{user.full_name || 'No Name'}</div>
+                         <div className="text-gray-400 text-sm">{user.email}</div>
+                         <div className="flex gap-2 mt-1">
+                           <Badge variant={user.role === 'super_admin' ? 'destructive' : user.role === 'agent' ? 'default' : 'secondary'}>
+                             {user.role.replace('_', ' ').toUpperCase()}
+                           </Badge>
+                           <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
+                             {user.status.toUpperCase()}
+                           </Badge>
+                           {user.last_login && (
+                             <Badge variant="outline" className="text-xs">
+                               <Clock className="h-3 w-3 mr-1" />
+                               {new Date(user.last_login).toLocaleDateString()}
+                             </Badge>
+                           )}
+                         </div>
+                       </div>
+                     </div>
+                     <div className="flex items-center gap-2">
+                       <Select onValueChange={(value) => handleUserAction('role-change', user.id, value)}>
+                         <SelectTrigger className="w-32 h-8 text-xs">
+                           <SelectValue placeholder="Change Role" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="buyer">Buyer</SelectItem>
+                           <SelectItem value="agent">Agent</SelectItem>
+                           <SelectItem value="admin">Admin</SelectItem>
+                           {authUser?.id !== user.id && (
+                             <SelectItem value="super_admin">Super Admin</SelectItem>
+                           )}
+                         </SelectContent>
+                       </Select>
+                       {user.status === 'active' ? (
+                         <Button 
+                           size="sm" 
+                           variant="outline" 
+                           className="text-orange-500 hover:bg-orange-500/10" 
+                           onClick={() => handleUserAction('suspend', user.id)}
+                           disabled={authUser?.id === user.id}
+                         >
+                           <AlertTriangle className="h-4 w-4" />
+                         </Button>
+                       ) : (
+                         <Button 
+                           size="sm" 
+                           variant="outline" 
+                           className="text-green-500 hover:bg-green-500/10" 
+                           onClick={() => handleUserAction('activate', user.id)}
+                         >
+                           <UserCheck className="h-4 w-4" />
+                         </Button>
+                       )}
+                     </div>
+                   </div>
+                 ))}
               </div>
             </CardContent>
           </Card>
@@ -254,50 +269,45 @@ export const SecurityPermissions = () => {
 
         {/* Roles Tab */}
         <TabsContent value="roles" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {roles.map(role => (
-              <Card key={role.id} className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-pickfirst-yellow/20">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-white">{role.name}</CardTitle>
-                    <Badge className="bg-blue-500 text-white">{role.userCount} users</Badge>
-                  </div>
-                  <CardDescription className="text-gray-300">{role.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="text-white">Permissions:</Label>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {role.permissions.slice(0, 3).map((perm, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {perm === '*' ? 'All' : perm}
-                          </Badge>
-                        ))}
-                        {role.permissions.length > 3 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{role.permissions.length - 3} more
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 pt-2">
-                      <Button size="sm" variant="outline" onClick={() => handleRoleAction('edited', role.id)}>
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                      {role.name !== 'Super Admin' && (
-                        <Button size="sm" variant="outline" className="text-red-500 hover:bg-red-500/10" onClick={() => handleRoleAction('deleted', role.id)}>
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+             {roles.map(role => (
+               <Card key={role.id} className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-pickfirst-yellow/20">
+                 <CardHeader>
+                   <div className="flex items-center justify-between">
+                     <CardTitle className="text-white">{role.name}</CardTitle>
+                     <Badge className="bg-blue-500 text-white">{role.user_count} users</Badge>
+                   </div>
+                   <CardDescription className="text-gray-300">{role.description}</CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                   <div className="space-y-3">
+                     <div>
+                       <Label className="text-white">Permissions:</Label>
+                       <div className="flex flex-wrap gap-1 mt-2 max-h-20 overflow-y-auto">
+                         {role.permissions.slice(0, 5).map((perm, index) => (
+                           <Badge key={index} variant="secondary" className="text-xs">
+                             {perm === '*' ? 'All' : perm.split('.').pop()}
+                           </Badge>
+                         ))}
+                         {role.permissions.length > 5 && (
+                           <Badge variant="secondary" className="text-xs">
+                             +{role.permissions.length - 5} more
+                           </Badge>
+                         )}
+                       </div>
+                     </div>
+                     <div className="flex gap-2 pt-2">
+                       {role.is_system_role && (
+                         <Badge variant="outline" className="text-xs">
+                           System Role
+                         </Badge>
+                       )}
+                     </div>
+                   </div>
+                 </CardContent>
+               </Card>
+             ))}
+           </div>
         </TabsContent>
 
         {/* Permissions Tab */}
@@ -314,7 +324,7 @@ export const SecurityPermissions = () => {
                   if (!acc[category]) acc[category] = [];
                   acc[category].push(permission);
                   return acc;
-                }, {} as Record<string, Permission[]>)).map(([category, perms]) => (
+                }, {} as Record<string, SecurityPermission[]>)).map(([category, perms]) => (
                   <div key={category} className="p-4 rounded-lg bg-white/5 border border-gray-700">
                     <h3 className="text-white font-medium mb-3">{category}</h3>
                     <div className="space-y-2">
@@ -332,84 +342,161 @@ export const SecurityPermissions = () => {
           </Card>
         </TabsContent>
 
-        {/* Security Policy Tab */}
-        <TabsContent value="security" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-pickfirst-yellow/20">
-              <CardHeader>
-                <CardTitle className="text-white">Authentication Settings</CardTitle>
-                <CardDescription className="text-gray-300">Configure authentication and session policies</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-white">Two-Factor Authentication</Label>
-                    <p className="text-sm text-gray-400">Require 2FA for all admin users</p>
-                  </div>
-                  <Switch
-                    checked={twoFactorEnabled}
-                    onCheckedChange={setTwoFactorEnabled}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="sessionTimeout" className="text-white">Session Timeout</Label>
-                  <Select value={sessionTimeout} onValueChange={setSessionTimeout}>
-                    <SelectTrigger className="bg-black/50 border-gray-600 text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1h">1 Hour</SelectItem>
-                      <SelectItem value="8h">8 Hours</SelectItem>
-                      <SelectItem value="24h">24 Hours</SelectItem>
-                      <SelectItem value="7d">7 Days</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
+         {/* Security Policy Tab */}
+         <TabsContent value="security" className="space-y-6">
+           {securityPolicy && (
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+               <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-pickfirst-yellow/20">
+                 <CardHeader>
+                   <CardTitle className="text-white">Authentication Settings</CardTitle>
+                   <CardDescription className="text-gray-300">Configure authentication and session policies</CardDescription>
+                 </CardHeader>
+                 <CardContent className="space-y-4">
+                   <div className="flex items-center justify-between">
+                     <div>
+                       <Label className="text-white">Two-Factor Authentication</Label>
+                       <p className="text-sm text-gray-400">Require 2FA for all admin users</p>
+                     </div>
+                     <Switch
+                       checked={securityPolicy.two_factor_enabled}
+                       onCheckedChange={(checked) => handlePolicyUpdate({ two_factor_enabled: checked })}
+                     />
+                   </div>
+                   <div>
+                     <Label htmlFor="sessionTimeout" className="text-white">Session Timeout</Label>
+                     <Select 
+                       value={securityPolicy.session_timeout} 
+                       onValueChange={(value) => handlePolicyUpdate({ session_timeout: value })}
+                     >
+                       <SelectTrigger className="bg-black/50 border-gray-600 text-white">
+                         <SelectValue />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="1h">1 Hour</SelectItem>
+                         <SelectItem value="8h">8 Hours</SelectItem>
+                         <SelectItem value="24h">24 Hours</SelectItem>
+                         <SelectItem value="7d">7 Days</SelectItem>
+                       </SelectContent>
+                     </Select>
+                   </div>
+                 </CardContent>
+               </Card>
 
-            <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-pickfirst-yellow/20">
-              <CardHeader>
-                <CardTitle className="text-white">Password Policy</CardTitle>
-                <CardDescription className="text-gray-300">Configure password requirements</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="minLength" className="text-white">Minimum Length</Label>
-                  <Input
-                    id="minLength"
-                    type="number"
-                    value={passwordPolicy.minLength}
-                    onChange={(e) => setPasswordPolicy(prev => ({ ...prev, minLength: parseInt(e.target.value) }))}
-                    className="bg-black/50 border-gray-600 text-white"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label className="text-white">Require Uppercase</Label>
-                  <Switch
-                    checked={passwordPolicy.requireUppercase}
-                    onCheckedChange={(checked) => setPasswordPolicy(prev => ({ ...prev, requireUppercase: checked }))}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label className="text-white">Require Numbers</Label>
-                  <Switch
-                    checked={passwordPolicy.requireNumbers}
-                    onCheckedChange={(checked) => setPasswordPolicy(prev => ({ ...prev, requireNumbers: checked }))}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label className="text-white">Require Special Characters</Label>
-                  <Switch
-                    checked={passwordPolicy.requireSpecialChars}
-                    onCheckedChange={(checked) => setPasswordPolicy(prev => ({ ...prev, requireSpecialChars: checked }))}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-};
+               <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-pickfirst-yellow/20">
+                 <CardHeader>
+                   <CardTitle className="text-white">Password Policy</CardTitle>
+                   <CardDescription className="text-gray-300">Configure password requirements</CardDescription>
+                 </CardHeader>
+                 <CardContent className="space-y-4">
+                   <div>
+                     <Label htmlFor="minLength" className="text-white">Minimum Length</Label>
+                     <Input
+                       id="minLength"
+                       type="number"
+                       value={securityPolicy.password_policy.min_length}
+                       onChange={(e) => handlePolicyUpdate({ 
+                         password_policy: { 
+                           ...securityPolicy.password_policy, 
+                           min_length: parseInt(e.target.value) 
+                         } 
+                       })}
+                       className="bg-black/50 border-gray-600 text-white"
+                     />
+                   </div>
+                   <div className="flex items-center justify-between">
+                     <Label className="text-white">Require Uppercase</Label>
+                     <Switch
+                       checked={securityPolicy.password_policy.require_uppercase}
+                       onCheckedChange={(checked) => handlePolicyUpdate({ 
+                         password_policy: { 
+                           ...securityPolicy.password_policy, 
+                           require_uppercase: checked 
+                         } 
+                       })}
+                     />
+                   </div>
+                   <div className="flex items-center justify-between">
+                     <Label className="text-white">Require Numbers</Label>
+                     <Switch
+                       checked={securityPolicy.password_policy.require_numbers}
+                       onCheckedChange={(checked) => handlePolicyUpdate({ 
+                         password_policy: { 
+                           ...securityPolicy.password_policy, 
+                           require_numbers: checked 
+                         } 
+                       })}
+                     />
+                   </div>
+                   <div className="flex items-center justify-between">
+                     <Label className="text-white">Require Special Characters</Label>
+                     <Switch
+                       checked={securityPolicy.password_policy.require_special_chars}
+                       onCheckedChange={(checked) => handlePolicyUpdate({ 
+                         password_policy: { 
+                           ...securityPolicy.password_policy, 
+                           require_special_chars: checked 
+                         } 
+                       })}
+                     />
+                   </div>
+                 </CardContent>
+               </Card>
+
+               <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-pickfirst-yellow/20 lg:col-span-2">
+                 <CardHeader>
+                   <CardTitle className="text-white">Rate Limiting</CardTitle>
+                   <CardDescription className="text-gray-300">Configure API and authentication rate limits</CardDescription>
+                 </CardHeader>
+                 <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                   <div>
+                     <Label className="text-white">API Requests/Minute</Label>
+                     <Input
+                       type="number"
+                       value={securityPolicy.rate_limits.api_requests_per_minute}
+                       onChange={(e) => handlePolicyUpdate({ 
+                         rate_limits: { 
+                           ...securityPolicy.rate_limits, 
+                           api_requests_per_minute: parseInt(e.target.value) 
+                         } 
+                       })}
+                       className="bg-black/50 border-gray-600 text-white"
+                     />
+                   </div>
+                   <div>
+                     <Label className="text-white">Login Attempts/Hour</Label>
+                     <Input
+                       type="number"
+                       value={securityPolicy.rate_limits.login_attempts_per_hour}
+                       onChange={(e) => handlePolicyUpdate({ 
+                         rate_limits: { 
+                           ...securityPolicy.rate_limits, 
+                           login_attempts_per_hour: parseInt(e.target.value) 
+                         } 
+                       })}
+                       className="bg-black/50 border-gray-600 text-white"
+                     />
+                   </div>
+                   <div>
+                     <Label className="text-white">Password Reset/Day</Label>
+                     <Input
+                       type="number"
+                       value={securityPolicy.rate_limits.password_reset_per_day}
+                       onChange={(e) => handlePolicyUpdate({ 
+                         rate_limits: { 
+                           ...securityPolicy.rate_limits, 
+                           password_reset_per_day: parseInt(e.target.value) 
+                         } 
+                       })}
+                       className="bg-black/50 border-gray-600 text-white"
+                     />
+                   </div>
+                 </CardContent>
+               </Card>
+             </div>
+           )}
+         </TabsContent>
+       </Tabs>
+       </div>
+     </ErrorBoundary>
+   );
+ };

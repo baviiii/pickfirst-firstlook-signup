@@ -1,15 +1,25 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Search, Filter, SortAsc } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { ArrowLeft, Search, Filter, SortAsc, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
+import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 const BrowsePropertiesPageComponent = () => {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [listings, setListings] = useState<PropertyListing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProperty, setSelectedProperty] = useState<PropertyListing | null>(null);
+  const [inquiryMessage, setInquiryMessage] = useState('');
+  const [isInquiryDialogOpen, setIsInquiryDialogOpen] = useState(false);
+  const [submittingInquiry, setSubmittingInquiry] = useState(false);
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -20,6 +30,70 @@ const BrowsePropertiesPageComponent = () => {
     };
     fetchListings();
   }, []);
+
+  const handleSaveProperty = async (propertyId: string) => {
+    if (!profile) {
+      toast.error('Please log in to save properties');
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      const { data: isFavorited } = await PropertyService.isFavorited(propertyId);
+      
+      if (isFavorited) {
+        await PropertyService.removeFromFavorites(propertyId);
+        toast.success('Property removed from favorites');
+      } else {
+        await PropertyService.addToFavorites(propertyId);
+        toast.success('Property saved to favorites');
+      }
+    } catch (error) {
+      toast.error('Failed to save property');
+    }
+  };
+
+  const handleInquireProperty = (property: PropertyListing) => {
+    if (!profile) {
+      toast.error('Please log in to inquire about properties');
+      navigate('/auth');
+      return;
+    }
+
+    if (profile.role !== 'buyer') {
+      toast.error('Only buyers can inquire about properties');
+      return;
+    }
+
+    setSelectedProperty(property);
+    setIsInquiryDialogOpen(true);
+  };
+
+  const handleSubmitInquiry = async () => {
+    if (!selectedProperty || !inquiryMessage.trim()) {
+      toast.error('Please enter a message');
+      return;
+    }
+
+    setSubmittingInquiry(true);
+    try {
+      const { data, error } = await PropertyService.createInquiry(
+        selectedProperty.id,
+        inquiryMessage.trim()
+      );
+
+      if (error) throw error;
+
+      toast.success('Inquiry sent successfully! The agent will contact you soon.');
+      setIsInquiryDialogOpen(false);
+      setInquiryMessage('');
+      setSelectedProperty(null);
+    } catch (error) {
+      toast.error('Failed to send inquiry');
+    } finally {
+      setSubmittingInquiry(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
@@ -68,7 +142,7 @@ const BrowsePropertiesPageComponent = () => {
               <div className="text-gray-400">No properties found.</div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {listings.map(listing => (
                 <Card key={listing.id} className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20 hover:border-primary/40 transition-all hover:scale-105 cursor-pointer">
                   <CardHeader>
@@ -103,10 +177,29 @@ const BrowsePropertiesPageComponent = () => {
                     {listing.description && (
                       <p className="text-gray-300 text-sm line-clamp-2 mb-3">{listing.description}</p>
                     )}
-                    <div className="flex gap-2">
-                      <Button size="sm" className="flex-1">View Details</Button>
-                      <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-500/10">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => navigate(`/property/${listing.id}`)}
+                      >
+                        View Details
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-red-500 border-red-500 hover:bg-red-500/10"
+                        onClick={() => handleSaveProperty(listing.id)}
+                      >
                         Save
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-blue-500 border-blue-500 hover:bg-blue-500/10"
+                        onClick={() => handleInquireProperty(listing)}
+                      >
+                        Inquire
                       </Button>
                     </div>
                   </CardContent>
@@ -116,6 +209,47 @@ const BrowsePropertiesPageComponent = () => {
           )}
         </div>
       </div>
+
+      {/* Inquiry Dialog */}
+      <Dialog open={isInquiryDialogOpen} onOpenChange={setIsInquiryDialogOpen}>
+        <DialogContent className="w-full max-w-[95vw] sm:max-w-lg bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-primary/20 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-primary">Inquire About Property</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Send a message to the agent about {selectedProperty?.title}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="inquiry-message" className="text-white">Your Message</Label>
+              <Textarea
+                id="inquiry-message"
+                placeholder="I'm interested in this property. Could you provide more information about..."
+                value={inquiryMessage}
+                onChange={(e) => setInquiryMessage(e.target.value)}
+                className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 mt-2"
+                rows={4}
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsInquiryDialogOpen(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmitInquiry}
+                disabled={submittingInquiry || !inquiryMessage.trim()}
+                className="flex-1"
+              >
+                {submittingInquiry ? 'Sending...' : 'Send Inquiry'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

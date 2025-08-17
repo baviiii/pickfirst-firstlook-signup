@@ -230,7 +230,7 @@ export const MyClients = () => {
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-pickfirst-yellow">
-              {Math.round(clients.reduce((sum, c) => sum + c.rating, 0) / clients.length * 10) / 10}
+              {clients.length > 0 ? Math.round(clients.reduce((sum, c) => sum + c.rating, 0) / clients.length * 10) / 10 : 0}
             </div>
             <div className="text-sm text-gray-300">Avg Rating</div>
           </CardContent>

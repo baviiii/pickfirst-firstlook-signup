@@ -6,16 +6,24 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Clock, MapPin, User, Phone, Plus, Search, Filter, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { AppointmentForm } from './AppointmentForm';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 interface Appointment {
   id: string;
+  agent_id: string;
+  client_id?: string;
+  inquiry_id?: string;
   client_name: string;
   client_phone: string;
+  client_email: string;
   property_address: string;
   appointment_type: 'property_showing' | 'consultation' | 'contract_review' | 'closing' | 'follow_up';
   date: string;
   time: string;
-  duration: number; // minutes
+  duration: number;
   status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
   notes: string;
   property_id?: string;
@@ -23,78 +31,63 @@ interface Appointment {
 }
 
 export const Appointments = () => {
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    {
-      id: '1',
-      client_name: 'Sarah Johnson',
-      client_phone: '(555) 123-4567',
-      property_address: '123 Oak Street, Downtown',
-      appointment_type: 'property_showing',
-      date: '2024-01-26',
-      time: '10:00',
-      duration: 60,
-      status: 'confirmed',
-      notes: 'First showing for this client. Interested in move-in ready homes.',
-      created_at: '2024-01-24'
-    },
-    {
-      id: '2',
-      client_name: 'Mike & Lisa Chen',
-      client_phone: '(555) 987-6543',
-      property_address: '456 Pine Avenue, West End',
-      appointment_type: 'consultation',
-      date: '2024-01-26',
-      time: '14:30',
-      duration: 90,
-      status: 'scheduled',
-      notes: 'Initial consultation for first-time buyers. Need to discuss pre-approval process.',
-      created_at: '2024-01-25'
-    },
-    {
-      id: '3',
-      client_name: 'Robert Davis',
-      client_phone: '(555) 456-7890',
-      property_address: '789 Maple Drive, South Side',
-      appointment_type: 'contract_review',
-      date: '2024-01-26',
-      time: '16:00',
-      duration: 45,
-      status: 'confirmed',
-      notes: 'Final contract review before closing. All contingencies have been met.',
-      created_at: '2024-01-23'
-    },
-    {
-      id: '4',
-      client_name: 'Jennifer Williams',
-      client_phone: '(555) 321-9876',
-      property_address: '321 Elm Street, Midtown',
-      appointment_type: 'property_showing',
-      date: '2024-01-27',
-      time: '11:00',
-      duration: 60,
-      status: 'scheduled',
-      notes: 'Second showing. Client is very interested, may make an offer.',
-      created_at: '2024-01-25'
-    },
-    {
-      id: '5',
-      client_name: 'David Thompson',
-      client_phone: '(555) 654-3210',
-      property_address: 'Office - Virtual Meeting',
-      appointment_type: 'follow_up',
-      date: '2024-01-25',
-      time: '15:00',
-      duration: 30,
-      status: 'completed',
-      notes: 'Follow-up call to discuss financing options. Needs to improve credit score.',
-      created_at: '2024-01-22'
-    }
-  ]);
+  const { user } = useAuth();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAppointmentForm, setShowAppointmentForm] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
+
+  useEffect(() => {
+    if (user) {
+      fetchAppointments();
+    }
+  }, [user]);
+
+  const fetchAppointments = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      // For now, fetch from client_notes where note_type is 'appointment'
+      const { data, error } = await supabase
+        .from('client_notes')
+        .select('*')
+        .eq('agent_id', user.id)
+        .eq('note_type', 'appointment')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Transform notes data to appointments format
+      const appointmentsData = (data || []).map(note => ({
+        id: note.id,
+        agent_id: note.agent_id,
+        client_id: note.client_id,
+        client_name: 'Client', // We'll need to join with clients table later
+        client_phone: '',
+        client_email: '',
+        property_address: 'See notes',
+        appointment_type: 'consultation' as const,
+        date: note.created_at.split('T')[0],
+        time: '10:00',
+        duration: 60,
+        status: 'scheduled' as const,
+        notes: note.content,
+        created_at: note.created_at
+      }));
+      
+      setAppointments(appointmentsData);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      toast.error('Failed to load appointments');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -165,11 +158,28 @@ export const Appointments = () => {
 
   const filteredAppointments = filterAppointments();
 
-  const handleStatusChange = (appointmentId: string, newStatus: string) => {
-    setAppointments(appointments.map(apt => 
-      apt.id === appointmentId ? { ...apt, status: newStatus as any } : apt
-    ));
-    toast.success('Appointment status updated');
+  const handleStatusChange = async (appointmentId: string, newStatus: string) => {
+    try {
+      // For now, update the note content to reflect status change
+      const appointment = appointments.find(apt => apt.id === appointmentId);
+      if (!appointment) return;
+      
+      const updatedContent = `${appointment.notes} - Status updated to: ${newStatus}`;
+      const { error } = await supabase
+        .from('client_notes')
+        .update({ content: updatedContent })
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+
+      setAppointments(appointments.map(apt => 
+        apt.id === appointmentId ? { ...apt, status: newStatus as any } : apt
+      ));
+      toast.success('Appointment status updated');
+    } catch (error) {
+      console.error('Error updating appointment:', error);
+      toast.error('Failed to update appointment status');
+    }
   };
 
   const getUpcomingStats = () => {
@@ -195,18 +205,30 @@ export const Appointments = () => {
 
   const stats = getUpcomingStats();
 
-  return (
-    <div className="space-y-6">
-      {/* Action Button */}
-      <div className="flex justify-end">
-        <Button className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber transition-colors">
-          <Plus className="h-4 w-4 mr-2" />
-          Schedule Appointment
-        </Button>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-white">Loading appointments...</div>
       </div>
+    );
+  }
+
+  return (
+    <ErrorBoundary>
+      <div className="space-y-6">
+        {/* Action Button */}
+        <div className="flex justify-end">
+          <Button 
+            onClick={() => setShowAppointmentForm(true)}
+            className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber transition-colors"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Schedule Appointment
+          </Button>
+        </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-blue-500">{stats.today}</div>
@@ -236,7 +258,7 @@ export const Appointments = () => {
       {/* Filters */}
       <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
@@ -308,7 +330,7 @@ export const Appointments = () => {
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div className="flex-1 space-y-3">
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                       <div className="flex items-center gap-3">
                         <div className="text-2xl">{getTypeIcon(appointment.appointment_type)}</div>
                         <div>
@@ -321,7 +343,7 @@ export const Appointments = () => {
                       </Badge>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                       <div className="flex items-center gap-2 text-gray-300">
                         <Calendar className="h-4 w-4 text-blue-500" />
                         <span>{appointmentDate.toLocaleDateString()}</span>
@@ -349,7 +371,7 @@ export const Appointments = () => {
                     )}
                   </div>
 
-                  <div className="flex flex-col lg:flex-row gap-2 lg:min-w-[200px]">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:min-w-[200px]">
                     {appointment.status === 'scheduled' && (
                       <Button
                         size="sm"
@@ -386,7 +408,7 @@ export const Appointments = () => {
         })}
       </div>
 
-      {filteredAppointments.length === 0 && (
+        {filteredAppointments.length === 0 && (
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
           <CardContent className="p-8 text-center">
             <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -397,7 +419,10 @@ export const Appointments = () => {
                 : 'You haven\'t scheduled any appointments yet.'}
             </p>
             {!searchTerm && filterStatus === 'all' && filterType === 'all' && dateFilter === 'all' && (
-              <Button className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber">
+              <Button 
+                onClick={() => setShowAppointmentForm(true)}
+                className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Schedule Your First Appointment
               </Button>
@@ -405,6 +430,14 @@ export const Appointments = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Appointment Form */}
+      <AppointmentForm
+        isOpen={showAppointmentForm}
+        onClose={() => setShowAppointmentForm(false)}
+        onSuccess={fetchAppointments}
+      />
     </div>
+    </ErrorBoundary>
   );
 };

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,10 +83,35 @@ export const ProfileSettings = () => {
 
   const handleSaveProfile = async () => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast.success('Profile updated successfully');
-    setIsLoading(false);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('User not authenticated');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: profileData.full_name,
+          phone: profileData.phone,
+          bio: profileData.bio,
+          avatar_url: profileData.avatar_url
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Profile update error:', error);
+        toast.error('Failed to update profile');
+      } else {
+        toast.success('Profile updated successfully');
+      }
+    } catch (error) {
+      console.error('Profile update error:', error);
+      toast.error('Failed to update profile');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSaveNotifications = async () => {

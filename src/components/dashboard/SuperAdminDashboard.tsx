@@ -51,10 +51,10 @@ export const SuperAdminDashboard = () => {
   const adminActions = [
     { icon: Users, label: 'Manage Users', description: 'View and manage all users', color: 'bg-blue-500/10 text-blue-500', onClick: () => navigate('/admin-users') },
     { icon: Building, label: 'Property Management', description: 'Oversee all property listings', color: 'bg-green-500/10 text-green-500', onClick: () => navigate('/admin-properties') },
-    { icon: Shield, label: 'Security & Permissions', description: 'Manage user roles and access', color: 'bg-red-500/10 text-red-500', onClick: () => navigate('/security-permissions') },
+    { icon: Shield, label: 'Security & Permissions', description: 'Manage user roles and access', color: 'bg-red-500/10 text-red-500', onClick: () => navigate('/security-permissions'), adminOnly: true },
     { icon: BarChart3, label: 'Platform Analytics', description: 'View system-wide metrics', color: 'bg-purple-500/10 text-purple-500', onClick: () => navigate('/platform-analytics') },
-    { icon: Database, label: 'Database Management', description: 'Monitor database health', color: 'bg-indigo-500/10 text-indigo-500', onClick: () => navigate('/database-management') },
-    { icon: AlertTriangle, label: 'System Alerts', description: 'Monitor critical issues', color: 'bg-orange-500/10 text-orange-500', onClick: () => navigate('/system-alerts') },
+    { icon: Database, label: 'Database Management', description: 'Monitor database health', color: 'bg-indigo-500/10 text-indigo-500', onClick: () => navigate('/database-management'), adminOnly: true },
+    { icon: AlertTriangle, label: 'System Alerts', description: 'Monitor critical issues', color: 'bg-orange-500/10 text-orange-500', onClick: () => navigate('/system-alerts'), adminOnly: true },
     { icon: Activity, label: 'System Logs', description: 'View platform activity', color: 'bg-cyan-500/10 text-cyan-500', onClick: () => navigate('/system-logs') },
     { icon: Settings, label: 'Platform Settings', description: 'Configure system settings', color: 'bg-gray-500/10 text-gray-500', onClick: () => navigate('/platform-settings') }
   ];
@@ -197,6 +197,10 @@ export const SuperAdminDashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {adminActions.map((action, index) => {
           const Icon = action.icon;
+          // Only show super admin actions to super admins
+          if (action.adminOnly && profile?.role !== 'super_admin') {
+            return null;
+          }
           return (
             <Card key={index} className="hover:shadow-md transition-all cursor-pointer bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105" onClick={action.onClick}>
               <CardHeader className="pb-3">
@@ -214,7 +218,7 @@ export const SuperAdminDashboard = () => {
               </CardContent>
             </Card>
           );
-        })}
+        }).filter(Boolean)}
       </div>
 
       {/* All Listings Modal */}

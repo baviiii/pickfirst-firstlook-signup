@@ -1,31 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Star, Archive, Plus, Send } from 'lucide-react';
+import { Search, Phone, Video, Send } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { messageService, Conversation, Message } from '@/services/messageService';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 
-export const AgentMessages = () => {
+export const BuyerMessages = () => {
   const { user, profile } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessage, setNewMessage] = useState('');
-  const [isNewMessageOpen, setIsNewMessageOpen] = useState(false);
-  const [newMessageForm, setNewMessageForm] = useState({
-    clientEmail: '',
-    subject: '',
-    content: ''
-  });
   const [loading, setLoading] = useState(true);
 
   // Load conversations
@@ -42,19 +31,6 @@ export const AgentMessages = () => {
     }
   }, [selectedConversation]);
 
-  const loadMessages = async (conversationId: string) => {
-    try {
-      const data = await messageService.getMessages(conversationId);
-      setMessages(data);
-      
-      // Mark messages as read
-      await messageService.markMessagesAsRead(conversationId, user?.id || '');
-    } catch (error) {
-      console.error('Error loading messages:', error);
-      toast.error('Failed to load messages');
-    }
-  };
-
   const loadConversations = async () => {
     if (!user) return;
     
@@ -66,6 +42,19 @@ export const AgentMessages = () => {
       toast.error('Failed to load conversations');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMessages = async (conversationId: string) => {
+    try {
+      const data = await messageService.getMessages(conversationId);
+      setMessages(data);
+      
+      // Mark messages as read
+      await messageService.markMessagesAsRead(conversationId, user?.id || '');
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      toast.error('Failed to load messages');
     }
   };
 
@@ -90,48 +79,10 @@ export const AgentMessages = () => {
     }
   };
 
-  const handleNewMessage = async () => {
-    if (!user || !newMessageForm.clientEmail || !newMessageForm.content) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    try {
-      const { data: clientData, error: clientError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', newMessageForm.clientEmail)
-        .eq('role', 'buyer')
-        .single();
-
-      if (!clientData) {
-        toast.error('Client not found');
-        return;
-      }
-
-      const conversationId = await messageService.getOrCreateConversation(
-        user.id,
-        clientData.id,
-        newMessageForm.subject
-      );
-
-      if (conversationId) {
-        await messageService.sendMessage(
-          conversationId,
-          user.id,
-          newMessageForm.content
-        );
-
-        setIsNewMessageOpen(false);
-        setNewMessageForm({ clientEmail: '', subject: '', content: '' });
-        loadConversations();
-        toast.success('Message sent successfully');
-      }
-    } catch (error) {
-      console.error('Error sending new message:', error);
-      toast.error('Failed to send message');
-    }
-  };
+  const filteredConversations = conversations.filter(conv =>
+    conv.agent_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    conv.subject?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -148,55 +99,7 @@ export const AgentMessages = () => {
     <div className="flex h-[calc(100vh-8rem)] gap-6">
       <Card className="w-1/3 flex flex-col">
         <CardHeader className="pb-4">
-          <div className="flex justify-between items-center">
-            <CardTitle>Conversations</CardTitle>
-            <Dialog open={isNewMessageOpen} onOpenChange={setIsNewMessageOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Message
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Send New Message</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="clientEmail">Client Email</Label>
-                    <Input
-                      id="clientEmail"
-                      type="email"
-                      placeholder="client@example.com"
-                      value={newMessageForm.clientEmail}
-                      onChange={(e) => setNewMessageForm({...newMessageForm, clientEmail: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="subject">Subject</Label>
-                    <Input
-                      id="subject"
-                      placeholder="Message subject"
-                      value={newMessageForm.subject}
-                      onChange={(e) => setNewMessageForm({...newMessageForm, subject: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="content">Message</Label>
-                    <Textarea
-                      id="content"
-                      placeholder="Type your message..."
-                      className="min-h-[100px]"
-                      value={newMessageForm.content}
-                      onChange={(e) => setNewMessageForm({...newMessageForm, content: e.target.value})}
-                    />
-                  </div>
-                  <Button onClick={handleNewMessage} className="w-full">Send Message</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-          
+          <CardTitle>Conversations</CardTitle>
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
@@ -210,8 +113,8 @@ export const AgentMessages = () => {
         
         <CardContent className="flex-1 overflow-y-auto p-0">
           <div className="space-y-2 p-4">
-            {conversations.map((conv) => {
-              const otherUser = profile?.role === 'agent' ? conv.client_profile : conv.agent_profile;
+            {filteredConversations.map((conv) => {
+              const agent = conv.agent_profile;
               return (
                 <div
                   key={conv.id}
@@ -222,19 +125,33 @@ export const AgentMessages = () => {
                   }`}
                   onClick={() => setSelectedConversation(conv)}
                 >
-                  <div className="font-medium">{otherUser?.full_name || 'Unknown User'}</div>
+                  <div className="font-medium">{agent?.full_name || 'Unknown Agent'}</div>
                   <div className="text-sm font-medium mb-1">{conv.subject}</div>
                   {conv.last_message && (
                     <div className="text-sm text-muted-foreground line-clamp-2 mb-2">
                       {conv.last_message.content}
                     </div>
                   )}
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(conv.updated_at).toLocaleDateString()}
+                  <div className="flex justify-between items-center">
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(conv.updated_at).toLocaleDateString()}
+                    </div>
+                    {conv.unread_count && conv.unread_count > 0 && (
+                      <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                        <span className="text-xs text-primary-foreground font-semibold">
+                          {conv.unread_count}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })}
+            {filteredConversations.length === 0 && (
+              <div className="text-center text-muted-foreground py-8">
+                No conversations found
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -243,7 +160,27 @@ export const AgentMessages = () => {
         {selectedConversation ? (
           <>
             <CardHeader className="border-b">
-              <CardTitle className="text-lg">{selectedConversation.subject}</CardTitle>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                    <span className="text-sm font-semibold">
+                      {selectedConversation.agent_profile?.full_name?.split(' ').map(n => n[0]).join('') || 'A'}
+                    </span>
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">{selectedConversation.agent_profile?.full_name || 'Unknown Agent'}</CardTitle>
+                    <p className="text-sm text-muted-foreground">{selectedConversation.subject}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline">
+                    <Phone className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" variant="outline">
+                    <Video className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             
             <CardContent className="flex-1 flex flex-col p-0">
@@ -279,6 +216,12 @@ export const AgentMessages = () => {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     className="min-h-[60px] resize-none"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
                   />
                   <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
                     <Send className="h-4 w-4" />
