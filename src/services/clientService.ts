@@ -207,7 +207,13 @@ class ClientService {
             body: { email: sanitizedEmail }
           });
           
-          if (searchError || !searchResult?.data) {
+          if (searchError) {
+            console.error('Edge function search error:', searchError);
+            return { data: null, error: { message: `An error occurred while searching for the user.` } };
+          }
+
+          // The edge function returns { data: userProfile }, so we need to unwrap it.
+          if (!searchResult || !searchResult.data) {
             return { data: null, error: { message: `User not found with email: ${sanitizedEmail}. Please ensure the email is registered in the system.` } };
           }
           
