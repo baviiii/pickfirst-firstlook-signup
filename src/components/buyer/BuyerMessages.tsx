@@ -35,7 +35,7 @@ export const BuyerMessages = () => {
     if (!user) return;
     
     try {
-      const data = await messageService.getConversations(user.id);
+      const data = await messageService.getConversations();
       setConversations(data);
     } catch (error) {
       console.error('Error loading conversations:', error);
@@ -51,7 +51,7 @@ export const BuyerMessages = () => {
       setMessages(data);
       
       // Mark messages as read
-      await messageService.markMessagesAsRead(conversationId, user?.id || '');
+      await messageService.markMessagesAsRead(conversationId);
     } catch (error) {
       console.error('Error loading messages:', error);
       toast.error('Failed to load messages');
@@ -64,8 +64,8 @@ export const BuyerMessages = () => {
     try {
       const message = await messageService.sendMessage(
         selectedConversation.id,
-        user.id,
-        newMessage.trim()
+        newMessage.trim(),
+        'text'
       );
       
       if (message) {
