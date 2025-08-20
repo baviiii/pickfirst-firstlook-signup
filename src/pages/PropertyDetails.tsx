@@ -19,7 +19,10 @@ import {
   Calendar,
   Share2,
   Camera,
-  Home
+  Home,
+  ChevronLeft,
+  ChevronRight,
+  X
 } from 'lucide-react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { useAuth } from '@/hooks/useAuth';
@@ -40,6 +43,8 @@ const PropertyDetailsComponent = () => {
   const [submittingInquiry, setSubmittingInquiry] = useState(false);
   const [existingInquiry, setExistingInquiry] = useState<any>(null);
   const [checkingInquiry, setCheckingInquiry] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showImageModal, setShowImageModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -153,7 +158,6 @@ const PropertyDetailsComponent = () => {
       setIsInquiryDialogOpen(false);
       setInquiryMessage('');
       
-      // Refresh inquiry status
       checkExistingInquiry();
     } catch (error) {
       toast.error('Failed to send inquiry');
@@ -162,20 +166,56 @@ const PropertyDetailsComponent = () => {
     }
   };
 
+  const handleImageNavigation = (direction: 'prev' | 'next') => {
+    if (!property?.images?.length) return;
+    
+    if (direction === 'prev') {
+      setCurrentImageIndex(prev => 
+        prev === 0 ? property.images.length - 1 : prev - 1
+      );
+    } else {
+      setCurrentImageIndex(prev => 
+        prev === property.images.length - 1 ? 0 : prev + 1
+      );
+    }
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: property?.title,
+          text: `Check out this property: ${property?.title}`,
+          url: window.location.href,
+        });
+      } catch (error) {
+        // Fallback to clipboard
+        navigator.clipboard.writeText(window.location.href);
+        toast.success('Link copied to clipboard');
+      }
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast.success('Link copied to clipboard');
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
-        <div className="text-white">Loading property details...</div>
+      <div className="min-h-screen flex items-center justify-center p-4 relative z-10">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+          <p>Loading property details...</p>
+        </div>
       </div>
     );
   }
 
   if (!property) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center p-4 relative z-10">
         <div className="text-white text-center">
           <h2 className="text-xl mb-4">Property not found</h2>
-          <Button onClick={() => navigate('/browse-properties')}>
+          <Button onClick={() => navigate('/browse-properties')} variant="outline">
             Browse Properties
           </Button>
         </div>
@@ -183,160 +223,289 @@ const PropertyDetailsComponent = () => {
     );
   }
 
+  const hasImages = property.images && property.images.length > 0;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/browse-properties')}
-            className="text-gray-300 hover:text-primary border-white/20 hover:border-primary/30"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Properties
-          </Button>
+    <div className="min-h-screen relative overflow-hidden">
+
+      {/* Content */}
+      <div className="relative z-10">
+        {/* Mobile-first Header */}
+        <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-yellow-400/20">
+          <div className="max-w-7xl mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/browse-properties')}
+                className="text-gray-300 hover:text-yellow-400 hover:bg-yellow-400/10"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Back to Properties</span>
+                <span className="sm:hidden">Back</span>
+              </Button>
+              
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={handleToggleFavorite}
+                  className={`rounded-full hover:bg-yellow-400/10 ${isFavorited ? 'text-yellow-400' : 'text-gray-400'}`}
+                >
+                  <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={handleShare}
+                  className="text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10"
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Property Images */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="aspect-video bg-gray-700 rounded-lg overflow-hidden">
-              {property.images && property.images.length > 0 ? (
-                <img
-                  src={property.images[0]}
-                  alt={property.title}
-                  className="w-full h-full object-cover"
-                />
+        <div className="max-w-7xl mx-auto p-4 space-y-6">
+          {/* Image Gallery */}
+          <div className="relative">
+            <div className="aspect-video w-full bg-gradient-to-br from-gray-800/90 to-black/90 backdrop-blur-xl rounded-xl border border-yellow-400/20 shadow-2xl overflow-hidden">
+              {hasImages ? (
+                <div className="relative w-full h-full">
+                  <img 
+                    src={property.images[currentImageIndex]} 
+                    alt={`${property.title} - Image ${currentImageIndex + 1}`}
+                    className="w-full h-full object-cover cursor-pointer"
+                    onClick={() => setShowImageModal(true)}
+                  />
+                  
+                  {/* Image Navigation */}
+                  {property.images.length > 1 && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white"
+                        onClick={() => handleImageNavigation('prev')}
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white"
+                        onClick={() => handleImageNavigation('next')}
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </Button>
+                      
+                      {/* Image Counter */}
+                      <div className="absolute bottom-2 right-2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                        {currentImageIndex + 1} / {property.images.length}
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* Status Badge */}
+                  <div className="absolute top-4 left-4">
+                    <Badge className="bg-yellow-400/90 hover:bg-yellow-400 text-black font-medium">
+                      {property.status === 'available' ? 'Available' : 'Under Contract'}
+                    </Badge>
+                  </div>
+                </div>
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Camera className="h-12 w-12 text-gray-500" />
+                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                  <Camera className="w-16 h-16 mb-4" />
+                  <span className="text-lg">No images available</span>
                 </div>
               )}
             </div>
-            {property.images && property.images.length > 1 && (
-              <div className="grid grid-cols-4 gap-2">
-                {property.images.slice(1, 5).map((image, index) => (
-                  <div key={index} className="aspect-square bg-gray-700 rounded overflow-hidden">
-                    <img
-                      src={image}
-                      alt={`${property.title} ${index + 2}`}
+            
+            {/* Thumbnail Strip - Hidden on mobile, visible on larger screens */}
+            {hasImages && property.images.length > 1 && (
+              <div className="hidden md:flex mt-4 gap-2 overflow-x-auto pb-2">
+                {property.images.map((img, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`flex-shrink-0 w-20 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                      index === currentImageIndex 
+                        ? 'border-yellow-400 opacity-100' 
+                        : 'border-transparent opacity-60 hover:opacity-80'
+                    }`}
+                  >
+                    <img 
+                      src={img} 
+                      alt={`${property.title} thumbnail ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Property Details */}
-          <div className="space-y-6">
-            <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-2xl text-white">{property.title}</CardTitle>
-                    <CardDescription className="text-gray-300 flex items-center gap-1 mt-2">
-                      <MapPin className="h-4 w-4" />
-                      {property.address}, {property.city}, {property.state} {property.zip_code}
-                    </CardDescription>
+          {/* Property Details - Mobile-First Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main Details */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Property Header */}
+              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-2xl lg:text-3xl font-bold text-white mb-2">
+                    {property.title}
+                  </CardTitle>
+                  <div className="flex items-center text-yellow-400/80 mb-4">
+                    <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
+                    <span className="text-sm lg:text-base">{property.address}</span>
                   </div>
-                  <Badge className="bg-green-500/10 text-green-500">
-                    {property.status?.replace('_', ' ').toUpperCase()}
-                  </Badge>
-                </div>
-                <div className="text-3xl font-bold text-primary">
-                  ${property.price.toLocaleString()}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Property Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {property.bedrooms !== null && (
-                    <div className="text-center p-3 bg-white/5 rounded-lg">
-                      <Bed className="h-6 w-6 text-blue-500 mx-auto mb-2" />
-                      <div className="text-white font-bold">{property.bedrooms}</div>
-                      <div className="text-gray-400 text-sm">Bedrooms</div>
+                  
+                  {/* Price and Stats */}
+                  <div className="bg-yellow-400/5 p-4 rounded-lg border border-yellow-400/20">
+                    <div className="text-3xl font-bold text-yellow-400 mb-3">
+                      ${property.price?.toLocaleString()}
+                      <span className="text-lg font-normal text-yellow-400/70 ml-1">
+                        {property.property_type === 'weekly' ? '/week' : property.property_type === 'monthly' ? '/month' : ''}
+                      </span>
                     </div>
-                  )}
-                  {property.bathrooms !== null && (
-                    <div className="text-center p-3 bg-white/5 rounded-lg">
-                      <Bath className="h-6 w-6 text-purple-500 mx-auto mb-2" />
-                      <div className="text-white font-bold">{property.bathrooms}</div>
-                      <div className="text-gray-400 text-sm">Bathrooms</div>
+                    
+                    {/* Property Stats */}
+                    <div className="flex flex-wrap gap-4 text-sm">
+                      {property.bedrooms !== null && (
+                        <div className="flex items-center gap-2">
+                          <Bed className="w-5 h-5 text-yellow-400" />
+                          <span className="text-gray-300">{property.bedrooms} Bed{property.bedrooms !== 1 ? 's' : ''}</span>
+                        </div>
+                      )}
+                      {property.bathrooms !== null && (
+                        <div className="flex items-center gap-2">
+                          <Bath className="w-5 h-5 text-yellow-400" />
+                          <span className="text-gray-300">{property.bathrooms} Bath{property.bathrooms !== 1 ? 's' : ''}</span>
+                        </div>
+                      )}
+                      {property.square_feet !== null && (
+                        <div className="flex items-center gap-2">
+                          <Square className="w-5 h-5 text-yellow-400" />
+                          <span className="text-gray-300">{property.square_feet.toLocaleString()} sq ft</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {property.square_feet !== null && (
-                    <div className="text-center p-3 bg-white/5 rounded-lg">
-                      <Square className="h-6 w-6 text-green-500 mx-auto mb-2" />
-                      <div className="text-white font-bold">{property.square_feet.toLocaleString()}</div>
-                      <div className="text-gray-400 text-sm">Sq Ft</div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Property Type */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Home className="h-5 w-5 text-primary" />
-                    <span className="text-white font-medium">Property Type</span>
                   </div>
-                  <Badge variant="secondary" className="bg-primary/10 text-primary">
-                    {property.property_type.replace(/\b\w/g, l => l.toUpperCase())}
-                  </Badge>
-                </div>
+                </CardHeader>
+              </Card>
 
-                {/* Description */}
-                {property.description && (
-                  <div>
-                    <h3 className="text-white font-medium mb-2">Description</h3>
-                    <p className="text-gray-300 leading-relaxed">{property.description}</p>
-                  </div>
-                )}
+              {/* Description */}
+              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+                <CardHeader>
+                  <CardTitle className="text-white text-lg flex items-center">
+                    <Home className="w-5 h-5 mr-2 text-yellow-400" />
+                    Property Description
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-300 leading-relaxed">
+                    {property.description}
+                  </p>
+                </CardContent>
+              </Card>
 
-                {/* Action Buttons */}
-                {profile?.role === 'buyer' && (
-                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                    {existingInquiry ? (
-                      <InquiryStatus propertyId={id} />
-                    ) : (
-                      <Button
+              {/* Features */}
+              {property.features && property.features.length > 0 && (
+                <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-white text-lg">Key Features</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {property.features.map((feature, index) => (
+                        <div key={index} className="flex items-center text-gray-300 group">
+                          <div className="w-2 h-2 rounded-full bg-yellow-400 mr-3 group-hover:animate-pulse flex-shrink-0"></div>
+                          <span className="group-hover:text-yellow-400/90 transition-colors text-sm">
+                            {feature}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Action Panel - Sticky on desktop */}
+            <div className="lg:sticky lg:top-24 lg:self-start">
+              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+                <CardHeader>
+                  <CardTitle className="text-white text-lg">
+                    {existingInquiry ? 'Your Inquiry' : 'Contact Agent'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {existingInquiry ? (
+                    <div className="space-y-4">
+                      <div className="bg-yellow-400/5 p-4 rounded-lg border border-yellow-400/20">
+                        <InquiryStatus propertyId={id} />
+                        <p className="text-sm text-yellow-400/80 mt-2">
+                          Submitted {new Date(existingInquiry.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <p className="text-gray-300 text-sm">
+                        Check your messages to continue the conversation with the agent.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <Button 
                         onClick={handleInquire}
-                        className="flex-1"
-                        disabled={checkingInquiry}
+                        className="w-full bg-yellow-400 hover:bg-amber-500 text-black font-medium py-4 text-base transition-all duration-300 hover:scale-[1.02] shadow-lg"
+                        size="lg"
                       >
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        {checkingInquiry ? 'Checking...' : 'Inquire Now'}
+                        <MessageSquare className="w-5 h-5 mr-2" />
+                        Make an Inquiry
                       </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      onClick={handleToggleFavorite}
-                      className={`${
-                        isFavorited 
-                          ? 'text-red-500 border-red-500 hover:bg-red-500/10' 
-                          : 'text-gray-400 border-gray-400 hover:bg-gray-400/10'
-                      }`}
-                    >
-                      <Heart className={`h-4 w-4 ${isFavorited ? 'fill-current' : ''}`} />
-                    </Button>
-                    <Button variant="outline" className="text-gray-400 border-gray-400 hover:bg-gray-400/10">
-                      <Share2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      <p className="text-gray-400 text-xs text-center">
+                        Connect directly with the listing agent
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Image Modal */}
+      {showImageModal && hasImages && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+          <div className="relative max-w-4xl max-h-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowImageModal(false)}
+              className="absolute -top-12 right-0 text-white hover:bg-white/10"
+            >
+              <X className="h-6 w-6" />
+            </Button>
+            <img
+              src={property.images[currentImageIndex]}
+              alt={`${property.title} - Image ${currentImageIndex + 1}`}
+              className="max-w-full max-h-full object-contain rounded-lg"
+            />
+            {property.images.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full text-sm">
+                {currentImageIndex + 1} / {property.images.length}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Inquiry Dialog */}
       <Dialog open={isInquiryDialogOpen} onOpenChange={setIsInquiryDialogOpen}>
-        <DialogContent className="w-full max-w-[95vw] sm:max-w-lg bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-primary/20 text-white">
+        <DialogContent className="w-full max-w-[95vw] sm:max-w-lg bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-yellow-400/20 text-white">
           <DialogHeader>
-            <DialogTitle className="text-primary">Inquire About Property</DialogTitle>
+            <DialogTitle className="text-yellow-400">Inquire About Property</DialogTitle>
             <DialogDescription className="text-gray-300">
               Send a message to the agent about {property.title}
             </DialogDescription>
@@ -346,27 +515,34 @@ const PropertyDetailsComponent = () => {
               <Label htmlFor="inquiry-message" className="text-white">Your Message</Label>
               <Textarea
                 id="inquiry-message"
-                placeholder="I'm interested in this property. Could you provide more information about..."
+                placeholder="I'm interested in this property. Could you provide more information about viewing times, additional features, or next steps?"
                 value={inquiryMessage}
                 onChange={(e) => setInquiryMessage(e.target.value)}
-                className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 mt-2"
+                className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 mt-2 min-h-[100px]"
                 rows={4}
               />
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <Button
                 variant="outline"
                 onClick={() => setIsInquiryDialogOpen(false)}
-                className="flex-1"
+                className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSubmitInquiry}
                 disabled={submittingInquiry || !inquiryMessage.trim()}
-                className="flex-1"
+                className="flex-1 bg-yellow-400 hover:bg-amber-500 text-black"
               >
-                {submittingInquiry ? 'Sending...' : 'Send Inquiry'}
+                {submittingInquiry ? (
+                  <span className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2"></div>
+                    Sending...
+                  </span>
+                ) : (
+                  'Send Inquiry'
+                )}
               </Button>
             </div>
           </div>

@@ -11,6 +11,11 @@ All colors MUST be HSL.
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
+    
+    /* Add these new variables for the background */
+    --pickfirst-bg-from: 240 10% 3.9%;
+    --pickfirst-bg-via: 0 0% 4%;
+    --pickfirst-bg-to: 0 0% 7%;
 
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -117,8 +122,54 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-black text-foreground min-h-screen;
+    background: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0) 0 0 / 20px 20px;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+  
+  /* Enhanced background styles */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      to bottom right,
+      hsl(var(--pickfirst-bg-from)),
+      hsl(var(--pickfirst-bg-via)),
+      hsl(var(--pickfirst-bg-to))
+    );
+    z-index: -2;
+  }
+  
+  /* Animated elements */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      /* Primary glow */
+      radial-gradient(circle at 80% 20%, rgba(234, 179, 8, 0.2) 0%, transparent 50%) 0 0 / 100% 100% no-repeat,
+      /* Secondary glow */
+      radial-gradient(circle at 20% 70%, rgba(234, 88, 12, 0.15) 0%, transparent 50%) 0 0 / 100% 100% no-repeat;
+    z-index: -1;
+    animation: gradientPulse 15s ease infinite;
+  }
+  
+  @keyframes gradientPulse {
+    0%, 100% {
+      opacity: 0.5;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
   }
 }
 

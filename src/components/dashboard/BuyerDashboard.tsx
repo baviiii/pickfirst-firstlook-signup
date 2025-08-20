@@ -61,8 +61,17 @@ const BuyerDashboardComponent = () => {
     { icon: Settings, label: 'Account Settings', description: 'Update your profile', color: 'bg-gray-500/10 text-gray-500', onClick: () => navigate('/buyer-account-settings') }
   ];
 
+  // Check if user has made an inquiry for a property
+  const hasInquired = (propertyId: string) => {
+    // This is a placeholder - you'll need to implement actual logic to check inquiries
+    // For example, you might check against a list of the user's inquiries
+    return false; // Return true if user has inquired about this property
+  };
+
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+    <div className="min-h-screen relative overflow-hidden">
+      
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 relative z-10">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -120,36 +129,83 @@ const BuyerDashboardComponent = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {listings.map(listing => (
-                <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10">
-                  <CardHeader>
-                    <div className="aspect-video bg-gray-700 rounded-md mb-3 overflow-hidden">
+                <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10 hover:border-pickfirst-yellow/40 transition-all duration-300 group">
+                  <CardHeader className="p-0 relative">
+                    <div className="aspect-video bg-gray-700 rounded-t-md overflow-hidden relative">
                       {listing.images && listing.images.length > 0 ? (
                         <img
                           src={listing.images[0]}
                           alt={listing.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           onError={(e) => {
-                            // Fallback to placeholder if image fails to load
                             e.currentTarget.style.display = 'none';
                             e.currentTarget.nextElementSibling?.classList.remove('hidden');
                           }}
                         />
                       ) : null}
-                      <div className={`w-full h-full bg-gray-700 flex items-center justify-center ${listing.images && listing.images.length > 0 ? 'hidden' : ''}`}>
-                        <span className="text-gray-500 text-sm">No Image</span>
+                      <div className={`w-full h-full bg-gray-800 flex items-center justify-center ${listing.images && listing.images.length > 0 ? 'hidden' : ''}`}>
+                        <Home className="h-12 w-12 text-gray-500" />
+                      </div>
+                      
+                      {/* Enhanced Inquiry Status Badge */}
+                      <div className="absolute top-2 right-2 flex flex-col gap-1">
+                        {hasInquired(listing.id) ? (
+                          <div className="relative group">
+                            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm rounded-full scale-0 group-hover:scale-100 transition-transform duration-200"></div>
+                            <Badge className="relative bg-green-600/90 hover:bg-green-600 text-white border border-green-400/50 shadow-lg shadow-green-900/30 transition-all duration-200 group-hover:scale-105">
+                              <MessageSquare className="h-3 w-3 mr-1.5" /> Inquiry Sent
+                            </Badge>
+                          </div>
+                        ) : (
+                          <div className="relative group">
+                            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm rounded-full scale-0 group-hover:scale-100 transition-transform duration-200"></div>
+                            <Badge variant="outline" className="relative bg-amber-600/90 hover:bg-amber-600/80 text-amber-100 border-amber-400/50 shadow-lg shadow-amber-900/20 transition-all duration-200 group-hover:scale-105">
+                              <MessageSquare className="h-3 w-3 mr-1.5" /> Inquire Now
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <CardTitle className="text-lg text-pickfirst-yellow">{listing.title}</CardTitle>
-                    <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-white font-bold text-xl mb-2">${listing.price.toLocaleString()}</div>
-                    <div className="text-gray-400 text-sm mb-2">{listing.property_type.replace(/\b\w/g, l => l.toUpperCase())}</div>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {listing.bedrooms !== null && <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded">{listing.bedrooms} Bed</span>}
-                      {listing.bathrooms !== null && <span className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded">{listing.bathrooms} Bath</span>}
-                      {listing.square_feet !== null && <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded">{listing.square_feet} Sq Ft</span>}
+                    
+                    <div className="p-4">
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-lg text-pickfirst-yellow line-clamp-1">{listing.title}</CardTitle>
+                        <div className="text-white font-bold text-lg">${listing.price.toLocaleString()}</div>
+                      </div>
+                      <CardDescription className="text-gray-300 text-sm mt-1 line-clamp-1">
+                        {listing.address}, {listing.city}, {listing.state}
+                      </CardDescription>
                     </div>
+                  </CardHeader>
+                  <CardContent className="pt-0 px-4 pb-4">
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {listing.bedrooms !== null && (
+                        <div className="flex items-center text-xs bg-blue-500/10 text-blue-300 px-2 py-1 rounded">
+                          <span className="font-medium">{listing.bedrooms}</span>
+                          <span className="ml-1 text-blue-200">Beds</span>
+                        </div>
+                      )}
+                      {listing.bathrooms !== null && (
+                        <div className="flex items-center text-xs bg-purple-500/10 text-purple-300 px-2 py-1 rounded">
+                          <span className="font-medium">{listing.bathrooms}</span>
+                          <span className="ml-1 text-purple-200">Baths</span>
+                        </div>
+                      )}
+                      {listing.square_feet !== null && (
+                        <div className="flex items-center text-xs bg-green-500/10 text-green-300 px-2 py-1 rounded">
+                          <span className="font-medium">{listing.square_feet.toLocaleString()}</span>
+                          <span className="ml-1 text-green-200">sq ft</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <Button 
+                      variant="outline" 
+                      className="w-full bg-pickfirst-yellow/5 text-pickfirst-yellow border-pickfirst-yellow/30 hover:bg-pickfirst-yellow/10 hover:border-pickfirst-yellow/50 transition-colors"
+                      onClick={() => navigate(`/property/${listing.id}`)}
+                    >
+                      {hasInquired(listing.id) ? 'View Inquiry' : 'View Details'}
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
@@ -269,6 +325,7 @@ const BuyerDashboardComponent = () => {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
