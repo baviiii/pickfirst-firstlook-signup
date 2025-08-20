@@ -25,6 +25,7 @@ import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
+import { InquiryStatus } from '@/components/buyer/InquiryStatus';
 
 const PropertyDetailsComponent = () => {
   const { id } = useParams<{ id: string }>();
@@ -126,7 +127,7 @@ const PropertyDetailsComponent = () => {
     }
 
     if (existingInquiry) {
-      toast.error('You have already inquired about this property');
+      toast.error('You have already inquired about this property. Check your messages to continue the conversation with the agent.');
       return;
     }
 
@@ -148,7 +149,7 @@ const PropertyDetailsComponent = () => {
 
       if (error) throw error;
 
-      toast.success('Inquiry sent successfully! The agent will contact you soon.');
+      toast.success('Inquiry sent successfully! A conversation has been created. Check your messages to continue talking with the agent.');
       setIsInquiryDialogOpen(false);
       setInquiryMessage('');
       
@@ -298,23 +299,7 @@ const PropertyDetailsComponent = () => {
                 {profile?.role === 'buyer' && (
                   <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     {existingInquiry ? (
-                      <div className="flex-1 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                        <div className="flex items-center gap-2 text-blue-400 mb-2">
-                          <MessageSquare className="h-4 w-4" />
-                          <span className="font-medium">Inquiry Sent</span>
-                        </div>
-                        <p className="text-sm text-gray-300">
-                          {existingInquiry.responded_at 
-                            ? `Agent responded on ${new Date(existingInquiry.responded_at).toLocaleDateString()}`
-                            : 'Waiting for agent response...'
-                          }
-                        </p>
-                        {existingInquiry.agent_response && (
-                          <div className="mt-2 p-2 bg-white/5 rounded text-sm text-gray-300">
-                            <strong>Agent Response:</strong> {existingInquiry.agent_response}
-                          </div>
-                        )}
-                      </div>
+                      <InquiryStatus propertyId={id} />
                     ) : (
                       <Button
                         onClick={handleInquire}

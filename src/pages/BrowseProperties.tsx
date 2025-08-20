@@ -84,7 +84,7 @@ const BrowsePropertiesPageComponent = () => {
 
       if (error) throw error;
 
-      toast.success('Inquiry sent successfully! The agent will contact you soon.');
+      toast.success('Inquiry sent successfully! A conversation has been created. Check your messages to continue talking with the agent.');
       setIsInquiryDialogOpen(false);
       setInquiryMessage('');
       setSelectedProperty(null);

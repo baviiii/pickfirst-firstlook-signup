@@ -36,6 +36,10 @@ interface ExtendedPropertyInquiry extends PropertyInquiry {
     full_name: string;
     email: string;
   };
+  conversation?: {
+    id: string;
+    subject: string;
+  };
 }
 
 export const AgentInquiriesComponent = () => {
@@ -131,6 +135,15 @@ export const AgentInquiriesComponent = () => {
     if (!profile || !inquiry.buyer_id) return;
 
     try {
+      // If there's already a conversation, navigate to it
+      if (inquiry.conversation_id) {
+        toast.success('Opening existing conversation...');
+        // Navigate to the conversation - you can implement this based on your routing
+        // For now, we'll just show a success message
+        return;
+      }
+
+      // Create new conversation if none exists
       const { data: conversation, error } = await conversationService.getOrCreateConversation(
         profile.id,
         inquiry.buyer_id,
@@ -139,7 +152,8 @@ export const AgentInquiriesComponent = () => {
 
       if (conversation && !error) {
         toast.success('Conversation started! You can now message this buyer.');
-        // You could navigate to messages here if needed
+        // Refresh inquiries to get the updated conversation data
+        fetchInquiries();
       } else {
         toast.error('Failed to start conversation');
       }
@@ -303,10 +317,14 @@ export const AgentInquiriesComponent = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => handleStartConversation(inquiry)}
-                  className="flex-1 text-blue-500 border-blue-500/20 hover:bg-blue-500/10"
+                  className={`flex-1 ${
+                    inquiry.conversation_id 
+                      ? 'text-green-500 border-green-500/20 hover:bg-green-500/10' 
+                      : 'text-blue-500 border-blue-500/20 hover:bg-blue-500/10'
+                  }`}
                 >
                   <MessageSquare className="h-4 w-4 mr-1" />
-                  Message
+                  {inquiry.conversation_id ? 'Open Chat' : 'Start Chat'}
                 </Button>
                 <Button
                   size="sm"
@@ -318,6 +336,14 @@ export const AgentInquiriesComponent = () => {
                   Convert
                 </Button>
               </div>
+              
+              {/* Conversation Status */}
+              {inquiry.conversation_id && (
+                <div className="flex items-center gap-2 text-xs text-green-400 bg-green-500/10 p-2 rounded">
+                  <CheckCircle className="h-3 w-3" />
+                  Active conversation available
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}

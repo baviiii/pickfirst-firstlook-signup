@@ -748,10 +748,10 @@ export class PropertyService {
       return { data: null, error: new Error('User not authenticated') };
     }
 
-    // Check if user has already inquired
+    // Check if user has already inquired (this will be caught by the unique constraint, but we can provide a better error message)
     const { data: existingInquiry } = await this.hasInquired(propertyId);
     if (existingInquiry) {
-      return { data: null, error: new Error('You have already inquired about this property') };
+      return { data: null, error: new Error('You have already inquired about this property. You can continue the conversation in your messages.') };
     }
 
     const { data, error } = await supabase
@@ -762,7 +762,10 @@ export class PropertyService {
         message,
         contact_preference: contactPreference
       })
-      .select()
+      .select(`
+        *,
+        conversation:conversations(id, subject)
+      `)
       .single();
 
     return { data, error };

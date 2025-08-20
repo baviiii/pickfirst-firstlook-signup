@@ -486,6 +486,7 @@ export type Database = {
           agent_response: string | null
           buyer_id: string
           contact_preference: string | null
+          conversation_id: string | null
           created_at: string | null
           id: string
           message: string
@@ -497,6 +498,7 @@ export type Database = {
           agent_response?: string | null
           buyer_id: string
           contact_preference?: string | null
+          conversation_id?: string | null
           created_at?: string | null
           id?: string
           message: string
@@ -508,6 +510,7 @@ export type Database = {
           agent_response?: string | null
           buyer_id?: string
           contact_preference?: string | null
+          conversation_id?: string | null
           created_at?: string | null
           id?: string
           message?: string
@@ -528,6 +531,13 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "property_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_inquiries_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
         ]
