@@ -8,21 +8,32 @@ import { Search, Heart, MessageSquare, Settings, Home, MapPin, Filter } from 'lu
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { useNavigate } from 'react-router-dom';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
+import { analyticsService, BuyerMetrics } from '@/services/analyticsService';
 
 const BuyerDashboardComponent = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [listings, setListings] = useState<PropertyListing[]>([]);
   const [loadingListings, setLoadingListings] = useState(true);
+  const [metrics, setMetrics] = useState<BuyerMetrics | null>(null);
+  const [loadingMetrics, setLoadingMetrics] = useState(true);
 
   useEffect(() => {
-    const fetchListings = async () => {
+    const fetchData = async () => {
       setLoadingListings(true);
-      const { data } = await PropertyService.getApprovedListings();
-      setListings(data || []);
+      setLoadingMetrics(true);
+      
+      const [listingsResult, metricsResult] = await Promise.all([
+        PropertyService.getApprovedListings(),
+        analyticsService.getBuyerMetrics()
+      ]);
+      
+      setListings(listingsResult.data || []);
+      setMetrics(metricsResult.data);
       setLoadingListings(false);
+      setLoadingMetrics(false);
     };
-    fetchListings();
+    fetchData();
   }, []);
 
   const getSubscriptionBadge = () => {
@@ -156,20 +167,28 @@ const BuyerDashboardComponent = () => {
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-4 rounded-lg bg-blue-500/10">
-                <div className="text-2xl font-bold text-blue-500">24</div>
-                <div className="text-sm text-gray-300">Properties Viewed</div>
+                <div className="text-2xl font-bold text-blue-500">
+                  {loadingMetrics ? '...' : metrics?.totalInquiries || 0}
+                </div>
+                <div className="text-sm text-gray-300">Inquiries Sent</div>
               </div>
               <div className="text-center p-4 rounded-lg bg-red-500/10">
-                <div className="text-2xl font-bold text-red-500">5</div>
+                <div className="text-2xl font-bold text-red-500">
+                  {loadingMetrics ? '...' : metrics?.totalFavorites || 0}
+                </div>
                 <div className="text-sm text-gray-300">Saved Properties</div>
               </div>
               <div className="text-center p-4 rounded-lg bg-green-500/10">
-                <div className="text-2xl font-bold text-green-500">3</div>
-                <div className="text-sm text-gray-300">Active Searches</div>
+                <div className="text-2xl font-bold text-green-500">
+                  {loadingMetrics ? '...' : metrics?.savedSearches || 0}
+                </div>
+                <div className="text-sm text-gray-300">Saved Searches</div>
               </div>
               <div className="text-center p-4 rounded-lg bg-purple-500/10">
-                <div className="text-2xl font-bold text-purple-500">2</div>
-                <div className="text-sm text-gray-300">Tour Requests</div>
+                <div className="text-2xl font-bold text-purple-500">
+                  {loadingMetrics ? '...' : metrics?.totalConversations || 0}
+                </div>
+                <div className="text-sm text-gray-300">Conversations</div>
               </div>
             </div>
           </CardContent>
@@ -181,27 +200,29 @@ const BuyerDashboardComponent = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-white">Viewed luxury condo downtown</p>
-                  <p className="text-xs text-gray-400">2 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-                <div className="h-2 w-2 rounded-full bg-red-500"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-white">Saved 3-bedroom house</p>
-                  <p className="text-xs text-gray-400">1 day ago</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-                <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-white">New search alert created</p>
-                  <p className="text-xs text-gray-400">3 days ago</p>
-                </div>
-              </div>
+              {loadingMetrics ? (
+                <div className="text-gray-300">Loading activity...</div>
+              ) : metrics?.recentActivity && metrics.recentActivity.length > 0 ? (
+                metrics.recentActivity.map((activity, index) => (
+                  <div key={activity.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                    <div className={`h-2 w-2 rounded-full ${
+                      activity.action === 'INSERT' ? 'bg-green-500' :
+                      activity.action === 'UPDATE' ? 'bg-blue-500' :
+                      activity.action === 'DELETE' ? 'bg-red-500' : 'bg-purple-500'
+                    }`}></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-white">
+                        {activity.action.toLowerCase()} on {activity.table_name}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(activity.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-400 text-sm">No recent activity</div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -219,7 +240,7 @@ const BuyerDashboardComponent = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {listings.slice(0, 3).map((listing) => (
+            {(loadingMetrics ? listings.slice(0, 3) : metrics?.recommendedProperties?.slice(0, 3) || listings.slice(0, 3)).map((listing) => (
               <div key={listing.id} className="p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
                 <div className="aspect-video bg-gray-700 rounded-md mb-3 overflow-hidden">
                   {listing.images && listing.images.length > 0 ? (

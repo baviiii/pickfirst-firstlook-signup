@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Users, Building, Shield, Settings, BarChart3, Database, AlertTriangle, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
+import { analyticsService, DashboardMetrics } from '@/services/analyticsService';
 import { toast } from 'sonner';
 
 export const SuperAdminDashboard = () => {
@@ -15,15 +16,25 @@ export const SuperAdminDashboard = () => {
   const [listings, setListings] = useState<PropertyListing[]>([]);
   const [loadingListings, setLoadingListings] = useState(true);
   const [showAllModal, setShowAllModal] = useState(false);
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [loadingMetrics, setLoadingMetrics] = useState(true);
 
   useEffect(() => {
-    const fetchListings = async () => {
+    const fetchData = async () => {
       setLoadingListings(true);
-      const { data } = await PropertyService.getAllListings();
-      setListings(data || []);
+      setLoadingMetrics(true);
+      
+      const [listingsResult, metricsResult] = await Promise.all([
+        PropertyService.getAllListings(),
+        analyticsService.getAdminMetrics()
+      ]);
+      
+      setListings(listingsResult.data || []);
+      setMetrics(metricsResult.data);
       setLoadingListings(false);
+      setLoadingMetrics(false);
     };
-    fetchListings();
+    fetchData();
   }, []);
 
   const handleApprove = async (id: string) => {
@@ -99,8 +110,10 @@ export const SuperAdminDashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-500">1,247</div>
-            <p className="text-xs text-gray-400">+12% this month</p>
+            <div className="text-2xl font-bold text-blue-500">
+              {loadingMetrics ? '...' : metrics?.totalUsers.toLocaleString() || '0'}
+            </div>
+            <p className="text-xs text-gray-400">System users</p>
           </CardContent>
         </Card>
 
@@ -114,8 +127,10 @@ export const SuperAdminDashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-500">893</div>
-            <p className="text-xs text-gray-400">+8% this month</p>
+            <div className="text-2xl font-bold text-green-500">
+              {loadingMetrics ? '...' : metrics?.totalProperties.toLocaleString() || '0'}
+            </div>
+            <p className="text-xs text-gray-400">Total listings</p>
           </CardContent>
         </Card>
 
@@ -129,8 +144,10 @@ export const SuperAdminDashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-500">$24.8K</div>
-            <p className="text-xs text-gray-400">+15% this month</p>
+            <div className="text-2xl font-bold text-purple-500">
+              {loadingMetrics ? '...' : `$${(metrics?.monthlyRevenue || 0).toLocaleString()}`}
+            </div>
+            <p className="text-xs text-gray-400">This month</p>
           </CardContent>
         </Card>
 
@@ -144,8 +161,10 @@ export const SuperAdminDashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-500">3</div>
-            <p className="text-xs text-gray-400">2 critical, 1 warning</p>
+            <div className="text-2xl font-bold text-orange-500">
+              {loadingMetrics ? '...' : metrics?.totalAlerts || '0'}
+            </div>
+            <p className="text-xs text-gray-400">System alerts</p>
           </CardContent>
         </Card>
       </div>
@@ -279,8 +298,13 @@ export const SuperAdminDashboard = () => {
                   <span className="text-white">Buyers</span>
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-blue-500">856</div>
-                  <div className="text-xs text-gray-400">68.7%</div>
+                  <div className="text-lg font-bold text-blue-500">
+                    {loadingMetrics ? '...' : metrics?.usersByRole?.buyer || 0}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {loadingMetrics ? '...' : metrics && metrics.totalUsers > 0 ? 
+                      `${((metrics.usersByRole?.buyer || 0) / metrics.totalUsers * 100).toFixed(1)}%` : '0%'}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10">
@@ -289,8 +313,13 @@ export const SuperAdminDashboard = () => {
                   <span className="text-white">Agents</span>
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-green-500">389</div>
-                  <div className="text-xs text-gray-400">31.2%</div>
+                  <div className="text-lg font-bold text-green-500">
+                    {loadingMetrics ? '...' : metrics?.usersByRole?.agent || 0}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {loadingMetrics ? '...' : metrics && metrics.totalUsers > 0 ? 
+                      `${((metrics.usersByRole?.agent || 0) / metrics.totalUsers * 100).toFixed(1)}%` : '0%'}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-red-500/10">
@@ -299,8 +328,13 @@ export const SuperAdminDashboard = () => {
                   <span className="text-white">Admins</span>
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-red-500">2</div>
-                  <div className="text-xs text-gray-400">0.1%</div>
+                  <div className="text-lg font-bold text-red-500">
+                    {loadingMetrics ? '...' : (metrics?.usersByRole?.super_admin || 0) + (metrics?.usersByRole?.admin || 0)}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {loadingMetrics ? '...' : metrics && metrics.totalUsers > 0 ? 
+                      `${(((metrics.usersByRole?.super_admin || 0) + (metrics.usersByRole?.admin || 0)) / metrics.totalUsers * 100).toFixed(1)}%` : '0%'}
+                  </div>
                 </div>
               </div>
             </div>

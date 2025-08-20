@@ -6,11 +6,24 @@ import { useAuth } from '@/hooks/useAuth';
 import { Home, Users, MessageSquare, Settings, PlusCircle, BarChart3, Calendar, Phone, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PropertyListingModal } from '@/components/property/PropertyListingModal';
+import { analyticsService, AgentMetrics } from '@/services/analyticsService';
 
 export const AgentDashboard = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
+  const [metrics, setMetrics] = useState<AgentMetrics | null>(null);
+  const [loadingMetrics, setLoadingMetrics] = useState(true);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      setLoadingMetrics(true);
+      const { data } = await analyticsService.getAgentMetrics();
+      setMetrics(data);
+      setLoadingMetrics(false);
+    };
+    fetchMetrics();
+  }, []);
 
   const getSubscriptionBadge = () => {
     const tier = profile?.subscription_tier || 'free';
@@ -115,20 +128,28 @@ export const AgentDashboard = () => {
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-4 rounded-lg bg-green-500/10">
-                    <div className="text-2xl font-bold text-green-500">7</div>
+                    <div className="text-2xl font-bold text-green-500">
+                      {loadingMetrics ? '...' : metrics?.activeListings || 0}
+                    </div>
                     <div className="text-sm text-gray-300">Active Listings</div>
                   </div>
                   <div className="text-center p-4 rounded-lg bg-blue-500/10">
-                    <div className="text-2xl font-bold text-blue-500">3</div>
-                    <div className="text-sm text-gray-300">Sales Closed</div>
+                    <div className="text-2xl font-bold text-blue-500">
+                      {loadingMetrics ? '...' : metrics?.totalListings || 0}
+                    </div>
+                    <div className="text-sm text-gray-300">Total Listings</div>
                   </div>
                   <div className="text-center p-4 rounded-lg bg-purple-500/10">
-                    <div className="text-2xl font-bold text-purple-500">15</div>
-                    <div className="text-sm text-gray-300">New Clients</div>
+                    <div className="text-2xl font-bold text-purple-500">
+                      {loadingMetrics ? '...' : metrics?.totalClients || 0}
+                    </div>
+                    <div className="text-sm text-gray-300">Total Clients</div>
                   </div>
                   <div className="text-center p-4 rounded-lg bg-orange-500/10">
-                    <div className="text-2xl font-bold text-orange-500">28</div>
-                    <div className="text-sm text-gray-300">Showings</div>
+                    <div className="text-2xl font-bold text-orange-500">
+                      {loadingMetrics ? '...' : metrics?.totalAppointments || 0}
+                    </div>
+                    <div className="text-sm text-gray-300">Appointments</div>
                   </div>
                 </div>
               </CardContent>
@@ -140,27 +161,29 @@ export const AgentDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-white">New listing created</p>
-                      <p className="text-xs text-gray-400">2 hours ago</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-                    <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-white">Client meeting scheduled</p>
-                      <p className="text-xs text-gray-400">4 hours ago</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-                    <div className="h-2 w-2 rounded-full bg-purple-500"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-white">Property inquiry received</p>
-                      <p className="text-xs text-gray-400">1 day ago</p>
-                    </div>
-                  </div>
+                  {loadingMetrics ? (
+                    <div className="text-gray-300">Loading activity...</div>
+                  ) : metrics?.recentActivity && metrics.recentActivity.length > 0 ? (
+                    metrics.recentActivity.map((activity, index) => (
+                      <div key={activity.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                        <div className={`h-2 w-2 rounded-full ${
+                          activity.action === 'INSERT' ? 'bg-green-500' :
+                          activity.action === 'UPDATE' ? 'bg-blue-500' :
+                          activity.action === 'DELETE' ? 'bg-red-500' : 'bg-purple-500'
+                        }`}></div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-white">
+                            {activity.action.toLowerCase()} on {activity.table_name}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {new Date(activity.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-gray-400 text-sm">No recent activity</div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -172,12 +195,16 @@ export const AgentDashboard = () => {
               <CardContent>
                 <div className="space-y-4">
                   <div className="text-center p-4 rounded-lg bg-pickfirst-yellow/10">
-                    <div className="text-2xl font-bold text-pickfirst-yellow">$42,500</div>
+                    <div className="text-2xl font-bold text-pickfirst-yellow">
+                      {loadingMetrics ? '...' : `$${(metrics?.monthlyRevenue || 0).toLocaleString()}`}
+                    </div>
                     <div className="text-sm text-gray-300">This Month</div>
                   </div>
                   <div className="text-center p-4 rounded-lg bg-pickfirst-amber/10">
-                    <div className="text-xl font-bold text-pickfirst-amber">$156,800</div>
-                    <div className="text-sm text-gray-300">This Quarter</div>
+                    <div className="text-xl font-bold text-pickfirst-amber">
+                      {loadingMetrics ? '...' : `$${((metrics?.monthlyRevenue || 0) * 3).toLocaleString()}`}
+                    </div>
+                    <div className="text-sm text-gray-300">This Quarter (Est.)</div>
                   </div>
                 </div>
               </CardContent>
@@ -196,24 +223,27 @@ export const AgentDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  { time: '10:00 AM', client: 'Sarah Johnson', property: '123 Oak Street', type: 'Property Showing' },
-                  { time: '2:30 PM', client: 'Mike & Lisa Chen', property: '456 Pine Avenue', type: 'Initial Consultation' },
-                  { time: '4:00 PM', client: 'Robert Davis', property: '789 Maple Drive', type: 'Contract Review' }
-                ].map((appointment, index) => (
-                  <div key={index} className="flex items-center gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                    <div className="text-center min-w-[80px]">
-                      <div className="text-sm font-bold text-pickfirst-yellow">{appointment.time}</div>
+                {loadingMetrics ? (
+                  <div className="text-gray-300">Loading appointments...</div>
+                ) : metrics?.upcomingAppointments && metrics.upcomingAppointments.length > 0 ? (
+                  metrics.upcomingAppointments.map((appointment, index) => (
+                    <div key={index} className="flex items-center gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                      <div className="text-center min-w-[80px]">
+                        <div className="text-sm font-bold text-pickfirst-yellow">{appointment.time}</div>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-white">{appointment.client_name}</h4>
+                        <p className="text-sm text-gray-400">{appointment.appointment_type} - {appointment.property_address}</p>
+                        <p className="text-xs text-gray-500">{new Date(appointment.date).toLocaleDateString()}</p>
+                      </div>
+                      <Button variant="outline" size="sm" className="text-gray-300 hover:text-pickfirst-yellow">
+                        View Details
+                      </Button>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-white">{appointment.client}</h4>
-                      <p className="text-sm text-gray-400">{appointment.type} - {appointment.property}</p>
-                    </div>
-                    <Button variant="outline" size="sm" className="text-gray-300 hover:text-pickfirst-yellow">
-                      View Details
-                    </Button>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <div className="text-gray-400 text-sm">No upcoming appointments</div>
+                )}
               </div>
             </CardContent>
           </Card>
