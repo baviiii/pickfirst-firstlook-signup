@@ -136,7 +136,7 @@ export const AgentInquiriesComponent = () => {
 
     try {
       // If there's already a conversation, navigate to it
-      if (inquiry.conversation_id) {
+      if (inquiry.conversation?.id) {
         toast.success('Opening existing conversation...');
         // Navigate to the conversation - you can implement this based on your routing
         // For now, we'll just show a success message
@@ -318,13 +318,13 @@ export const AgentInquiriesComponent = () => {
                   variant="outline"
                   onClick={() => handleStartConversation(inquiry)}
                   className={`flex-1 ${
-                    inquiry.conversation_id 
+                    inquiry.conversation?.id 
                       ? 'text-green-500 border-green-500/20 hover:bg-green-500/10' 
                       : 'text-blue-500 border-blue-500/20 hover:bg-blue-500/10'
                   }`}
                 >
                   <MessageSquare className="h-4 w-4 mr-1" />
-                  {inquiry.conversation_id ? 'Open Chat' : 'Start Chat'}
+                  {inquiry.conversation?.id ? 'Open Chat' : 'Start Chat'}
                 </Button>
                 <Button
                   size="sm"
@@ -338,7 +338,7 @@ export const AgentInquiriesComponent = () => {
               </div>
               
               {/* Conversation Status */}
-              {inquiry.conversation_id && (
+              {inquiry.conversation?.id && (
                 <div className="flex items-center gap-2 text-xs text-green-400 bg-green-500/10 p-2 rounded">
                   <CheckCircle className="h-3 w-3" />
                   Active conversation available

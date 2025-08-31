@@ -13,6 +13,7 @@ const AdminPropertyManagementComponent = () => {
   const [loadingListings, setLoadingListings] = useState(true);
   const [selectedListing, setSelectedListing] = useState<PropertyListing | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,7 +32,9 @@ const AdminPropertyManagementComponent = () => {
       toast.error(error.message || 'Failed to approve listing');
     } else {
       toast.success('Listing approved!');
-      setListings(listings => listings.map(l => l.id === id ? { ...l, status: 'approved' } : l));
+      // Refresh the listings to get updated data
+      const { data } = await PropertyService.getAllListings();
+      setListings(data || []);
     }
   };
 
@@ -43,7 +46,9 @@ const AdminPropertyManagementComponent = () => {
       toast.error(error.message || 'Failed to reject listing');
     } else {
       toast.success('Listing rejected.');
-      setListings(listings => listings.map(l => l.id === id ? { ...l, status: 'rejected', rejection_reason: reason } : l));
+      // Refresh the listings to get updated data
+      const { data } = await PropertyService.getAllListings();
+      setListings(data || []);
     }
   };
 
@@ -54,7 +59,9 @@ const AdminPropertyManagementComponent = () => {
       toast.error(error.message || 'Failed to delete listing');
     } else {
       toast.success('Listing deleted.');
-      setListings(listings => listings.filter(l => l.id !== id));
+      // Refresh the listings to get updated data
+      const { data } = await PropertyService.getAllListings();
+      setListings(data || []);
     }
   };
 
@@ -75,6 +82,27 @@ const AdminPropertyManagementComponent = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      console.log('Force refreshing listings...');
+      const { data, error } = await PropertyService.getAllListings();
+      if (error) {
+        console.error('Error refreshing listings:', error);
+        toast.error('Failed to refresh listings');
+      } else {
+        console.log('Refreshed listings:', data?.length || 0, 'listings');
+        setListings(data || []);
+        toast.success('Listings refreshed successfully');
+      }
+    } catch (error) {
+      console.error('Error in handleRefresh:', error);
+      toast.error('Failed to refresh listings');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black relative overflow-x-hidden">
       {/* Sticky Header */}
@@ -84,6 +112,25 @@ const AdminPropertyManagementComponent = () => {
           Back to Dashboard
         </Button>
         <h1 className="text-2xl font-bold pickfirst-gradient-yellow-amber-text ml-2">All Property Listings</h1>
+        <div className="ml-auto flex items-center gap-4">
+          {/* Debug info */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="text-xs text-gray-400">
+              Total: {listings.length} | 
+              Pending: {listings.filter(l => l.status === 'pending').length} | 
+              Approved: {listings.filter(l => l.status === 'approved').length} | 
+              Rejected: {listings.filter(l => l.status === 'rejected').length}
+            </div>
+          )}
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh} 
+            disabled={loadingListings || refreshing} 
+            className="text-white hover:text-pickfirst-yellow border-pickfirst-yellow/30"
+          >
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-8">
@@ -164,14 +211,27 @@ const AdminPropertyManagementComponent = () => {
                       {listing.bathrooms !== null && <span className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded">{listing.bathrooms} Bath</span>}
                       {listing.square_feet !== null && <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded">{listing.square_feet} Sq Ft</span>}
                     </div>
-                    <div className="text-xs text-gray-400 mb-2">Status: <span className={
-                      listing.status === 'approved' ? 'text-green-400' :
-                      listing.status === 'pending' ? 'text-yellow-400' :
-                      listing.status === 'rejected' ? 'text-red-400' :
-                      'text-gray-400'
-                    }>{listing.status.charAt(0).toUpperCase() + listing.status.slice(1)}</span></div>
+                    <div className="text-xs text-gray-400 mb-2">
+                      Status: <span className={
+                        listing.status === 'approved' ? 'text-green-400' :
+                        listing.status === 'pending' ? 'text-yellow-400' :
+                        listing.status === 'rejected' ? 'text-red-400' :
+                        'text-gray-400'
+                      }>{listing.status.charAt(0).toUpperCase() + listing.status.slice(1)}</span>
+                      {process.env.NODE_ENV === 'development' && (
+                        <span className="ml-2 text-gray-500">ID: {listing.id.substring(0, 8)}...</span>
+                      )}
+                    </div>
                     {listing.status === 'rejected' && listing.rejection_reason && (
                       <div className="text-xs text-red-400">Reason: {listing.rejection_reason}</div>
+                    )}
+                    {listing.status === 'approved' && listing.approved_at && (
+                      <div className="text-xs text-green-400">
+                        Approved: {new Date(listing.approved_at).toLocaleDateString()}
+                        {process.env.NODE_ENV === 'development' && listing.approved_by && (
+                          <span className="ml-2 text-gray-500">by: {listing.approved_by.substring(0, 8)}...</span>
+                        )}
+                      </div>
                     )}
                   </div>
                   <div className="flex gap-2 mt-4 flex-wrap">
@@ -244,6 +304,32 @@ const AdminPropertyManagementComponent = () => {
                         {currentImageIndex + 1} / {selectedListing.images.length}
                       </div>
                     </>
+                  )}
+                  
+                  {/* Image thumbnails for better navigation */}
+                  {selectedListing.images.length > 1 && (
+                    <div className="flex gap-2 mt-4 justify-center">
+                      {selectedListing.images.map((image, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentImageIndex(index)}
+                          className={`w-16 h-16 rounded border-2 overflow-hidden ${
+                            index === currentImageIndex 
+                              ? 'border-pickfirst-yellow' 
+                              : 'border-gray-600 hover:border-gray-400'
+                          }`}
+                        >
+                          <img
+                            src={image}
+                            alt={`Thumbnail ${index + 1}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = '/placeholder.svg';
+                            }}
+                          />
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
               )}

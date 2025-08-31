@@ -11,18 +11,18 @@ export interface CreatePropertyListingData {
   title: string;
   description?: string;
   property_type: string;
-  price: number;
-  bedrooms?: number;
-  bathrooms?: number;
-  square_feet?: number;
-  lot_size?: number;
-  year_built?: number;
+  price: number | undefined;
+  bedrooms?: number | undefined;
+  bathrooms?: number | undefined;
+  square_feet?: number | undefined;
+  lot_size?: number | undefined;
+  year_built?: number | undefined;
   address: string;
   city: string;
   state: string;
   zip_code: string;
-  latitude?: number;
-  longitude?: number;
+  latitude?: number | undefined;
+  longitude?: number | undefined;
   features?: string[];
   images?: string[];
   contact_phone?: string;
@@ -188,19 +188,19 @@ export class PropertyService {
           newValues: {
             error: 'title too short',
             title: listingData.title
-          },
-          recordId: 'validation_failed'
+          }
+          // Removed recordId for validation errors since no actual record exists
         });
         return { data: null, error: { message: 'Property title must be at least 3 characters long' } };
       }
 
-      if (listingData.price <= 0) {
+      if (listingData.price && listingData.price <= 0) {
         await auditService.log(user.id, 'VALIDATION_ERROR', 'property_listings', {
           newValues: {
             error: 'invalid price',
             price: listingData.price
-          },
-          recordId: 'validation_failed'
+          }
+          // Removed recordId for validation errors since no actual record exists
         });
         return { data: null, error: { message: 'Property price must be greater than 0' } };
       }
@@ -210,8 +210,8 @@ export class PropertyService {
           newValues: {
             error: 'invalid email format',
             email: listingData.contact_email
-          },
-          recordId: 'validation_failed'
+          }
+          // Removed recordId for validation errors since no actual record exists
         });
         return { data: null, error: { message: 'Invalid contact email format' } };
       }
@@ -221,8 +221,8 @@ export class PropertyService {
           newValues: {
             error: 'invalid phone format',
             phone: listingData.contact_phone
-          },
-          recordId: 'validation_failed'
+          }
+          // Removed recordId for validation errors since no actual record exists
         });
         return { data: null, error: { message: 'Invalid contact phone format' } };
       }
@@ -234,8 +234,8 @@ export class PropertyService {
             error: 'too many images',
             imageCount: imageFiles.length,
             maxAllowed: 10
-          },
-          recordId: 'validation_failed'
+          }
+          // Removed recordId for validation errors since no actual record exists
         });
         return { data: null, error: { message: 'Maximum 10 images allowed per property' } };
       }
@@ -374,7 +374,7 @@ export class PropertyService {
         return { data: null, error: { message: 'Property title must be at least 3 characters long' } };
       }
 
-      if (listingData.price <= 0) {
+      if (listingData.price && listingData.price <= 0) {
         return { data: null, error: { message: 'Property price must be greater than 0' } };
       }
 
@@ -518,15 +518,30 @@ export class PropertyService {
 
   // Get all listings (for admins)
   static async getAllListings(): Promise<{ data: PropertyListing[] | null; error: any }> {
-    const { data, error } = await supabase
-      .from('property_listings')
-      .select(`
-        *,
-        agent:profiles!property_listings_agent_id_fkey(full_name, email)
-      `)
-      .order('created_at', { ascending: false });
+    try {
+      console.log('Fetching all listings...');
+      const { data, error } = await supabase
+        .from('property_listings')
+        .select(`
+          *,
+          agent:profiles!property_listings_agent_id_fkey(full_name, email)
+        `)
+        .order('created_at', { ascending: false });
 
-    return { data, error };
+      if (error) {
+        console.error('Error fetching all listings:', error);
+      } else {
+        console.log('Successfully fetched listings:', data?.length || 0, 'listings');
+        if (data && data.length > 0) {
+          console.log('Sample listing statuses:', data.map(l => ({ id: l.id.substring(0, 8), status: l.status, title: l.title })));
+        }
+      }
+
+      return { data, error };
+    } catch (error) {
+      console.error('Exception in getAllListings:', error);
+      return { data: null, error };
+    }
   }
 
   // Get a specific listing by ID
@@ -627,6 +642,15 @@ export class PropertyService {
       .select()
       .single();
 
+    if (!error && data) {
+      // Log the approval action
+      await auditService.log(user.id, 'UPDATE', 'property_listings', {
+        recordId: id,
+        oldValues: { status: 'pending' },
+        newValues: { status: 'approved', approved_by: user.id, approved_at: new Date().toISOString() }
+      });
+    }
+
     return { data, error };
   }
 
@@ -646,6 +670,15 @@ export class PropertyService {
       .eq('id', id)
       .select()
       .single();
+
+    if (!error && data) {
+      // Log the rejection action
+      await auditService.log(user.id, 'UPDATE', 'property_listings', {
+        recordId: id,
+        oldValues: { status: 'pending' },
+        newValues: { status: 'rejected', rejection_reason: reason }
+      });
+    }
 
     return { data, error };
   }

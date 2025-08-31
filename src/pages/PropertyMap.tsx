@@ -1,140 +1,117 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, MapPin, Filter, Search } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { PageWrapper } from '@/components/ui/page-wrapper';
+import PropertyMap from '@/components/maps/PropertyMap';
+import { PropertyService } from '@/services/propertyService';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 const PropertyMapPage = () => {
-  const navigate = useNavigate();
+  const [properties, setProperties] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch real properties from the database
+  const fetchProperties = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await PropertyService.getApprovedListings();
+      
+      if (error) {
+        console.error('Error fetching properties:', error);
+        setError('Failed to load properties');
+        toast.error('Failed to load properties');
+      } else {
+        setProperties(data || []);
+        if (data && data.length === 0) {
+          toast.info('No properties available in the system yet');
+        }
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      setError('An unexpected error occurred');
+      toast.error('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  const handlePropertySelect = (property: any) => {
+    console.log('Selected property:', property);
+    toast.success(`Selected: ${property.title}`);
+    // Handle property selection - could navigate to property details
+    // You can implement navigation to property details page here
+  };
+
+  if (loading) {
+    return (
+      <PageWrapper title="Property Map" showBackButton={false}>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="animate-spin h-8 w-8 mx-auto mb-4 text-blue-500" />
+            <p className="text-gray-600">Loading properties...</p>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageWrapper title="Property Map" showBackButton={false}>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <svg className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Properties</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/dashboard')}
-            className="text-gray-300 hover:text-primary border-white/20 hover:border-primary/30"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Property Map</h1>
-        </div>
-
-        {/* Map Controls */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Search location..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
-            />
-          </div>
-          <Button variant="outline" className="text-gray-300 hover:text-primary">
-            <Filter className="h-4 w-4 mr-2" />
-            Map Filters
-          </Button>
-        </div>
-
-        {/* Map Container */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
-          <CardContent className="p-0">
-            <div className="h-[600px] bg-gray-800 rounded-lg flex items-center justify-center relative overflow-hidden">
-              {/* Map Placeholder */}
-              <div className="text-center text-gray-400">
-                <MapPin className="h-16 w-16 mx-auto mb-4 text-primary" />
-                <h3 className="text-xl font-semibold mb-2 text-white">Interactive Property Map</h3>
-                <p className="text-gray-300 mb-4">Explore properties in your area with our interactive map</p>
-                <Button variant="outline" className="text-gray-300 hover:text-primary">
-                  Enable Map View
-                </Button>
-              </div>
-              
-              {/* Map overlay with sample pins */}
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-20 left-20 w-4 h-4 bg-primary rounded-full animate-pulse"></div>
-                <div className="absolute top-32 right-32 w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
-                <div className="absolute bottom-20 left-1/3 w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
-                <div className="absolute bottom-32 right-20 w-4 h-4 bg-blue-500 rounded-full animate-pulse"></div>
-              </div>
+    <PageWrapper title="Property Map" showBackButton={false}>
+      <div className="space-y-6">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Property Map</h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            {properties.length > 0 
+              ? `Explore ${properties.length} properties in your area with our interactive map. Search for locations, view property details, and find your perfect home.`
+              : 'No properties are currently available in the system. Check back later or contact an agent to add new listings.'
+            }
+          </p>
+          {properties.length > 0 && (
+            <div className="mt-4 inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm">
+              <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
+              {properties.length} {properties.length === 1 ? 'property' : 'properties'} available
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Map Legend and Info */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-white">Map Legend</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-primary rounded-full"></div>
-                  <span className="text-gray-300 text-sm">Available Properties</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="text-gray-300 text-sm">Saved Properties</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-gray-300 text-sm">Recently Viewed</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span className="text-gray-300 text-sm">Under Contract</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-white">Quick Stats</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-300 text-sm">Properties in View</span>
-                  <span className="text-white font-semibold">47</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-300 text-sm">Average Price</span>
-                  <span className="text-white font-semibold">$625K</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-300 text-sm">Price Range</span>
-                  <span className="text-white font-semibold">$350K - $1.2M</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-white">Map Options</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <Button variant="outline" size="sm" className="w-full text-gray-300 hover:text-primary">
-                  Switch to Satellite View
-                </Button>
-                <Button variant="outline" size="sm" className="w-full text-gray-300 hover:text-primary">
-                  Show School Districts
-                </Button>
-                <Button variant="outline" size="sm" className="w-full text-gray-300 hover:text-primary">
-                  Traffic & Transit
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          )}
         </div>
+
+        {/* Property Map Component */}
+        <PropertyMap
+          properties={properties}
+          onPropertySelect={handlePropertySelect}
+          showControls={true}
+          className="w-full"
+        />
       </div>
-    </div>
+    </PageWrapper>
   );
 };
 
-export default PropertyMapPage;
+export default PropertyMapPage; 

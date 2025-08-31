@@ -65,8 +65,8 @@ export const InquiryStatusComponent = ({ propertyId, onNavigateToMessages }: Inq
   };
 
   const handleOpenConversation = () => {
-    if (inquiry?.conversation_id && onNavigateToMessages) {
-      onNavigateToMessages(inquiry.conversation_id);
+    if (inquiry?.conversation?.id && onNavigateToMessages) {
+      onNavigateToMessages(inquiry.conversation.id);
     }
   };
 
@@ -146,7 +146,7 @@ export const InquiryStatusComponent = ({ propertyId, onNavigateToMessages }: Inq
 
         {/* Actions */}
         <div className="flex gap-2 pt-2">
-          {inquiry.conversation_id ? (
+          {inquiry.conversation?.id ? (
             <Button
               onClick={handleOpenConversation}
               className="flex-1 bg-green-500 text-black hover:bg-green-600"

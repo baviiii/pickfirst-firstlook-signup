@@ -320,7 +320,11 @@ export type Database = {
           id: string
           inquiry_id: string | null
           last_message_at: string | null
+          metadata: Json | null
+          priority: string | null
+          status: string | null
           subject: string | null
+          tags: string[] | null
           updated_at: string | null
         }
         Insert: {
@@ -330,7 +334,11 @@ export type Database = {
           id?: string
           inquiry_id?: string | null
           last_message_at?: string | null
+          metadata?: Json | null
+          priority?: string | null
+          status?: string | null
           subject?: string | null
+          tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
@@ -340,7 +348,11 @@ export type Database = {
           id?: string
           inquiry_id?: string | null
           last_message_at?: string | null
+          metadata?: Json | null
+          priority?: string | null
+          status?: string | null
           subject?: string | null
+          tags?: string[] | null
           updated_at?: string | null
         }
         Relationships: [
@@ -370,25 +382,34 @@ export type Database = {
       messages: {
         Row: {
           content: string
+          content_type: string | null
           conversation_id: string | null
           created_at: string | null
+          delivered_at: string | null
           id: string
+          metadata: Json | null
           read_at: string | null
           sender_id: string | null
         }
         Insert: {
           content: string
+          content_type?: string | null
           conversation_id?: string | null
           created_at?: string | null
+          delivered_at?: string | null
           id?: string
+          metadata?: Json | null
           read_at?: string | null
           sender_id?: string | null
         }
         Update: {
           content?: string
+          content_type?: string | null
           conversation_id?: string | null
           created_at?: string | null
+          delivered_at?: string | null
           id?: string
+          metadata?: Json | null
           read_at?: string | null
           sender_id?: string | null
         }
@@ -411,37 +432,55 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
+          bio: string | null
+          company: string | null
           created_at: string | null
           email: string
           full_name: string | null
           id: string
+          location: string | null
+          phone: string | null
           role: string
           subscription_expires_at: string | null
           subscription_status: string | null
           subscription_tier: string | null
           updated_at: string | null
+          website: string | null
         }
         Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          company?: string | null
           created_at?: string | null
           email: string
           full_name?: string | null
           id: string
+          location?: string | null
+          phone?: string | null
           role?: string
           subscription_expires_at?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
           updated_at?: string | null
+          website?: string | null
         }
         Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          company?: string | null
           created_at?: string | null
           email?: string
           full_name?: string | null
           id?: string
+          location?: string | null
+          phone?: string | null
           role?: string
           subscription_expires_at?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
           updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -486,7 +525,6 @@ export type Database = {
           agent_response: string | null
           buyer_id: string
           contact_preference: string | null
-          conversation_id: string | null
           created_at: string | null
           id: string
           message: string
@@ -498,7 +536,6 @@ export type Database = {
           agent_response?: string | null
           buyer_id: string
           contact_preference?: string | null
-          conversation_id?: string | null
           created_at?: string | null
           id?: string
           message: string
@@ -510,7 +547,6 @@ export type Database = {
           agent_response?: string | null
           buyer_id?: string
           contact_preference?: string | null
-          conversation_id?: string | null
           created_at?: string | null
           id?: string
           message?: string
@@ -531,13 +567,6 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "property_listings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "property_inquiries_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
         ]

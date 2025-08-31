@@ -7,7 +7,7 @@ export interface AuditLog {
   user_id: string;
   action: string;
   table_name: string;
-  record_id?: string;
+  record_id?: string | null; // Make nullable to handle validation errors
   old_values?: any;
   new_values?: any;
   ip_address?: string;

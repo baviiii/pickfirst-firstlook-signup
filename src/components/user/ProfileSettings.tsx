@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,13 +57,29 @@ export const ProfileSettings = () => {
   const [profileData, setProfileData] = useState<ProfileData>({
     full_name: profile?.full_name || '',
     email: user?.email || '',
-    phone: '',
-    bio: '',
-    avatar_url: '',
-    location: '',
-    company: '',
-    website: ''
+    phone: (profile as any)?.phone || '',
+    bio: (profile as any)?.bio || '',
+    avatar_url: profile?.avatar_url || '',
+    location: (profile as any)?.location || '',
+    company: (profile as any)?.company || '',
+    website: (profile as any)?.website || ''
   });
+
+  // Update profile data when profile changes
+  useEffect(() => {
+    if (profile) {
+      setProfileData({
+        full_name: profile.full_name || '',
+        email: user?.email || '',
+        phone: (profile as any)?.phone || '',
+        bio: (profile as any)?.bio || '',
+        avatar_url: profile.avatar_url || '',
+        location: (profile as any)?.location || '',
+        company: (profile as any)?.company || '',
+        website: (profile as any)?.website || ''
+      });
+    }
+  }, [profile, user]);
 
   const [notifications, setNotifications] = useState<NotificationSettings>({
     emailNotifications: true,
@@ -94,9 +110,12 @@ export const ProfileSettings = () => {
         .from('profiles')
         .update({
           full_name: profileData.full_name,
-          phone: profileData.phone,
-          bio: profileData.bio,
-          avatar_url: profileData.avatar_url
+          avatar_url: profileData.avatar_url,
+          ...(profileData.phone && { phone: profileData.phone }),
+          ...(profileData.bio && { bio: profileData.bio }),
+          ...(profileData.location && { location: profileData.location }),
+          ...(profileData.company && { company: profileData.company }),
+          ...(profileData.website && { website: profileData.website })
         })
         .eq('id', user.id);
 

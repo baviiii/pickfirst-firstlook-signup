@@ -85,7 +85,7 @@ const BrowsePropertiesPageComponent = () => {
   const fetchFavorites = async () => {
     try {
       const { data } = await PropertyService.getFavorites();
-      setFavorites(new Set(data?.map(fav => fav.property_id) || []));
+      setFavorites(new Set(data?.map(fav => fav.id) || []));
     } catch (error) {
       console.error('Error fetching favorites:', error);
     }
