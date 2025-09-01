@@ -1136,7 +1136,27 @@ with check ((EXISTS ( SELECT 1
   to public
 using ((EXISTS ( SELECT 1
    FROM profiles
-  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'super_admin'::text)))));
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'super_admin'::text))));
+
+-- Add policy for super admins to update any property listing
+create policy "Super admins can update any listing"
+  on "public"."property_listings"
+  as permissive
+  for update
+  to public
+using ((EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'super_admin'::text))));
+
+-- Add policy for super admins to delete any property listing
+create policy "Super admins can delete any listing"
+  on "public"."property_listings"
+  as permissive
+  for delete
+  to public
+using ((EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'super_admin'::text))));
 
 
 

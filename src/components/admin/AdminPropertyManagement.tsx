@@ -27,28 +27,57 @@ const AdminPropertyManagementComponent = () => {
   }, []);
 
   const handleApprove = async (id: string) => {
-    const { error } = await PropertyService.approveListing(id);
-    if (error) {
-      toast.error(error.message || 'Failed to approve listing');
-    } else {
-      toast.success('Listing approved!');
-      // Refresh the listings to get updated data
-      const { data } = await PropertyService.getAllListings();
-      setListings(data || []);
+    try {
+      console.log('Attempting to approve listing:', id);
+      const { data, error } = await PropertyService.approveListing(id);
+      
+      if (error) {
+        console.error('Error approving listing:', error);
+        toast.error(error.message || 'Failed to approve listing');
+      } else {
+        if (data) {
+          console.log('Listing approved successfully:', data);
+          toast.success('Listing approved!');
+          // Refresh the listings to get updated data
+          await handleRefresh();
+        } else {
+          console.warn('No data returned from approval');
+          toast.warning('Approval completed but no data returned');
+          await handleRefresh();
+        }
+      }
+    } catch (error) {
+      console.error('Exception in handleApprove:', error);
+      toast.error('An unexpected error occurred while approving the listing');
     }
   };
 
   const handleReject = async (id: string) => {
     const reason = prompt('Enter rejection reason:');
     if (!reason) return;
-    const { error } = await PropertyService.rejectListing(id, reason);
-    if (error) {
-      toast.error(error.message || 'Failed to reject listing');
-    } else {
-      toast.success('Listing rejected.');
-      // Refresh the listings to get updated data
-      const { data } = await PropertyService.getAllListings();
-      setListings(data || []);
+    
+    try {
+      console.log('Attempting to reject listing:', id, 'with reason:', reason);
+      const { data, error } = await PropertyService.rejectListing(id, reason);
+      
+      if (error) {
+        console.error('Error rejecting listing:', error);
+        toast.error(error.message || 'Failed to reject listing');
+      } else {
+        if (data) {
+          console.log('Listing rejected successfully:', data);
+          toast.success('Listing rejected.');
+          // Refresh the listings to get updated data
+          await handleRefresh();
+        } else {
+          console.warn('No data returned from rejection');
+          toast.warning('Rejection completed but no data returned');
+          await handleRefresh();
+        }
+      }
+    } catch (error) {
+      console.error('Exception in handleReject:', error);
+      toast.error('An unexpected error occurred while rejecting the listing');
     }
   };
 
@@ -60,8 +89,7 @@ const AdminPropertyManagementComponent = () => {
     } else {
       toast.success('Listing deleted.');
       // Refresh the listings to get updated data
-      const { data } = await PropertyService.getAllListings();
-      setListings(data || []);
+      await handleRefresh();
     }
   };
 
@@ -83,16 +111,28 @@ const AdminPropertyManagementComponent = () => {
   };
 
   const handleRefresh = async () => {
+    console.log('=== REFRESH START ===');
+    console.log('Current listings state before refresh:', listings.length, 'listings');
+    console.log('Current listings statuses:', listings.map(l => ({ id: l.id.substring(0, 8), status: l.status, title: l.title })));
+    
     setRefreshing(true);
     try {
       console.log('Force refreshing listings...');
       const { data, error } = await PropertyService.getAllListings();
+      
+      console.log('PropertyService.getAllListings response:', { dataCount: data?.length || 0, error });
+      
       if (error) {
         console.error('Error refreshing listings:', error);
         toast.error('Failed to refresh listings');
       } else {
         console.log('Refreshed listings:', data?.length || 0, 'listings');
+        if (data && data.length > 0) {
+          console.log('Sample refreshed listing statuses:', data.map(l => ({ id: l.id.substring(0, 8), status: l.status, title: l.title })));
+        }
+        
         setListings(data || []);
+        console.log('State updated with new listings');
         toast.success('Listings refreshed successfully');
       }
     } catch (error) {
@@ -100,6 +140,7 @@ const AdminPropertyManagementComponent = () => {
       toast.error('Failed to refresh listings');
     } finally {
       setRefreshing(false);
+      console.log('=== REFRESH END ===');
     }
   };
 
@@ -129,6 +170,16 @@ const AdminPropertyManagementComponent = () => {
             className="text-white hover:text-pickfirst-yellow border-pickfirst-yellow/30"
           >
             {refreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              console.log('Test button clicked!');
+              toast.success('Test button works!');
+            }}
+            className="text-white hover:text-pickfirst-yellow border-pickfirst-yellow/30"
+          >
+            Test
           </Button>
         </div>
       </div>
@@ -237,13 +288,31 @@ const AdminPropertyManagementComponent = () => {
                   <div className="flex gap-2 mt-4 flex-wrap">
                     {listing.status === 'pending' && (
                       <>
-                        <Button size="sm" className="bg-green-500 text-white hover:bg-green-600" onClick={() => handleApprove(listing.id)}>
+                        <Button 
+                          size="sm" 
+                          className="bg-green-500 text-white hover:bg-green-600" 
+                          onClick={() => {
+                            console.log('Approve button clicked for listing:', listing.id);
+                            handleApprove(listing.id);
+                          }}
+                          disabled={false}
+                        >
                           Approve
                         </Button>
                         <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-500/10" onClick={() => handleReject(listing.id)}>
                           Reject
                         </Button>
                       </>
+                    )}
+                    {listing.status === 'approved' && (
+                      <div className="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded">
+                        ✓ Approved
+                      </div>
+                    )}
+                    {listing.status === 'rejected' && (
+                      <div className="text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded">
+                        ✗ Rejected
+                      </div>
                     )}
                     <Button size="sm" variant="outline" className="text-blue-500 border-blue-500 hover:bg-blue-500/10 flex items-center" onClick={() => handleViewDetails(listing)}>
                       <Eye className="h-4 w-4 mr-1" /> View Details
