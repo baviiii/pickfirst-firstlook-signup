@@ -28,26 +28,21 @@ const AdminPropertyManagementComponent = () => {
 
   const handleApprove = async (id: string) => {
     try {
-      console.log('Attempting to approve listing:', id);
       const { data, error } = await PropertyService.approveListing(id);
       
       if (error) {
-        console.error('Error approving listing:', error);
         toast.error(error.message || 'Failed to approve listing');
       } else {
         if (data) {
-          console.log('Listing approved successfully:', data);
           toast.success('Listing approved!');
           // Refresh the listings to get updated data
           await handleRefresh();
         } else {
-          console.warn('No data returned from approval');
           toast.warning('Approval completed but no data returned');
           await handleRefresh();
         }
       }
     } catch (error) {
-      console.error('Exception in handleApprove:', error);
       toast.error('An unexpected error occurred while approving the listing');
     }
   };
@@ -57,26 +52,21 @@ const AdminPropertyManagementComponent = () => {
     if (!reason) return;
     
     try {
-      console.log('Attempting to reject listing:', id, 'with reason:', reason);
       const { data, error } = await PropertyService.rejectListing(id, reason);
       
       if (error) {
-        console.error('Error rejecting listing:', error);
         toast.error(error.message || 'Failed to reject listing');
       } else {
         if (data) {
-          console.log('Listing rejected successfully:', data);
           toast.success('Listing rejected.');
           // Refresh the listings to get updated data
           await handleRefresh();
         } else {
-          console.warn('No data returned from rejection');
           toast.warning('Rejection completed but no data returned');
           await handleRefresh();
         }
       }
     } catch (error) {
-      console.error('Exception in handleReject:', error);
       toast.error('An unexpected error occurred while rejecting the listing');
     }
   };
@@ -111,36 +101,20 @@ const AdminPropertyManagementComponent = () => {
   };
 
   const handleRefresh = async () => {
-    console.log('=== REFRESH START ===');
-    console.log('Current listings state before refresh:', listings.length, 'listings');
-    console.log('Current listings statuses:', listings.map(l => ({ id: l.id.substring(0, 8), status: l.status, title: l.title })));
-    
     setRefreshing(true);
     try {
-      console.log('Force refreshing listings...');
       const { data, error } = await PropertyService.getAllListings();
       
-      console.log('PropertyService.getAllListings response:', { dataCount: data?.length || 0, error });
-      
       if (error) {
-        console.error('Error refreshing listings:', error);
         toast.error('Failed to refresh listings');
       } else {
-        console.log('Refreshed listings:', data?.length || 0, 'listings');
-        if (data && data.length > 0) {
-          console.log('Sample refreshed listing statuses:', data.map(l => ({ id: l.id.substring(0, 8), status: l.status, title: l.title })));
-        }
-        
         setListings(data || []);
-        console.log('State updated with new listings');
         toast.success('Listings refreshed successfully');
       }
     } catch (error) {
-      console.error('Error in handleRefresh:', error);
       toast.error('Failed to refresh listings');
     } finally {
       setRefreshing(false);
-      console.log('=== REFRESH END ===');
     }
   };
 
@@ -171,16 +145,7 @@ const AdminPropertyManagementComponent = () => {
           >
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              console.log('Test button clicked!');
-              toast.success('Test button works!');
-            }}
-            className="text-white hover:text-pickfirst-yellow border-pickfirst-yellow/30"
-          >
-            Test
-          </Button>
+
         </div>
       </div>
 
@@ -291,11 +256,7 @@ const AdminPropertyManagementComponent = () => {
                         <Button 
                           size="sm" 
                           className="bg-green-500 text-white hover:bg-green-600" 
-                          onClick={() => {
-                            console.log('Approve button clicked for listing:', listing.id);
-                            handleApprove(listing.id);
-                          }}
-                          disabled={false}
+                          onClick={() => handleApprove(listing.id)}
                         >
                           Approve
                         </Button>

@@ -627,18 +627,12 @@ export class PropertyService {
   // Approve a listing (admin only)
   static async approveListing(id: string): Promise<{ data: PropertyListing | null; error: any }> {
     try {
-      console.log('=== APPROVAL PROCESS START ===');
-      console.log('Approving listing:', id);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.error('User not authenticated for approval');
         return { data: null, error: new Error('User not authenticated') };
       }
 
-      console.log('User authenticated:', user.id, 'approving listing:', id);
-
       // First, get the current listing to check its status
-      console.log('Fetching current listing...');
       const { data: currentListing, error: fetchError } = await supabase
         .from('property_listings')
         .select('*')
@@ -646,49 +640,28 @@ export class PropertyService {
         .single();
 
       if (fetchError) {
-        console.error('Error fetching current listing status:', fetchError);
         return { data: null, error: fetchError };
       }
 
-      console.log('Current listing before update:', {
-        id: currentListing.id,
-        status: currentListing.status,
-        approved_at: currentListing.approved_at,
-        approved_by: currentListing.approved_by
-      });
-
       if (currentListing.status === 'approved') {
-        console.log('Listing already approved, returning current data');
         return { data: currentListing, error: null };
       }
 
-      console.log('Current listing status:', currentListing.status);
-
-      // Update the listing status without select to avoid PGRST116
-      console.log('Attempting to update listing...');
-      const { data: updateResult, error: updateError } = await supabase
+      // Update the listing status
+      const { error: updateError } = await supabase
         .from('property_listings')
         .update({
           status: 'approved',
           approved_at: new Date().toISOString(),
           approved_by: user.id
         })
-        .eq('id', id)
-        .select('id, status, approved_at, approved_by'); // Select minimal fields to verify update
+        .eq('id', id);
 
       if (updateError) {
-        console.error('Error updating listing status:', updateError);
         return { data: null, error: updateError };
       }
 
-      console.log('Update result:', updateResult);
-      console.log('Successfully updated listing status to approved');
-
-      // Wait a moment for the update to propagate
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Fetch the updated listing separately to avoid PGRST116
-      console.log('Fetching updated listing...');
+      // Fetch the updated listing
       const { data: updatedListing, error: fetchUpdatedError } = await supabase
         .from('property_listings')
         .select('*')
@@ -696,44 +669,29 @@ export class PropertyService {
         .single();
 
       if (fetchUpdatedError) {
-        console.error('Error fetching updated listing:', fetchUpdatedError);
-        // Even if we can't fetch the updated listing, the update was successful
-        // Return the current listing with updated status
+        // Return fallback data if we can't fetch the updated listing
         const fallbackListing: PropertyListing = {
           ...currentListing,
           status: 'approved',
           approved_at: new Date().toISOString(),
           approved_by: user.id
         };
-        console.log('Using fallback listing data');
         return { data: fallbackListing, error: null };
       }
 
-      console.log('Successfully fetched updated listing:', {
-        id: updatedListing.id,
-        status: updatedListing.status,
-        approved_at: updatedListing.approved_at,
-        approved_by: updatedListing.approved_by
-      });
-
-      // Log the approval action (but don't fail if audit logging fails)
+      // Log the approval action
       try {
-        console.log('Creating audit log...');
         await auditService.log(user.id, 'UPDATE', 'property_listings', {
           recordId: id,
           oldValues: { status: currentListing.status },
           newValues: { status: 'approved', approved_by: user.id, approved_at: new Date().toISOString() }
         });
-        console.log('Audit log created for approval');
       } catch (auditError) {
-        console.error('Failed to create audit log (non-critical):', auditError);
         // Don't fail the approval if audit logging fails
       }
 
-      console.log('=== APPROVAL PROCESS END ===');
       return { data: updatedListing, error: null };
     } catch (error) {
-      console.error('Exception in approveListing:', error);
       return { data: null, error };
     }
   }
