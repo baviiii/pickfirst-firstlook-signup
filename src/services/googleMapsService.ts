@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, handleAuthError } from '@/integrations/supabase/client';
 
 export interface GeocodeResult {
   formatted_address: string;
@@ -49,6 +49,15 @@ class GoogleMapsService {
 
       if (error) {
         console.error('Google Maps API error:', error);
+        
+        // Handle auth errors specifically
+        if (error.message?.includes('Invalid Refresh Token') || 
+            error.message?.includes('Refresh Token Not Found') ||
+            error.status === 400 || 
+            error.status === 404) {
+          await handleAuthError(error);
+        }
+        
         throw new Error(error.message || 'Failed to call Google Maps API');
       }
 
@@ -59,6 +68,15 @@ class GoogleMapsService {
       return data;
     } catch (error) {
       console.error('Google Maps service error:', error);
+      
+      // Handle auth errors at the service level
+      if (error instanceof Error && (
+        error.message.includes('Invalid Refresh Token') || 
+        error.message.includes('Refresh Token Not Found')
+      )) {
+        await handleAuthError(error);
+      }
+      
       throw error;
     }
   }

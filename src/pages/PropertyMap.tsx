@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { PageWrapper } from '@/components/ui/page-wrapper';
 import PropertyMap from '@/components/maps/PropertyMap';
-import { PropertyService } from '@/services/propertyService';
+import { MapAnalyticsService } from '@/services/mapAnalyticsService';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { Tables } from '@/integrations/supabase/types';
+
+type PropertyListing = Tables<'property_listings'>;
 
 const PropertyMapPage = () => {
-  const [properties, setProperties] = useState<any[]>([]);
+  const [properties, setProperties] = useState<PropertyListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,7 +17,7 @@ const PropertyMapPage = () => {
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      const { data, error } = await PropertyService.getApprovedListings();
+      const { data, error } = await MapAnalyticsService.getMapProperties();
       
       if (error) {
         console.error('Error fetching properties:', error);
@@ -24,6 +27,8 @@ const PropertyMapPage = () => {
         setProperties(data || []);
         if (data && data.length === 0) {
           toast.info('No properties available in the system yet');
+        } else {
+          toast.success(`Loaded ${data?.length || 0} properties for the map`);
         }
       }
     } catch (err) {
@@ -39,7 +44,7 @@ const PropertyMapPage = () => {
     fetchProperties();
   }, []);
 
-  const handlePropertySelect = (property: any) => {
+  const handlePropertySelect = (property: PropertyListing) => {
     console.log('Selected property:', property);
     toast.success(`Selected: ${property.title}`);
     // Handle property selection - could navigate to property details

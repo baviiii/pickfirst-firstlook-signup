@@ -15,3 +15,41 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
   }
 });
+
+// Utility function to clear corrupted tokens
+export const clearAuthTokens = () => {
+  try {
+    // Clear Supabase auth tokens
+    localStorage.removeItem('sb-rkwvgqozbpqgmpbvujgz-auth-token');
+    localStorage.removeItem('supabase.auth.token');
+    
+    // Clear any other potential auth-related items
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.includes('supabase') || key.includes('auth')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    console.log('Auth tokens cleared successfully');
+  } catch (error) {
+    console.error('Error clearing auth tokens:', error);
+  }
+};
+
+// Enhanced error handling for auth errors
+export const handleAuthError = async (error: any) => {
+  if (error?.message?.includes('Invalid Refresh Token') || 
+      error?.message?.includes('Refresh Token Not Found') ||
+      error?.status === 400 || 
+      error?.status === 404) {
+    
+    console.log('Detected auth token error, clearing tokens...');
+    clearAuthTokens();
+    
+    // Redirect to login page
+    if (typeof window !== 'undefined') {
+      window.location.href = '/auth';
+    }
+  }
+};

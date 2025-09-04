@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, clearAuthTokens, handleAuthError } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
 type Profile = Tables<'profiles'>;
@@ -44,31 +44,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [user]);
 
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener with error handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
+      async (event, session) => {
+        try {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            setTimeout(() => {
+              fetchProfile(session.user.id);
+            }, 0);
+          } else {
+            setProfile(null);
+          }
+          setLoading(false);
+        } catch (error) {
+          console.error('Auth state change error:', error);
+          await handleAuthError(error);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
+    // Check for existing session with error handling
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      try {
+        if (error) {
+          console.error('Session retrieval error:', error);
+          await handleAuthError(error);
+        }
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchProfile(session.user.id);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('Session setup error:', error);
+        await handleAuthError(error);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -110,15 +127,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    return { error };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        await handleAuthError(error);
+      }
+      
+      return { error };
+    } catch (error) {
+      console.error('Sign in error:', error);
+      await handleAuthError(error);
+      return { error };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+      clearAuthTokens(); // Clear any remaining tokens
+    } catch (error) {
+      console.error('Sign out error:', error);
+      clearAuthTokens(); // Clear tokens even if signout fails
+    }
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
