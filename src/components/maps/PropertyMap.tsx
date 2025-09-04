@@ -51,7 +51,14 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
 
   // Generate interactive map display
   const generateMap = useCallback(async () => {
-    if (!mapContainer.current) return;
+    console.log('=== GENERATING MAP ===');
+    console.log('Properties received:', properties);
+    console.log('Map container exists:', !!mapContainer.current);
+    
+    if (!mapContainer.current) {
+      console.log('No map container, returning');
+      return;
+    }
 
     try {
       setIsMapLoading(true);
@@ -59,9 +66,34 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
 
       const validProperties = properties.filter(p => p.latitude && p.longitude);
       
+      console.log(`Map Debug: Total properties: ${properties.length}, With coordinates: ${validProperties.length}`);
+      console.log('Valid properties:', validProperties);
+      
       if (validProperties.length === 0) {
-        // Show default map if no properties
+        // Show default map if no properties have coordinates
+        console.log('No properties with coordinates found, showing default map');
         setMapCenter({ lat: 40.7128, lng: -74.0060 });
+        
+        // Show empty state message
+        const emptyDisplay = `
+          <div class="w-full h-full bg-slate-800 rounded-lg relative overflow-hidden flex items-center justify-center">
+            <div class="text-center p-6">
+              <div class="text-yellow-400 mb-4">
+                <svg class="h-16 w-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+              </div>
+              <h3 class="text-lg font-semibold text-white mb-2">No Properties with Coordinates</h3>
+              <p class="text-gray-300">${properties.length} properties need location data to appear on the map</p>
+            </div>
+          </div>
+        `;
+        
+        if (mapContainer.current) {
+          mapContainer.current.innerHTML = emptyDisplay;
+        }
+        
         setIsMapLoading(false);
         setIsLoaded(true);
         return;
@@ -75,26 +107,30 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
         west: Math.min(...validProperties.map(p => p.longitude!))
       };
 
+      console.log('Calculated bounds:', bounds);
+
       // Calculate center and zoom
       const centerLat = (bounds.north + bounds.south) / 2;
       const centerLng = (bounds.east + bounds.west) / 2;
       setMapCenter({ lat: centerLat, lng: centerLng });
+      
+      console.log('Map center:', { lat: centerLat, lng: centerLng });
 
       // Create interactive map display
       const mapDisplay = `
-        <div class="w-full h-full bg-gradient-to-br from-blue-50 to-green-50 rounded-lg relative overflow-hidden">
+        <div class="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg relative overflow-hidden shadow-2xl">
           <!-- Map Background with Grid -->
-          <div class="absolute inset-0 bg-gradient-to-br from-blue-100 to-green-100">
-            <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 1px 1px, #3B82F6 1px, transparent 0); background-size: 20px 20px;"></div>
+          <div class="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950">
+            <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 1px 1px, hsl(45 100% 51%) 1px, transparent 0); background-size: 20px 20px;"></div>
           </div>
           
           <!-- Map Container -->
-          <div class="absolute inset-4 bg-white rounded-lg border border-gray-200 shadow-lg overflow-hidden">
+          <div class="absolute inset-4 bg-slate-900/90 backdrop-blur-sm rounded-lg border border-slate-700 shadow-xl overflow-hidden">
             <!-- Map Header -->
-            <div class="absolute top-0 left-0 right-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-2 z-10">
+            <div class="absolute top-0 left-0 right-0 bg-gradient-to-r from-yellow-500 to-amber-500 text-black p-3 z-10 shadow-lg">
               <div class="flex items-center justify-between">
-                <span class="text-sm font-medium">Interactive Property Map</span>
-                <span class="text-xs bg-blue-500 px-2 py-1 rounded">${validProperties.length} Properties</span>
+                <span class="text-sm font-bold">Interactive Property Map</span>
+                <span class="text-xs bg-black/20 px-3 py-1 rounded-full font-medium">${validProperties.length} Properties</span>
               </div>
             </div>
             
@@ -111,46 +147,50 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
               
               return `
                 <div 
-                  class="absolute w-8 h-8 bg-blue-500 rounded-full border-2 border-white shadow-lg cursor-pointer transform hover:scale-110 transition-all duration-200 hover:shadow-xl"
-                  style="top: ${top}%; left: ${left}%; z-index: 20;"
+                  class="absolute w-10 h-10 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full border-3 border-white shadow-xl cursor-pointer transform hover:scale-125 transition-all duration-300 hover:shadow-2xl animate-pulse"
+                  style="top: ${top}%; left: ${left}%; z-index: 20; animation: pulse 2s infinite;"
                   data-property-id="${property.id}"
                   title="${property.title} - $${property.price.toLocaleString()}"
                 >
-                  <div class="flex items-center justify-center h-full text-white text-xs font-bold">${index + 1}</div>
+                  <div class="flex items-center justify-center h-full text-black text-sm font-bold">${index + 1}</div>
                   
                   <!-- Property Info on Hover -->
-                  <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                    <div class="bg-gray-900 text-white text-xs rounded-lg px-2 py-1 whitespace-nowrap shadow-lg">
-                      <div class="font-semibold">${property.title}</div>
-                      <div class="text-gray-300">$${property.price.toLocaleString()}</div>
+                  <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 hover:opacity-100 transition-all duration-300 pointer-events-none z-30">
+                    <div class="bg-slate-900/95 backdrop-blur-sm text-white text-sm rounded-xl px-4 py-3 whitespace-nowrap shadow-2xl border border-yellow-400/30">
+                      <div class="font-bold text-yellow-400">${property.title}</div>
+                      <div class="text-gray-200 text-xs mt-1">$${property.price.toLocaleString()}</div>
+                      ${property.bedrooms ? `<div class="text-gray-300 text-xs">${property.bedrooms}bd ${property.bathrooms}ba</div>` : ''}
                     </div>
-                    <div class="w-2 h-2 bg-gray-900 transform rotate-45 absolute top-full left-1/2 -translate-x-1/2"></div>
+                    <div class="w-3 h-3 bg-slate-900 transform rotate-45 absolute top-full left-1/2 -translate-x-1/2 border-r border-b border-yellow-400/30"></div>
                   </div>
                 </div>
               `;
             }).join('')}
             
             <!-- Map Legend -->
-            <div class="absolute bottom-2 left-2 bg-white/90 backdrop-blur-sm rounded-lg p-2 border border-gray-200 shadow-lg">
-              <div class="text-xs text-gray-600 space-y-1">
-                <div class="flex items-center gap-2">
-                  <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span>Property Location</span>
+            <div class="absolute bottom-3 left-3 bg-slate-800/95 backdrop-blur-sm rounded-xl p-3 border border-yellow-400/30 shadow-2xl">
+              <div class="text-sm text-gray-200 space-y-2">
+                <div class="flex items-center gap-3">
+                  <div class="w-4 h-4 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full border border-white"></div>
+                  <span class="font-medium">Property Location</span>
                 </div>
-                <div class="text-xs text-gray-500">
+                <div class="text-xs text-gray-400 font-mono">
                   ${mapCenter.lat.toFixed(4)}, ${mapCenter.lng.toFixed(4)}
+                </div>
+                <div class="text-xs text-yellow-400">
+                  Click markers to view details
                 </div>
               </div>
             </div>
             
             <!-- Zoom Controls -->
-            <div class="absolute top-16 right-2 bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg">
+            <div class="absolute top-20 right-3 bg-slate-800/95 backdrop-blur-sm rounded-xl border border-yellow-400/30 shadow-2xl overflow-hidden">
               <div class="p-1 space-y-1">
-                <button class="w-8 h-8 bg-white hover:bg-gray-50 border border-gray-200 rounded flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors" onclick="window.zoomIn()">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                <button class="w-10 h-10 bg-slate-700 hover:bg-yellow-500 border border-slate-600 hover:border-yellow-400 rounded-lg flex items-center justify-center text-gray-200 hover:text-black transition-all duration-200" onclick="window.zoomIn()">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                 </button>
-                <button class="w-8 h-8 bg-white hover:bg-gray-50 border border-gray-200 rounded flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors" onclick="window.zoomOut()">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+                <button class="w-10 h-10 bg-slate-700 hover:bg-yellow-500 border border-slate-600 hover:border-yellow-400 rounded-lg flex items-center justify-center text-gray-200 hover:text-black transition-all duration-200" onclick="window.zoomOut()">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
                 </button>
               </div>
             </div>
@@ -159,11 +199,16 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
       `;
 
       if (mapContainer.current) {
+        console.log('Setting map container innerHTML');
         mapContainer.current.innerHTML = mapDisplay;
+        console.log('Map container innerHTML set successfully');
+      } else {
+        console.error('Map container not found when trying to set innerHTML');
       }
 
       // Add click handlers for property markers
       const markerElements = mapContainer.current?.querySelectorAll('[data-property-id]');
+      console.log('Found marker elements:', markerElements?.length);
       markerElements?.forEach(marker => {
         marker.addEventListener('click', (e) => {
           const propertyId = (e.currentTarget as HTMLElement).getAttribute('data-property-id');
@@ -188,6 +233,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
 
       setIsMapLoading(false);
       setIsLoaded(true);
+      console.log('=== MAP GENERATION COMPLETE ===');
 
     } catch (err) {
       console.error('Error generating map:', err);
@@ -346,20 +392,30 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
 
           {/* No Coordinates Message */}
           {isLoaded && properties.length > 0 && properties.filter(p => p.latitude && p.longitude).length === 0 && (
-            <div className="absolute inset-0 bg-gray-800/80 flex items-center justify-center">
-              <div className="text-center p-6">
+            <div className="absolute inset-0 bg-slate-800/90 flex items-center justify-center">
+              <div className="text-center p-6 max-w-md">
                 <MapPin className="h-16 w-16 mx-auto text-yellow-400 mb-4" />
                 <h3 className="text-lg font-semibold text-white mb-2">Properties Need Coordinates</h3>
-                <p className="text-sm text-gray-400 mb-4">Your properties need latitude and longitude coordinates to appear on the map.</p>
-                <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-3 text-left">
-                  <div className="text-sm text-yellow-300 mb-2">
+                <p className="text-sm text-gray-300 mb-4">Your {properties.length} properties need location coordinates to appear on the map.</p>
+                <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-3 text-left space-y-2">
+                  <div className="text-sm text-yellow-300">
                     <CheckCircle className="h-4 w-4 inline mr-2" />
-                    Coordinates are automatically added when you create properties
+                    Coordinates are automatically added when creating properties
                   </div>
                   <div className="text-xs text-yellow-400">
-                    The form automatically finds coordinates using Google Maps Geocoding API
+                    Edit existing properties to add missing coordinates
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Partial Coordinates Message */}
+          {isLoaded && properties.length > 0 && properties.filter(p => p.latitude && p.longitude).length > 0 && properties.filter(p => p.latitude && p.longitude).length < properties.length && (
+            <div className="absolute top-4 right-4 bg-yellow-900/90 backdrop-blur-sm border border-yellow-500/30 rounded-lg p-3 max-w-xs">
+              <div className="text-xs text-yellow-300">
+                <div className="font-medium mb-1">⚠️ Partial Coverage</div>
+                <div>{properties.filter(p => p.latitude && p.longitude).length} of {properties.length} properties have coordinates</div>
               </div>
             </div>
           )}

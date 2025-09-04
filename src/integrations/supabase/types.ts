@@ -772,6 +772,92 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          agent_messages: boolean | null
+          allow_marketing: boolean | null
+          appointment_reminders: boolean | null
+          budget_range: string | null
+          created_at: string | null
+          email_notifications: boolean | null
+          id: string
+          market_updates: boolean | null
+          marketing_emails: boolean | null
+          new_listings: boolean | null
+          preferred_areas: string[] | null
+          preferred_contact_method: string | null
+          price_changes: boolean | null
+          profile_visibility: string | null
+          property_alerts: boolean | null
+          property_type_preferences: string[] | null
+          push_notifications: boolean | null
+          show_activity_status: boolean | null
+          show_email: boolean | null
+          show_location: boolean | null
+          show_phone: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          agent_messages?: boolean | null
+          allow_marketing?: boolean | null
+          appointment_reminders?: boolean | null
+          budget_range?: string | null
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          market_updates?: boolean | null
+          marketing_emails?: boolean | null
+          new_listings?: boolean | null
+          preferred_areas?: string[] | null
+          preferred_contact_method?: string | null
+          price_changes?: boolean | null
+          profile_visibility?: string | null
+          property_alerts?: boolean | null
+          property_type_preferences?: string[] | null
+          push_notifications?: boolean | null
+          show_activity_status?: boolean | null
+          show_email?: boolean | null
+          show_location?: boolean | null
+          show_phone?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          agent_messages?: boolean | null
+          allow_marketing?: boolean | null
+          appointment_reminders?: boolean | null
+          budget_range?: string | null
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          market_updates?: boolean | null
+          marketing_emails?: boolean | null
+          new_listings?: boolean | null
+          preferred_areas?: string[] | null
+          preferred_contact_method?: string | null
+          price_changes?: boolean | null
+          profile_visibility?: string | null
+          property_alerts?: boolean | null
+          property_type_preferences?: string[] | null
+          push_notifications?: boolean | null
+          show_activity_status?: boolean | null
+          show_email?: boolean | null
+          show_location?: boolean | null
+          show_phone?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

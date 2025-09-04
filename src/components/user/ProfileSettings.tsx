@@ -25,6 +25,7 @@ import {
   Edit
 } from 'lucide-react';
 import { toast } from 'sonner';
+import ProfileService, { UserPreferences } from '@/services/profileService';
 
 interface ProfileData {
   full_name: string;
@@ -97,33 +98,45 @@ export const ProfileSettings = () => {
 
   const [isLoading, setIsLoading] = useState(false);
 
+  // Load user preferences when component mounts
+  useEffect(() => {
+    const loadUserPreferences = async () => {
+      if (user) {
+        const preferences = await ProfileService.getUserPreferences(user.id);
+        if (preferences) {
+          setNotifications({
+            emailNotifications: preferences.email_notifications,
+            pushNotifications: preferences.push_notifications,
+            marketingEmails: preferences.marketing_emails,
+            propertyAlerts: preferences.property_alerts
+          });
+          
+          setPrivacy({
+            profileVisibility: preferences.profile_visibility,
+            showEmail: preferences.show_email,
+            showPhone: preferences.show_phone,
+            showLocation: preferences.show_location
+          });
+        }
+      }
+    };
+
+    loadUserPreferences();
+  }, [user]);
+
   const handleSaveProfile = async () => {
+    if (!user) {
+      toast.error('User not authenticated');
+      return;
+    }
+    
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('User not authenticated');
-        return;
-      }
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: profileData.full_name,
-          avatar_url: profileData.avatar_url,
-          ...(profileData.phone && { phone: profileData.phone }),
-          ...(profileData.bio && { bio: profileData.bio }),
-          ...(profileData.location && { location: profileData.location }),
-          ...(profileData.company && { company: profileData.company }),
-          ...(profileData.website && { website: profileData.website })
-        })
-        .eq('id', user.id);
-
-      if (error) {
-        console.error('Profile update error:', error);
-        toast.error('Failed to update profile');
-      } else {
-        toast.success('Profile updated successfully');
+      const { success } = await ProfileService.updateProfile(user.id, profileData);
+      
+      if (success) {
+        // Refresh the profile data in auth context
+        window.location.reload(); // Simple refresh to update auth context
       }
     } catch (error) {
       console.error('Profile update error:', error);
@@ -134,17 +147,49 @@ export const ProfileSettings = () => {
   };
 
   const handleSaveNotifications = async () => {
+    if (!user) return;
+    
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast.success('Notification preferences updated');
-    setIsLoading(false);
+    try {
+      const { success, error } = await ProfileService.updateUserPreferences(user.id, {
+        email_notifications: notifications.emailNotifications,
+        push_notifications: notifications.pushNotifications,
+        marketing_emails: notifications.marketingEmails,
+        property_alerts: notifications.propertyAlerts
+      });
+
+      if (!success) {
+        toast.error(error || 'Failed to update notification preferences');
+      }
+    } catch (error) {
+      console.error('Error saving notifications:', error);
+      toast.error('Failed to update notification preferences');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSavePrivacy = async () => {
+    if (!user) return;
+    
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast.success('Privacy settings updated');
-    setIsLoading(false);
+    try {
+      const { success, error } = await ProfileService.updateUserPreferences(user.id, {
+        profile_visibility: privacy.profileVisibility,
+        show_email: privacy.showEmail,
+        show_phone: privacy.showPhone,
+        show_location: privacy.showLocation
+      });
+
+      if (!success) {
+        toast.error(error || 'Failed to update privacy settings');
+      }
+    } catch (error) {
+      console.error('Error saving privacy settings:', error);
+      toast.error('Failed to update privacy settings');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleAvatarUpload = () => {

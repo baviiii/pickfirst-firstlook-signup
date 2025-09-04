@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, fullName?: string, userType?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -88,6 +88,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     });
+    
+    // Send welcome email for new users (async, don't wait for it)
+    if (!error && data.user && !data.user.email_confirmed_at) {
+      // Use setTimeout to send email without blocking the signup process
+      setTimeout(async () => {
+        try {
+          const { EmailService } = await import('@/services/emailService');
+          await EmailService.sendWelcomeEmail(
+            data.user.id, 
+            email, 
+            fullName
+          );
+        } catch (emailError) {
+          console.error('Failed to send welcome email:', emailError);
+        }
+      }, 2000); // Send after 2 seconds to ensure profile is created
+    }
     
     return { error };
   };

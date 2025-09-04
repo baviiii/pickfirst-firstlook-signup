@@ -1,14 +1,25 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Settings, User, Bell, Lock, CreditCard, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Settings, User, Bell, Lock, CreditCard, Eye, EyeOff, Heart, Search, Activity, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import BuyerProfileService, { BuyerPreferences, PropertySearchCriteria } from '@/services/buyerProfileService';
+import { toast } from 'sonner';
 
 const BuyerAccountSettingsPage = () => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('profile');
+  
   const [settings, setSettings] = useState({
     fullName: profile?.full_name || '',
     email: profile?.email || '',
@@ -30,6 +41,73 @@ const BuyerAccountSettingsPage = () => {
     }
   });
 
+  const [buyerPreferences, setBuyerPreferences] = useState<Partial<BuyerPreferences>>({
+    min_budget: 0,
+    max_budget: 1000000,
+    preferred_bedrooms: 2,
+    preferred_bathrooms: 2,
+    preferred_areas: [],
+    property_type_preferences: [],
+    move_in_timeline: 'flexible',
+    financing_pre_approved: false,
+    first_time_buyer: false
+  });
+
+  const [searchCriteria, setSearchCriteria] = useState<PropertySearchCriteria>({
+    location: '',
+    minPrice: 0,
+    maxPrice: 1000000,
+    propertyType: '',
+    bedrooms: 2,
+    bathrooms: 2
+  });
+
+  const [favoriteProperties, setFavoriteProperties] = useState<any[]>([]);
+  const [matchingProperties, setMatchingProperties] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+
+  // Load buyer data on component mount
+  useEffect(() => {
+    const loadBuyerData = async () => {
+      if (!user) return;
+      
+      setIsLoading(true);
+      try {
+        // Load buyer preferences
+        const preferences = await BuyerProfileService.getBuyerPreferences(user.id);
+        if (preferences) {
+          setBuyerPreferences(preferences);
+          
+          // Update search criteria from preferences
+          setSearchCriteria({
+            location: preferences.preferred_areas?.[0] || '',
+            minPrice: preferences.min_budget || 0,
+            maxPrice: preferences.max_budget || 1000000,
+            propertyType: preferences.property_type_preferences?.[0] || '',
+            bedrooms: preferences.preferred_bedrooms || 2,
+            bathrooms: preferences.preferred_bathrooms || 2
+          });
+        }
+
+        // Load favorite properties
+        const favorites = await BuyerProfileService.getFavoriteProperties(user.id);
+        setFavoriteProperties(favorites);
+
+        // Load matching properties
+        const matches = await BuyerProfileService.getMatchingProperties(user.id, 5);
+        setMatchingProperties(matches);
+
+      } catch (error) {
+        console.error('Error loading buyer data:', error);
+        toast.error('Failed to load your preferences');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadBuyerData();
+  }, [user]);
+
   const handleNotificationChange = (key: string, value: boolean) => {
     setSettings(prev => ({
       ...prev,
@@ -50,66 +128,399 @@ const BuyerAccountSettingsPage = () => {
     }));
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
-      <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/dashboard')}
-            className="text-gray-300 hover:text-primary border-white/20 hover:border-primary/30"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Account Settings</h1>
-        </div>
+  const handleSaveSearchCriteria = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      const result = await BuyerProfileService.saveSearchCriteria(user.id, searchCriteria);
+      if (result.success) {
+        // Reload matching properties
+        const matches = await BuyerProfileService.getMatchingProperties(user.id, 5);
+        setMatchingProperties(matches);
+      }
+    } catch (error) {
+      console.error('Error saving search criteria:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-        {/* Personal Information */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
-              Personal Information
-            </CardTitle>
-            <CardDescription className="text-gray-300">
-              Update your personal details
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
-                <input
-                  type="text"
-                  value={settings.fullName}
-                  onChange={(e) => setSettings(prev => ({ ...prev, fullName: e.target.value }))}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                <input
-                  type="email"
-                  value={settings.email}
-                  onChange={(e) => setSettings(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-              </div>
-            </div>
+  const handleSaveBuyerPreferences = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      const result = await BuyerProfileService.updateBuyerPreferences(user.id, buyerPreferences);
+      if (!result.success) {
+        toast.error(result.error || 'Failed to update preferences');
+      }
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleToggleFavorite = async (propertyId: string) => {
+    if (!user) return;
+    
+    try {
+      const result = await BuyerProfileService.togglePropertyFavorite(user.id, propertyId);
+      if (result.success) {
+        // Reload favorites
+        const favorites = await BuyerProfileService.getFavoriteProperties(user.id);
+        setFavoriteProperties(favorites);
+        toast.success(result.isFavorited ? 'Added to favorites' : 'Removed from favorites');
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+        <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/dashboard')}
+              className="hover:bg-accent"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
-              <input
-                type="tel"
-                value={settings.phone}
-                onChange={(e) => setSettings(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="(555) 123-4567"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Account Settings</h1>
+              <p className="text-muted-foreground mt-1">Manage your profile and preferences</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="bg-card border border-border grid grid-cols-2 lg:grid-cols-5 w-full p-1">
+              <TabsTrigger value="profile" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
+                <User className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Profile</span>
+              </TabsTrigger>
+              <TabsTrigger value="search" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
+                <Search className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Search</span>
+              </TabsTrigger>
+              <TabsTrigger value="favorites" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
+                <Heart className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Favorites</span>
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
+                <Bell className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Notifications</span>
+              </TabsTrigger>
+              <TabsTrigger value="privacy" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
+                <Lock className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Privacy</span>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Profile Tab */}
+            <TabsContent value="profile" className="space-y-6">
+              {/* Personal Information */}
+              <Card className="bg-card border border-border shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-card-foreground flex items-center gap-2">
+                    <User className="h-5 w-5 text-primary" />
+                    Personal Information
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    Update your personal details and buyer preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName" className="text-card-foreground font-medium">Full Name</Label>
+                      <Input
+                        id="fullName"
+                        value={settings.fullName}
+                        onChange={(e) => setSettings(prev => ({ ...prev, fullName: e.target.value }))}
+                        className="bg-input border border-border text-foreground focus:ring-primary focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-card-foreground font-medium">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={settings.email}
+                        disabled
+                        className="bg-muted border border-border text-muted-foreground cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-card-foreground font-medium">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={settings.phone}
+                      onChange={(e) => setSettings(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="(555) 123-4567"
+                      className="bg-input border border-border text-foreground focus:ring-primary focus:border-primary"
+                    />
+                  </div>
+                  
+                  {/* Buyer Specific Preferences */}
+                  <div className="pt-6 border-t border-border">
+                    <h3 className="text-lg font-semibold text-card-foreground mb-4 flex items-center gap-2">
+                      <Home className="h-5 w-5 text-accent" />
+                      Buyer Preferences
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="timeline" className="text-card-foreground font-medium">Move-in Timeline</Label>
+                        <Select
+                          value={buyerPreferences.move_in_timeline}
+                          onValueChange={(value: any) => setBuyerPreferences(prev => ({ ...prev, move_in_timeline: value }))}
+                        >
+                          <SelectTrigger className="bg-input border border-border text-foreground">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover border border-border">
+                            <SelectItem value="immediate">Immediate</SelectItem>
+                            <SelectItem value="1-3_months">1-3 months</SelectItem>
+                            <SelectItem value="3-6_months">3-6 months</SelectItem>
+                            <SelectItem value="6-12_months">6-12 months</SelectItem>
+                            <SelectItem value="flexible">Flexible</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-4 pt-2">
+                        <div className="flex items-center space-x-3">
+                          <Switch
+                            id="preApproved"
+                            checked={buyerPreferences.financing_pre_approved}
+                            onCheckedChange={(checked) => setBuyerPreferences(prev => ({ ...prev, financing_pre_approved: checked }))}
+                          />
+                          <Label htmlFor="preApproved" className="text-card-foreground font-medium">Pre-approved for financing</Label>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Switch
+                            id="firstTime"
+                            checked={buyerPreferences.first_time_buyer}
+                            onCheckedChange={(checked) => setBuyerPreferences(prev => ({ ...prev, first_time_buyer: checked }))}
+                          />
+                          <Label htmlFor="firstTime" className="text-card-foreground font-medium">First-time home buyer</Label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button 
+                    onClick={handleSaveBuyerPreferences}
+                    disabled={isLoading}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
+                  >
+                    {isLoading ? 'Saving...' : 'Save Profile'}
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Search Preferences Tab */}
+            <TabsContent value="search" className="space-y-6">
+              <Card className="bg-card border border-border shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-card-foreground flex items-center gap-2">
+                    <Search className="h-5 w-5 text-primary" />
+                    Property Search Preferences
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    Set your ideal property criteria to get better matches
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="location" className="text-white">Preferred Location</Label>
+                      <Input
+                        id="location"
+                        value={searchCriteria.location}
+                        onChange={(e) => setSearchCriteria(prev => ({ ...prev, location: e.target.value }))}
+                        placeholder="City, State"
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="propertyType" className="text-white">Property Type</Label>
+                      <Select
+                        value={searchCriteria.propertyType}
+                        onValueChange={(value) => setSearchCriteria(prev => ({ ...prev, propertyType: value }))}
+                      >
+                        <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="house">House</SelectItem>
+                          <SelectItem value="condo">Condo</SelectItem>
+                          <SelectItem value="townhouse">Townhouse</SelectItem>
+                          <SelectItem value="apartment">Apartment</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="minPrice" className="text-white">Min Price ($)</Label>
+                      <Input
+                        id="minPrice"
+                        type="number"
+                        value={searchCriteria.minPrice}
+                        onChange={(e) => setSearchCriteria(prev => ({ ...prev, minPrice: parseInt(e.target.value) || 0 }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="maxPrice" className="text-white">Max Price ($)</Label>
+                      <Input
+                        id="maxPrice"
+                        type="number"
+                        value={searchCriteria.maxPrice}
+                        onChange={(e) => setSearchCriteria(prev => ({ ...prev, maxPrice: parseInt(e.target.value) || 0 }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="bedrooms" className="text-white">Bedrooms</Label>
+                      <Select
+                        value={searchCriteria.bedrooms?.toString()}
+                        onValueChange={(value) => setSearchCriteria(prev => ({ ...prev, bedrooms: parseInt(value) }))}
+                      >
+                        <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1</SelectItem>
+                          <SelectItem value="2">2</SelectItem>
+                          <SelectItem value="3">3</SelectItem>
+                          <SelectItem value="4">4</SelectItem>
+                          <SelectItem value="5">5+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="bathrooms" className="text-white">Bathrooms</Label>
+                      <Select
+                        value={searchCriteria.bathrooms?.toString()}
+                        onValueChange={(value) => setSearchCriteria(prev => ({ ...prev, bathrooms: parseInt(value) }))}
+                      >
+                        <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1</SelectItem>
+                          <SelectItem value="2">2</SelectItem>
+                          <SelectItem value="3">3</SelectItem>
+                          <SelectItem value="4">4+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <Button 
+                    onClick={handleSaveSearchCriteria}
+                    disabled={isLoading}
+                    className="bg-primary text-black hover:bg-primary/90"
+                  >
+                    {isLoading ? 'Saving...' : 'Save Search Preferences'}
+                  </Button>
+
+                  {/* Matching Properties Preview */}
+                  {matchingProperties.length > 0 && (
+                    <div className="pt-6 border-t border-gray-700">
+                      <h3 className="text-lg font-semibold text-white mb-4">Properties Matching Your Criteria</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {matchingProperties.slice(0, 4).map((property: any) => (
+                          <div key={property.id} className="bg-gray-800/50 p-4 rounded-lg">
+                            <h4 className="text-white font-medium">{property.title}</h4>
+                            <p className="text-gray-300">{property.city}, {property.state}</p>
+                            <p className="text-primary font-bold">${property.price?.toLocaleString()}</p>
+                            <div className="flex justify-between items-center mt-2">
+                              <Badge variant="secondary">{property.bedrooms}br/{property.bathrooms}ba</Badge>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleToggleFavorite(property.id)}
+                                className="text-gray-300 hover:text-red-400"
+                              >
+                                <Heart className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Favorites Tab */}
+            <TabsContent value="favorites" className="space-y-6">
+              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Heart className="h-5 w-5 text-primary" />
+                    Favorite Properties
+                  </CardTitle>
+                  <CardDescription className="text-gray-300">
+                    Manage your saved properties
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {favoriteProperties.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Heart className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                      <p className="text-gray-400">No favorite properties yet</p>
+                      <p className="text-gray-500 text-sm">Start browsing properties to add them to your favorites</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {favoriteProperties.map((property: any) => (
+                        <div key={property.id} className="bg-gray-800/50 p-4 rounded-lg">
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="text-white font-medium">{property.title}</h4>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleToggleFavorite(property.id)}
+                              className="text-red-400 hover:text-red-300"
+                            >
+                              <Heart className="h-4 w-4 fill-current" />
+                            </Button>
+                          </div>
+                          <p className="text-gray-300">{property.address}</p>
+                          <p className="text-gray-300">{property.city}, {property.state}</p>
+                          <p className="text-primary font-bold text-lg">${property.price?.toLocaleString()}</p>
+                          <div className="flex justify-between items-center mt-4">
+                            <div className="flex gap-2">
+                              <Badge variant="secondary">{property.bedrooms} bed</Badge>
+                              <Badge variant="secondary">{property.bathrooms} bath</Badge>
+                              <Badge variant="secondary">{property.square_feet} sqft</Badge>
+                            </div>
+                            <Button size="sm" variant="outline" className="text-white border-white/20">
+                              View Details
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
         {/* Password Security */}
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
@@ -164,100 +575,79 @@ const BuyerAccountSettingsPage = () => {
           </CardContent>
         </Card>
 
-        {/* Notification Preferences */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Bell className="h-5 w-5 text-primary" />
-              Notification Preferences
-            </CardTitle>
-            <CardDescription className="text-gray-300">
-              Choose what notifications you want to receive
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {Object.entries(settings.notifications).map(([key, value]) => (
-              <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50">
-                <div>
-                  <h4 className="text-white font-medium">
-                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                  </h4>
-                  <p className="text-sm text-gray-400">
-                    {key === 'newListings' && 'Get notified when new properties match your criteria'}
-                    {key === 'priceChanges' && 'Alerts when saved properties change price'}
-                    {key === 'marketUpdates' && 'Weekly market trends and insights'}
-                    {key === 'agentMessages' && 'Notifications for new messages from agents'}
-                    {key === 'appointmentReminders' && 'Reminders for upcoming property viewings'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleNotificationChange(key, !value)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    value ? 'bg-primary' : 'bg-gray-600'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      value ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+            {/* Notifications Tab */}
+            <TabsContent value="notifications" className="space-y-6">
+              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Bell className="h-5 w-5 text-primary" />
+                    Notification Preferences  
+                  </CardTitle>
+                  <CardDescription className="text-gray-300">
+                    Choose what notifications you want to receive
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {Object.entries(settings.notifications).map(([key, value]) => (
+                    <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50">
+                      <div>
+                        <h4 className="text-white font-medium">
+                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                        </h4>
+                        <p className="text-sm text-gray-400">
+                          {key === 'newListings' && 'Get notified when new properties match your criteria'}
+                          {key === 'priceChanges' && 'Alerts when saved properties change price'}
+                          {key === 'marketUpdates' && 'Weekly market trends and insights'}
+                          {key === 'agentMessages' && 'Notifications for new messages from agents'}
+                          {key === 'appointmentReminders' && 'Reminders for upcoming property viewings'}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={value}
+                        onCheckedChange={(checked) => handleNotificationChange(key, checked)}
+                      />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-        {/* Privacy Settings */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Lock className="h-5 w-5 text-primary" />
-              Privacy Settings
-            </CardTitle>
-            <CardDescription className="text-gray-300">
-              Control your privacy and data sharing preferences
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {Object.entries(settings.privacy).map(([key, value]) => (
-              <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50">
-                <div>
-                  <h4 className="text-white font-medium">
-                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                  </h4>
-                  <p className="text-sm text-gray-400">
-                    {key === 'profileVisible' && 'Allow agents to see your profile information'}
-                    {key === 'showActivityStatus' && 'Show when you\'re online and active'}
-                    {key === 'allowMarketing' && 'Receive marketing emails about new features'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handlePrivacyChange(key, !value)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    value ? 'bg-primary' : 'bg-gray-600'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      value ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Button className="flex-1">
-            Save Changes
-          </Button>
-          <Button variant="outline" className="text-gray-300 hover:text-primary">
-            Cancel
-          </Button>
+            {/* Privacy Tab */}
+            <TabsContent value="privacy" className="space-y-6">
+              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Lock className="h-5 w-5 text-primary" />
+                    Privacy Settings
+                  </CardTitle>
+                  <CardDescription className="text-gray-300">
+                    Control your privacy and data sharing preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {Object.entries(settings.privacy).map(([key, value]) => (
+                    <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50">
+                      <div>
+                        <h4 className="text-white font-medium">
+                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                        </h4>
+                        <p className="text-sm text-gray-400">
+                          {key === 'profileVisible' && 'Allow agents to see your profile information'}
+                          {key === 'showActivityStatus' && 'Show when you\'re online and active'}
+                          {key === 'allowMarketing' && 'Receive marketing emails about new features'}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={value}
+                        onCheckedChange={(checked) => handlePrivacyChange(key, checked)}
+                      />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
-      </div>
     </div>
   );
 };
