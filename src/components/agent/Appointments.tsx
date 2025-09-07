@@ -52,34 +52,40 @@ export const Appointments = () => {
     
     setLoading(true);
     try {
-      // For now, fetch from client_notes where note_type is 'appointment'
+      // Fetch from the actual appointments table with proper joins
       const { data, error } = await supabase
-        .from('client_notes')
-        .select('*')
+        .from('appointments')
+        .select(`
+          *,
+          clients!appointments_client_id_fkey(name, email, phone),
+          property_listings!appointments_property_id_fkey(title, address)
+        `)
         .eq('agent_id', user.id)
-        .eq('note_type', 'appointment')
-        .order('created_at', { ascending: false });
+        .order('date', { ascending: true })
+        .order('time', { ascending: true });
 
       if (error) throw error;
       
-      // Transform notes data to appointments format
-      const appointmentsData = (data || []).map(note => ({
-        id: note.id,
-        agent_id: note.agent_id,
-        client_id: note.client_id,
-        client_name: 'Client', // We'll need to join with clients table later
-        client_phone: '',
-        client_email: '',
-        property_address: 'See notes',
-        appointment_type: 'consultation' as const,
-        date: note.created_at.split('T')[0],
-        time: '10:00',
-        duration: 60,
-        status: 'scheduled' as const,
-        notes: note.content,
-        created_at: note.created_at
+      // Transform the data to match our interface
+      const appointmentsData = (data || []).map(appointment => ({
+        id: appointment.id,
+        agent_id: appointment.agent_id,
+        client_id: appointment.client_id,
+        inquiry_id: appointment.inquiry_id,
+        client_name: appointment.client_name || appointment.clients?.name || 'Unknown Client',
+        client_phone: appointment.client_phone || appointment.clients?.phone || '',
+        client_email: appointment.client_email || appointment.clients?.email || '',
+        property_address: appointment.property_address || appointment.property_listings?.address || 'Virtual/Office Meeting',
+        appointment_type: appointment.appointment_type as any,
+        date: appointment.date,
+        time: appointment.time,
+        duration: appointment.duration,
+        status: appointment.status as any,
+        notes: appointment.notes || '',
+        property_id: appointment.property_id,
+        created_at: appointment.created_at
       }));
-      
+
       setAppointments(appointmentsData);
     } catch (error) {
       console.error('Error fetching appointments:', error);

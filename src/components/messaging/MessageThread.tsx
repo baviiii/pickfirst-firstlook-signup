@@ -4,19 +4,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Send, MessageSquare } from 'lucide-react';
-import { conversationService, ConversationWithDetails, Message } from '@/services/conversationService';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { toast } from 'sonner';
 
 interface MessageThreadProps {
-  conversation: ConversationWithDetails;
+  conversation: any;
   onMessageSent?: () => void;
 }
 
 const MessageThreadComponent = ({ conversation, onMessageSent }: MessageThreadProps) => {
   const { profile } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -34,12 +34,14 @@ const MessageThreadComponent = ({ conversation, onMessageSent }: MessageThreadPr
   const fetchMessages = async () => {
     setLoading(true);
     try {
-      const { data, error } = await conversationService.getConversation(conversation.id);
+      const { data, error } = await supabase.functions.invoke('messaging', {
+        body: { action: 'getMessages', conversationId: conversation.id }
+      });
       if (error) {
         toast.error('Failed to fetch messages');
         return;
       }
-      setMessages(data?.messages || []);
+      setMessages(data || []);
     } catch (error) {
       toast.error('Failed to fetch messages');
     } finally {
@@ -49,7 +51,9 @@ const MessageThreadComponent = ({ conversation, onMessageSent }: MessageThreadPr
 
   const markAsRead = async () => {
     try {
-      await conversationService.markMessagesAsRead(conversation.id);
+      await supabase.functions.invoke('messaging', {
+        body: { action: 'markMessagesAsRead', conversationId: conversation.id }
+      });
     } catch (error) {
       // Silent fail for marking as read
     }
@@ -64,7 +68,13 @@ const MessageThreadComponent = ({ conversation, onMessageSent }: MessageThreadPr
 
     setSending(true);
     try {
-      const { data, error } = await conversationService.sendMessage(conversation.id, newMessage.trim());
+      const { data, error } = await supabase.functions.invoke('messaging', {
+        body: { 
+          action: 'sendMessage', 
+          conversationId: conversation.id,
+          content: newMessage.trim()
+        }
+      });
       if (error) {
         toast.error('Failed to send message');
         return;
@@ -89,9 +99,26 @@ const MessageThreadComponent = ({ conversation, onMessageSent }: MessageThreadPr
 
   const getOtherParticipant = () => {
     if (profile?.id === conversation.agent_id) {
-      return conversation.client;
+      return conversation.client_profile;
     }
-    return conversation.agent;
+    return conversation.agent_profile;
+  };
+  const getPropertyInfo = () => {
+    // Property is now directly available from Edge Function
+    if (conversation.property) {
+      return conversation.property;
+    }
+    
+    // Fallback to metadata
+    if (conversation.metadata?.property_id) {
+      return { 
+        id: conversation.metadata.property_id, 
+        title: 'Property', 
+        address: 'Address not available' 
+      };
+    }
+    
+    return null;
   };
 
   const formatMessageTime = (timestamp: string) => {
@@ -118,6 +145,7 @@ const MessageThreadComponent = ({ conversation, onMessageSent }: MessageThreadPr
   };
 
   const otherParticipant = getOtherParticipant();
+  const propertyInfo = getPropertyInfo();
 
   if (loading) {
     return (
@@ -132,19 +160,34 @@ const MessageThreadComponent = ({ conversation, onMessageSent }: MessageThreadPr
       <CardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src="" />
+            <AvatarImage src={otherParticipant?.avatar_url} />
             <AvatarFallback>
               {otherParticipant?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
             </AvatarFallback>
           </Avatar>
-          <div>
+          <div className="flex-1">
             <CardTitle className="text-white text-lg">
               {otherParticipant?.full_name || 'Unknown User'}
             </CardTitle>
             <div className="text-sm text-gray-400">
               {otherParticipant?.email}
             </div>
-            {conversation.subject && (
+            {otherParticipant?.phone && (
+              <div className="text-xs text-gray-500">
+                📞 {otherParticipant.phone}
+              </div>
+            )}
+            {otherParticipant?.company_name && (
+              <div className="text-xs text-gray-500">
+                🏢 {otherParticipant.company_name}
+              </div>
+            )}
+            {propertyInfo && (
+              <div className="text-xs text-pickfirst-yellow mt-1 bg-pickfirst-yellow/10 px-2 py-1 rounded">
+                🏠 {propertyInfo.title} - ${propertyInfo.price?.toLocaleString()}
+              </div>
+            )}
+            {conversation.subject && !propertyInfo && (
               <div className="text-xs text-gray-500 mt-1">
                 {conversation.subject}
               </div>

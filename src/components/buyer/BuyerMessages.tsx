@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Phone, Video, Send, MessageSquare, MoreVertical } from 'lucide-react';
+import { Search, Phone, Video, Send, MessageSquare, MoreVertical, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -7,18 +7,20 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
-import { messageService, Conversation, Message } from '@/services/messageService';
+import { supabase } from '@/integrations/supabase/client';
+import { AgentProfileView } from '@/components/agent/AgentProfileView';
 import { toast } from 'sonner';
 
 export const BuyerMessages = () => {
   const { user, profile } = useAuth();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<any>(null);
+  const [messages, setMessages] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [showAgentProfile, setShowAgentProfile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load conversations
@@ -34,7 +36,9 @@ export const BuyerMessages = () => {
       loadMessages(selectedConversation.id);
       // Mark messages as read
       if (user) {
-        messageService.markMessagesAsRead(selectedConversation.id).catch(console.error);
+        supabase.functions.invoke('messaging', {
+          body: { action: 'markMessagesAsRead', conversationId: selectedConversation.id }
+        }).catch(console.error);
       }
     }
   }, [selectedConversation, user]);
@@ -48,8 +52,15 @@ export const BuyerMessages = () => {
     if (!user) return;
     
     try {
-      const data = await messageService.getConversations();
-      setConversations(data);
+      const { data, error } = await supabase.functions.invoke('messaging', {
+        body: { action: 'getConversations' }
+      });
+      
+      if (error) {
+        toast.error('Failed to load conversations');
+        return;
+      }
+      setConversations(data || []);
     } catch (error) {
       console.error('Error loading conversations:', error);
       toast.error('Failed to load conversations');
@@ -60,8 +71,15 @@ export const BuyerMessages = () => {
 
   const loadMessages = async (conversationId: string) => {
     try {
-      const data = await messageService.getMessages(conversationId);
-      setMessages(data);
+      const { data, error } = await supabase.functions.invoke('messaging', {
+        body: { action: 'getMessages', conversationId }
+      });
+      
+      if (error) {
+        toast.error('Failed to load messages');
+        return;
+      }
+      setMessages(data || []);
     } catch (error) {
       console.error('Error loading messages:', error);
       toast.error('Failed to load messages');
@@ -73,16 +91,21 @@ export const BuyerMessages = () => {
 
     setSending(true);
     try {
-      const message = await messageService.sendMessage(
-        selectedConversation.id,
-        newMessage.trim()
-      );
+      const { data, error } = await supabase.functions.invoke('messaging', {
+        body: { 
+          action: 'sendMessage', 
+          conversationId: selectedConversation.id,
+          content: newMessage.trim()
+        }
+      });
       
-      if (message) {
-        setMessages(prev => [...prev, message]);
+      if (data && !error) {
+        setMessages(prev => [...prev, data]);
         setNewMessage('');
         // Refresh conversations to update last message
         loadConversations();
+      } else {
+        toast.error('Failed to send message');
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -94,7 +117,9 @@ export const BuyerMessages = () => {
 
   const filteredConversations = conversations.filter(conv =>
     conv.agent_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conv.subject?.toLowerCase().includes(searchTerm.toLowerCase())
+    conv.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    conv.property?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    conv.property?.address?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -160,12 +185,24 @@ export const BuyerMessages = () => {
                         </Badge>
                       )}
                     </div>
-                    <div className="text-sm font-medium mb-1 text-gray-300">{conv.subject}</div>
-                    {conv.last_message && (
-                      <div className="text-sm text-gray-400 line-clamp-2 mb-2">
-                        {conv.last_message.content}
+                    
+                    {/* Property Information */}
+                    {conv.property && (
+                      <div className="text-sm text-pickfirst-yellow mb-1 bg-pickfirst-yellow/10 px-2 py-1 rounded">
+                        🏠 {conv.property.title} - ${conv.property.price?.toLocaleString()}
                       </div>
                     )}
+                    
+                    <div className="text-sm font-medium mb-1 text-gray-300">
+                      {conv.property ? `About ${conv.property.title}` : conv.subject}
+                    </div>
+                    
+                    {conv.last_message_at && (
+                      <div className="text-sm text-gray-400 line-clamp-2 mb-2">
+                        Last message at {new Date(conv.last_message_at).toLocaleString()}
+                      </div>
+                    )}
+                    
                     <div className="text-xs text-gray-500">
                       {new Date(conv.last_message_at).toLocaleDateString()}
                     </div>
@@ -192,10 +229,33 @@ export const BuyerMessages = () => {
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <CardTitle className="text-lg text-white truncate">{selectedConversation.agent_profile?.full_name || 'Agent'}</CardTitle>
-                    <div className="text-sm text-gray-400 truncate">{selectedConversation.subject}</div>
+                    <div className="text-sm text-gray-400 truncate">{selectedConversation.agent_profile?.email}</div>
+                    {selectedConversation.agent_profile?.phone && (
+                      <div className="text-xs text-gray-500">📞 {selectedConversation.agent_profile.phone}</div>
+                    )}
+                    {selectedConversation.agent_profile?.company && (
+                      <div className="text-xs text-gray-500">🏢 {selectedConversation.agent_profile.company}</div>
+                    )}
+                    {selectedConversation.property && (
+                      <div className="text-xs text-pickfirst-yellow mt-1 bg-pickfirst-yellow/10 px-2 py-1 rounded">
+                        🏠 {selectedConversation.property.title} - ${selectedConversation.property.price?.toLocaleString()}
+                      </div>
+                    )}
+                    {!selectedConversation.property && (
+                      <div className="text-sm text-gray-400 truncate">{selectedConversation.subject}</div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-gray-400 hover:text-pickfirst-yellow"
+                    onClick={() => setShowAgentProfile(true)}
+                    title="View Agent Profile"
+                  >
+                    <User className="h-4 w-4" />
+                  </Button>
                   <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow">
                     <Phone className="h-4 w-4" />
                   </Button>
@@ -267,6 +327,28 @@ export const BuyerMessages = () => {
           </CardContent>
         )}
       </Card>
+
+      {/* Agent Profile Modal */}
+      {selectedConversation && (
+        <AgentProfileView
+          agent={selectedConversation.agent_profile ? {
+            id: selectedConversation.agent_profile.id,
+            full_name: selectedConversation.agent_profile.full_name,
+            email: selectedConversation.agent_profile.email,
+            phone: selectedConversation.agent_profile.phone,
+            company: selectedConversation.agent_profile.company,
+            avatar_url: selectedConversation.agent_profile.avatar_url,
+          } : null}
+          isOpen={showAgentProfile}
+          onClose={() => setShowAgentProfile(false)}
+          onStartConversation={() => {
+            setShowAgentProfile(false);
+            // Conversation is already started, just focus on message input
+            const messageInput = document.querySelector('textarea[placeholder="Type your reply..."]') as HTMLTextAreaElement;
+            messageInput?.focus();
+          }}
+        />
+      )}
     </div>
   );
 };

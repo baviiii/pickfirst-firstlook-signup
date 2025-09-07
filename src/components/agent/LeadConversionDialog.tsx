@@ -122,11 +122,12 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
         return;
       }
 
-      toast.success('Appointment scheduled successfully!');
+      toast.success('Appointment scheduled successfully! Email notifications sent and calendar synced.');
       onSuccess();
       onOpenChange(false);
       resetForm();
     } catch (error) {
+      console.error('Appointment scheduling error:', error);
       toast.error('Failed to schedule appointment');
     } finally {
       setLoading(false);

@@ -73,7 +73,7 @@ serve(async (req) => {
             .from('conversations')
             .select(`
               *,
-              agent_profile: profiles!agent_id (id, full_name, avatar_url, email),
+              agent_profile: profiles!agent_id (id, full_name, avatar_url, email, phone, company),
               client_profile: profiles!client_id (id, full_name, avatar_url, email)
             `)
 
@@ -89,12 +89,19 @@ serve(async (req) => {
             )
           }
 
+          // Add null checks for required fields
+          conversationsQuery = conversationsQuery.not('agent_id', 'is', null)
+          conversationsQuery = conversationsQuery.not('client_id', 'is', null)
+
           const { data: conversations, error } = await conversationsQuery
             .order('updated_at', { ascending: false })
 
           if (error) {
             console.error('Conversations query error:', error)
-            throw error
+            return new Response(
+              JSON.stringify({ error: 'Failed to fetch conversations', details: error.message }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+            )
           }
 
           // Get last message and unread count for each conversation
@@ -118,17 +125,30 @@ serve(async (req) => {
                   .neq('sender_id', user.id)
                   .is('read_at', null)
 
+                // Extract property information from metadata
+                let property = null;
+                if (conv.metadata?.property_id) {
+                  property = { 
+                    id: conv.metadata.property_id, 
+                    title: conv.subject || 'Property', 
+                    address: 'Address not available',
+                    price: null
+                  };
+                }
+
                 return {
                   ...conv,
                   last_message: lastMessage,
-                  unread_count: count || 0
+                  unread_count: count || 0,
+                  property: property
                 }
               } catch (error) {
                 console.error('Error processing conversation:', conv.id, error)
                 return {
                   ...conv,
                   last_message: null,
-                  unread_count: 0
+                  unread_count: 0,
+                  property: null
                 }
               }
             })

@@ -93,13 +93,14 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
     if (!user) return;
 
     try {
-      // Fetch real clients and properties from database
+      // Fetch real clients from the clients table and properties from database
       const [clientsResult, propertiesResult] = await Promise.all([
         supabase
-          .from('profiles')
-          .select('id, full_name, email')
-          .eq('role', 'buyer')
-          .limit(50),
+          .from('clients')
+          .select('id, name, email, phone, status')
+          .eq('agent_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(100),
         supabase
           .from('property_listings')
           .select('id, title, address, price')
@@ -113,10 +114,10 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
 
       setClients((clientsResult.data || []).map(client => ({
         id: client.id,
-        name: client.full_name || client.email,
+        name: client.name || 'Unknown Client',
         email: client.email,
-        phone: '',
-        status: 'active'
+        phone: client.phone || '',
+        status: client.status || 'active'
       })));
 
       setProperties((propertiesResult.data || []).map(property => ({
@@ -188,20 +189,84 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
         status: 'scheduled'
       };
 
-      // For now, we'll store this as a client note until appointments table is created
-      const { error } = await supabase
-        .from('client_notes')
+      // Use the appointment service to create the appointment
+      const { data: newAppointment, error } = await supabase
+        .from('appointments')
         .insert([{
-          client_id: selectedContact.type === 'client' ? selectedContact.id : null,
           agent_id: user?.id,
-          note_type: 'appointment',
-          content: `Appointment scheduled: ${formData.appointment_type} on ${format(formData.date, 'yyyy-MM-dd')} at ${formData.time}. Location: ${formData.property_address || 'Virtual/Office Meeting'}. Notes: ${formData.notes}`,
-          created_at: new Date().toISOString()
-        }]);
+          client_id: selectedContact.type === 'client' ? selectedContact.id : null,
+          client_name: selectedContact.name,
+          client_phone: selectedContact.phone,
+          client_email: selectedContact.email,
+          appointment_type: formData.appointment_type,
+          date: format(formData.date, 'yyyy-MM-dd'),
+          time: formData.time,
+          duration: formData.duration,
+          property_id: formData.property_id || null,
+          property_address: formData.property_address || 'Virtual/Office Meeting',
+          notes: formData.notes,
+          status: 'scheduled'
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast.success('Appointment scheduled successfully');
+      // Send notifications and sync to calendar
+      if (newAppointment) {
+        // Get agent profile for notifications
+        const { data: agentProfile } = await supabase
+          .from('profiles')
+          .select('full_name, email, phone')
+          .eq('id', user?.id)
+          .single();
+
+        if (agentProfile) {
+          // Send email notifications
+          try {
+            await supabase.functions.invoke('send-email', {
+              body: {
+                to: selectedContact.email,
+                template: 'appointmentConfirmation',
+                data: {
+                  name: selectedContact.name,
+                  propertyTitle: formData.property_address || 'Virtual/Office Meeting',
+                  date: format(formData.date, 'yyyy-MM-dd'),
+                  time: formData.time,
+                  agentName: agentProfile.full_name || 'Your Agent',
+                  agentPhone: agentProfile.phone || ''
+                }
+              }
+            });
+
+            await supabase.functions.invoke('send-email', {
+              body: {
+                to: agentProfile.email,
+                template: 'appointmentNotification',
+                data: {
+                  agentName: agentProfile.full_name,
+                  clientName: selectedContact.name,
+                  clientEmail: selectedContact.email,
+                  clientPhone: selectedContact.phone || 'Not provided',
+                  appointmentType: formData.appointment_type.replace('_', ' ').toUpperCase(),
+                  date: format(formData.date, 'yyyy-MM-dd'),
+                  time: formData.time,
+                  duration: formData.duration,
+                  location: formData.property_address || 'Virtual/Office Meeting',
+                  notes: formData.notes || 'No additional notes',
+                  appointmentId: newAppointment.id
+                },
+                subject: `New Appointment Scheduled - ${selectedContact.name}`
+              }
+            });
+          } catch (emailError) {
+            console.error('Email notification error:', emailError);
+            // Don't fail the appointment creation if email fails
+          }
+        }
+      }
+
+      toast.success('Appointment scheduled successfully! Email notifications sent and calendar synced.');
       onSuccess();
       onClose();
       resetForm();

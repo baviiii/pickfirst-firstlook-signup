@@ -10,15 +10,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
-import { messageService, Conversation, Message } from '@/services/messageService';
-import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const AgentMessages = () => {
   const { user, profile } = useAuth();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<any>(null);
+  const [messages, setMessages] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [isNewMessageOpen, setIsNewMessageOpen] = useState(false);
@@ -46,7 +45,9 @@ export const AgentMessages = () => {
       loadMessages(selectedConversation.id);
       // Mark messages as read
       if (user) {
-        messageService.markMessagesAsRead(selectedConversation.id).catch(console.error);
+        supabase.functions.invoke('messaging', {
+          body: { action: 'markMessagesAsRead', conversationId: selectedConversation.id }
+        }).catch(console.error);
       }
     }
   }, [selectedConversation, user]);
@@ -110,8 +111,15 @@ export const AgentMessages = () => {
 
   const loadMessages = async (conversationId: string) => {
     try {
-      const data = await messageService.getMessages(conversationId);
-      setMessages(data);
+      const { data, error } = await supabase.functions.invoke('messaging', {
+        body: { action: 'getMessages', conversationId }
+      });
+      
+      if (error) {
+        toast.error('Failed to load messages');
+        return;
+      }
+      setMessages(data || []);
     } catch (error) {
       console.error('Error loading messages:', error);
       toast.error('Failed to load messages');
@@ -122,8 +130,15 @@ export const AgentMessages = () => {
     if (!user) return;
     
     try {
-      const data = await messageService.getConversations();
-      setConversations(data);
+      const { data, error } = await supabase.functions.invoke('messaging', {
+        body: { action: 'getConversations' }
+      });
+      
+      if (error) {
+        toast.error('Failed to load conversations');
+        return;
+      }
+      setConversations(data || []);
     } catch (error) {
       console.error('Error loading conversations:', error);
       toast.error('Failed to load conversations');
@@ -137,16 +152,21 @@ export const AgentMessages = () => {
 
     setSending(true);
     try {
-      const message = await messageService.sendMessage(
-        selectedConversation.id,
-        newMessage.trim()
-      );
+      const { data, error } = await supabase.functions.invoke('messaging', {
+        body: { 
+          action: 'sendMessage', 
+          conversationId: selectedConversation.id,
+          content: newMessage.trim()
+        }
+      });
       
-      if (message) {
-        setMessages(prev => [...prev, message]);
+      if (data && !error) {
+        setMessages(prev => [...prev, data]);
         setNewMessage('');
         // Refresh conversations to update last message
         loadConversations();
+      } else {
+        toast.error('Failed to send message');
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -175,16 +195,30 @@ export const AgentMessages = () => {
         return;
       }
 
-      const conversationId = await messageService.getOrCreateConversation(
-        clientData.id,
-        newMessageForm.subject
-      );
+      const { data: conversation, error: conversationError } = await supabase.functions.invoke('messaging', {
+        body: { 
+          action: 'createConversation',
+          agentId: user.id,
+          clientId: clientData.id,
+          subject: newMessageForm.subject
+        }
+      });
+
+      if (conversationError || !conversation) {
+        toast.error('Failed to create conversation');
+        return;
+      }
+
+      const conversationId = conversation.id;
 
       if (conversationId) {
-        await messageService.sendMessage(
-          conversationId,
-          newMessageForm.content
-        );
+        await supabase.functions.invoke('messaging', {
+          body: { 
+            action: 'sendMessage',
+            conversationId,
+            content: newMessageForm.content
+          }
+        });
 
         setIsNewMessageOpen(false);
         setNewMessageForm({ clientEmail: '', subject: '', content: '' });
@@ -340,9 +374,9 @@ export const AgentMessages = () => {
                       )}
                     </div>
                     <div className="text-sm font-medium mb-1 text-gray-300">{conv.subject}</div>
-                    {conv.last_message && (
+                    {conv.last_message_at && (
                       <div className="text-sm text-gray-400 line-clamp-2 mb-2">
-                        {conv.last_message.content}
+                        Last message at {new Date(conv.last_message_at).toLocaleString()}
                       </div>
                     )}
                     <div className="text-xs text-gray-500">

@@ -104,6 +104,51 @@ export class EmailService {
   }
 
   /**
+   * Send appointment notification email to agent
+   */
+  static async sendAppointmentNotification(
+    agentEmail: string,
+    agentName: string,
+    appointmentData: {
+      clientName: string;
+      clientEmail: string;
+      clientPhone: string;
+      appointmentType: string;
+      date: string;
+      time: string;
+      duration: number;
+      location: string;
+      notes: string;
+      appointmentId: string;
+    }
+  ): Promise<void> {
+    try {
+      await supabase.functions.invoke('send-email', {
+        body: {
+          to: agentEmail,
+          template: 'appointmentNotification',
+          data: {
+            agentName: agentName,
+            clientName: appointmentData.clientName,
+            clientEmail: appointmentData.clientEmail,
+            clientPhone: appointmentData.clientPhone,
+            appointmentType: appointmentData.appointmentType,
+            date: appointmentData.date,
+            time: appointmentData.time,
+            duration: appointmentData.duration,
+            location: appointmentData.location,
+            notes: appointmentData.notes,
+            appointmentId: appointmentData.appointmentId
+          },
+          subject: `New Appointment Scheduled - ${appointmentData.clientName}`
+        }
+      });
+    } catch (error) {
+      console.error('Error sending appointment notification email:', error);
+    }
+  }
+
+  /**
    * Send market update email
    */
   static async sendMarketUpdate(

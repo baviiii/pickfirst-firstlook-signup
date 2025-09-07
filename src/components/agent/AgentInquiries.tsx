@@ -16,15 +16,17 @@ import {
   UserPlus,
   CheckCircle,
   Calendar,
-  ArrowUpCircle
+  ArrowUpCircle,
+  CalendarCheck,
+  CalendarX,
+  CalendarClock
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PropertyService, PropertyInquiry } from '@/services/propertyService';
-import { messageService } from '@/services/messageService';
-import { conversationService } from '@/services/conversationService';
 import { useAuth } from '@/hooks/useAuth';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { LeadConversionDialog } from './LeadConversionDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ExtendedPropertyInquiry extends PropertyInquiry {
   property?: {
@@ -39,6 +41,19 @@ interface ExtendedPropertyInquiry extends PropertyInquiry {
   conversation?: {
     id: string;
     subject: string;
+  };
+  appointment?: {
+    id: string;
+    date: string;
+    time: string;
+    appointment_type: string;
+    status: string;
+    duration: number;
+  };
+  client?: {
+    id: string;
+    name: string;
+    status: string;
   };
 }
 
@@ -74,15 +89,45 @@ export const AgentInquiriesComponent = () => {
       for (const listing of myListings) {
         const { data: propertyInquiries } = await PropertyService.getPropertyInquiries(listing.id);
         if (propertyInquiries) {
-          const inquiriesWithProperty = propertyInquiries.map(inquiry => ({
-            ...inquiry,
-            property: {
-              title: listing.title,
-              address: listing.address,
-              price: listing.price
+          // For each inquiry, fetch related appointment and client data
+          for (const inquiry of propertyInquiries) {
+            const inquiryWithData: ExtendedPropertyInquiry = {
+              ...inquiry,
+              property: {
+                title: listing.title,
+                address: listing.address,
+                price: listing.price
+              }
+            };
+
+            // Fetch appointment data for this inquiry
+            const { data: appointment } = await supabase
+              .from('appointments')
+              .select('id, date, time, appointment_type, status, duration')
+              .eq('inquiry_id', inquiry.id)
+              .eq('agent_id', profile.id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (appointment) {
+              inquiryWithData.appointment = appointment;
             }
-          }));
-          allInquiries.push(...inquiriesWithProperty);
+
+            // Fetch client data if buyer exists as a client
+            const { data: client } = await supabase
+              .from('clients')
+              .select('id, name, status')
+              .eq('id', inquiry.buyer_id)
+              .eq('agent_id', profile.id)
+              .maybeSingle();
+
+            if (client) {
+              inquiryWithData.client = client;
+            }
+
+            allInquiries.push(inquiryWithData);
+          }
         }
       }
 
@@ -144,11 +189,14 @@ export const AgentInquiriesComponent = () => {
       }
 
       // Create new conversation if none exists
-      const { data: conversation, error } = await conversationService.getOrCreateConversation(
-        profile.id,
-        inquiry.buyer_id,
-        `Property Inquiry: ${inquiry.property?.title}`
-      );
+      const { data: conversation, error } = await supabase.functions.invoke('messaging', {
+        body: { 
+          action: 'createConversation',
+          agentId: profile.id,
+          clientId: inquiry.buyer_id,
+          subject: `Property Inquiry: ${inquiry.property?.title}`
+        }
+      });
 
       if (conversation && !error) {
         toast.success('Conversation started! You can now message this buyer.');
@@ -168,6 +216,23 @@ export const AgentInquiriesComponent = () => {
   };
 
   const getInquiryStatusColor = (inquiry: ExtendedPropertyInquiry) => {
+    if (inquiry.appointment) {
+      switch (inquiry.appointment.status) {
+        case 'confirmed':
+          return 'bg-green-500/10 text-green-500';
+        case 'scheduled':
+          return 'bg-blue-500/10 text-blue-500';
+        case 'completed':
+          return 'bg-purple-500/10 text-purple-500';
+        case 'cancelled':
+          return 'bg-red-500/10 text-red-500';
+        default:
+          return 'bg-blue-500/10 text-blue-500';
+      }
+    }
+    if (inquiry.client) {
+      return 'bg-yellow-500/10 text-yellow-500';
+    }
     if (inquiry.agent_response) {
       return 'bg-green-500/10 text-green-500';
     }
@@ -175,10 +240,51 @@ export const AgentInquiriesComponent = () => {
   };
 
   const getInquiryStatusText = (inquiry: ExtendedPropertyInquiry) => {
+    if (inquiry.appointment) {
+      switch (inquiry.appointment.status) {
+        case 'confirmed':
+          return 'Appointment Confirmed';
+        case 'scheduled':
+          return 'Appointment Scheduled';
+        case 'completed':
+          return 'Appointment Completed';
+        case 'cancelled':
+          return 'Appointment Cancelled';
+        default:
+          return 'Appointment Scheduled';
+      }
+    }
+    if (inquiry.client) {
+      return 'Client Added';
+    }
     if (inquiry.agent_response) {
       return 'Responded';
     }
     return 'New';
+  };
+
+  const getInquiryStatusIcon = (inquiry: ExtendedPropertyInquiry) => {
+    if (inquiry.appointment) {
+      switch (inquiry.appointment.status) {
+        case 'confirmed':
+          return <CalendarCheck className="h-3 w-3" />;
+        case 'scheduled':
+          return <Calendar className="h-3 w-3" />;
+        case 'completed':
+          return <CheckCircle className="h-3 w-3" />;
+        case 'cancelled':
+          return <CalendarX className="h-3 w-3" />;
+        default:
+          return <CalendarClock className="h-3 w-3" />;
+      }
+    }
+    if (inquiry.client) {
+      return <UserPlus className="h-3 w-3" />;
+    }
+    if (inquiry.agent_response) {
+      return <CheckCircle className="h-3 w-3" />;
+    }
+    return <Clock className="h-3 w-3" />;
   };
 
   if (loading) {
@@ -202,7 +308,7 @@ export const AgentInquiriesComponent = () => {
   return (
     <div className="space-y-6">
       {/* Statistics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-blue-500/20">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-blue-500">{inquiries.length}</div>
@@ -212,15 +318,23 @@ export const AgentInquiriesComponent = () => {
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-green-500/20">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-green-500">
-              {inquiries.filter(i => i.agent_response).length}
+              {inquiries.filter(i => i.appointment).length}
             </div>
-            <div className="text-sm text-gray-300">Responded</div>
+            <div className="text-sm text-gray-300">Appointments</div>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-500/20">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-yellow-500">
-              {inquiries.filter(i => !i.agent_response).length}
+              {inquiries.filter(i => i.client && !i.appointment).length}
+            </div>
+            <div className="text-sm text-gray-300">Clients Added</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-gray-500/20">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-gray-500">
+              {inquiries.filter(i => !i.agent_response && !i.client && !i.appointment).length}
             </div>
             <div className="text-sm text-gray-300">Pending</div>
           </CardContent>
@@ -250,7 +364,10 @@ export const AgentInquiriesComponent = () => {
                   </div>
                 </div>
                 <Badge className={getInquiryStatusColor(inquiry)}>
-                  {getInquiryStatusText(inquiry)}
+                  <div className="flex items-center gap-1">
+                    {getInquiryStatusIcon(inquiry)}
+                    {getInquiryStatusText(inquiry)}
+                  </div>
                 </Badge>
               </div>
             </CardHeader>
@@ -279,6 +396,55 @@ export const AgentInquiriesComponent = () => {
                 </div>
               </div>
 
+              {/* Appointment Information */}
+              {inquiry.appointment && (
+                <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="h-4 w-4 text-blue-400" />
+                    <span className="text-white font-medium text-sm">Appointment Scheduled</span>
+                  </div>
+                  <div className="text-gray-300 text-xs space-y-1">
+                    <div><strong>Date:</strong> {new Date(inquiry.appointment.date).toLocaleDateString()}</div>
+                    <div><strong>Time:</strong> {inquiry.appointment.time}</div>
+                    <div><strong>Type:</strong> {inquiry.appointment.appointment_type.replace('_', ' ').toUpperCase()}</div>
+                    <div><strong>Duration:</strong> {inquiry.appointment.duration} minutes</div>
+                    <div><strong>Status:</strong> 
+                      <span className={`ml-1 ${
+                        inquiry.appointment.status === 'confirmed' ? 'text-green-400' :
+                        inquiry.appointment.status === 'scheduled' ? 'text-blue-400' :
+                        inquiry.appointment.status === 'completed' ? 'text-purple-400' :
+                        inquiry.appointment.status === 'cancelled' ? 'text-red-400' :
+                        'text-gray-400'
+                      }`}>
+                        {inquiry.appointment.status.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Client Information */}
+              {inquiry.client && !inquiry.appointment && (
+                <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <UserPlus className="h-4 w-4 text-yellow-400" />
+                    <span className="text-white font-medium text-sm">Client Added</span>
+                  </div>
+                  <div className="text-gray-300 text-xs">
+                    <div><strong>Name:</strong> {inquiry.client.name}</div>
+                    <div><strong>Status:</strong> 
+                      <span className={`ml-1 ${
+                        inquiry.client.status === 'active' ? 'text-green-400' :
+                        inquiry.client.status === 'lead' ? 'text-blue-400' :
+                        'text-gray-400'
+                      }`}>
+                        {inquiry.client.status.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Response if exists */}
               {inquiry.agent_response && (
                 <div>
@@ -303,7 +469,7 @@ export const AgentInquiriesComponent = () => {
 
               {/* Actions */}
               <div className="flex gap-2 pt-2">
-                {!inquiry.agent_response && (
+                {!inquiry.agent_response && !inquiry.appointment && (
                   <Button
                     size="sm"
                     onClick={() => handleRespondToInquiry(inquiry)}
@@ -313,6 +479,7 @@ export const AgentInquiriesComponent = () => {
                     Respond
                   </Button>
                 )}
+                
                 <Button
                   size="sm"
                   variant="outline"
@@ -326,24 +493,63 @@ export const AgentInquiriesComponent = () => {
                   <MessageSquare className="h-4 w-4 mr-1" />
                   {inquiry.conversation?.id ? 'Open Chat' : 'Start Chat'}
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleConvertLead(inquiry)}
-                  className="flex-1 text-green-500 border-green-500/20 hover:bg-green-500/10"
-                >
-                  <ArrowUpCircle className="h-4 w-4 mr-1" />
-                  Convert
-                </Button>
+                
+                {!inquiry.appointment && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleConvertLead(inquiry)}
+                    className={`flex-1 ${
+                      inquiry.client 
+                        ? 'text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/10' 
+                        : 'text-green-500 border-green-500/20 hover:bg-green-500/10'
+                    }`}
+                  >
+                    {inquiry.client ? (
+                      <>
+                        <Calendar className="h-4 w-4 mr-1" />
+                        Schedule
+                      </>
+                    ) : (
+                      <>
+                        <ArrowUpCircle className="h-4 w-4 mr-1" />
+                        Convert
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
               
-              {/* Conversation Status */}
-              {inquiry.conversation?.id && (
-                <div className="flex items-center gap-2 text-xs text-green-400 bg-green-500/10 p-2 rounded">
-                  <CheckCircle className="h-3 w-3" />
-                  Active conversation available
-                </div>
-              )}
+              {/* Status Summary */}
+              <div className="space-y-2">
+                {inquiry.conversation?.id && (
+                  <div className="flex items-center gap-2 text-xs text-green-400 bg-green-500/10 p-2 rounded">
+                    <CheckCircle className="h-3 w-3" />
+                    Active conversation available
+                  </div>
+                )}
+                
+                {inquiry.appointment && (
+                  <div className="flex items-center gap-2 text-xs text-blue-400 bg-blue-500/10 p-2 rounded">
+                    <Calendar className="h-3 w-3" />
+                    Appointment scheduled for {new Date(inquiry.appointment.date).toLocaleDateString()} at {inquiry.appointment.time}
+                  </div>
+                )}
+                
+                {inquiry.client && !inquiry.appointment && (
+                  <div className="flex items-center gap-2 text-xs text-yellow-400 bg-yellow-500/10 p-2 rounded">
+                    <UserPlus className="h-3 w-3" />
+                    Client added - ready to schedule appointment
+                  </div>
+                )}
+                
+                {!inquiry.agent_response && !inquiry.client && !inquiry.appointment && (
+                  <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-500/10 p-2 rounded">
+                    <Clock className="h-3 w-3" />
+                    New inquiry - awaiting response
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}

@@ -1,142 +1,291 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { MessageSquare, Clock } from 'lucide-react';
-import { conversationService, ConversationWithDetails } from '@/services/conversationService';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Search, MessageCircle, MapPin, Calendar, User } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { toast } from 'sonner';
+
+interface ConversationWithDetails {
+  id: string;
+  agent_id: string;
+  client_id: string;
+  inquiry_id?: string;
+  subject?: string;
+  status?: string;
+  priority?: string;
+  tags?: string[];
+  metadata?: Record<string, any>;
+  last_message_at: string;
+  created_at: string;
+  updated_at: string;
+  agent_profile?: {
+    id: string;
+    full_name: string;
+    email: string;
+  };
+  client_profile?: {
+    id: string;
+    full_name: string;
+    email: string;
+  };
+  property?: {
+    id: string;
+    title: string;
+    address: string;
+    price: number;
+  };
+  last_message?: {
+    content: string;
+    created_at: string;
+    sender_id: string;
+  };
+  unread_count?: number;
+}
 
 interface ConversationListProps {
   onSelectConversation: (conversation: ConversationWithDetails) => void;
   selectedConversationId?: string;
 }
 
-const ConversationListComponent = ({ onSelectConversation, selectedConversationId }: ConversationListProps) => {
-  const { profile } = useAuth();
+export const ConversationList = ({ onSelectConversation, selectedConversationId }: ConversationListProps) => {
+  const { user } = useAuth();
   const [conversations, setConversations] = useState<ConversationWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetchConversations();
-  }, []);
+    if (user) {
+      fetchConversations();
+    }
+  }, [user]);
 
   const fetchConversations = async () => {
-    if (!profile) return;
-    
+    if (!user) return;
+
     setLoading(true);
     try {
-      const { data, error } = await conversationService.getConversations();
-      if (error) {
-        toast.error('Failed to fetch conversations');
-        return;
-      }
-      setConversations(data || []);
+      // Fetch conversations with all related data
+      const { data, error } = await supabase
+        .from('conversations')
+        .select(`
+          *,
+          agent_profile:profiles!conversations_agent_id_fkey(id, full_name, email, avatar_url, phone, company_name),
+          client_profile:profiles!conversations_client_id_fkey(id, full_name, email, avatar_url),
+          property_inquiries!conversations_inquiry_id_fkey(
+            property_id,
+            property_listings!inner(id, title, address, price, images)
+          )
+        `)
+        .or(`agent_id.eq.${user.id},client_id.eq.${user.id}`)
+        .order('last_message_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform the data to include property information
+      const transformedConversations = (data || []).map(conv => {
+        let property = null;
+        
+        // Get property from inquiry if available
+        if (conv.property_inquiries && conv.property_inquiries.length > 0) {
+          const inquiry = conv.property_inquiries[0];
+          if (inquiry.property_listings) {
+            property = inquiry.property_listings;
+          }
+        }
+        
+        // Get property from metadata if available (fallback)
+        if (!property && conv.metadata?.property_id) {
+          // This would require an additional query, but for now we'll handle it in the UI
+          property = { id: conv.metadata.property_id, title: 'Property', address: 'Address not available' };
+        }
+
+        return {
+          ...conv,
+          property: property || null,
+          unread_count: 0 // TODO: Calculate unread count
+        };
+      });
+
+      setConversations(transformedConversations);
     } catch (error) {
-      toast.error('Failed to fetch conversations');
+      console.error('Error fetching conversations:', error);
+      toast.error('Failed to load conversations');
     } finally {
       setLoading(false);
     }
   };
 
-  const getOtherParticipant = (conversation: ConversationWithDetails) => {
-    if (profile?.id === conversation.agent_id) {
-      return conversation.client;
+  const filteredConversations = conversations.filter(conv => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      conv.client_profile?.full_name?.toLowerCase().includes(searchLower) ||
+      conv.client_profile?.email?.toLowerCase().includes(searchLower) ||
+      conv.agent_profile?.full_name?.toLowerCase().includes(searchLower) ||
+      conv.agent_profile?.email?.toLowerCase().includes(searchLower) ||
+      conv.property?.title?.toLowerCase().includes(searchLower) ||
+      conv.property?.address?.toLowerCase().includes(searchLower) ||
+      conv.subject?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  const getConversationTitle = (conversation: ConversationWithDetails) => {
+    if (conversation.property) {
+      return `${conversation.property.title} - ${conversation.property.address}`;
     }
-    return conversation.agent;
+    
+    if (conversation.subject) {
+      return conversation.subject;
+    }
+    
+    const otherUser = user?.id === conversation.agent_id 
+      ? conversation.client_profile 
+      : conversation.agent_profile;
+    
+    return otherUser?.full_name || otherUser?.email || 'Unknown User';
+  };
+
+  const getConversationSubtitle = (conversation: ConversationWithDetails) => {
+    const otherUser = user?.id === conversation.agent_id 
+      ? conversation.client_profile 
+      : conversation.agent_profile;
+    
+    if (conversation.property) {
+      return `$${conversation.property.price.toLocaleString()} • ${otherUser?.full_name || otherUser?.email}`;
+    }
+    
+    return otherUser?.full_name || otherUser?.email || 'Unknown User';
   };
 
   const formatLastMessageTime = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffDays > 0) {
-      return `${diffDays}d ago`;
-    } else if (diffHours > 0) {
-      return `${diffHours}h ago`;
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+    
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffInHours < 168) { // 7 days
+      return date.toLocaleDateString([], { weekday: 'short' });
     } else {
-      const diffMinutes = Math.floor(diffMs / (1000 * 60));
-      return diffMinutes > 0 ? `${diffMinutes}m ago` : 'Just now';
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-gray-300">Loading conversations...</div>
-      </div>
-    );
-  }
-
-  if (conversations.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-white mb-2">No Conversations</h3>
-        <p className="text-gray-400">Start conversations with clients from property inquiries.</p>
+      <div className="space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <Card key={i} className="bg-white/5 border-white/10 animate-pulse">
+            <CardContent className="p-4">
+              <div className="h-4 bg-white/10 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-white/5 rounded w-1/2"></div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {conversations.map((conversation) => {
-        const otherParticipant = getOtherParticipant(conversation);
-        const isSelected = selectedConversationId === conversation.id;
-        
-        return (
-          <Card 
-            key={conversation.id} 
-            className={`cursor-pointer transition-all hover:shadow-lg ${
-              isSelected 
-                ? 'bg-gradient-to-br from-pickfirst-yellow/20 to-pickfirst-amber/20 border-pickfirst-yellow/40' 
-                : 'bg-gradient-to-br from-gray-900/90 to-black/90 border-pickfirst-yellow/20 hover:border-pickfirst-yellow/40'
-            }`}
-            onClick={() => onSelectConversation(conversation)}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src="" />
-                  <AvatarFallback>
-                    {otherParticipant?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <h4 className="text-white font-medium truncate">
-                      {otherParticipant?.full_name || 'Unknown User'}
-                    </h4>
-                    <div className="flex items-center gap-2 text-xs text-gray-400">
-                      <Clock className="h-3 w-3" />
-                      {formatLastMessageTime(conversation.last_message_at || conversation.created_at)}
+    <div className="space-y-4">
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input
+          placeholder="Search conversations..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
+        />
+      </div>
+
+      {/* Conversations */}
+      <div className="space-y-2">
+        {filteredConversations.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">
+            <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>No conversations found</p>
+            {searchTerm && (
+              <p className="text-sm mt-2">Try adjusting your search terms</p>
+            )}
+          </div>
+        ) : (
+          filteredConversations.map((conversation) => (
+            <Card
+              key={conversation.id}
+              className={`cursor-pointer transition-all duration-200 hover:bg-white/10 ${
+                selectedConversationId === conversation.id 
+                  ? 'bg-pickfirst-yellow/10 border-pickfirst-yellow/30' 
+                  : 'bg-white/5 border-white/10 hover:border-white/20'
+              }`}
+              onClick={() => onSelectConversation(conversation)}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-medium text-white truncate">
+                        {getConversationTitle(conversation)}
+                      </h3>
+                      {conversation.unread_count > 0 && (
+                        <Badge className="bg-pickfirst-yellow text-black text-xs">
+                          {conversation.unread_count}
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <p className="text-sm text-gray-400 truncate">
+                      {getConversationSubtitle(conversation)}
+                    </p>
+                    
+                    {conversation.last_message && (
+                      <p className="text-xs text-gray-500 mt-1 truncate">
+                        {conversation.last_message.content}
+                      </p>
+                    )}
+                    
+                    {/* Property and inquiry badges */}
+                    <div className="flex items-center gap-2 mt-2">
+                      {conversation.property && (
+                        <Badge variant="outline" className="text-xs border-blue-400/30 text-blue-400">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          Property
+                        </Badge>
+                      )}
+                      {conversation.inquiry_id && (
+                        <Badge variant="outline" className="text-xs border-green-400/30 text-green-400">
+                          <MessageCircle className="h-3 w-3 mr-1" />
+                          Inquiry
+                        </Badge>
+                      )}
+                      {conversation.status && (
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${
+                            conversation.status === 'active' 
+                              ? 'border-green-400/30 text-green-400'
+                              : 'border-gray-400/30 text-gray-400'
+                          }`}
+                        >
+                          {conversation.status}
+                        </Badge>
+                      )}
                     </div>
                   </div>
-                  <div className="text-sm text-gray-300 truncate">
-                    {otherParticipant?.email}
+                  
+                  <div className="text-xs text-gray-500 ml-2 flex-shrink-0">
+                    {formatLastMessageTime(conversation.last_message_at)}
                   </div>
-                  {conversation.subject && (
-                    <div className="text-xs text-gray-400 mt-1 truncate">
-                      {conversation.subject}
-                    </div>
-                  )}
-                  {conversation.unread_count && conversation.unread_count > 0 && (
-                    <Badge variant="secondary" className="mt-2 bg-pickfirst-yellow text-black">
-                      {conversation.unread_count} unread
-                    </Badge>
-                  )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 };
-
-export const ConversationList = withErrorBoundary(ConversationListComponent);

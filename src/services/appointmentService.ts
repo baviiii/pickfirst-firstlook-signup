@@ -2,6 +2,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { rateLimitService } from './rateLimitService';
 import { auditService } from './auditService';
+import { CalendarService } from './calendarService';
+import { EmailService } from './emailService';
 
 export type Appointment = Tables<'appointments'>;
 export type AppointmentInsert = TablesInsert<'appointments'>;
@@ -120,6 +122,9 @@ class AppointmentService {
             appointment_type: data.appointment_type
           }
         });
+
+        // Send email notifications and sync to calendar
+        await this.sendAppointmentNotifications(data);
       }
 
       return { data, error };
@@ -210,10 +215,24 @@ class AppointmentService {
         return { data: null, error: { message: 'Inquiry not found' } };
       }
 
+      // Check if the buyer exists in the clients table
+      let clientId: string | null = null;
+      if (inquiry.buyer_id) {
+        const { data: existingClient } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('id', inquiry.buyer_id)
+          .single();
+        
+        if (existingClient) {
+          clientId = existingClient.id;
+        }
+      }
+
       const newAppointment: AppointmentInsert = {
         agent_id: user.id,
         inquiry_id: inquiryId,
-        client_id: inquiry.buyer_id,
+        client_id: clientId, // Only set if client exists in clients table
         client_name: inquiry.profiles.full_name || 'Unknown',
         client_email: inquiry.profiles.email,
         property_id: inquiry.property_id,
@@ -240,11 +259,103 @@ class AppointmentService {
             appointment_type: data.appointment_type
           }
         });
+
+        // Send email notifications and sync to calendar
+        await this.sendAppointmentNotifications(data);
       }
 
       return { data, error };
     } catch (error) {
       return { data: null, error };
+    }
+  }
+
+  /**
+   * Send appointment notifications (email and calendar sync)
+   */
+  private async sendAppointmentNotifications(appointment: Appointment): Promise<void> {
+    try {
+      // Get agent information
+      const { data: agentProfile } = await supabase
+        .from('profiles')
+        .select('full_name, email, phone')
+        .eq('id', appointment.agent_id)
+        .single();
+
+      if (!agentProfile) {
+        console.error('Agent profile not found for appointment notifications');
+        return;
+      }
+
+      // Send email notifications
+      await this.sendEmailNotifications(appointment, agentProfile);
+
+      // Sync to calendar
+      await this.syncToCalendar(appointment, agentProfile);
+    } catch (error) {
+      console.error('Error sending appointment notifications:', error);
+    }
+  }
+
+  /**
+   * Send email notifications for appointment
+   */
+  private async sendEmailNotifications(
+    appointment: Appointment,
+    agentProfile: { full_name: string; email: string; phone?: string }
+  ): Promise<void> {
+    try {
+      // Send confirmation email to client
+      await EmailService.sendAppointmentConfirmation(
+        appointment.client_email,
+        appointment.client_name,
+        {
+          propertyTitle: appointment.property_address,
+          date: appointment.date,
+          time: appointment.time,
+          agentName: agentProfile.full_name || 'Your Agent',
+          agentPhone: agentProfile.phone || ''
+        }
+      );
+
+      // Send notification email to agent
+      await EmailService.sendAppointmentNotification(
+        agentProfile.email,
+        agentProfile.full_name,
+        {
+          clientName: appointment.client_name,
+          clientEmail: appointment.client_email,
+          clientPhone: appointment.client_phone || 'Not provided',
+          appointmentType: appointment.appointment_type.replace('_', ' ').toUpperCase(),
+          date: appointment.date,
+          time: appointment.time,
+          duration: appointment.duration,
+          location: appointment.property_address,
+          notes: appointment.notes || 'No additional notes',
+          appointmentId: appointment.id
+        }
+      );
+    } catch (error) {
+      console.error('Error sending email notifications:', error);
+    }
+  }
+
+  /**
+   * Sync appointment to calendar
+   */
+  private async syncToCalendar(
+    appointment: Appointment,
+    agentProfile: { full_name: string; email: string; phone?: string }
+  ): Promise<void> {
+    try {
+      await CalendarService.createCalendarEvent(
+        appointment,
+        agentProfile.full_name || 'Your Agent',
+        agentProfile.email,
+        agentProfile.phone
+      );
+    } catch (error) {
+      console.error('Error syncing to calendar:', error);
     }
   }
 }

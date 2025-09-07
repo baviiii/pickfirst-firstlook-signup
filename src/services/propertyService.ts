@@ -870,7 +870,19 @@ export class PropertyService {
       return { data: null, error: new Error('You have already inquired about this property. You can continue the conversation in your messages.') };
     }
 
-    const { data, error } = await supabase
+    // Get property details to find the agent
+    const { data: property, error: propertyError } = await supabase
+      .from('property_listings')
+      .select('agent_id, title')
+      .eq('id', propertyId)
+      .single();
+
+    if (propertyError || !property) {
+      return { data: null, error: { message: 'Property not found' } };
+    }
+
+    // Create the inquiry
+    const { data: inquiry, error: inquiryError } = await supabase
       .from('property_inquiries')
       .insert({
         property_id: propertyId,
@@ -884,7 +896,33 @@ export class PropertyService {
       `)
       .single();
 
-    return { data, error };
+    if (inquiryError) {
+      return { data: null, error: inquiryError };
+    }
+
+    // Create conversation for this inquiry
+    try {
+      const { data: conversation, error: conversationError } = await supabase.functions.invoke('messaging', {
+        body: { 
+          action: 'createConversation',
+          agentId: property.agent_id,
+          clientId: user.id,
+          subject: `Property Inquiry: ${property.title}`,
+          inquiryId: inquiry.id,
+          propertyId: propertyId
+        }
+      });
+
+      if (conversationError) {
+        console.error('Failed to create conversation:', conversationError);
+        // Don't fail the inquiry if conversation creation fails
+      }
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      // Don't fail the inquiry if conversation creation fails
+    }
+
+    return { data: inquiry, error: null };
   }
 
   // Get inquiries for a specific property (agent only)
