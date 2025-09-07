@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,8 @@ import { toast } from 'sonner';
 import { clientService } from '@/services/clientService';
 import { appointmentService } from '@/services/appointmentService';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface PropertyInquiry {
   id: string;
@@ -40,11 +42,14 @@ interface LeadConversionDialogProps {
 }
 
 const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess }: LeadConversionDialogProps) => {
+  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState('client');
   const [loading, setLoading] = useState(false);
+  const [hasClient, setHasClient] = useState(false);
   
   // Client conversion state
   const [clientData, setClientData] = useState({
+    countryCode: '+61',
     phone: '',
     status: 'lead',
     budget_range: '',
@@ -62,6 +67,23 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
     notes: '',
   });
 
+  // Check if this buyer is already a client for this agent
+  useEffect(() => {
+    const checkExistingClient = async () => {
+      if (!open || !inquiry?.buyer?.email || !profile?.id) return;
+      const { data } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('agent_id', profile.id)
+        .eq('email', inquiry.buyer.email)
+        .maybeSingle();
+      const exists = !!data;
+      setHasClient(exists);
+      if (exists) setActiveTab('appointment');
+    };
+    checkExistingClient();
+  }, [open, inquiry?.buyer?.email, profile?.id]);
+
   const handleConvertToClient = async () => {
     if (!inquiry?.buyer?.email) {
       toast.error('Buyer email not found');
@@ -70,10 +92,15 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
 
     setLoading(true);
     try {
+      // Build E.164-style phone using selected country code
+      const codeDigits = (clientData.countryCode || '+61').replace(/\D/g, '');
+      const phoneDigits = (clientData.phone || '').replace(/\D/g, '');
+      const formattedPhone = phoneDigits ? `+${codeDigits}${phoneDigits}` : undefined;
+
       const { data, error } = await clientService.createClientByEmail(
         inquiry.buyer.email,
         {
-          phone: clientData.phone || undefined,
+          phone: formattedPhone,
           status: clientData.status,
           budget_range: clientData.budget_range || undefined,
           property_type: clientData.property_type || undefined,
@@ -136,6 +163,7 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
 
   const resetForm = () => {
     setClientData({
+      countryCode: '+61',
       phone: '',
       status: 'lead',
       budget_range: '',
@@ -176,28 +204,40 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-white/10">
-            <TabsTrigger value="client" className="flex items-center gap-2">
-              <UserPlus className="h-4 w-4" />
-              Add as Client
-            </TabsTrigger>
+          <TabsList className="grid w-full bg-white/10" style={{ gridTemplateColumns: hasClient ? '1fr' : '1fr 1fr' }}>
+            {!hasClient && (
+              <TabsTrigger value="client" className="flex items-center gap-2">
+                <UserPlus className="h-4 w-4" />
+                Add as Client
+              </TabsTrigger>
+            )}
             <TabsTrigger value="appointment" className="flex items-center gap-2">
               <CalendarSchedule className="h-4 w-4" />
               Schedule Appointment
             </TabsTrigger>
           </TabsList>
 
+          {!hasClient && (
           <TabsContent value="client" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="phone" className="text-white">Phone Number</Label>
-                <Input
-                  id="phone"
-                  value={clientData.phone}
-                  onChange={(e) => setClientData(prev => ({ ...prev, phone: e.target.value }))}
-                  className="bg-white/5 border-white/20 text-white"
-                  placeholder="(555) 123-4567"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="countryCode"
+                    value={clientData.countryCode}
+                    onChange={(e) => setClientData(prev => ({ ...prev, countryCode: e.target.value }))}
+                    className="bg-white/5 border-white/20 text-white w-24"
+                    placeholder="+61"
+                  />
+                  <Input
+                    id="phone"
+                    value={clientData.phone}
+                    onChange={(e) => setClientData(prev => ({ ...prev, phone: e.target.value }))}
+                    className="bg-white/5 border-white/20 text-white flex-1"
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
               </div>
               <div>
                 <Label htmlFor="status" className="text-white">Status</Label>
@@ -281,6 +321,7 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
               {loading ? 'Converting...' : 'Convert to Client'}
             </Button>
           </TabsContent>
+          )}
 
           <TabsContent value="appointment" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

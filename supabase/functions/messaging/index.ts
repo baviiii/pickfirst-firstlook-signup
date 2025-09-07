@@ -26,6 +26,12 @@ serve(async (req) => {
       }
     )
 
+    // Create service role client for admin operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
     // Get the authenticated user from JWT
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
     
@@ -104,6 +110,24 @@ serve(async (req) => {
             )
           }
 
+          console.log('Raw conversations from DB:', conversations)
+          
+          // Debug: Check if agent profile exists
+          if (conversations && conversations.length > 0) {
+            const firstConv = conversations[0];
+            console.log('First conversation agent_id:', firstConv.agent_id);
+            console.log('First conversation agent_profile:', firstConv.agent_profile);
+            
+            // Try to fetch the agent profile directly
+            const { data: agentProfile, error: agentError } = await supabaseClient
+              .from('profiles')
+              .select('id, full_name, email, phone, company')
+              .eq('id', firstConv.agent_id)
+              .single();
+            
+            console.log('Direct agent profile lookup:', agentProfile, agentError);
+          }
+
           // Get last message and unread count for each conversation
           const processedConversations = await Promise.all(
             conversations.map(async (conv) => {
@@ -125,6 +149,19 @@ serve(async (req) => {
                   .neq('sender_id', user.id)
                   .is('read_at', null)
 
+                // Fetch agent profile separately since join is failing
+                let agentProfile = conv.agent_profile;
+                if (!agentProfile && conv.agent_id) {
+                  console.log('Fetching agent profile for ID:', conv.agent_id);
+                  const { data: agentData, error: agentError } = await supabaseAdmin
+                    .from('profiles')
+                    .select('id, full_name, avatar_url, email, phone, company')
+                    .eq('id', conv.agent_id)
+                    .single();
+                  console.log('Agent profile fetch result:', agentData, agentError);
+                  agentProfile = agentData;
+                }
+
                 // Extract property information from metadata
                 let property = null;
                 if (conv.metadata?.property_id) {
@@ -138,6 +175,7 @@ serve(async (req) => {
 
                 return {
                   ...conv,
+                  agent_profile: agentProfile,
                   last_message: lastMessage,
                   unread_count: count || 0,
                   property: property
@@ -154,6 +192,7 @@ serve(async (req) => {
             })
           )
 
+          console.log('Processed conversations:', processedConversations)
           return new Response(
             JSON.stringify(processedConversations),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }

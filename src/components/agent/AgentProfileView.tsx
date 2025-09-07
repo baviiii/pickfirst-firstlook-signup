@@ -28,7 +28,29 @@ interface AgentProfileViewProps {
 }
 
 export const AgentProfileView = ({ agent, isOpen, onClose, onStartConversation }: AgentProfileViewProps) => {
-  if (!agent) return null;
+  console.log('AgentProfileView rendered with:', { agent, isOpen });
+  
+  if (!isOpen) {
+    console.log('Modal is not open, returning null');
+    return null;
+  }
+  
+  if (!agent) {
+    console.log('No agent data, showing fallback');
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="bg-gray-900 border border-pickfirst-yellow/20 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-white text-xl">Agent Profile</DialogTitle>
+          </DialogHeader>
+          <div className="p-4 text-white">
+            <p>No agent data available</p>
+            <Button onClick={onClose} className="mt-4">Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
