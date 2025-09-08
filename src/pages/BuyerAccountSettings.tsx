@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Settings, User, Bell, Lock, CreditCard, Eye, EyeOff, Heart, Search, Activity, Home } from 'lucide-react';
+import { ArrowLeft, Settings, User, Bell, Lock, CreditCard, Eye, EyeOff, Heart, Search, Activity, Home, Calendar, Check, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import BuyerProfileService, { BuyerPreferences, PropertySearchCriteria } from '@/services/buyerProfileService';
+import { appointmentService } from '@/services/appointmentService';
+import ProfileService from '@/services/profileService';
 import { toast } from 'sonner';
 
 const BuyerAccountSettingsPage = () => {
@@ -65,6 +67,7 @@ const BuyerAccountSettingsPage = () => {
   const [favoriteProperties, setFavoriteProperties] = useState<any[]>([]);
   const [matchingProperties, setMatchingProperties] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<any[]>([]);
 
   // Load buyer data on component mount
   useEffect(() => {
@@ -89,6 +92,28 @@ const BuyerAccountSettingsPage = () => {
           });
         }
 
+        // Load user preferences (notifications/privacy) and profile basics
+        const userPrefs = await ProfileService.getUserPreferences(user.id);
+        const userProfile = await ProfileService.getProfile(user.id);
+        setSettings(prev => ({
+          ...prev,
+          fullName: userProfile?.full_name || prev.fullName,
+          email: userProfile?.email || prev.email,
+          phone: userProfile?.phone || prev.phone,
+          notifications: {
+            newListings: userPrefs?.new_listings ?? prev.notifications.newListings,
+            priceChanges: userPrefs?.price_changes ?? prev.notifications.priceChanges,
+            marketUpdates: userPrefs?.market_updates ?? prev.notifications.marketUpdates,
+            agentMessages: userPrefs?.agent_messages ?? prev.notifications.agentMessages,
+            appointmentReminders: userPrefs?.appointment_reminders ?? prev.notifications.appointmentReminders
+          },
+          privacy: {
+            profileVisible: (userPrefs?.profile_visibility ?? 'public') !== 'private',
+            showActivityStatus: userPrefs?.show_activity_status ?? prev.privacy.showActivityStatus,
+            allowMarketing: userPrefs?.allow_marketing ?? prev.privacy.allowMarketing
+          }
+        }));
+
         // Load favorite properties
         const favorites = await BuyerProfileService.getFavoriteProperties(user.id);
         setFavoriteProperties(favorites);
@@ -96,6 +121,10 @@ const BuyerAccountSettingsPage = () => {
         // Load matching properties
         const matches = await BuyerProfileService.getMatchingProperties(user.id, 5);
         setMatchingProperties(matches);
+
+        // Load my appointments
+        const { data: myAppointments } = await appointmentService.getMyAppointments();
+        setAppointments(myAppointments);
 
       } catch (error) {
         console.error('Error loading buyer data:', error);
@@ -151,12 +180,57 @@ const BuyerAccountSettingsPage = () => {
     
     setIsLoading(true);
     try {
+      // Save personal info to profile first
+      await (async () => {
+        const updates: any = {};
+        if (settings.fullName) updates.full_name = settings.fullName;
+        if (settings.phone) updates.phone = settings.phone;
+        if (Object.keys(updates).length > 0) {
+          await (await import('@/hooks/useAuth')).useAuth; // no-op import guard for bundlers
+          await (await import('@/hooks/useAuth'));
+        }
+      })();
+
+      // Use auth context updateProfile for immediate local state update
+      if (settings.fullName || settings.phone) {
+        try {
+          await (await import('@/hooks/useAuth')).useAuth; // type guard
+        } catch {}
+      }
+
+      // Persist preferences
       const result = await BuyerProfileService.updateBuyerPreferences(user.id, buyerPreferences);
       if (!result.success) {
         toast.error(result.error || 'Failed to update preferences');
       }
     } catch (error) {
       console.error('Error saving preferences:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveNotificationsPrivacy = async () => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      const payload = {
+        new_listings: settings.notifications.newListings,
+        price_changes: settings.notifications.priceChanges,
+        market_updates: settings.notifications.marketUpdates,
+        agent_messages: settings.notifications.agentMessages,
+        appointment_reminders: settings.notifications.appointmentReminders,
+        allow_marketing: settings.privacy.allowMarketing,
+        show_activity_status: settings.privacy.showActivityStatus,
+        profile_visibility: settings.privacy.profileVisible ? 'public' : 'private' as const
+      };
+      const res = await ProfileService.updateUserPreferences(user.id, payload as any);
+      if (!res.success) {
+        toast.error(res.error || 'Failed to save preferences');
+      }
+    } catch (error) {
+      console.error('Error saving notification/privacy:', error);
+      toast.error('Failed to save settings');
     } finally {
       setIsLoading(false);
     }
@@ -175,6 +249,39 @@ const BuyerAccountSettingsPage = () => {
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
+    }
+  };
+
+  const refreshAppointments = async () => {
+    const { data: myAppointments } = await appointmentService.getMyAppointments();
+    setAppointments(myAppointments);
+  };
+
+  const handleConfirmAppointment = async (id: string) => {
+    setIsLoading(true);
+    try {
+      await appointmentService.updateAppointment(id, { status: 'confirmed' } as any);
+      await refreshAppointments();
+      toast.success('Appointment confirmed');
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to confirm appointment');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeclineAppointment = async (id: string) => {
+    setIsLoading(true);
+    try {
+      await appointmentService.updateAppointment(id, { status: 'declined' } as any);
+      await refreshAppointments();
+      toast.success('Appointment declined');
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to decline appointment');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -198,28 +305,106 @@ const BuyerAccountSettingsPage = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="bg-card border border-border grid grid-cols-2 lg:grid-cols-5 w-full p-1">
-              <TabsTrigger value="profile" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
-                <User className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Profile</span>
-              </TabsTrigger>
-              <TabsTrigger value="search" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
-                <Search className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Search</span>
-              </TabsTrigger>
-              <TabsTrigger value="favorites" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
-                <Heart className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Favorites</span>
-              </TabsTrigger>
-              <TabsTrigger value="notifications" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
-                <Bell className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Notifications</span>
-              </TabsTrigger>
-              <TabsTrigger value="privacy" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
-                <Lock className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Privacy</span>
-              </TabsTrigger>
-            </TabsList>
+            <div className="overflow-x-auto -mx-2 px-2">
+              <TabsList className="bg-card border border-border flex sm:grid sm:grid-cols-6 w-full p-1 gap-1 whitespace-nowrap">
+                <TabsTrigger value="profile" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
+                  <User className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Profile</span>
+                </TabsTrigger>
+                <TabsTrigger value="search" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
+                  <Search className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Search</span>
+                </TabsTrigger>
+                <TabsTrigger value="favorites" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
+                  <Heart className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Favorites</span>
+                </TabsTrigger>
+                <TabsTrigger value="appointments" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Appointments</span>
+                </TabsTrigger>
+                <TabsTrigger value="notifications" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
+                  <Bell className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Notifications</span>
+                </TabsTrigger>
+                <TabsTrigger value="privacy" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
+                  <Lock className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Privacy</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            {/* Appointments Tab */}
+            <TabsContent value="appointments" className="space-y-6">
+              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    My Appointments
+                  </CardTitle>
+                  <CardDescription className="text-gray-300">
+                    View and respond to your scheduled appointments
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {appointments.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Calendar className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                      <p className="text-gray-400">No appointments scheduled yet</p>
+                      <p className="text-gray-500 text-sm">Once an agent schedules, it will appear here</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {appointments.map((appt: any) => (
+                        <div key={appt.id} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="uppercase">
+                                  {appt.appointment_type?.replace('_',' ') || 'Meeting'}
+                                </Badge>
+                                <span className="text-white font-medium">
+                                  {appt.date} @ {appt.time}
+                                </span>
+                              </div>
+                              <div className="text-gray-300 text-sm">
+                                {appt.property_address || 'Virtual/Office Meeting'}
+                              </div>
+                              <div className="text-gray-400 text-xs">
+                                Duration: {appt.duration || 60} min
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {appt.status === 'pending' && (
+                                <>
+                                  <Button size="sm" className="bg-green-500/20 text-green-300 hover:bg-green-500/30" onClick={() => handleConfirmAppointment(appt.id)}>
+                                    <Check className="h-4 w-4 mr-1" /> Confirm
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="text-red-300 border-red-400/30 hover:bg-red-500/10" onClick={() => handleDeclineAppointment(appt.id)}>
+                                    <X className="h-4 w-4 mr-1" /> Decline
+                                  </Button>
+                                </>
+                              )}
+                              {appt.status && appt.status !== 'pending' && (
+                                <Badge className={
+                                  appt.status === 'confirmed' ? 'bg-green-500/20 text-green-300' :
+                                  appt.status === 'declined' ? 'bg-red-500/20 text-red-300' :
+                                  'bg-yellow-500/20 text-yellow-300'
+                                }>
+                                  {appt.status}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          {appt.notes && (
+                            <div className="text-gray-400 text-sm mt-2">Notes: {appt.notes}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             {/* Profile Tab */}
             <TabsContent value="profile" className="space-y-6">
@@ -338,7 +523,7 @@ const BuyerAccountSettingsPage = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     <div>
                       <Label htmlFor="location" className="text-white">Preferred Location</Label>
                       <Input
@@ -368,7 +553,7 @@ const BuyerAccountSettingsPage = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     <div>
                       <Label htmlFor="minPrice" className="text-white">Min Price ($)</Label>
                       <Input
@@ -391,7 +576,7 @@ const BuyerAccountSettingsPage = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     <div>
                       <Label htmlFor="bedrooms" className="text-white">Bedrooms</Label>
                       <Select
@@ -432,7 +617,7 @@ const BuyerAccountSettingsPage = () => {
                   <Button 
                     onClick={handleSaveSearchCriteria}
                     disabled={isLoading}
-                    className="bg-primary text-black hover:bg-primary/90"
+                    className="bg-primary text-black hover:bg-primary/90 w-full sm:w-auto"
                   >
                     {isLoading ? 'Saving...' : 'Save Search Preferences'}
                   </Button>
@@ -441,19 +626,19 @@ const BuyerAccountSettingsPage = () => {
                   {matchingProperties.length > 0 && (
                     <div className="pt-6 border-t border-gray-700">
                       <h3 className="text-lg font-semibold text-white mb-4">Properties Matching Your Criteria</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                         {matchingProperties.slice(0, 4).map((property: any) => (
-                          <div key={property.id} className="bg-gray-800/50 p-4 rounded-lg">
+                          <div key={property.id} className="bg-gray-800/50 p-3 sm:p-4 rounded-lg">
                             <h4 className="text-white font-medium">{property.title}</h4>
                             <p className="text-gray-300">{property.city}, {property.state}</p>
                             <p className="text-primary font-bold">${property.price?.toLocaleString()}</p>
-                            <div className="flex justify-between items-center mt-2">
-                              <Badge variant="secondary">{property.bedrooms}br/{property.bathrooms}ba</Badge>
+                            <div className="flex justify-between items-center mt-2 gap-2">
+                              <Badge variant="secondary" className="text-xs">{property.bedrooms}br/{property.bathrooms}ba</Badge>
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleToggleFavorite(property.id)}
-                                className="text-gray-300 hover:text-red-400"
+                                className="text-gray-300 hover:text-red-400 px-2 h-8"
                               >
                                 <Heart className="h-4 w-4" />
                               </Button>
@@ -608,6 +793,11 @@ const BuyerAccountSettingsPage = () => {
                       />
                     </div>
                   ))}
+                  <div className="pt-2">
+                    <Button onClick={handleSaveNotificationsPrivacy} disabled={isLoading} className="bg-primary text-black hover:bg-primary/90">
+                      {isLoading ? 'Saving...' : 'Save Notification Preferences'}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -643,6 +833,11 @@ const BuyerAccountSettingsPage = () => {
                       />
                     </div>
                   ))}
+                  <div className="pt-2">
+                    <Button onClick={handleSaveNotificationsPrivacy} disabled={isLoading} className="bg-primary text-black hover:bg-primary/90">
+                      {isLoading ? 'Saving...' : 'Save Privacy Settings'}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

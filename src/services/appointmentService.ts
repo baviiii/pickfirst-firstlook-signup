@@ -64,6 +64,76 @@ class AppointmentService {
     }
   }
 
+  /**
+   * Get appointments visible to the current user (buyer sees their own, agent sees all)
+   */
+  async getMyAppointments(): Promise<{ data: Appointment[]; error: any }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { data: [], error: { message: 'User not authenticated' } };
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, email, role')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      // Agents: show all their agent-owned appointments
+      if (profile?.role === 'agent') {
+        const { data, error } = await supabase
+          .from('appointments')
+          .select('*')
+          .eq('agent_id', user.id)
+          .order('date', { ascending: true })
+          .order('time', { ascending: true });
+        return { data: data || [], error };
+      }
+
+      // Buyers: show only appointments for this client (by user id or email)
+      let data: Appointment[] | null = null;
+      let error: any = null;
+
+      if (profile?.email) {
+        const orExpr = `client_id.eq.${user.id},client_email.eq.${profile.email}`;
+        const res = await supabase
+          .from('appointments')
+          .select('*')
+          .or(orExpr)
+          .order('date', { ascending: true })
+          .order('time', { ascending: true });
+        data = res.data as any;
+        error = res.error;
+      } else {
+        const res = await supabase
+          .from('appointments')
+          .select('*')
+          .eq('client_id', user.id)
+          .order('date', { ascending: true })
+          .order('time', { ascending: true });
+        data = res.data as any;
+        error = res.error;
+      }
+
+      // Fallback: attempt email ilike if nothing returned and email present
+      if ((!data || data.length === 0) && profile?.email) {
+        const res2 = await supabase
+          .from('appointments')
+          .select('*')
+          .ilike('client_email', profile.email)
+          .order('date', { ascending: true })
+          .order('time', { ascending: true });
+        data = res2.data as any;
+        error = error || res2.error;
+      }
+
+      return { data: data || [], error };
+    } catch (error) {
+      return { data: [], error };
+    }
+  }
+
   async createAppointment(appointmentData: Omit<AppointmentInsert, 'agent_id'>): Promise<{ data: Appointment | null; error: any }> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -124,6 +194,62 @@ class AppointmentService {
         });
 
         // Send email notifications and sync to calendar
+        await this.sendAppointmentNotifications(data);
+      }
+
+      return { data, error };
+    } catch (error) {
+      return { data: null, error };
+    }
+  }
+
+  /**
+   * Buyer creates an appointment with a specific agent
+   */
+  async createAppointmentAsBuyer(
+    agentId: string,
+    appointmentData: Omit<AppointmentInsert, 'agent_id' | 'client_id' | 'client_name' | 'client_email'>
+  ): Promise<{ data: Appointment | null; error: any }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { data: null, error: { message: 'User not authenticated' } };
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, email, id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.email) {
+        return { data: null, error: { message: 'Buyer email not found' } };
+      }
+
+      if (!appointmentData.date || !appointmentData.time) {
+        return { data: null, error: { message: 'Date and time are required' } };
+      }
+
+      const newAppointment: AppointmentInsert = {
+        ...appointmentData,
+        agent_id: agentId,
+        client_id: user.id,
+        client_name: profile.full_name || 'Buyer',
+        client_email: profile.email,
+      } as AppointmentInsert;
+
+      const { data, error } = await supabase
+        .from('appointments')
+        .insert(newAppointment)
+        .select()
+        .single();
+
+      if (!error && data) {
+        await auditService.log(user.id, 'CREATE', 'appointments', {
+          recordId: data.id,
+          newValues: { buyer_created: true, agent_id: agentId }
+        });
+
         await this.sendAppointmentNotifications(data);
       }
 

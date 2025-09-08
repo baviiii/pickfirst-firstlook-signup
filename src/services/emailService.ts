@@ -185,6 +185,96 @@ export class EmailService {
   }
 
   /**
+   * Send confirmation that preferences were updated
+   */
+  static async sendPreferencesUpdated(
+    userEmail: string,
+    userName?: string,
+    changedFields: string[] = []
+  ): Promise<void> {
+    try {
+      await supabase.functions.invoke('send-email', {
+        body: {
+          to: userEmail,
+          template: 'preferencesUpdated',
+          data: {
+            name: userName || 'User',
+            changedFields
+          },
+          subject: 'Your preferences were updated'
+        }
+      });
+    } catch (error) {
+      console.error('Error sending preferences updated email:', error);
+    }
+  }
+
+  /**
+   * Send confirmation that search preferences were saved
+   */
+  static async sendSearchPreferencesSaved(
+    userEmail: string,
+    userName: string,
+    criteria: {
+      location?: string;
+      minPrice?: number;
+      maxPrice?: number;
+      propertyType?: string;
+      bedrooms?: number;
+      bathrooms?: number;
+    }
+  ): Promise<void> {
+    try {
+      await supabase.functions.invoke('send-email', {
+        body: {
+          to: userEmail,
+          template: 'searchPreferencesSaved',
+          data: {
+            name: userName,
+            ...criteria
+          },
+          subject: 'Search preferences saved'
+        }
+      });
+    } catch (error) {
+      console.error('Error sending search preferences saved email:', error);
+    }
+  }
+
+  /**
+   * Send a digest of new matching properties (call from a scheduled job)
+   */
+  static async sendNewMatchesDigest(
+    userEmail: string,
+    userName: string,
+    matches: Array<{
+      title: string;
+      price: number;
+      city?: string;
+      state?: string;
+      bedrooms?: number;
+      bathrooms?: number;
+      url?: string;
+    }>
+  ): Promise<void> {
+    try {
+      await supabase.functions.invoke('send-email', {
+        body: {
+          to: userEmail,
+          template: 'newMatchesDigest',
+          data: {
+            name: userName,
+            matches
+          },
+          subject: 'New properties that match your preferences'
+        }
+      });
+    } catch (error) {
+      console.error('Error sending new matches digest:', error);
+    }
+  }
+
+  /**
    * Send custom template email
    */
   static async sendCustomEmail(emailData: EmailTemplate): Promise<void> {

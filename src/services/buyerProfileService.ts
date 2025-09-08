@@ -62,6 +62,21 @@ export class BuyerProfileService extends ProfileService {
         if (preferences.property_alerts && this.hasSearchCriteriaChanged(preferences)) {
           await this.sendPropertyAlertSetupConfirmation(userId);
         }
+
+        // Send preferences updated email if email notifications enabled
+        try {
+          const profile = await super.getProfile(userId);
+          const prefs = await super.getUserPreferences(userId);
+          if (profile?.email && prefs?.email_notifications) {
+            await EmailService.sendPreferencesUpdated(
+              profile.email,
+              profile.full_name || 'User',
+              Object.keys(preferences)
+            );
+          }
+        } catch (e) {
+          console.error('Failed to send preferences updated email:', e);
+        }
       }
 
       return result;
@@ -97,6 +112,21 @@ export class BuyerProfileService extends ProfileService {
         
         // Log search criteria save
         await this.logBuyerActivity(userId, 'search_criteria_saved', criteria);
+
+        // Send confirmation email if enabled
+        try {
+          const profile = await super.getProfile(userId);
+          const prefs = await super.getUserPreferences(userId);
+          if (profile?.email && prefs?.email_notifications) {
+            await EmailService.sendSearchPreferencesSaved(
+              profile.email,
+              profile.full_name || 'User',
+              criteria
+            );
+          }
+        } catch (e) {
+          console.error('Failed to send search preferences email:', e);
+        }
       }
 
       return result;

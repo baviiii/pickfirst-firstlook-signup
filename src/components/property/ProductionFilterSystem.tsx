@@ -22,7 +22,32 @@ import {
   TrendingUp,
   Zap,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Calendar,
+  Car,
+  Building,
+  TreePine,
+  Wifi,
+  Shield,
+  Waves,
+  Dumbbell,
+  ShoppingBag,
+  GraduationCap,
+  Hospital,
+  Plane,
+  Train,
+  Coffee,
+  Music,
+  Camera,
+  Maximize,
+  Menu,
+  ChevronLeft,
+  ChevronRight,
+  Bath,
+  Bed,
+  Square,
+  MapPinIcon,
+  Settings
 } from 'lucide-react';
 import { googleMapsService, PlaceAutocompleteResult } from '@/services/googleMapsService';
 import { FilterService, AdvancedPropertyFilters, FilterResult, SavedFilter } from '@/services/filterService';
@@ -51,14 +76,19 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
   const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([]);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [filterName, setFilterName] = useState('');
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     basic: true,
+    price: false,
+    property: false,
+    features: false,
     amenities: false,
     area: false,
-    advanced: false
+    advanced: false,
+    accessibility: false
   });
 
-  // Debounced search term
+  // Debounced search terms
   const debouncedSearchTerm = useDebounce(filters.searchTerm || '', 500);
   const debouncedLocation = useDebounce(filters.location || '', 500);
 
@@ -69,7 +99,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
   // Filter suggestions
   const [filterSuggestions, setFilterSuggestions] = useState({
     propertyTypes: [],
-    priceRange: { min: 0, max: 1000000 },
+    priceRange: { min: 0, max: 2000000 },
     bedroomOptions: [],
     bathroomOptions: [],
     features: [],
@@ -86,11 +116,78 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
     loadFilterSuggestions();
   }, []);
 
-  // Apply filters when they change
+  // Apply filters when they change (with debouncing)
   useEffect(() => {
-    if (isInitialized) {
-      applyFilters();
+    if (!isInitialized) return;
+
+    // Do not auto-load everything on first mount if no filters are set
+    const hasAnyFilter = Boolean(
+      (filters.searchTerm && filters.searchTerm.trim()) ||
+      (filters.location && filters.location.trim()) ||
+      filters.priceMin !== undefined ||
+      filters.priceMax !== undefined ||
+      filters.bedrooms !== undefined ||
+      filters.bathrooms !== undefined ||
+      filters.propertyType ||
+      (filters.features && filters.features.length > 0) ||
+      filters.squareFootageMin !== undefined ||
+      filters.squareFootageMax !== undefined ||
+      filters.yearBuiltMin !== undefined ||
+      filters.yearBuiltMax !== undefined ||
+      filters.lotSizeMin !== undefined ||
+      filters.lotSizeMax !== undefined ||
+      filters.garageSpaces !== undefined ||
+      filters.hoaMin !== undefined ||
+      filters.hoaMax !== undefined ||
+      (filters.nearbyAmenities && Object.values(filters.nearbyAmenities).some(Boolean)) ||
+      (filters.listingStatus && filters.listingStatus.length > 0) ||
+      filters.daysOnMarket !== undefined ||
+      filters.openHouse !== undefined ||
+      filters.virtualTour !== undefined ||
+      filters.priceReduced !== undefined ||
+      filters.foreclosure !== undefined ||
+      filters.shortSale !== undefined ||
+      (filters.accessibilityFeatures && filters.accessibilityFeatures.length > 0)
+    );
+
+    if (!hasAnyFilter) {
+      // Show empty results instead of loading everything
+      setResults({
+        properties: [],
+        totalCount: 0,
+        page: 1,
+        totalPages: 0,
+        hasMore: false,
+        appliedFilters: filters,
+        filterStats: {
+          matchingProperties: 0,
+          totalProperties: 0,
+          averagePrice: 0,
+          priceRange: { min: 0, max: 0 }
+        }
+      });
+      onResultsChange?.({
+        properties: [],
+        totalCount: 0,
+        page: 1,
+        totalPages: 0,
+        hasMore: false,
+        appliedFilters: filters,
+        filterStats: {
+          matchingProperties: 0,
+          totalProperties: 0,
+          averagePrice: 0,
+          priceRange: { min: 0, max: 0 }
+        }
+      });
+      return;
     }
+
+    const timeoutId = setTimeout(() => {
+      applyFilters();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [filters, isInitialized]);
 
   // Location autocomplete
@@ -146,6 +243,24 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
       const errorMessage = error instanceof Error ? error.message : 'Failed to apply filters';
       setError(errorMessage);
       toast.error(errorMessage);
+      
+      // Set empty results on error to prevent stale data
+      const emptyResults: FilterResult = {
+        properties: [],
+        totalCount: 0,
+        page: 1,
+        totalPages: 0,
+        hasMore: false,
+        appliedFilters: filters,
+        filterStats: {
+          matchingProperties: 0,
+          totalProperties: 0,
+          averagePrice: 0,
+          priceRange: { min: 0, max: 0 }
+        }
+      };
+      setResults(emptyResults);
+      onResultsChange?.(emptyResults);
     } finally {
       setLoading(false);
       onLoadingChange?.(false);
@@ -210,6 +325,15 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
     if (filters.bathrooms !== undefined) count++;
     if (filters.propertyType) count++;
     if (filters.features?.length) count += filters.features.length;
+    if (filters.squareFootageMin !== undefined || filters.squareFootageMax !== undefined) count++;
+    if (filters.yearBuiltMin !== undefined || filters.yearBuiltMax !== undefined) count++;
+    if (filters.lotSizeMin !== undefined || filters.lotSizeMax !== undefined) count++;
+    if (filters.garageSpaces !== undefined) count++;
+    if (filters.hoaMin !== undefined || filters.hoaMax !== undefined) count++;
+    if (filters.nearbyAmenities) {
+      const amenities = Object.values(filters.nearbyAmenities).filter(Boolean);
+      count += amenities.length;
+    }
     return count;
   };
 
@@ -228,91 +352,682 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
   }) => (
     <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
       <CardHeader 
-        className="cursor-pointer hover:bg-yellow-400/5 transition-colors"
+        className="cursor-pointer hover:bg-yellow-400/5 transition-colors p-3 sm:p-4 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 rounded-lg"
         onClick={() => toggleSection(sectionKey)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleSection(sectionKey);
+          }
+        }}
+        tabIndex={0}
+        role="button"
+        aria-expanded={expandedSections[sectionKey]}
+        aria-label={`${title} filter section`}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {icon}
-            <CardTitle className="text-white">{title}</CardTitle>
+            <CardTitle className="text-white text-sm sm:text-base">{title}</CardTitle>
             {badge !== undefined && badge > 0 && (
-              <Badge className="bg-yellow-400 text-black">{badge}</Badge>
+              <Badge className="bg-yellow-400 text-black text-xs" aria-label={`${badge} active filters`}>
+                {badge}
+              </Badge>
             )}
           </div>
           <ChevronDown 
-            className={`h-5 w-5 text-yellow-400 transition-transform ${
+            className={`h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 transition-transform ${
               expandedSections[sectionKey] ? 'rotate-180' : ''
             }`} 
+            aria-hidden="true"
           />
         </div>
       </CardHeader>
       {expandedSections[sectionKey] && (
-        <CardContent className="border-t border-yellow-400/10">
+        <CardContent className="border-t border-yellow-400/10 p-3 sm:p-4">
           {children}
         </CardContent>
       )}
     </Card>
   );
 
+  const MobileFilterToggle = () => (
+    <div className="sm:hidden fixed bottom-4 right-4 z-50">
+      <Button
+        onClick={() => setIsMobileFiltersOpen(!isMobileFiltersOpen)}
+        className="bg-yellow-400 hover:bg-amber-500 text-black rounded-full p-3 shadow-2xl"
+      >
+        <Filter className="h-5 w-5" />
+      </Button>
+    </div>
+  );
+
+  const MobileFilterOverlay = () => (
+    isMobileFiltersOpen && (
+      <div className="sm:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm">
+        <div className="absolute inset-y-0 right-0 w-full max-w-sm bg-gray-900 border-l border-yellow-400/20 overflow-y-auto">
+          <div className="p-4 border-b border-yellow-400/20">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-white">Filters</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMobileFiltersOpen(false)}
+                className="text-gray-300 hover:text-yellow-400"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+          <div className="p-4 space-y-4">
+            {/* Mobile filter content goes here - same as desktop but in overlay */}
+            <FilterContent />
+          </div>
+        </div>
+      </div>
+    )
+  );
+
+  const FilterContent = () => (
+    <>
+      {/* Basic Search & Location */}
+      <ExpandableSection
+        title="Search & Location"
+        icon={<Search className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400" />}
+        sectionKey="basic"
+      >
+        <div className="space-y-4">
+          {/* Search */}
+          <div>
+            <Label className="text-gray-300 mb-2 block text-sm">Search Keywords</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Enter keywords..."
+                value={filters.searchTerm || ''}
+                onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
+                className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder-gray-400 text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Location with Autocomplete */}
+          <div>
+            <Label className="text-gray-300 mb-2 block text-sm">Location</Label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Enter city, suburb, or address..."
+                value={filters.location || ''}
+                onChange={(e) => handleFilterChange('location', e.target.value)}
+                className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder-gray-400 text-sm"
+              />
+              
+              {/* Location Suggestions */}
+              {showLocationSuggestions && locationSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+                  {locationSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      className="w-full px-4 py-2 text-left text-white hover:bg-yellow-400/10 transition-colors text-sm"
+                      onClick={() => {
+                        handleFilterChange('location', suggestion.description);
+                        setShowLocationSuggestions(false);
+                      }}
+                    >
+                      <div className="font-medium">{suggestion.structured_formatting.main_text}</div>
+                      <div className="text-xs text-gray-400">{suggestion.structured_formatting.secondary_text}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </ExpandableSection>
+
+      {/* Price Range */}
+      <ExpandableSection
+        title="Price Range"
+        icon={<DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400" />}
+        sectionKey="price"
+        badge={filters.priceMin || filters.priceMax ? 1 : 0}
+      >
+        <div className="space-y-4">
+          <div>
+            <Label className="text-gray-300 mb-4 block text-sm">
+              Price Range: ${(filters.priceMin || 0).toLocaleString()} - ${(filters.priceMax || 2000000).toLocaleString()}
+            </Label>
+            <Slider
+              value={[filters.priceMin || 0, filters.priceMax || 2000000]}
+              onValueChange={([min, max]) => {
+                handleFilterChange('priceMin', min);
+                handleFilterChange('priceMax', max);
+              }}
+              max={2000000}
+              min={0}
+              step={25000}
+              className="w-full"
+            />
+          </div>
+          
+          {/* Manual price inputs */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-gray-300 mb-1 block text-sm">Min Price</Label>
+              <Input
+                type="number"
+                placeholder="0"
+                value={filters.priceMin || ''}
+                onChange={(e) => handleFilterChange('priceMin', e.target.value ? parseInt(e.target.value) : undefined)}
+                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+              />
+            </div>
+            <div>
+              <Label className="text-gray-300 mb-1 block text-sm">Max Price</Label>
+              <Input
+                type="number"
+                placeholder="2000000"
+                value={filters.priceMax || ''}
+                onChange={(e) => handleFilterChange('priceMax', e.target.value ? parseInt(e.target.value) : undefined)}
+                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+              />
+            </div>
+          </div>
+
+          {/* HOA Fees */}
+          <div>
+            <Label className="text-gray-300 mb-2 block text-sm">HOA Fees (Monthly)</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                type="number"
+                placeholder="Min HOA"
+                value={filters.hoaMin || ''}
+                onChange={(e) => handleFilterChange('hoaMin', e.target.value ? parseInt(e.target.value) : undefined)}
+                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+              />
+              <Input
+                type="number"
+                placeholder="Max HOA"
+                value={filters.hoaMax || ''}
+                onChange={(e) => handleFilterChange('hoaMax', e.target.value ? parseInt(e.target.value) : undefined)}
+                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+              />
+            </div>
+          </div>
+        </div>
+      </ExpandableSection>
+
+      {/* Property Details */}
+      <ExpandableSection
+        title="Property Details"
+        icon={<Home className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400" />}
+        sectionKey="property"
+        badge={[filters.propertyType, filters.bedrooms, filters.bathrooms, filters.squareFootageMin, filters.squareFootageMax].filter(Boolean).length}
+      >
+        <div className="space-y-4">
+          {/* Property Type */}
+          <div>
+            <Label className="text-gray-300 mb-2 block text-sm">Property Type</Label>
+            <Select
+              value={filters.propertyType || ''}
+              onValueChange={(value) => handleFilterChange('propertyType', value === 'any' ? undefined : value)}
+            >
+              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white text-sm">
+                <SelectValue placeholder="Any Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any Type</SelectItem>
+                <SelectItem value="house">House</SelectItem>
+                <SelectItem value="apartment">Apartment</SelectItem>
+                <SelectItem value="condo">Condo</SelectItem>
+                <SelectItem value="townhouse">Townhouse</SelectItem>
+                <SelectItem value="land">Land</SelectItem>
+                <SelectItem value="commercial">Commercial</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Bedrooms & Bathrooms */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-gray-300 mb-2 block text-sm">Bedrooms</Label>
+              <Select
+                value={filters.bedrooms?.toString() || ''}
+                onValueChange={(value) => handleFilterChange('bedrooms', value === 'any' ? undefined : parseInt(value))}
+              >
+                <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white text-sm">
+                  <SelectValue placeholder="Any" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any</SelectItem>
+                  {[1, 2, 3, 4, 5, 6].map(num => (
+                    <SelectItem key={num} value={num.toString()}>{num}+</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label className="text-gray-300 mb-2 block text-sm">Bathrooms</Label>
+              <Select
+                value={filters.bathrooms?.toString() || ''}
+                onValueChange={(value) => handleFilterChange('bathrooms', value === 'any' ? undefined : parseFloat(value))}
+              >
+                <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white text-sm">
+                  <SelectValue placeholder="Any" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any</SelectItem>
+                  {[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map(num => (
+                    <SelectItem key={num} value={num.toString()}>{num}+</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Square Footage */}
+          <div>
+            <Label className="text-gray-300 mb-2 block text-sm">Square Footage</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                type="number"
+                placeholder="Min sqft"
+                value={filters.squareFootageMin || ''}
+                onChange={(e) => handleFilterChange('squareFootageMin', e.target.value ? parseInt(e.target.value) : undefined)}
+                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+              />
+              <Input
+                type="number"
+                placeholder="Max sqft"
+                value={filters.squareFootageMax || ''}
+                onChange={(e) => handleFilterChange('squareFootageMax', e.target.value ? parseInt(e.target.value) : undefined)}
+                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Lot Size */}
+          <div>
+            <Label className="text-gray-300 mb-2 block text-sm">Lot Size (acres)</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                type="number"
+                step="0.1"
+                placeholder="Min acres"
+                value={filters.lotSizeMin || ''}
+                onChange={(e) => handleFilterChange('lotSizeMin', e.target.value ? parseFloat(e.target.value) : undefined)}
+                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+              />
+              <Input
+                type="number"
+                step="0.1"
+                placeholder="Max acres"
+                value={filters.lotSizeMax || ''}
+                onChange={(e) => handleFilterChange('lotSizeMax', e.target.value ? parseFloat(e.target.value) : undefined)}
+                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Year Built */}
+          <div>
+            <Label className="text-gray-300 mb-2 block text-sm">Year Built</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                type="number"
+                placeholder="Min year"
+                min="1800"
+                max={new Date().getFullYear()}
+                value={filters.yearBuiltMin || ''}
+                onChange={(e) => handleFilterChange('yearBuiltMin', e.target.value ? parseInt(e.target.value) : undefined)}
+                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+              />
+              <Input
+                type="number"
+                placeholder="Max year"
+                min="1800"
+                max={new Date().getFullYear()}
+                value={filters.yearBuiltMax || ''}
+                onChange={(e) => handleFilterChange('yearBuiltMax', e.target.value ? parseInt(e.target.value) : undefined)}
+                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Garage Spaces */}
+          <div>
+            <Label className="text-gray-300 mb-2 block text-sm">Garage Spaces</Label>
+            <Select
+              value={filters.garageSpaces?.toString() || ''}
+              onValueChange={(value) => handleFilterChange('garageSpaces', value === 'any' ? undefined : parseInt(value))}
+            >
+              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white text-sm">
+                <SelectValue placeholder="Any" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
+                <SelectItem value="0">No Garage</SelectItem>
+                {[1, 2, 3, 4].map(num => (
+                  <SelectItem key={num} value={num.toString()}>{num}+ spaces</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </ExpandableSection>
+
+      {/* Property Features */}
+      <ExpandableSection
+        title="Property Features"
+        icon={<Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400" />}
+        sectionKey="features"
+        badge={filters.features?.length || 0}
+      >
+        <div className="space-y-3">
+          <Label className="text-gray-300 mb-3 block text-sm">Select Features</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {[
+              'Pool', 'Spa/Hot Tub', 'Garden/Landscaping', 'Balcony/Patio', 'Fireplace', 
+              'Air Conditioning', 'Heating', 'Dishwasher', 'Laundry Room', 'Walk-in Closet',
+              'Hardwood Floors', 'Tile Flooring', 'Carpet', 'Basement', 'Attic',
+              'Deck', 'Fence', 'Security System', 'Solar Panels', 'Smart Home Features',
+              'High Ceilings', 'Bay Windows', 'Skylight', 'Wine Cellar', 'Home Office',
+              'Gym/Exercise Room', 'Media Room', 'Game Room', 'Workshop', 'Guest House'
+            ].map(feature => (
+              <label key={feature} className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-gray-800/30 transition-colors">
+                <Checkbox
+                  checked={filters.features?.includes(feature) || false}
+                  onCheckedChange={(checked) => {
+                    const currentFeatures = filters.features || [];
+                    if (checked) {
+                      handleFilterChange('features', [...currentFeatures, feature]);
+                    } else {
+                      handleFilterChange('features', currentFeatures.filter(f => f !== feature));
+                    }
+                  }}
+                />
+                <span className="text-sm text-gray-300">{feature}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </ExpandableSection>
+
+      {/* Nearby Amenities */}
+      <ExpandableSection
+        title="Nearby Amenities"
+        icon={<MapPinIcon className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400" />}
+        sectionKey="amenities"
+        badge={filters.nearbyAmenities ? Object.values(filters.nearbyAmenities).filter(Boolean).length : 0}
+      >
+        <div className="space-y-4">
+          <Label className="text-gray-300 mb-3 block text-sm">Find properties near:</Label>
+          <div className="grid grid-cols-1 gap-3">
+            {[
+              { key: 'schools', icon: GraduationCap, label: 'Good Schools' },
+              { key: 'hospitals', icon: Hospital, label: 'Hospitals/Medical' },
+              { key: 'shopping', icon: ShoppingBag, label: 'Shopping Centers' },
+              { key: 'restaurants', icon: Coffee, label: 'Restaurants/Dining' },
+              { key: 'parks', icon: TreePine, label: 'Parks/Recreation' },
+              { key: 'gyms', icon: Dumbbell, label: 'Fitness Centers' },
+              { key: 'publicTransport', icon: Train, label: 'Public Transport' },
+              { key: 'airports', icon: Plane, label: 'Airports' },
+              { key: 'entertainment', icon: Music, label: 'Entertainment' }
+            ].map(({ key, icon: Icon, label }) => (
+              <label key={key} className="flex items-center space-x-3 cursor-pointer p-2 rounded hover:bg-gray-800/30 transition-colors">
+                <Checkbox
+                  checked={filters.nearbyAmenities?.[key] || false}
+                  onCheckedChange={(checked) => {
+                    const current = filters.nearbyAmenities || {};
+                    handleFilterChange('nearbyAmenities', {
+                      ...current,
+                      [key]: checked
+                    });
+                  }}
+                />
+                <Icon className="h-4 w-4 text-yellow-400" />
+                <span className="text-sm text-gray-300">{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </ExpandableSection>
+
+      {/* Advanced Filters */}
+      <ExpandableSection
+        title="Advanced Options"
+        icon={<Settings className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400" />}
+        sectionKey="advanced"
+      >
+        <div className="space-y-4">
+          {/* Listing Status */}
+          <div>
+            <Label className="text-gray-300 mb-2 block text-sm">Listing Status</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { key: 'active', label: 'Active' },
+                { key: 'pending', label: 'Pending' },
+                { key: 'sold', label: 'Recently Sold' },
+                { key: 'new', label: 'New Listings' }
+              ].map(({ key, label }) => (
+                <label key={key} className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-gray-800/30 transition-colors">
+                  <Checkbox
+                    checked={filters.listingStatus?.includes(key) || false}
+                    onCheckedChange={(checked) => {
+                      const current = filters.listingStatus || [];
+                      if (checked) {
+                        handleFilterChange('listingStatus', [...current, key]);
+                      } else {
+                        handleFilterChange('listingStatus', current.filter(s => s !== key));
+                      }
+                    }}
+                  />
+                  <span className="text-sm text-gray-300">{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Days on Market */}
+          <div>
+            <Label className="text-gray-300 mb-2 block text-sm">Days on Market</Label>
+            <Select
+              value={filters.daysOnMarket?.toString() || ''}
+              onValueChange={(value) => handleFilterChange('daysOnMarket', value === 'any' ? undefined : parseInt(value))}
+            >
+              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white text-sm">
+                <SelectValue placeholder="Any" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
+                <SelectItem value="1">1 day</SelectItem>
+                <SelectItem value="7">7 days</SelectItem>
+                <SelectItem value="14">14 days</SelectItem>
+                <SelectItem value="30">30 days</SelectItem>
+                <SelectItem value="90">90 days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Advanced Checkboxes */}
+          <div className="space-y-2">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <Checkbox
+                checked={filters.openHouse || false}
+                onCheckedChange={(checked) => handleFilterChange('openHouse', checked)}
+              />
+              <span className="text-sm text-gray-300">Open House Available</span>
+            </label>
+
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <Checkbox
+                checked={filters.virtualTour || false}
+                onCheckedChange={(checked) => handleFilterChange('virtualTour', checked)}
+              />
+              <span className="text-sm text-gray-300">Virtual Tour Available</span>
+            </label>
+
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <Checkbox
+                checked={filters.priceReduced || false}
+                onCheckedChange={(checked) => handleFilterChange('priceReduced', checked)}
+              />
+              <span className="text-sm text-gray-300">Price Recently Reduced</span>
+            </label>
+
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <Checkbox
+                checked={filters.foreclosure || false}
+                onCheckedChange={(checked) => handleFilterChange('foreclosure', checked)}
+              />
+              <span className="text-sm text-gray-300">Foreclosure Properties</span>
+            </label>
+
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <Checkbox
+                checked={filters.shortSale || false}
+                onCheckedChange={(checked) => handleFilterChange('shortSale', checked)}
+              />
+              <span className="text-sm text-gray-300">Short Sale Properties</span>
+            </label>
+          </div>
+        </div>
+      </ExpandableSection>
+
+      {/* Accessibility Features */}
+      <ExpandableSection
+        title="Accessibility Features"
+        icon={<Shield className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400" />}
+        sectionKey="accessibility"
+        badge={filters.accessibilityFeatures?.length || 0}
+      >
+        <div className="space-y-3">
+          <Label className="text-gray-300 mb-3 block text-sm">Accessibility Features</Label>
+          <div className="grid grid-cols-1 gap-2">
+            {[
+              'Wheelchair Accessible',
+              'Ramp Access',
+              'Wide Doorways',
+              'Accessible Bathroom',
+              'Accessible Kitchen',
+              'Elevator Access',
+              'Ground Floor Unit',
+              'Accessible Parking',
+              'Visual Alarms',
+              'Hearing Loop System'
+            ].map(feature => (
+              <label key={feature} className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-gray-800/30 transition-colors">
+                <Checkbox
+                  checked={filters.accessibilityFeatures?.includes(feature) || false}
+                  onCheckedChange={(checked) => {
+                    const current = filters.accessibilityFeatures || [];
+                    if (checked) {
+                      handleFilterChange('accessibilityFeatures', [...current, feature]);
+                    } else {
+                      handleFilterChange('accessibilityFeatures', current.filter(f => f !== feature));
+                    }
+                  }}
+                />
+                <span className="text-sm text-gray-300">{feature}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </ExpandableSection>
+    </>
+  );
+
   if (!isInitialized) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-yellow-400" />
+      <div className="space-y-4 sm:space-y-6">
+        {/* Loading skeleton for filter stats */}
+        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 bg-gray-700 rounded animate-pulse"></div>
+                <div className="h-4 w-32 bg-gray-700 rounded animate-pulse"></div>
+              </div>
+              <div className="flex gap-2">
+                <div className="h-8 w-16 bg-gray-700 rounded animate-pulse"></div>
+                <div className="h-8 w-16 bg-gray-700 rounded animate-pulse"></div>
+                <div className="h-8 w-16 bg-gray-700 rounded animate-pulse"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Loading skeleton for filter sections */}
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+            <CardHeader className="p-3 sm:p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 bg-gray-700 rounded animate-pulse"></div>
+                  <div className="h-4 w-24 bg-gray-700 rounded animate-pulse"></div>
+                </div>
+                <div className="h-4 w-4 bg-gray-700 rounded animate-pulse"></div>
+              </div>
+            </CardHeader>
+          </Card>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className={`space-y-4 sm:space-y-6 ${className}`}>
       {/* Filter Stats and Actions */}
       <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
               <div className="flex items-center gap-2">
-                <Filter className="h-5 w-5 text-yellow-400" />
-                <span className="text-white font-medium">
+                <Filter className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400" />
+                <span className="text-white font-medium text-sm sm:text-base">
                   {results ? `${results.filterStats.matchingProperties} of ${results.filterStats.totalProperties} properties` : 'Loading...'}
                 </span>
               </div>
               {getActiveFilterCount() > 0 && (
-                <Badge className="bg-yellow-400 text-black">
+                <Badge className="bg-yellow-400 text-black text-xs">
                   {getActiveFilterCount()} filters active
                 </Badge>
               )}
               {error && (
                 <div className="flex items-center gap-2 text-red-400">
                   <AlertCircle className="h-4 w-4" />
-                  <span className="text-sm">{error}</span>
+                  <span className="text-xs sm:text-sm">{error}</span>
                 </div>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowSaveDialog(true)}
-                className="text-gray-300 hover:text-yellow-400 border-gray-600"
+                className="text-gray-300 hover:text-yellow-400 border-gray-600 text-xs sm:text-sm"
               >
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 Save
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleShareFilter}
-                className="text-gray-300 hover:text-yellow-400 border-gray-600"
+                className="text-gray-300 hover:text-yellow-400 border-gray-600 text-xs sm:text-sm"
               >
-                <Share2 className="h-4 w-4 mr-2" />
+                <Share2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 Share
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={clearFilters}
-                className="text-gray-300 hover:text-yellow-400 border-gray-600"
+                className="text-gray-300 hover:text-yellow-400 border-gray-600 text-xs sm:text-sm"
               >
-                <X className="h-4 w-4 mr-2" />
+                <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 Clear
               </Button>
             </div>
@@ -323,212 +1038,76 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
       {/* Saved Filters */}
       {savedFilters.length > 0 && (
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Bookmark className="h-5 w-5 text-yellow-400" />
+          <CardHeader className="p-3 sm:p-4">
+            <CardTitle className="text-white flex items-center gap-2 text-sm sm:text-base">
+              <Bookmark className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400" />
               Saved Filters
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 sm:p-4 pt-0">
             <div className="flex flex-wrap gap-2">
               {savedFilters.map(filter => (
-                <Button
-                  key={filter.id}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleLoadSavedFilter(filter)}
-                  className="text-gray-300 hover:text-yellow-400 border-gray-600"
-                >
-                  {filter.name}
-                </Button>
+                <div key={filter.id} className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleLoadSavedFilter(filter)}
+                    className="text-gray-300 hover:text-yellow-400 border-gray-600 text-xs sm:text-sm"
+                  >
+                    {filter.name}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteSavedFilter(filter.id)}
+                    className="text-gray-400 hover:text-red-400 p-1"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
               ))}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Basic Filters */}
-      <ExpandableSection
-        title="Basic Filters"
-        icon={<Home className="h-5 w-5 text-yellow-400" />}
-        sectionKey="basic"
-      >
-        <div className="space-y-6">
-          {/* Search */}
-          <div>
-            <Label className="text-gray-300 mb-2 block">Search Keywords</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Enter keywords..."
-                value={filters.searchTerm || ''}
-                onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
-                className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder-gray-400"
-              />
-            </div>
-          </div>
+      {/* Desktop Filter Content */}
+      <div className="hidden sm:block space-y-4">
+        <FilterContent />
+      </div>
 
-          {/* Location with Autocomplete */}
-          <div>
-            <Label className="text-gray-300 mb-2 block">Location</Label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Enter city, suburb, or address..."
-                value={filters.location || ''}
-                onChange={(e) => handleFilterChange('location', e.target.value)}
-                className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder-gray-400"
-              />
-              
-              {/* Location Suggestions */}
-              {showLocationSuggestions && locationSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
-                  {locationSuggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      className="w-full px-4 py-2 text-left text-white hover:bg-yellow-400/10 transition-colors"
-                      onClick={() => {
-                        handleFilterChange('location', suggestion.description);
-                        setShowLocationSuggestions(false);
-                      }}
-                    >
-                      <div className="font-medium">{suggestion.structured_formatting.main_text}</div>
-                      <div className="text-sm text-gray-400">{suggestion.structured_formatting.secondary_text}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Price Range */}
-          <div>
-            <Label className="text-gray-300 mb-4 block">
-              Price Range: ${(filters.priceMin || 0).toLocaleString()} - ${(filters.priceMax || 1000000).toLocaleString()}
-            </Label>
-            <Slider
-              value={[filters.priceMin || 0, filters.priceMax || 1000000]}
-              onValueChange={([min, max]) => {
-                handleFilterChange('priceMin', min);
-                handleFilterChange('priceMax', max);
-              }}
-              max={filterSuggestions.priceRange.max}
-              min={filterSuggestions.priceRange.min}
-              step={10000}
-              className="w-full"
-            />
-          </div>
-
-          {/* Property Details */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <Label className="text-gray-300 mb-2 block">Property Type</Label>
-              <Select
-                value={filters.propertyType || ''}
-                onValueChange={(value) => handleFilterChange('propertyType', value)}
-              >
-                <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
-                  <SelectValue placeholder="Any Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">Any Type</SelectItem>
-                  {filterSuggestions.propertyTypes.map(type => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label className="text-gray-300 mb-2 block">Bedrooms</Label>
-              <Select
-                value={filters.bedrooms?.toString() || ''}
-                onValueChange={(value) => handleFilterChange('bedrooms', value ? parseInt(value) : undefined)}
-              >
-                <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
-                  <SelectValue placeholder="Any" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">Any</SelectItem>
-                  {filterSuggestions.bedroomOptions.map(option => (
-                    <SelectItem key={option} value={option.toString()}>{option}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label className="text-gray-300 mb-2 block">Bathrooms</Label>
-              <Select
-                value={filters.bathrooms?.toString() || ''}
-                onValueChange={(value) => handleFilterChange('bathrooms', value ? parseFloat(value) : undefined)}
-              >
-                <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
-                  <SelectValue placeholder="Any" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">Any</SelectItem>
-                  {filterSuggestions.bathroomOptions.map(option => (
-                    <SelectItem key={option} value={option.toString()}>{option}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Features */}
-          <div>
-            <Label className="text-gray-300 mb-3 block">Property Features</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {filterSuggestions.features.map(feature => (
-                <label key={feature} className="flex items-center space-x-2 cursor-pointer">
-                  <Checkbox
-                    checked={filters.features?.includes(feature) || false}
-                    onCheckedChange={(checked) => {
-                      const currentFeatures = filters.features || [];
-                      if (checked) {
-                        handleFilterChange('features', [...currentFeatures, feature]);
-                      } else {
-                        handleFilterChange('features', currentFeatures.filter(f => f !== feature));
-                      }
-                    }}
-                  />
-                  <span className="text-sm text-gray-300">{feature}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
-      </ExpandableSection>
+      {/* Mobile Filter Toggle & Overlay */}
+      <MobileFilterToggle />
+      <MobileFilterOverlay />
 
       {/* Save Filter Dialog */}
       {showSaveDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-96 bg-gray-900 border border-yellow-400/20">
-            <CardHeader>
-              <CardTitle className="text-white">Save Filter</CardTitle>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md bg-gray-900 border border-yellow-400/20">
+            <CardHeader className="p-4">
+              <CardTitle className="text-white text-lg">Save Filter</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4 pt-0">
               <div>
-                <Label className="text-gray-300 mb-2 block">Filter Name</Label>
+                <Label className="text-gray-300 mb-2 block text-sm">Filter Name</Label>
                 <Input
                   placeholder="Enter filter name..."
                   value={filterName}
                   onChange={(e) => setFilterName(e.target.value)}
-                  className="bg-gray-800/50 border-gray-700 text-white"
+                  className="bg-gray-800/50 border-gray-700 text-white text-sm"
                 />
               </div>
               <div className="flex gap-2">
                 <Button
                   onClick={handleSaveFilter}
-                  className="bg-yellow-400 hover:bg-amber-500 text-black"
+                  className="bg-yellow-400 hover:bg-amber-500 text-black text-sm flex-1"
                 >
                   Save
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => setShowSaveDialog(false)}
-                  className="text-gray-300 border-gray-600"
+                  className="text-gray-300 border-gray-600 text-sm flex-1"
                 >
                   Cancel
                 </Button>

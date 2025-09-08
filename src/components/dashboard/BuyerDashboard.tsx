@@ -4,11 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
-import { Search, Heart, MessageSquare, Settings, Home, MapPin, Filter } from 'lucide-react';
+import { Search, Heart, MessageSquare, Settings, Home, MapPin, Filter, Calendar, Check, X } from 'lucide-react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { useNavigate } from 'react-router-dom';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { analyticsService, BuyerMetrics } from '@/services/analyticsService';
+import { appointmentService } from '@/services/appointmentService';
+import { toast } from 'sonner';
 
 const BuyerDashboardComponent = () => {
   const { profile } = useAuth();
@@ -17,21 +19,27 @@ const BuyerDashboardComponent = () => {
   const [loadingListings, setLoadingListings] = useState(true);
   const [metrics, setMetrics] = useState<BuyerMetrics | null>(null);
   const [loadingMetrics, setLoadingMetrics] = useState(true);
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoadingListings(true);
       setLoadingMetrics(true);
+      setLoadingAppointments(true);
       
-      const [listingsResult, metricsResult] = await Promise.all([
+      const [listingsResult, metricsResult, myAppts] = await Promise.all([
         PropertyService.getApprovedListings(),
-        analyticsService.getBuyerMetrics()
+        analyticsService.getBuyerMetrics(),
+        appointmentService.getMyAppointments()
       ]);
       
       setListings(listingsResult.data || []);
       setMetrics(metricsResult.data);
+      setAppointments(myAppts.data || []);
       setLoadingListings(false);
       setLoadingMetrics(false);
+      setLoadingAppointments(false);
     };
     fetchData();
   }, []);
@@ -50,6 +58,35 @@ const BuyerDashboardComponent = () => {
         {tier.charAt(0).toUpperCase() + tier.slice(1)}
       </Badge>
     );
+  };
+
+  const refreshAppointments = async () => {
+    setLoadingAppointments(true);
+    const { data } = await appointmentService.getMyAppointments();
+    setAppointments(data || []);
+    setLoadingAppointments(false);
+  };
+
+  const handleConfirmAppointment = async (id: string) => {
+    try {
+      await appointmentService.updateAppointment(id, { status: 'confirmed' } as any);
+      await refreshAppointments();
+      toast.success('Appointment confirmed');
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to confirm appointment');
+    }
+  };
+
+  const handleDeclineAppointment = async (id: string) => {
+    try {
+      await appointmentService.updateAppointment(id, { status: 'declined' } as any);
+      await refreshAppointments();
+      toast.success('Appointment declined');
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to decline appointment');
+    }
   };
 
   const buyerActions = [
@@ -214,8 +251,61 @@ const BuyerDashboardComponent = () => {
         </CardContent>
       </Card>
 
-      {/* Property Stats and Recent Activity */}
+      {/* Appointments and Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2"><Calendar className="h-5 w-5" /> My Appointments</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingAppointments ? (
+              <div className="text-gray-300">Loading appointments...</div>
+            ) : appointments.length === 0 ? (
+              <div className="text-gray-400">No appointments scheduled yet.</div>
+            ) : (
+              <div className="space-y-3">
+                {appointments.map((appt: any) => (
+                  <div key={appt.id} className="p-4 bg-white/5 rounded-lg border border-white/10">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="uppercase">{appt.appointment_type?.replace('_',' ') || 'Meeting'}</Badge>
+                          <span className="text-white font-medium">{appt.date} @ {appt.time}</span>
+                        </div>
+                        <div className="text-gray-300 text-sm">{appt.property_address || 'Virtual/Office Meeting'}</div>
+                        <div className="text-gray-400 text-xs">Duration: {appt.duration || 60} min</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {appt.status === 'pending' && (
+                          <>
+                            <Button size="sm" className="bg-green-500/20 text-green-300 hover:bg-green-500/30" onClick={() => handleConfirmAppointment(appt.id)}>
+                              <Check className="h-4 w-4 mr-1" /> Confirm
+                            </Button>
+                            <Button size="sm" variant="outline" className="text-red-300 border-red-400/30 hover:bg-red-500/10" onClick={() => handleDeclineAppointment(appt.id)}>
+                              <X className="h-4 w-4 mr-1" /> Decline
+                            </Button>
+                          </>
+                        )}
+                        {appt.status && appt.status !== 'pending' && (
+                          <Badge className={
+                            appt.status === 'confirmed' ? 'bg-green-500/20 text-green-300' :
+                            appt.status === 'declined' ? 'bg-red-500/20 text-red-300' :
+                            'bg-yellow-500/20 text-yellow-300'
+                          }>
+                            {appt.status}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    {appt.notes && (
+                      <div className="text-gray-400 text-sm mt-2">Notes: {appt.notes}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
           <CardHeader>
             <CardTitle className="text-white">Your Property Search</CardTitle>

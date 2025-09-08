@@ -91,7 +91,7 @@ const EnhancedSearchFiltersPage = () => {
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
                   <TrendingUp className="h-6 w-6 text-yellow-400" />
-                  AI-Powered Property Search
+                  Advanced Property Search with Insights
                 </h1>
                 <p className="text-sm text-yellow-400/80">
                   Find properties with intelligent insights and ratings

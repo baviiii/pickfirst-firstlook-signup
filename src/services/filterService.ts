@@ -24,15 +24,29 @@ export interface AdvancedPropertyFilters {
   hoaMin?: number;
   hoaMax?: number;
   
+  // Listing status and market filters
+  listingStatus?: string[];
+  daysOnMarket?: number;
+  openHouse?: boolean;
+  virtualTour?: boolean;
+  priceReduced?: boolean;
+  foreclosure?: boolean;
+  shortSale?: boolean;
+  
+  // Accessibility features
+  accessibilityFeatures?: string[];
+  
   // Location-based filters
   nearbyAmenities?: {
-    schools?: { required: boolean; maxDistance: number; minRating: number };
-    restaurants?: { required: boolean; maxDistance: number; minRating: number };
-    shopping?: { required: boolean; maxDistance: number; minRating: number };
-    healthcare?: { required: boolean; maxDistance: number; minRating: number };
-    parks?: { required: boolean; maxDistance: number; minRating: number };
-    transit?: { required: boolean; maxDistance: number; minRating: number };
-    gyms?: { required: boolean; maxDistance: number; minRating: number };
+    schools?: boolean;
+    hospitals?: boolean;
+    shopping?: boolean;
+    restaurants?: boolean;
+    parks?: boolean;
+    publicTransport?: boolean;
+    gyms?: boolean;
+    airports?: boolean;
+    entertainment?: boolean;
   };
   
   // Area quality filters
@@ -93,8 +107,7 @@ export class FilterService {
     try {
       let query = supabase
         .from('property_listings')
-        .select('*', { count: 'exact' })
-        .eq('status', 'approved');
+        .select('*', { count: 'exact' });
 
       // Apply basic filters
       if (filters.searchTerm) {
@@ -114,11 +127,13 @@ export class FilterService {
       }
 
       if (filters.bedrooms !== undefined) {
-        query = query.eq('bedrooms', filters.bedrooms);
+        // UI selects X+ so use gte for better matching
+        query = query.gte('bedrooms', filters.bedrooms);
       }
 
       if (filters.bathrooms !== undefined) {
-        query = query.eq('bathrooms', filters.bathrooms);
+        // Bathrooms can be fractional; use gte for X+
+        query = query.gte('bathrooms', filters.bathrooms);
       }
 
       if (filters.propertyType) {
@@ -157,6 +172,71 @@ export class FilterService {
       if (filters.features && filters.features.length > 0) {
         query = query.overlaps('features', filters.features);
       }
+
+      // Listing status filtering with sensible defaults and mapping
+      if (filters.listingStatus && filters.listingStatus.length > 0) {
+        const statusMap: Record<string, string> = {
+          active: 'approved',
+          pending: 'pending',
+          sold: 'sold'
+        };
+
+        const mappedStatuses = (filters.listingStatus || [])
+          .filter(s => s !== 'new')
+          .map(s => statusMap[s] || s);
+
+        if (mappedStatuses.length > 0) {
+          query = query.in('status', mappedStatuses);
+        }
+
+        // Handle "new listings" as a time-based filter (e.g., last 14 days)
+        if ((filters.listingStatus || []).includes('new')) {
+          const cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - 14);
+          query = query.gte('created_at', cutoffDate.toISOString());
+          // If no other status specified, assume active
+          if (mappedStatuses.length === 0) {
+            query = query.eq('status', 'approved');
+          }
+        }
+      } else {
+        // Default to approved/active properties only when no explicit status filter is set
+        query = query.eq('status', 'approved');
+      }
+
+      // Days on market filtering
+      if (filters.daysOnMarket !== undefined) {
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - filters.daysOnMarket);
+        query = query.gte('created_at', cutoffDate.toISOString());
+      }
+
+      // Boolean filters - these are optional fields that may not exist in the database yet
+      // We'll add them as comments for future implementation
+      // if (filters.openHouse !== undefined) {
+      //   query = query.eq('open_house', filters.openHouse);
+      // }
+
+      // if (filters.virtualTour !== undefined) {
+      //   query = query.eq('virtual_tour', filters.virtualTour);
+      // }
+
+      // if (filters.priceReduced !== undefined) {
+      //   query = query.eq('price_reduced', filters.priceReduced);
+      // }
+
+      // if (filters.foreclosure !== undefined) {
+      //   query = query.eq('foreclosure', filters.foreclosure);
+      // }
+
+      // if (filters.shortSale !== undefined) {
+      //   query = query.eq('short_sale', filters.shortSale);
+      // }
+
+      // Accessibility features filtering - commented out until database field is added
+      // if (filters.accessibilityFeatures && filters.accessibilityFeatures.length > 0) {
+      //   query = query.overlaps('accessibility_features', filters.accessibilityFeatures);
+      // }
 
       // Apply sorting
       const sortBy = filters.sortBy || 'created_at';
