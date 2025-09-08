@@ -43,9 +43,10 @@ const mockProperties = [
 
 interface PublicPreviewProps {
   onSignUpClick: () => void;
+  onSignInClick: () => void;
 }
 
-export const PublicPreview = ({ onSignUpClick }: PublicPreviewProps) => {
+export const PublicPreview = ({ onSignUpClick, onSignInClick }: PublicPreviewProps) => {
   const [viewedProperties, setViewedProperties] = useState(0);
 
   useEffect(() => {
