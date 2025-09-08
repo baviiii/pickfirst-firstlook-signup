@@ -431,7 +431,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                   <SelectValue placeholder="Any Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any Type</SelectItem>
+                  <SelectItem value="any">Any Type</SelectItem>
                   {filterSuggestions.propertyTypes.map(type => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
@@ -449,7 +449,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                   <SelectValue placeholder="Any" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any</SelectItem>
+                  <SelectItem value="any">Any</SelectItem>
                   {filterSuggestions.bedroomOptions.map(option => (
                     <SelectItem key={option} value={option.toString()}>{option}</SelectItem>
                   ))}
@@ -467,7 +467,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                   <SelectValue placeholder="Any" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any</SelectItem>
+                  <SelectItem value="any">Any</SelectItem>
                   {filterSuggestions.bathroomOptions.map(option => (
                     <SelectItem key={option} value={option.toString()}>{option}</SelectItem>
                   ))}
