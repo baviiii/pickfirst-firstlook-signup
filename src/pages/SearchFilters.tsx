@@ -5,80 +5,24 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { toast } from 'sonner';
-import EnhancedFilterSystem, { PropertyFilters } from '@/components/property/EnhancedFilterSystem';
+import ProductionFilterSystem from '@/components/property/ProductionFilterSystem';
+import { AdvancedPropertyFilters, FilterResult } from '@/services/filterService';
 import PropertyInsights from '@/components/property/PropertyInsights';
 
 const EnhancedSearchFiltersPage = () => {
   const navigate = useNavigate();
   
-  const [filters, setFilters] = useState<PropertyFilters>({
-    priceRange: [0, 1000000],
-    squareFootageRange: [0, 10000],
-    yearBuiltRange: [1900, 2024]
-  });
-  
-  const [filteredProperties, setFilteredProperties] = useState<PropertyListing[]>([]);
+  const [results, setResults] = useState<FilterResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
-  const handleFiltersChange = (newFilters: PropertyFilters) => {
-    setFilters(newFilters);
+  const handleResultsChange = (newResults: FilterResult) => {
+    setResults(newResults);
+    setShowResults(true);
   };
 
-  const handleClearFilters = () => {
-    setFilters({
-      priceRange: [0, 1000000],
-      squareFootageRange: [0, 10000],
-      yearBuiltRange: [1900, 2024]
-    });
-    setFilteredProperties([]);
-    setShowResults(false);
-  };
-
-  const handleApplyFilters = async () => {
-    setLoading(true);
-    try {
-      const { data } = await PropertyService.getApprovedListings();
-      let filtered = data || [];
-      
-      // Apply basic filters
-      if (filters.searchTerm) {
-        const term = filters.searchTerm.toLowerCase();
-        filtered = filtered.filter(property =>
-          property.title.toLowerCase().includes(term) ||
-          property.description?.toLowerCase().includes(term) ||
-          property.address.toLowerCase().includes(term)
-        );
-      }
-      
-      if (filters.location) {
-        const term = filters.location.toLowerCase();
-        filtered = filtered.filter(property =>
-          property.city.toLowerCase().includes(term) ||
-          property.state.toLowerCase().includes(term) ||
-          property.address.toLowerCase().includes(term)
-        );
-      }
-      
-      if (filters.propertyType) {
-        filtered = filtered.filter(property => property.property_type === filters.propertyType);
-      }
-      
-      // Price range filter
-      filtered = filtered.filter(property =>
-        property.price >= filters.priceRange[0] && 
-        property.price <= filters.priceRange[1]
-      );
-      
-      setFilteredProperties(filtered);
-      setShowResults(true);
-      toast.success(`Found ${filtered.length} matching properties`);
-    } catch (error) {
-      toast.error('Failed to apply filters');
-      console.error('Filter error:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handleLoadingChange = (isLoading: boolean) => {
+    setLoading(isLoading);
   };
 
   const PropertyCard = ({ property }: { property: PropertyListing }) => (
@@ -174,12 +118,11 @@ const EnhancedSearchFiltersPage = () => {
       <div className="relative z-10">
         <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
           
-          {/* Enhanced Filter System */}
-          <EnhancedFilterSystem
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-            onClearFilters={handleClearFilters}
-            onApplyFilters={handleApplyFilters}
+          {/* Production Filter System */}
+          <ProductionFilterSystem
+            onResultsChange={handleResultsChange}
+            onLoadingChange={handleLoadingChange}
+            showResults={showResults}
           />
 
           {/* Results Section */}
@@ -192,12 +135,12 @@ const EnhancedSearchFiltersPage = () => {
                     Search Results
                   </CardTitle>
                   <Button
-                    onClick={handleApplyFilters}
+                    onClick={() => setShowResults(!showResults)}
                     disabled={loading}
                     className="bg-yellow-400 hover:bg-amber-500 text-black"
                   >
                     <Zap className="h-4 w-4 mr-2" />
-                    {loading ? 'Searching...' : 'Apply Filters'}
+                    {showResults ? 'Hide Results' : 'Show Results'}
                   </Button>
                 </div>
               </CardHeader>
@@ -206,15 +149,15 @@ const EnhancedSearchFiltersPage = () => {
                   <div className="flex items-center justify-center py-8">
                     <div className="text-gray-400">Searching properties...</div>
                   </div>
-                ) : filteredProperties.length > 0 ? (
+                ) : results && results.properties.length > 0 ? (
                   <>
                     <div className="mb-6">
                       <p className="text-gray-300">
-                        Found <span className="text-yellow-400 font-semibold">{filteredProperties.length}</span> properties matching your criteria
+                        Found <span className="text-yellow-400 font-semibold">{results.filterStats.matchingProperties}</span> of <span className="text-yellow-400 font-semibold">{results.filterStats.totalProperties}</span> properties matching your criteria
                       </p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {filteredProperties.map(property => (
+                      {results.properties.map(property => (
                         <div key={property.id} className="space-y-4">
                           <PropertyCard property={property} />
                           {/* Property Insights for filtered results */}
@@ -235,10 +178,10 @@ const EnhancedSearchFiltersPage = () => {
                     <div className="text-gray-400 mb-4">No properties found matching your criteria</div>
                     <Button
                       variant="outline"
-                      onClick={handleClearFilters}
+                      onClick={() => setShowResults(false)}
                       className="text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10"
                     >
-                      Clear Filters
+                      Hide Results
                     </Button>
                   </div>
                 )}
