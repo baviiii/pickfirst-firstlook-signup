@@ -6,10 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Search, Plus, Phone, Mail, MessageSquare, Calendar, Star, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Users, Search, Plus, Phone, Mail, MessageSquare, Calendar, Star, Edit, Trash2, Loader2, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { clientService, Client, ClientFilters } from '@/services/clientService';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
+import { ClientHistory } from './ClientHistory';
 
 export const MyClients = () => {
   const [clients, setClients] = useState<Client[]>([]);
@@ -30,6 +31,8 @@ export const MyClients = () => {
   });
   const [searchingUser, setSearchingUser] = useState(false);
   const [foundUser, setFoundUser] = useState<any>(null);
+  const [historyClient, setHistoryClient] = useState<Client | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   // Load clients on component mount
   useEffect(() => {
@@ -95,6 +98,11 @@ export const MyClients = () => {
 
   const handleAddClient = () => {
     setIsAddingClient(true);
+  };
+
+  const handleViewHistory = (client: Client) => {
+    setHistoryClient(client);
+    setShowHistory(true);
   };
 
   const handleDeleteClient = async (clientId: string) => {
@@ -300,7 +308,7 @@ export const MyClients = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => handleContactClient(client, 'phone')}
-                  className="flex-1 text-green-500 border-green-500/20 hover:bg-green-500/10"
+                  className="flex-1 text-green-400 border-green-400/30 hover:bg-green-400/20 hover:text-green-300 hover:border-green-400/50"
                 >
                   <Phone className="h-4 w-4" />
                 </Button>
@@ -308,7 +316,7 @@ export const MyClients = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => handleContactClient(client, 'email')}
-                  className="flex-1 text-blue-500 border-blue-500/20 hover:bg-blue-500/10"
+                  className="flex-1 text-blue-400 border-blue-400/30 hover:bg-blue-400/20 hover:text-blue-300 hover:border-blue-400/50"
                 >
                   <Mail className="h-4 w-4" />
                 </Button>
@@ -316,15 +324,24 @@ export const MyClients = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => handleContactClient(client, 'message')}
-                  className="flex-1 text-purple-500 border-purple-500/20 hover:bg-purple-500/10"
+                  className="flex-1 text-purple-400 border-purple-400/30 hover:bg-purple-400/20 hover:text-purple-300 hover:border-purple-400/50"
                 >
                   <MessageSquare className="h-4 w-4" />
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
+                  onClick={() => handleViewHistory(client)}
+                  className="text-pickfirst-yellow border-pickfirst-yellow/30 hover:bg-pickfirst-yellow/20 hover:text-pickfirst-amber hover:border-pickfirst-yellow/50"
+                  title="View client history"
+                >
+                  <History className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
                   onClick={() => setSelectedClient(client)}
-                  className="text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/10"
+                  className="text-yellow-400 border-yellow-400/30 hover:bg-yellow-400/20 hover:text-yellow-300 hover:border-yellow-400/50"
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
@@ -332,7 +349,7 @@ export const MyClients = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => handleDeleteClient(client.id)}
-                  className="text-red-500 border-red-500/20 hover:bg-red-500/10"
+                  className="text-red-400 border-red-400/30 hover:bg-red-400/20 hover:text-red-300 hover:border-red-400/50"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -457,6 +474,16 @@ export const MyClients = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Client History Dialog */}
+      <ClientHistory 
+        client={historyClient}
+        isOpen={showHistory}
+        onClose={() => {
+          setShowHistory(false);
+          setHistoryClient(null);
+        }}
+      />
     </div>
   );
 };
