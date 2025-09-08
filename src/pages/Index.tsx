@@ -21,7 +21,7 @@ const Index = () => {
   };
 
   const handleSignInClick = () => {
-    navigate('/signin');
+    navigate('/auth');
   };
 
   const closeMobileMenu = () => {

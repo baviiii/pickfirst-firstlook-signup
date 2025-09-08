@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -61,6 +62,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
   showControls = true,
   className = ""
 }) => {
+  const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -104,6 +106,17 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
   };
+
+  // Set up global navigation function
+  useEffect(() => {
+    (window as any).navigateToProperty = (propertyId: string) => {
+      navigate(`/property/${propertyId}`);
+    };
+    
+    return () => {
+      delete (window as any).navigateToProperty;
+    };
+  }, [navigate]);
 
   // Initialize Google Maps with advanced styling
   const initializeMap = useCallback(() => {
@@ -393,9 +406,9 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
 
               <!-- Actions -->
               <div class="flex gap-2">
-                <a href="/property/${property.id}" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-4 rounded-lg transition-colors duration-200 font-bold text-center">
+                <button onclick="window.navigateToProperty('${property.id}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-4 rounded-lg transition-colors duration-200 font-bold text-center">
                   View Details
-                </a>
+                </button>
                 <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm py-2 px-3 rounded-lg transition-colors duration-200">
                   💖
                 </button>

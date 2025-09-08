@@ -46,7 +46,7 @@ interface PublicPreviewProps {
   onSignInClick: () => void;
 }
 
-export const PublicPreview = ({ onSignUpClick, onSignInClick }: PublicPreviewProps) => {
+const PublicPreview = ({ onSignUpClick, onSignInClick }: PublicPreviewProps) => {
   const [viewedProperties, setViewedProperties] = useState(0);
 
   useEffect(() => {
@@ -226,3 +226,5 @@ export const PublicPreview = ({ onSignUpClick, onSignInClick }: PublicPreviewPro
     </div>
   );
 };
+
+export { PublicPreview };
