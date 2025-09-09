@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import { auditService } from './auditService';
 import { rateLimitService } from './rateLimitService';
+import PropertyAlertService from './propertyAlertService';
 
 export type PropertyListing = Tables<'property_listings'>;
 export type PropertyFavorite = Tables<'property_favorites'>;
@@ -690,6 +691,14 @@ export class PropertyService {
         // Don't fail the approval if audit logging fails
       }
 
+      // Trigger property alerts for the newly approved listing
+      try {
+        await this.triggerPropertyAlerts(id);
+      } catch (alertError) {
+        console.error('Failed to trigger property alerts:', alertError);
+        // Don't fail the approval if alert triggering fails
+      }
+
       return { data: updatedListing, error: null };
     } catch (error) {
       return { data: null, error };
@@ -971,5 +980,22 @@ export class PropertyService {
       .single();
 
     return { data, error };
+  }
+
+  // Trigger property alerts for a newly approved listing
+  private static async triggerPropertyAlerts(propertyId: string): Promise<void> {
+    try {
+      // Call the property alert service to process the new property
+      const result = await PropertyAlertService.processNewProperty(propertyId);
+      
+      if (result.success) {
+        console.log(`Property alerts processed for property ${propertyId}: ${result.matchesFound} matches found, ${result.alertsSent} alerts sent`);
+      } else {
+        console.error(`Failed to process property alerts for property ${propertyId}:`, result.error);
+      }
+    } catch (error) {
+      console.error('Error triggering property alerts:', error);
+      throw error;
+    }
   }
 } 

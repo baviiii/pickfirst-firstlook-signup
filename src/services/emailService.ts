@@ -21,7 +21,7 @@ export class EmailService {
             name: userName || 'User',
             email: userEmail,
             platformName: 'PickFirst Real Estate',
-            platformUrl: window.location.origin,
+            platformUrl: 'https://baviiii.github.io/pickfirst-firstlook-signup',
             userId
           }
         }

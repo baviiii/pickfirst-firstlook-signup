@@ -150,6 +150,56 @@ export type Database = {
           },
         ]
       }
+      calendar_integrations: {
+        Row: {
+          access_token: string
+          calendar_id: string
+          calendar_name: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          provider: string
+          refresh_token: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          calendar_id: string
+          calendar_name?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          provider: string
+          refresh_token?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          calendar_id?: string
+          calendar_name?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          provider?: string
+          refresh_token?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_integrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_interactions: {
         Row: {
           agent_id: string
@@ -484,6 +534,89 @@ export type Database = {
         }
         Relationships: []
       }
+      property_alert_jobs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          processed_at: string | null
+          property_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          property_id: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          property_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_alert_jobs_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_alerts: {
+        Row: {
+          buyer_id: string
+          created_at: string | null
+          email_template: string
+          id: string
+          property_id: string
+          sent_at: string
+          status: string
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string | null
+          email_template?: string
+          id?: string
+          property_id: string
+          sent_at?: string
+          status?: string
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string | null
+          email_template?: string
+          id?: string
+          property_id?: string
+          sent_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_alerts_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_alerts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       property_favorites: {
         Row: {
           buyer_id: string
@@ -673,6 +806,44 @@ export type Database = {
           {
             foreignKeyName: "property_listings_approved_by_fkey"
             columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_filters: {
+        Row: {
+          created_at: string | null
+          filters: Json
+          id: string
+          is_default: boolean | null
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          filters?: Json
+          id?: string
+          is_default?: boolean | null
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          filters?: Json
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_filters_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -881,6 +1052,22 @@ export type Database = {
           table_name: string
           table_size: string
         }[]
+      }
+      get_pending_alert_jobs: {
+        Args: { limit_count?: number }
+        Returns: {
+          created_at: string
+          id: string
+          property_id: string
+        }[]
+      }
+      mark_alert_job_completed: {
+        Args: { error_msg?: string; job_id: string }
+        Returns: boolean
+      }
+      mark_alert_job_processing: {
+        Args: { job_id: string }
+        Returns: boolean
       }
     }
     Enums: {

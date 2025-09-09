@@ -16,20 +16,23 @@ interface EmailRequest {
 // Email templates
 const EMAIL_TEMPLATES = {
   welcome: (data: any) => ({
-    subject: `Welcome to ${data.platformName || 'Our Platform'}, ${data.name}!`,
+    subject: `Welcome to ${data.platformName || 'PickFirst Real Estate'}, ${data.name}!`,
     html: `
       <!DOCTYPE html>
       <html>
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Welcome</title>
+          <title>Welcome to PickFirst Real Estate</title>
         </head>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
           <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 40px; border-radius: 10px;">
-            <h1 style="color: #ffd700; margin-bottom: 20px;">Welcome to Our Real Estate Platform!</h1>
+            <div style="text-align: center; margin-bottom: 30px;">
+              <img src="https://baviiii.github.io/pickfirst-firstlook-signup/logo.jpg" alt="PickFirst Real Estate" style="max-width: 200px; height: auto; border-radius: 8px;">
+            </div>
+            <h1 style="color: #ffd700; margin-bottom: 20px; text-align: center;">Welcome to PickFirst Real Estate!</h1>
             <p style="font-size: 18px; line-height: 1.6;">Hi ${data.name},</p>
-            <p style="line-height: 1.6;">Welcome to our platform! We're excited to help you find your dream property.</p>
+            <p style="line-height: 1.6;">Welcome to PickFirst Real Estate! We're excited to help you find your dream property.</p>
             <div style="background: rgba(255, 215, 0, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="color: #ffd700; margin-top: 0;">Your Profile Details:</h3>
               <p><strong>Email:</strong> ${data.email}</p>
@@ -38,7 +41,10 @@ const EMAIL_TEMPLATES = {
             </div>
             <p>Start exploring properties and connect with top real estate agents in your area.</p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${data.platformUrl || '#'}" style="background: #ffd700; color: #000; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">Start Browsing Properties</a>
+              <a href="${data.platformUrl || 'https://baviiii.github.io/pickfirst-firstlook-signup'}" style="background: #ffd700; color: #000; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">Start Browsing Properties</a>
+            </div>
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
+              <p style="color: #ccc; font-size: 14px;">Questions? Contact us at <a href="mailto:info@pickfirst.com.au" style="color: #ffd700;">info@pickfirst.com.au</a></p>
             </div>
           </div>
         </body>
@@ -53,13 +59,19 @@ const EMAIL_TEMPLATES = {
       <html>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 30px; border-radius: 10px;">
-            <h2 style="color: #ffd700;">Profile Updated</h2>
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://baviiii.github.io/pickfirst-firstlook-signup/logo.jpg" alt="PickFirst Real Estate" style="max-width: 150px; height: auto; border-radius: 8px;">
+            </div>
+            <h2 style="color: #ffd700; text-align: center;">Profile Updated</h2>
             <p>Hi ${data.name},</p>
             <p>Your profile has been successfully updated. Here's what changed:</p>
             <ul style="line-height: 1.8;">
               ${data.changes?.map((change: string) => `<li>${change}</li>`).join('') || '<li>General profile information</li>'}
             </ul>
             <p style="margin-top: 20px;">If you didn't make these changes, please contact support immediately.</p>
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
+              <p style="color: #ccc; font-size: 14px;">Questions? Contact us at <a href="mailto:info@pickfirst.com.au" style="color: #ffd700;">info@pickfirst.com.au</a></p>
+            </div>
           </div>
         </body>
       </html>
@@ -73,7 +85,10 @@ const EMAIL_TEMPLATES = {
       <html>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 30px; border-radius: 10px;">
-            <h2 style="color: #ffd700;">New Property Match!</h2>
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://baviiii.github.io/pickfirst-firstlook-signup/logo.jpg" alt="PickFirst Real Estate" style="max-width: 150px; height: auto; border-radius: 8px;">
+            </div>
+            <h2 style="color: #ffd700; text-align: center;">New Property Match!</h2>
             <p>Hi ${data.name},</p>
             <p>We found a property that matches your criteria:</p>
             <div style="background: rgba(255, 215, 0, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -84,7 +99,10 @@ const EMAIL_TEMPLATES = {
               <p><strong>Bedrooms:</strong> ${data.bedrooms} | <strong>Bathrooms:</strong> ${data.bathrooms}</p>
             </div>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${data.propertyUrl || '#'}" style="background: #ffd700; color: #000; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Property</a>
+              <a href="${data.propertyUrl || 'https://baviiii.github.io/pickfirst-firstlook-signup'}" style="background: #ffd700; color: #000; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Property</a>
+            </div>
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
+              <p style="color: #ccc; font-size: 14px;">Questions? Contact us at <a href="mailto:info@pickfirst.com.au" style="color: #ffd700;">info@pickfirst.com.au</a></p>
             </div>
           </div>
         </body>
@@ -99,7 +117,10 @@ const EMAIL_TEMPLATES = {
       <html>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 30px; border-radius: 10px;">
-            <h2 style="color: #ffd700;">Appointment Confirmed</h2>
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://baviiii.github.io/pickfirst-firstlook-signup/logo.jpg" alt="PickFirst Real Estate" style="max-width: 150px; height: auto; border-radius: 8px;">
+            </div>
+            <h2 style="color: #ffd700; text-align: center;">Appointment Confirmed</h2>
             <p>Hi ${data.name},</p>
             <p>Your property viewing has been confirmed!</p>
             <div style="background: rgba(255, 215, 0, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -110,6 +131,9 @@ const EMAIL_TEMPLATES = {
               <p><strong>Agent Phone:</strong> ${data.agentPhone}</p>
             </div>
             <p>Please arrive 5 minutes early. If you need to reschedule, contact your agent directly.</p>
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
+              <p style="color: #ccc; font-size: 14px;">Questions? Contact us at <a href="mailto:info@pickfirst.com.au" style="color: #ffd700;">info@pickfirst.com.au</a></p>
+            </div>
           </div>
         </body>
       </html>
@@ -123,7 +147,10 @@ const EMAIL_TEMPLATES = {
       <html>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 30px; border-radius: 10px;">
-            <h2 style="color: #ffd700;">Market Update</h2>
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://baviiii.github.io/pickfirst-firstlook-signup/logo.jpg" alt="PickFirst Real Estate" style="max-width: 150px; height: auto; border-radius: 8px;">
+            </div>
+            <h2 style="color: #ffd700; text-align: center;">Market Update</h2>
             <p>Hi ${data.name},</p>
             <p>Here's your weekly market update for ${data.area}:</p>
             <div style="background: rgba(255, 215, 0, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -134,6 +161,9 @@ const EMAIL_TEMPLATES = {
               <p><strong>Days on Market:</strong> ${data.daysOnMarket} days average</p>
             </div>
             <p>Based on your preferences, now might be ${data.recommendation || 'a good time to explore the market'}.</p>
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
+              <p style="color: #ccc; font-size: 14px;">Questions? Contact us at <a href="mailto:info@pickfirst.com.au" style="color: #ffd700;">info@pickfirst.com.au</a></p>
+            </div>
           </div>
         </body>
       </html>
@@ -179,12 +209,33 @@ serve(async (req) => {
     const emailContent = templateFunction(data)
     const finalSubject = subject || emailContent.subject
 
-    // For now, simulate sending email (replace with actual email service later)
-    console.log('📧 Simulated Email Send:')
-    console.log('To:', to)
-    console.log('Subject:', finalSubject)
-    console.log('Template:', template)
-    console.log('Data:', JSON.stringify(data, null, 2))
+    // Send email using Resend
+    const resendApiKey = Deno.env.get('RESEND_API_KEY')
+    if (!resendApiKey) {
+      throw new Error('RESEND_API_KEY environment variable is required')
+    }
+
+    const resendResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'PickFirst Real Estate <info@pickfirst.com.au>',
+        to: [to],
+        subject: finalSubject,
+        html: emailContent.html,
+      }),
+    })
+
+    if (!resendResponse.ok) {
+      const errorData = await resendResponse.text()
+      throw new Error(`Resend API error: ${resendResponse.status} - ${errorData}`)
+    }
+
+    const resendData = await resendResponse.json()
+    console.log('📧 Email sent via Resend:', resendData)
 
     // Log email activity to database for production tracking
     try {
@@ -208,8 +259,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Email sent successfully (simulated)',
-        emailId: `sim_${Date.now()}`,
+        message: 'Email sent successfully via Resend',
+        emailId: resendData.id,
         template,
         to,
         subject: finalSubject
