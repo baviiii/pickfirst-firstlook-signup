@@ -2,6 +2,15 @@ import { supabase } from '@/integrations/supabase/client';
 import PropertyAlertService from '@/services/propertyAlertService';
 import BuyerProfileService from '@/services/buyerProfileService';
 
+// Simple UUID generator fallback if not available
+const generateUuid = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 /**
  * Test utility for the property alert system
  */
@@ -11,7 +20,7 @@ export class PropertyAlertTester {
    */
   static async testCompleteFlow(): Promise<{
     success: boolean;
-    results: any;
+    results?: any;
     error?: string;
   }> {
     try {
@@ -30,19 +39,19 @@ export class PropertyAlertTester {
       }
 
       // Step 3: Test property matching
-      const matchResult = await this.testPropertyMatching(testProperty.propertyId, testBuyer.buyerId);
+      const matchResult = await this.testPropertyMatching(testProperty.propertyId!, testBuyer.buyerId!);
       if (!matchResult.success) {
         return { success: false, results: null, error: matchResult.error };
       }
 
       // Step 4: Test alert processing
-      const alertResult = await PropertyAlertService.testAlertSystem(testProperty.propertyId);
+      const alertResult = await PropertyAlertService.testAlertSystem(testProperty.propertyId!);
       if (!alertResult.success) {
         return { success: false, results: null, error: alertResult.error };
       }
 
       // Step 5: Clean up test data
-      await this.cleanupTestData(testBuyer.buyerId, testProperty.propertyId);
+      await this.cleanupTestData(testBuyer.buyerId!, testProperty.propertyId!);
 
       console.log('✅ Property Alert System Test Completed Successfully!');
       
@@ -69,19 +78,21 @@ export class PropertyAlertTester {
   /**
    * Create a test buyer with property alert preferences
    */
-  private static async createTestBuyer(): Promise<{
+  static async createTestBuyer(data?: any): Promise<{
     success: boolean;
     buyerId?: string;
     error?: string;
   }> {
     try {
-      const testEmail = `test-buyer-${Date.now()}@example.com`;
-      const testName = 'Test Buyer';
+      const testEmail = data?.email || `test-buyer-${Date.now()}@example.com`;
+      const testName = data?.name || 'Test Buyer';
 
       // Create test profile
+      const userId = generateUuid();
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .insert({
+          id: userId,
           email: testEmail,
           full_name: testName,
           role: 'buyer'
@@ -100,11 +111,11 @@ export class PropertyAlertTester {
           user_id: profile.id,
           property_alerts: true,
           email_notifications: true,
-          min_budget: 300000,
-          max_budget: 600000,
-          preferred_bedrooms: 3,
-          preferred_bathrooms: 2,
-          preferred_areas: ['San Francisco', 'Oakland'],
+          min_budget: data?.budget ? data.budget * 0.8 : 300000,
+          max_budget: data?.budget || 600000,
+          preferred_bedrooms: data?.bedrooms || 3,
+          preferred_bathrooms: data?.bathrooms || 2,
+          preferred_areas: data?.location ? [data.location] : ['San Francisco', 'Oakland'],
           property_type_preferences: ['house', 'condo']
         });
 
@@ -124,9 +135,9 @@ export class PropertyAlertTester {
   }
 
   /**
-   * Create a test property that should match the buyer's preferences
+   * Create a test property listing
    */
-  private static async createTestProperty(): Promise<{
+  static async createTestProperty(data?: any): Promise<{
     success: boolean;
     propertyId?: string;
     error?: string;
@@ -140,11 +151,15 @@ export class PropertyAlertTester {
         .limit(1)
         .single();
 
-      if (agentError) {
+      let agentId: string;
+
+      if (agentError || !agent) {
         // Create a test agent if none exists
+        const newAgentId = generateUuid();
         const { data: newAgent, error: newAgentError } = await supabase
           .from('profiles')
           .insert({
+            id: newAgentId,
             email: `test-agent-${Date.now()}@example.com`,
             full_name: 'Test Agent',
             role: 'agent'
@@ -155,51 +170,26 @@ export class PropertyAlertTester {
         if (newAgentError) {
           return { success: false, error: `Failed to create test agent: ${newAgentError.message}` };
         }
-
-        // Create test property
-        const { data: property, error: propertyError } = await supabase
-          .from('property_listings')
-          .insert({
-            agent_id: newAgent.id,
-            title: 'Test Property - Perfect Match',
-            description: 'A beautiful test property that matches buyer preferences',
-            property_type: 'house',
-            price: 450000,
-            bedrooms: 3,
-            bathrooms: 2,
-            square_feet: 1800,
-            address: '123 Test Street',
-            city: 'San Francisco',
-            state: 'CA',
-            zip_code: '94102',
-            status: 'approved'
-          })
-          .select()
-          .single();
-
-        if (propertyError) {
-          return { success: false, error: `Failed to create test property: ${propertyError.message}` };
-        }
-
-        console.log(`✅ Created test property: ${property.id}`);
-        return { success: true, propertyId: property.id };
+        agentId = newAgent.id;
+      } else {
+        agentId = agent.id;
       }
 
-      // Create test property with existing agent
+      // Create test property
       const { data: property, error: propertyError } = await supabase
         .from('property_listings')
         .insert({
-          agent_id: agent.id,
-          title: 'Test Property - Perfect Match',
+          agent_id: agentId,
+          title: data?.title || 'Test Property - Perfect Match',
           description: 'A beautiful test property that matches buyer preferences',
-          property_type: 'house',
-          price: 450000,
-          bedrooms: 3,
-          bathrooms: 2,
+          property_type: data?.property_type?.toLowerCase() || 'house',
+          price: data?.price || 450000,
+          bedrooms: data?.bedrooms || 3,
+          bathrooms: data?.bathrooms || 2,
           square_feet: 1800,
           address: '123 Test Street',
-          city: 'San Francisco',
-          state: 'CA',
+          city: data?.city || 'San Francisco',
+          state: data?.state || 'CA',
           zip_code: '94102',
           status: 'approved'
         })
@@ -253,15 +243,15 @@ export class PropertyAlertTester {
       // Test the matching logic (simplified version)
       const price = parseFloat(property.price.toString());
       const matches = {
-        priceMin: preferences.min_budget ? price >= preferences.min_budget : false,
-        priceMax: preferences.max_budget ? price <= preferences.max_budget : false,
-        bedrooms: preferences.preferred_bedrooms ? property.bedrooms >= preferences.preferred_bedrooms : false,
-        bathrooms: preferences.preferred_bathrooms ? property.bathrooms >= preferences.preferred_bathrooms : false,
-        location: preferences.preferred_areas ? preferences.preferred_areas.some(area => 
+        priceMin: preferences.min_budget ? price >= preferences.min_budget : true,
+        priceMax: preferences.max_budget ? price <= preferences.max_budget : true,
+        bedrooms: preferences.preferred_bedrooms ? property.bedrooms >= preferences.preferred_bedrooms : true,
+        bathrooms: preferences.preferred_bathrooms ? property.bathrooms >= preferences.preferred_bathrooms : true,
+        location: preferences.preferred_areas ? preferences.preferred_areas.some((area: string) => 
           property.city.toLowerCase().includes(area.toLowerCase())
-        ) : false,
+        ) : true,
         propertyType: preferences.property_type_preferences ? 
-          preferences.property_type_preferences.includes(property.property_type) : false
+          preferences.property_type_preferences.includes(property.property_type) : true
       };
 
       const matchCount = Object.values(matches).filter(Boolean).length;
@@ -297,8 +287,7 @@ export class PropertyAlertTester {
       await supabase
         .from('property_alerts')
         .delete()
-        .eq('buyer_id', buyerId)
-        .eq('property_id', propertyId);
+        .or(`buyer_id.eq.${buyerId},property_id.eq.${propertyId}`);
 
       // Delete user preferences
       await supabase
@@ -312,11 +301,11 @@ export class PropertyAlertTester {
         .delete()
         .eq('id', propertyId);
 
-      // Delete profiles
+      // Delete profiles (buyer and potentially agent)
       await supabase
         .from('profiles')
         .delete()
-        .in('id', [buyerId]);
+        .eq('id', buyerId);
 
       console.log('✅ Cleaned up test data');
     } catch (error) {
@@ -365,7 +354,10 @@ export class PropertyAlertTester {
   }
 }
 
-// Export for easy testing
-export const testPropertyAlerts = PropertyAlertTester.testCompleteFlow;
-export const testAlertStats = PropertyAlertTester.testAlertStatistics;
-export const testBuyerHistory = PropertyAlertTester.testBuyerAlertHistory;
+// Export helper functions for easy testing
+export const testPropertyAlerts = () => PropertyAlertTester.testCompleteFlow();
+export const testAlertStats = () => PropertyAlertTester.testAlertStatistics();
+export const testBuyerHistory = (buyerId: string) => PropertyAlertTester.testBuyerAlertHistory(buyerId);
+
+// Default export
+export default PropertyAlertTester;

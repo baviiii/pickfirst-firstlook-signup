@@ -9,10 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, TestTube, Mail, Users, Home, Database, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 
 // Import test utilities
-import { testPropertyAlertSystem, createTestBuyer, createTestProperty } from '@/utils/testPropertyAlerts';
+import { PropertyAlertTester } from '@/utils/testPropertyAlerts';
 import PropertyAlertService from '@/services/propertyAlertService';
 import EmailService from '@/services/emailService';
 
@@ -23,6 +22,11 @@ interface TestResult {
   error?: string;
   timestamp: string;
 }
+
+// Mock toast function since it's not available
+const toast = ({ title, description, variant }: { title: string; description: string; variant?: string }) => {
+  console.log(`Toast: ${title} - ${description} (${variant || 'default'})`);
+};
 
 export default function SystemTestingDashboard() {
   const [testResults, setTestResults] = useState<TestResult[]>([]);
@@ -78,7 +82,7 @@ export default function SystemTestingDashboard() {
       addTestResult({
         success: result.success,
         message: result.success 
-          ? `Property alert test completed. Found ${result.result.matchesFound} matches, sent ${result.result.alertsSent} alerts.`
+          ? `Property alert test completed. Found ${result.result?.matchesFound || 0} matches, sent ${result.result?.alertsSent || 0} alerts.`
           : `Property alert test failed: ${result.error}`,
         data: result.result,
         error: result.error,
@@ -188,17 +192,21 @@ export default function SystemTestingDashboard() {
   const createTestBuyerAccount = async () => {
     setIsLoading(true);
     try {
-      const result = await createTestBuyer(testBuyerData);
+      const result = await PropertyAlertTester.createTestBuyer(testBuyerData);
       addTestResult({
-        success: true,
-        message: `Test buyer created successfully: ${testBuyerData.email}`,
+        success: result.success,
+        message: result.success 
+          ? `Test buyer created successfully: ${testBuyerData.email}` 
+          : `Failed to create test buyer: ${result.error}`,
         data: result,
+        error: result.error,
         timestamp: new Date().toLocaleString()
       });
 
       toast({
-        title: "Success",
-        description: "Test buyer account created",
+        title: result.success ? "Success" : "Error",
+        description: result.success ? "Test buyer account created" : result.error,
+        variant: result.success ? "default" : "destructive"
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -221,17 +229,21 @@ export default function SystemTestingDashboard() {
   const createTestPropertyListing = async () => {
     setIsLoading(true);
     try {
-      const result = await createTestProperty(testPropertyData);
+      const result = await PropertyAlertTester.createTestProperty(testPropertyData);
       addTestResult({
-        success: true,
-        message: `Test property created successfully: ${testPropertyData.title}`,
+        success: result.success,
+        message: result.success 
+          ? `Test property created successfully: ${testPropertyData.title}` 
+          : `Failed to create test property: ${result.error}`,
         data: result,
+        error: result.error,
         timestamp: new Date().toLocaleString()
       });
 
       toast({
-        title: "Success",
-        description: "Test property listing created",
+        title: result.success ? "Success" : "Error",
+        description: result.success ? "Test property listing created" : result.error,
+        variant: result.success ? "default" : "destructive"
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -254,13 +266,13 @@ export default function SystemTestingDashboard() {
   const runFullSystemTest = async () => {
     setIsLoading(true);
     try {
-      const result = await testPropertyAlertSystem();
+      const result = await PropertyAlertTester.testCompleteFlow();
       addTestResult({
         success: result.success,
         message: result.success 
-          ? `Full system test completed successfully. ${result.data?.alertsSent || 0} alerts sent.`
+          ? `Full system test completed successfully. ${result.results?.alerts?.alertsSent || 0} alerts sent.`
           : `Full system test failed: ${result.error}`,
-        data: result.data,
+        data: result.results,
         error: result.error,
         timestamp: new Date().toLocaleString()
       });
@@ -491,7 +503,7 @@ export default function SystemTestingDashboard() {
                       id="buyerBudget"
                       type="number"
                       value={testBuyerData.budget}
-                      onChange={(e) => setTestBuyerData(prev => ({ ...prev, budget: parseInt(e.target.value) }))}
+                      onChange={(e) => setTestBuyerData(prev => ({ ...prev, budget: parseInt(e.target.value) || 0 }))}
                     />
                   </div>
                   <div className="space-y-2">
@@ -500,7 +512,7 @@ export default function SystemTestingDashboard() {
                       id="buyerBedrooms"
                       type="number"
                       value={testBuyerData.bedrooms}
-                      onChange={(e) => setTestBuyerData(prev => ({ ...prev, bedrooms: parseInt(e.target.value) }))}
+                      onChange={(e) => setTestBuyerData(prev => ({ ...prev, bedrooms: parseInt(e.target.value) || 0 }))}
                     />
                   </div>
                   <div className="space-y-2">
@@ -509,7 +521,7 @@ export default function SystemTestingDashboard() {
                       id="buyerBathrooms"
                       type="number"
                       value={testBuyerData.bathrooms}
-                      onChange={(e) => setTestBuyerData(prev => ({ ...prev, bathrooms: parseInt(e.target.value) }))}
+                      onChange={(e) => setTestBuyerData(prev => ({ ...prev, bathrooms: parseInt(e.target.value) || 0 }))}
                     />
                   </div>
                 </div>
@@ -559,7 +571,7 @@ export default function SystemTestingDashboard() {
                       id="propertyPrice"
                       type="number"
                       value={testPropertyData.price}
-                      onChange={(e) => setTestPropertyData(prev => ({ ...prev, price: parseInt(e.target.value) }))}
+                      onChange={(e) => setTestPropertyData(prev => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
                     />
                   </div>
                   <div className="space-y-2">
@@ -602,7 +614,7 @@ export default function SystemTestingDashboard() {
                       id="propertyBedrooms"
                       type="number"
                       value={testPropertyData.bedrooms}
-                      onChange={(e) => setTestPropertyData(prev => ({ ...prev, bedrooms: parseInt(e.target.value) }))}
+                      onChange={(e) => setTestPropertyData(prev => ({ ...prev, bedrooms: parseInt(e.target.value) || 0 }))}
                     />
                   </div>
                   <div className="space-y-2">
@@ -611,7 +623,7 @@ export default function SystemTestingDashboard() {
                       id="propertyBathrooms"
                       type="number"
                       value={testPropertyData.bathrooms}
-                      onChange={(e) => setTestPropertyData(prev => ({ ...prev, bathrooms: parseInt(e.target.value) }))}
+                      onChange={(e) => setTestPropertyData(prev => ({ ...prev, bathrooms: parseInt(e.target.value) || 0 }))}
                     />
                   </div>
                 </div>
