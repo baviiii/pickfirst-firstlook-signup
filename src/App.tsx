@@ -35,6 +35,7 @@ import SearchFiltersPage from './pages/SearchFilters';
 import BuyerAccountSettingsPage from './pages/BuyerAccountSettings';
 import ProfileSettingsPage from './pages/ProfileSettings';
 import PropertyDetails from './pages/PropertyDetails';
+import SystemTestingPage from './pages/SystemTesting';
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,7 @@ const App = () => (
             <Route path="/buyer-account-settings" element={<BuyerAccountSettingsPage />} />
             <Route path="/profile-settings" element={<ProfileSettingsPage />} />
             <Route path="/property/:id" element={<PropertyDetails />} />
+            <Route path="/system-testing" element={<SystemTestingPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

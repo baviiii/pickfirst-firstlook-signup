@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
-import { Users, Building, Shield, Settings, BarChart3, Database, AlertTriangle, Activity } from 'lucide-react';
+import { Users, Building, Shield, Settings, BarChart3, Database, AlertTriangle, Activity, TestTube } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { analyticsService, DashboardMetrics } from '@/services/analyticsService';
@@ -67,6 +67,7 @@ export const SuperAdminDashboard = () => {
     { icon: Database, label: 'Database Management', description: 'Monitor database health', color: 'bg-indigo-500/10 text-indigo-500', onClick: () => navigate('/database-management'), adminOnly: true },
     { icon: AlertTriangle, label: 'System Alerts', description: 'Monitor critical issues', color: 'bg-orange-500/10 text-orange-500', onClick: () => navigate('/system-alerts'), adminOnly: true },
     { icon: Activity, label: 'System Logs', description: 'View platform activity', color: 'bg-cyan-500/10 text-cyan-500', onClick: () => navigate('/system-logs') },
+    { icon: TestTube, label: 'System Testing', description: 'Test property alerts, emails, and system components', color: 'bg-yellow-500/10 text-yellow-500', onClick: () => navigate('/system-testing'), adminOnly: true },
     { icon: Settings, label: 'Platform Settings', description: 'Configure system settings', color: 'bg-gray-500/10 text-gray-500', onClick: () => navigate('/platform-settings') }
   ];
 
