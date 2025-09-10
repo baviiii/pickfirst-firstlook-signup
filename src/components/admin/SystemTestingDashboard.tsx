@@ -113,10 +113,24 @@ export default function SystemTestingDashboard() {
   };
 
   const runEmailTest = async () => {
-    if (!emailRecipient.trim()) {
+    // Get the email from the input field and trim whitespace
+    const recipientEmail = emailRecipient.trim();
+    
+    if (!recipientEmail) {
       toast({
         title: "Error",
         description: "Please enter an email recipient",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(recipientEmail)) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
         variant: "destructive"
       });
       return;
@@ -133,8 +147,8 @@ export default function SystemTestingDashboard() {
         data = {};
       }
 
-      // Ensure required fields are set
-      data.email = data.email || emailRecipient;
+      // Ensure required fields are set, using the email from the input field
+      data.email = recipientEmail;
       data.name = data.name || 'Test User';
       data.platformName = data.platformName || 'PickFirst Real Estate';
       data.platformUrl = data.platformUrl || 'https://baviiii.github.io/pickfirst-firstlook-signup';
@@ -142,11 +156,11 @@ export default function SystemTestingDashboard() {
       // Call the appropriate email service method based on template
       switch (emailTemplate) {
         case 'welcome':
-          await EmailService.sendWelcomeEmail(emailRecipient, data.name, data);
+          await EmailService.sendWelcomeEmail(recipientEmail, data.name, data);
           break;
         case 'propertyAlert':
           await EmailService.sendPropertyAlert(
-            emailRecipient,
+            recipientEmail,
             data.name,
             {
               title: data.propertyTitle || 'Test Property',
@@ -161,7 +175,7 @@ export default function SystemTestingDashboard() {
           break;
         case 'appointmentConfirmation':
           await EmailService.sendAppointmentConfirmation(
-            emailRecipient,
+            recipientEmail,
             data.name,
             {
               propertyTitle: data.propertyTitle || 'Test Property',
@@ -178,7 +192,7 @@ export default function SystemTestingDashboard() {
 
       addTestResult({
         success: true,
-        message: `${emailTemplate} email sent successfully to ${emailRecipient}`,
+        message: `${emailTemplate} email sent successfully to ${recipientEmail}`,
         timestamp: new Date().toISOString()
       });
 
