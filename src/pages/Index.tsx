@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { PublicPreview } from '@/components/public/PublicPreview';
 import { Button } from '@/components/ui/button';
-import { User, Home, LogIn, Menu, X } from 'lucide-react';
+import { User, LogIn, Menu, X } from 'lucide-react';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -66,8 +66,12 @@ const Index = () => {
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo Section */}
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl pickfirst-gradient-yellow-amber flex items-center justify-center shadow-xl shadow-pickfirst-yellow/30 transition-all duration-300 hover:shadow-pickfirst-yellow/50 hover:scale-105">
-                <Home className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-black/20 border border-pickfirst-yellow/30 flex items-center justify-center shadow-xl shadow-pickfirst-yellow/20 transition-all duration-300 hover:shadow-pickfirst-yellow/40 hover:scale-105 hover:border-pickfirst-yellow/50 p-2">
+                <img 
+                  src="/logo.jpg" 
+                  alt="PickFirst Logo" 
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold pickfirst-gradient-yellow-amber-text">

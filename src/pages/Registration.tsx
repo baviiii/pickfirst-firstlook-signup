@@ -103,18 +103,23 @@ const Registration = () => {
       </div>
 
       {/* Enhanced Navigation */}
-      <nav className="relative z-10 backdrop-blur-sm bg-black/20 border-b border-pickfirst-yellow/20 shadow-xl sticky top-0 z-50">
+      <nav className="relative z-10 pickfirst-glass border-b border-pickfirst-yellow/20 shadow-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-xl pickfirst-gradient-yellow-amber flex items-center justify-center shadow-xl shadow-pickfirst-yellow/30 transition-all duration-300 hover:shadow-pickfirst-yellow/50 hover:scale-105">
-                <CheckCircle className="w-6 h-6 text-black" />
+          <div className="flex items-center justify-between h-16 sm:h-20">
+            {/* Logo Section */}
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-black/20 border border-pickfirst-yellow/30 flex items-center justify-center shadow-xl shadow-pickfirst-yellow/20 transition-all duration-300 hover:shadow-pickfirst-yellow/40 hover:scale-105 hover:border-pickfirst-yellow/50 p-2">
+                <img 
+                  src="/logo.jpg" 
+                  alt="PickFirst Logo" 
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div>
-                <h1 className="text-2xl font-bold pickfirst-gradient-yellow-amber-text">
+                <h1 className="text-xl sm:text-2xl font-bold pickfirst-gradient-yellow-amber-text">
                   PickFirst
                 </h1>
-                <p className="text-sm text-gray-400">Off-Market Property Access</p>
+                <p className="text-xs sm:text-sm text-gray-400 hidden sm:block">Off-Market Property Access</p>
               </div>
             </div>
           </div>
