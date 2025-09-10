@@ -124,47 +124,62 @@ export default function SystemTestingDashboard() {
 
     setIsLoading(true);
     try {
+      // Parse the JSON data or use default values
       let data;
       try {
-        data = JSON.parse(emailData);
-      } catch {
-        data = { name: "Test User", email: emailRecipient };
+        data = emailData ? JSON.parse(emailData) : {};
+      } catch (e) {
+        console.error('Failed to parse email data:', e);
+        data = {};
       }
 
-      let result;
+      // Ensure required fields are set
+      data.email = data.email || emailRecipient;
+      data.name = data.name || 'Test User';
+      data.platformName = data.platformName || 'PickFirst Real Estate';
+      data.platformUrl = data.platformUrl || 'https://baviiii.github.io/pickfirst-firstlook-signup';
+
+      // Call the appropriate email service method based on template
       switch (emailTemplate) {
         case 'welcome':
-          result = await EmailService.sendWelcomeEmail(emailRecipient, data.name, data);
+          await EmailService.sendWelcomeEmail(emailRecipient, data.name, data);
           break;
         case 'propertyAlert':
-          result = await EmailService.sendPropertyAlert(emailRecipient, data.name, {
-            title: data.title || 'Test Property',
-            price: data.price || 500000,
-            location: data.location || 'Test Location',
-            propertyType: data.propertyType || 'House',
-            bedrooms: data.bedrooms || 3,
-            bathrooms: data.bathrooms || 2,
-            propertyUrl: data.propertyUrl || 'https://baviiii.github.io/pickfirst-firstlook-signup'
-          });
+          await EmailService.sendPropertyAlert(
+            emailRecipient,
+            data.name,
+            {
+              title: data.propertyTitle || 'Test Property',
+              price: data.price || 0,
+              location: data.location || 'Test Location',
+              propertyType: data.propertyType || 'House',
+              bedrooms: data.bedrooms || 3,
+              bathrooms: data.bathrooms || 2,
+              propertyUrl: data.propertyUrl
+            }
+          );
           break;
         case 'appointmentConfirmation':
-          result = await EmailService.sendAppointmentConfirmation(emailRecipient, data.name, {
-            propertyTitle: data.propertyTitle || 'Test Property',
-            date: data.date || '2024-01-15',
-            time: data.time || '2:00 PM',
-            agentName: data.agentName || 'Test Agent',
-            agentPhone: data.agentPhone || '0400 000 000'
-          });
+          await EmailService.sendAppointmentConfirmation(
+            emailRecipient,
+            data.name,
+            {
+              propertyTitle: data.propertyTitle || 'Test Property',
+              date: data.date || new Date().toLocaleDateString(),
+              time: data.time || '10:00 AM',
+              agentName: data.agentName || 'Test Agent',
+              agentPhone: data.agentPhone || '+1234567890'
+            }
+          );
           break;
         default:
-          throw new Error('Invalid email template');
+          throw new Error(`Unsupported email template: ${emailTemplate}`);
       }
 
       addTestResult({
         success: true,
         message: `${emailTemplate} email sent successfully to ${emailRecipient}`,
-        data: result,
-        timestamp: new Date().toLocaleString()
+        timestamp: new Date().toISOString()
       });
 
       toast({
@@ -177,7 +192,7 @@ export default function SystemTestingDashboard() {
         success: false,
         message: `Email test failed: ${errorMessage}`,
         error: errorMessage,
-        timestamp: new Date().toLocaleString()
+        timestamp: new Date().toISOString()
       });
       toast({
         title: "Error",
