@@ -110,13 +110,17 @@ export default function SystemTestingDashboard() {
     } finally {
       setIsLoading(false);
     }
-  };
+  };// Add this debugging code to your runEmailTest function
 
   const runEmailTest = async () => {
-    // Get the email from the input field and trim whitespace
-    const recipientEmail = emailRecipient.trim();
+    // Enhanced validation
+    const trimmedRecipient = emailRecipient.trim();
     
-    if (!recipientEmail) {
+    console.log('Email recipient (raw):', JSON.stringify(emailRecipient));
+    console.log('Email recipient (trimmed):', JSON.stringify(trimmedRecipient));
+    console.log('Email recipient length:', trimmedRecipient.length);
+    
+    if (!trimmedRecipient) {
       toast({
         title: "Error",
         description: "Please enter an email recipient",
@@ -124,89 +128,82 @@ export default function SystemTestingDashboard() {
       });
       return;
     }
-
-    // Basic email validation
+  
+    // Email validation regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(recipientEmail)) {
+    if (!emailRegex.test(trimmedRecipient)) {
       toast({
         title: "Error",
-        description: "Please enter a valid email address",
+        description: "Please enter a valid email address format (email@example.com)",
         variant: "destructive"
       });
       return;
     }
-
+  
     setIsLoading(true);
     try {
-      // Parse the JSON data or use default values
       let data;
       try {
-        data = emailData ? JSON.parse(emailData) : {};
-      } catch (e) {
-        console.error('Failed to parse email data:', e);
-        data = {};
+        data = JSON.parse(emailData);
+      } catch {
+        data = { name: "Test User", email: trimmedRecipient };
       }
-
-      // Ensure required fields are set, using the email from the input field
-      data.email = recipientEmail;
-      data.name = data.name || 'Test User';
-      data.platformName = data.platformName || 'PickFirst Real Estate';
-      data.platformUrl = data.platformUrl || 'https://baviiii.github.io/pickfirst-firstlook-signup';
-
-      // Call the appropriate email service method based on template
+  
+      // Log the data being sent
+      console.log('Email data:', data);
+      console.log('Email template:', emailTemplate);
+  
+      let result;
       switch (emailTemplate) {
         case 'welcome':
-          await EmailService.sendWelcomeEmail(recipientEmail, data.name, data);
+          console.log('Sending welcome email to:', trimmedRecipient);
+          result = await EmailService.sendWelcomeEmail(trimmedRecipient, data.name, data);
           break;
         case 'propertyAlert':
-          await EmailService.sendPropertyAlert(
-            recipientEmail,
-            data.name,
-            {
-              title: data.propertyTitle || 'Test Property',
-              price: data.price || 0,
-              location: data.location || 'Test Location',
-              propertyType: data.propertyType || 'House',
-              bedrooms: data.bedrooms || 3,
-              bathrooms: data.bathrooms || 2,
-              propertyUrl: data.propertyUrl
-            }
-          );
+          console.log('Sending property alert to:', trimmedRecipient);
+          result = await EmailService.sendPropertyAlert(trimmedRecipient, data.name, {
+            title: data.title || 'Test Property',
+            price: data.price || 500000,
+            location: data.location || 'Test Location',
+            propertyType: data.propertyType || 'House',
+            bedrooms: data.bedrooms || 3,
+            bathrooms: data.bathrooms || 2,
+            propertyUrl: data.propertyUrl || 'https://baviiii.github.io/pickfirst-firstlook-signup'
+          });
           break;
         case 'appointmentConfirmation':
-          await EmailService.sendAppointmentConfirmation(
-            recipientEmail,
-            data.name,
-            {
-              propertyTitle: data.propertyTitle || 'Test Property',
-              date: data.date || new Date().toLocaleDateString(),
-              time: data.time || '10:00 AM',
-              agentName: data.agentName || 'Test Agent',
-              agentPhone: data.agentPhone || '+1234567890'
-            }
-          );
+          console.log('Sending appointment confirmation to:', trimmedRecipient);
+          result = await EmailService.sendAppointmentConfirmation(trimmedRecipient, data.name, {
+            propertyTitle: data.propertyTitle || 'Test Property',
+            date: data.date || '2024-01-15',
+            time: data.time || '2:00 PM',
+            agentName: data.agentName || 'Test Agent',
+            agentPhone: data.agentPhone || '0400 000 000'
+          });
           break;
         default:
-          throw new Error(`Unsupported email template: ${emailTemplate}`);
+          throw new Error('Invalid email template');
       }
-
+  
       addTestResult({
         success: true,
-        message: `${emailTemplate} email sent successfully to ${recipientEmail}`,
-        timestamp: new Date().toISOString()
+        message: `${emailTemplate} email sent successfully to ${trimmedRecipient}`,
+        data: result,
+        timestamp: new Date().toLocaleString()
       });
-
+  
       toast({
         title: "Success",
         description: "Email sent successfully",
       });
     } catch (error) {
+      console.error('Email test error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       addTestResult({
         success: false,
         message: `Email test failed: ${errorMessage}`,
         error: errorMessage,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toLocaleString()
       });
       toast({
         title: "Error",
