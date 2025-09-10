@@ -335,13 +335,18 @@ export default function SystemTestingDashboard() {
     if (!testAppointmentId) {
       addTestResult({ 
         success: false, 
-        message: 'Please enter an appointment ID to test' 
+        message: 'Please enter an appointment ID to test',
+        timestamp: new Date().toISOString()
       });
       return;
     }
 
     setIsLoading(true);
-    addTestResult({ success: false, message: 'Testing appointment status update...' });
+    addTestResult({ 
+      success: false, 
+      message: 'Testing appointment status update...',
+      timestamp: new Date().toISOString() 
+    });
     
     try {
       const result = await appointmentService.updateAppointment(testAppointmentId, { 
@@ -352,20 +357,23 @@ export default function SystemTestingDashboard() {
         addTestResult({ 
           success: false, 
           message: `Appointment status update failed: ${result.error.message}`,
-          data: { error: result.error }
+          data: { error: result.error },
+          timestamp: new Date().toISOString()  // Add this line
         });
       } else {
         addTestResult({ 
           success: true, 
           message: `Appointment status updated to ${testAppointmentStatus}`,
-          data: { appointmentId: testAppointmentId, newStatus: testAppointmentStatus }
+          data: { appointmentId: testAppointmentId, newStatus: testAppointmentStatus },
+          timestamp: new Date().toISOString()  // Add this line
         });
       }
     } catch (error: any) {
       addTestResult({ 
         success: false, 
         message: `Appointment test failed: ${error.message}`,
-        data: { error: error.message }
+        data: { error: error.message },
+        timestamp: new Date().toISOString()  // Add this line
       });
     } finally {
       setIsLoading(false);
@@ -374,7 +382,11 @@ export default function SystemTestingDashboard() {
 
   const runAppointmentEmailTest = async () => {
     setIsLoading(true);
-    addTestResult({ success: false, message: 'Testing appointment status email...' });
+    addTestResult({ 
+      success: false, 
+      message: 'Testing appointment status email...',
+      timestamp: new Date().toISOString()
+    });
     
     try {
       await EmailService.sendAppointmentStatusUpdate(
@@ -394,13 +406,15 @@ export default function SystemTestingDashboard() {
       addTestResult({ 
         success: true, 
         message: `Appointment status email sent to ${emailRecipient}`,
-        data: { status: testAppointmentStatus, recipient: emailRecipient }
+        data: { status: testAppointmentStatus, recipient: emailRecipient },
+        timestamp: new Date().toISOString()  // Add this line
       });
     } catch (error: any) {
       addTestResult({ 
         success: false, 
         message: `Appointment email test failed: ${error.message}`,
-        data: { error: error.message }
+        data: { error: error.message },
+        timestamp: new Date().toISOString()  // Add this line
       });
     } finally {
       setIsLoading(false);
