@@ -330,6 +330,51 @@ export class EmailService {
       console.error('Error sending bulk emails:', error);
     }
   }
+
+  /**
+   * Send appointment status update email
+   */
+  static async sendAppointmentStatusUpdate(
+    userEmail: string,
+    userName: string,
+    appointmentData: {
+      clientName?: string;
+      clientEmail?: string;
+      agentName?: string;
+      appointmentType: string;
+      date: string;
+      time: string;
+      location: string;
+      status: string;
+      statusMessage: string;
+    }
+  ): Promise<void> {
+    try {
+      await supabase.functions.invoke('send-email', {
+        body: {
+          to: userEmail,
+          template: 'appointmentStatusUpdate',
+          data: {
+            name: userName,
+            clientName: appointmentData.clientName,
+            clientEmail: appointmentData.clientEmail,
+            agentName: appointmentData.agentName,
+            appointmentType: appointmentData.appointmentType,
+            date: appointmentData.date,
+            time: appointmentData.time,
+            location: appointmentData.location,
+            status: appointmentData.status,
+            statusMessage: appointmentData.statusMessage,
+            platformName: 'PickFirst Real Estate',
+            platformUrl: 'https://baviiii.github.io/pickfirst-firstlook-signup'
+          },
+          subject: `Appointment ${appointmentData.status.charAt(0).toUpperCase() + appointmentData.status.slice(1)} - ${appointmentData.appointmentType}`
+        }
+      });
+    } catch (error) {
+      console.error('Error sending appointment status update email:', error);
+    }
+  }
 }
 
 export default EmailService;

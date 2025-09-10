@@ -515,15 +515,20 @@ export const Appointments = () => {
                       <div className="flex flex-wrap gap-2 flex-1">
                         {/* Quick Status Change Buttons */}
                         {appointment.status === 'scheduled' && (
-                          <Button
-                            size="sm"
-                            onClick={() => openStatusChangeDialog(appointment.id, 'confirmed')}
-                            className="bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500/20 text-xs"
-                            disabled={updatingStatus === appointment.id}
-                          >
-                            <Check className="h-3 w-3 mr-1" />
-                            Confirm
-                          </Button>
+                          <div className="flex flex-col gap-1">
+                            <div className="text-xs text-yellow-400 mb-1">
+                              ⏳ Waiting for client response
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => openStatusChangeDialog(appointment.id, 'confirmed')}
+                              className="bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500/20 text-xs"
+                              disabled={updatingStatus === appointment.id}
+                            >
+                              <Check className="h-3 w-3 mr-1" />
+                              Mark as Confirmed
+                            </Button>
+                          </div>
                         )}
                         
                         {['scheduled', 'confirmed'].includes(appointment.status) && !isPast && (

@@ -266,6 +266,50 @@ class AppointmentService {
         return { data: null, error: { message: 'User not authenticated' } };
       }
 
+      // Get the current appointment to check permissions and send notifications
+      const { data: currentAppointment, error: fetchError } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (fetchError || !currentAppointment) {
+        return { data: null, error: { message: 'Appointment not found' } };
+      }
+
+      // Check permissions - agents can update their appointments, buyers can only confirm/decline
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, email')
+        .eq('id', user.id)
+        .single();
+
+      const isAgent = profile?.role === 'agent';
+      const isBuyer = profile?.role === 'buyer';
+      const isAppointmentOwner = currentAppointment.agent_id === user.id;
+      const isAppointmentClient = currentAppointment.client_id === user.id || 
+                                 currentAppointment.client_email === profile?.email;
+
+      // Validate permissions based on status change
+      if (updates.status) {
+        if (isBuyer && isAppointmentClient) {
+          // Buyers can only confirm or decline scheduled appointments
+          if (!['confirmed', 'declined'].includes(updates.status) || 
+              currentAppointment.status !== 'scheduled') {
+            return { data: null, error: { message: 'Invalid status change for buyer' } };
+          }
+        } else if (isAgent && isAppointmentOwner) {
+          // Agents can manage all statuses except buyer-specific actions
+          if (!['scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'].includes(updates.status)) {
+            return { data: null, error: { message: 'Invalid status for agent' } };
+          }
+        } else {
+          return { data: null, error: { message: 'Unauthorized to update this appointment' } };
+        }
+      } else if (!isAgent || !isAppointmentOwner) {
+        return { data: null, error: { message: 'Unauthorized to update this appointment' } };
+      }
+
       const { data, error } = await supabase
         .from('appointments')
         .update(updates)
@@ -276,8 +320,14 @@ class AppointmentService {
       if (!error && data) {
         await auditService.log(user.id, 'UPDATE', 'appointments', {
           recordId: id,
-          newValues: updates
+          newValues: updates,
+          oldValues: { status: currentAppointment.status }
         });
+
+        // Send email notifications for status changes
+        if (updates.status && updates.status !== currentAppointment.status) {
+          await this.sendStatusChangeNotifications(data, currentAppointment.status, updates.status);
+        }
       }
 
       return { data, error };
@@ -463,6 +513,124 @@ class AppointmentService {
       );
     } catch (error) {
       console.error('Error sending email notifications:', error);
+    }
+  }
+
+  /**
+   * Send email notifications for appointment status changes
+   */
+  private async sendStatusChangeNotifications(
+    appointment: Appointment,
+    oldStatus: string,
+    newStatus: string
+  ): Promise<void> {
+    try {
+      // Get agent information
+      const { data: agentProfile } = await supabase
+        .from('profiles')
+        .select('full_name, email, phone')
+        .eq('id', appointment.agent_id)
+        .single();
+
+      if (!agentProfile) {
+        console.error('Agent profile not found for status change notifications');
+        return;
+      }
+
+      // Send appropriate email based on status change
+      switch (newStatus) {
+        case 'confirmed':
+          // Notify agent that buyer confirmed
+          await EmailService.sendAppointmentStatusUpdate(
+            agentProfile.email,
+            agentProfile.full_name,
+            {
+              clientName: appointment.client_name,
+              clientEmail: appointment.client_email,
+              appointmentType: appointment.appointment_type.replace('_', ' ').toUpperCase(),
+              date: appointment.date,
+              time: appointment.time,
+              location: appointment.property_address,
+              status: 'confirmed',
+              statusMessage: 'Your client has confirmed the appointment'
+            }
+          );
+          break;
+
+        case 'declined':
+          // Notify agent that buyer declined
+          await EmailService.sendAppointmentStatusUpdate(
+            agentProfile.email,
+            agentProfile.full_name,
+            {
+              clientName: appointment.client_name,
+              clientEmail: appointment.client_email,
+              appointmentType: appointment.appointment_type.replace('_', ' ').toUpperCase(),
+              date: appointment.date,
+              time: appointment.time,
+              location: appointment.property_address,
+              status: 'declined',
+              statusMessage: 'Your client has declined the appointment'
+            }
+          );
+          break;
+
+        case 'cancelled':
+          // Notify client that appointment was cancelled
+          await EmailService.sendAppointmentStatusUpdate(
+            appointment.client_email,
+            appointment.client_name,
+            {
+              clientName: appointment.client_name,
+              agentName: agentProfile.full_name,
+              appointmentType: appointment.appointment_type.replace('_', ' ').toUpperCase(),
+              date: appointment.date,
+              time: appointment.time,
+              location: appointment.property_address,
+              status: 'cancelled',
+              statusMessage: 'Your appointment has been cancelled'
+            }
+          );
+          break;
+
+        case 'completed':
+          // Send completion confirmation to client
+          await EmailService.sendAppointmentStatusUpdate(
+            appointment.client_email,
+            appointment.client_name,
+            {
+              clientName: appointment.client_name,
+              agentName: agentProfile.full_name,
+              appointmentType: appointment.appointment_type.replace('_', ' ').toUpperCase(),
+              date: appointment.date,
+              time: appointment.time,
+              location: appointment.property_address,
+              status: 'completed',
+              statusMessage: 'Your appointment has been completed'
+            }
+          );
+          break;
+
+        case 'no_show':
+          // Notify agent about no-show
+          await EmailService.sendAppointmentStatusUpdate(
+            agentProfile.email,
+            agentProfile.full_name,
+            {
+              clientName: appointment.client_name,
+              clientEmail: appointment.client_email,
+              appointmentType: appointment.appointment_type.replace('_', ' ').toUpperCase(),
+              date: appointment.date,
+              time: appointment.time,
+              location: appointment.property_address,
+              status: 'no_show',
+              statusMessage: 'Client did not show up for the appointment'
+            }
+          );
+          break;
+      }
+    } catch (error) {
+      console.error('Error sending status change notifications:', error);
     }
   }
 

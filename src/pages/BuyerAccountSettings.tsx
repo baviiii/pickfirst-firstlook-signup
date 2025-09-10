@@ -374,23 +374,37 @@ const BuyerAccountSettingsPage = () => {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              {appt.status === 'pending' && (
+                              {appt.status === 'scheduled' && (
                                 <>
-                                  <Button size="sm" className="bg-green-500/20 text-green-300 hover:bg-green-500/30" onClick={() => handleConfirmAppointment(appt.id)}>
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-green-500/20 text-green-300 hover:bg-green-500/30" 
+                                    onClick={() => handleConfirmAppointment(appt.id)}
+                                    disabled={isLoading}
+                                  >
                                     <Check className="h-4 w-4 mr-1" /> Confirm
                                   </Button>
-                                  <Button size="sm" variant="outline" className="text-red-300 border-red-400/30 hover:bg-red-500/10" onClick={() => handleDeclineAppointment(appt.id)}>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-red-300 border-red-400/30 hover:bg-red-500/10" 
+                                    onClick={() => handleDeclineAppointment(appt.id)}
+                                    disabled={isLoading}
+                                  >
                                     <X className="h-4 w-4 mr-1" /> Decline
                                   </Button>
                                 </>
                               )}
-                              {appt.status && appt.status !== 'pending' && (
+                              {appt.status && appt.status !== 'scheduled' && (
                                 <Badge className={
                                   appt.status === 'confirmed' ? 'bg-green-500/20 text-green-300' :
                                   appt.status === 'declined' ? 'bg-red-500/20 text-red-300' :
+                                  appt.status === 'completed' ? 'bg-purple-500/20 text-purple-300' :
+                                  appt.status === 'cancelled' ? 'bg-gray-500/20 text-gray-300' :
+                                  appt.status === 'no_show' ? 'bg-orange-500/20 text-orange-300' :
                                   'bg-yellow-500/20 text-yellow-300'
                                 }>
-                                  {appt.status}
+                                  {appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}
                                 </Badge>
                               )}
                             </div>

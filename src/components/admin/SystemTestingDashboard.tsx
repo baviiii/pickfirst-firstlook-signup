@@ -8,12 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, TestTube, Mail, Users, Home, Database, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Loader2, TestTube, Mail, Users, Home, Database, CheckCircle, XCircle, Clock, Calendar } from 'lucide-react';
 
 // Import test utilities
 import { PropertyAlertTester } from '@/utils/testPropertyAlerts';
 import PropertyAlertService from '@/services/propertyAlertService';
 import EmailService from '@/services/emailService';
+import { appointmentService } from '@/services/appointmentService';
 
 interface TestResult {
   success: boolean;
@@ -41,6 +42,10 @@ export default function SystemTestingDashboard() {
   const [emailTemplate, setEmailTemplate] = useState('welcome');
   const [emailRecipient, setEmailRecipient] = useState('test@example.com');
   const [emailData, setEmailData] = useState('{"name": "Test User", "email": "test@example.com"}');
+
+  // Appointment Test State
+  const [testAppointmentId, setTestAppointmentId] = useState('');
+  const [testAppointmentStatus, setTestAppointmentStatus] = useState('confirmed');
 
   // Test Data Creation State
   const [testBuyerData, setTestBuyerData] = useState({
@@ -326,6 +331,82 @@ export default function SystemTestingDashboard() {
     }
   };
 
+  const runAppointmentStatusTest = async () => {
+    if (!testAppointmentId) {
+      addTestResult({ 
+        success: false, 
+        message: 'Please enter an appointment ID to test' 
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    addTestResult({ success: false, message: 'Testing appointment status update...' });
+    
+    try {
+      const result = await appointmentService.updateAppointment(testAppointmentId, { 
+        status: testAppointmentStatus as any 
+      });
+      
+      if (result.error) {
+        addTestResult({ 
+          success: false, 
+          message: `Appointment status update failed: ${result.error.message}`,
+          data: { error: result.error }
+        });
+      } else {
+        addTestResult({ 
+          success: true, 
+          message: `Appointment status updated to ${testAppointmentStatus}`,
+          data: { appointmentId: testAppointmentId, newStatus: testAppointmentStatus }
+        });
+      }
+    } catch (error: any) {
+      addTestResult({ 
+        success: false, 
+        message: `Appointment test failed: ${error.message}`,
+        data: { error: error.message }
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const runAppointmentEmailTest = async () => {
+    setIsLoading(true);
+    addTestResult({ success: false, message: 'Testing appointment status email...' });
+    
+    try {
+      await EmailService.sendAppointmentStatusUpdate(
+        emailRecipient,
+        'Test User',
+        {
+          clientName: 'Test Client',
+          appointmentType: 'Property Showing',
+          date: '2024-12-25',
+          time: '10:00 AM',
+          location: '123 Test Street, Test City',
+          status: testAppointmentStatus,
+          statusMessage: 'This is a test appointment status update'
+        }
+      );
+      
+      addTestResult({ 
+        success: true, 
+        message: `Appointment status email sent to ${emailRecipient}`,
+        data: { status: testAppointmentStatus, recipient: emailRecipient }
+      });
+    } catch (error: any) {
+      addTestResult({ 
+        success: false, 
+        message: `Appointment email test failed: ${error.message}`,
+        data: { error: error.message }
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -340,7 +421,7 @@ export default function SystemTestingDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="property-alerts" className="flex items-center gap-2">
             <Home className="w-4 h-4" />
             Property Alerts
@@ -348,6 +429,10 @@ export default function SystemTestingDashboard() {
           <TabsTrigger value="email-system" className="flex items-center gap-2">
             <Mail className="w-4 h-4" />
             Email System
+          </TabsTrigger>
+          <TabsTrigger value="appointments" className="flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Appointments
           </TabsTrigger>
           <TabsTrigger value="test-data" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
@@ -479,6 +564,126 @@ export default function SystemTestingDashboard() {
                   </>
                 )}
               </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="appointments" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Appointment System Testing
+              </CardTitle>
+              <CardDescription>
+                Test appointment status updates and email notifications
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Appointment Status Update Test */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Status Update Test</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="appointmentId">Appointment ID</Label>
+                      <Input
+                        id="appointmentId"
+                        value={testAppointmentId}
+                        onChange={(e) => setTestAppointmentId(e.target.value)}
+                        placeholder="Enter appointment ID to test"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="appointmentStatus">New Status</Label>
+                      <Select value={testAppointmentStatus} onValueChange={setTestAppointmentStatus}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="confirmed">Confirmed</SelectItem>
+                          <SelectItem value="declined">Declined</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="no_show">No Show</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button 
+                      onClick={runAppointmentStatusTest} 
+                      disabled={isLoading || !testAppointmentId}
+                      className="w-full"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Testing Status Update...
+                        </>
+                      ) : (
+                        <>
+                          <Calendar className="w-4 h-4 mr-2" />
+                          Test Status Update
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Appointment Email Test */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Email Notification Test</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="appointmentEmailRecipient">Email Recipient</Label>
+                      <Input
+                        id="appointmentEmailRecipient"
+                        value={emailRecipient}
+                        onChange={(e) => setEmailRecipient(e.target.value)}
+                        placeholder="test@example.com"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="appointmentEmailStatus">Status for Email</Label>
+                      <Select value={testAppointmentStatus} onValueChange={setTestAppointmentStatus}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="confirmed">Confirmed</SelectItem>
+                          <SelectItem value="declined">Declined</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="no_show">No Show</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button 
+                      onClick={runAppointmentEmailTest} 
+                      disabled={isLoading}
+                      className="w-full"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Sending Email...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-4 h-4 mr-2" />
+                          Send Test Email
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <Alert>
+                <AlertDescription>
+                  <strong>Appointment Testing:</strong> Use the Status Update Test to change appointment statuses and trigger email notifications. 
+                  The Email Notification Test sends a sample appointment status email to verify the template works correctly.
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
         </TabsContent>
