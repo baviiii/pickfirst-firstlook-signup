@@ -28,7 +28,8 @@ import {
   Zap,
   Star,
   Calendar,
-  Users
+  Users,
+  ArrowLeft
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { googleMapsService } from '@/services/googleMapsService';
@@ -603,12 +604,23 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
   // Get overall analytics
   const overallAnalytics = MapAnalyticsService.getOverallAnalytics(properties);
 
+
   return (
     <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50' : ''} ${className}`}>
       {/* Simple Header Controls */}
       {showControls && (
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/dashboard')}
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Back to Dashboard</span>
+              <span className="sm:hidden">Back</span>
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -638,7 +650,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
           {/* Search Bar */}
           <div className="flex items-center gap-2 flex-1 max-w-md mx-4">
             <Input
-              placeholder="Search locations via your Edge Function..."
+              placeholder="Search locations..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -670,7 +682,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
         {/* Map Header */}
         <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-yellow-500 to-amber-500 text-black p-3 z-10 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-bold">🗺️ Property Map (Google Maps + Edge Function)</span>
+            <span className="text-sm font-bold">🗺️ Property Map</span>
             <div className="flex items-center gap-3">
               <span className="text-xs bg-black/20 px-3 py-1 rounded-full font-medium">
                 {properties.filter(p => p.latitude && p.longitude).length} Properties
@@ -714,10 +726,6 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
           </div>
         )}
 
-        {/* Edge Function Info */}
-        <div className="absolute bottom-4 right-4 bg-blue-900/90 backdrop-blur-sm rounded-xl p-3 border border-blue-400/30 z-10">
-          <div className="text-blue-300 text-xs font-medium">🚀 Powered by Edge Function</div>
-        </div>
       </div>
 
       {/* Analytics Section - Completely Separate Below Map */}
