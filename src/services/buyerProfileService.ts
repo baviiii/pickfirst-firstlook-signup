@@ -34,7 +34,43 @@ export class BuyerProfileService extends ProfileService {
   static async getBuyerPreferences(userId: string): Promise<BuyerPreferences | null> {
     try {
       const preferences = await super.getUserPreferences(userId);
-      return preferences as BuyerPreferences;
+      if (!preferences) return null;
+
+      // Convert budget_range back to min_budget and max_budget
+      const buyerPreferences: BuyerPreferences = { ...preferences } as BuyerPreferences;
+      
+      if (preferences.budget_range) {
+        const [minStr, maxStr] = preferences.budget_range.split('-');
+        buyerPreferences.min_budget = parseInt(minStr) || 0;
+        buyerPreferences.max_budget = parseInt(maxStr) || 1000000;
+      } else {
+        buyerPreferences.min_budget = 0;
+        buyerPreferences.max_budget = 1000000;
+      }
+
+      // Extract bedrooms and bathrooms from preferred_areas array
+      if (preferences.preferred_areas) {
+        const bedroomPref = preferences.preferred_areas.find(area => area.startsWith('bedrooms:'));
+        const bathroomPref = preferences.preferred_areas.find(area => area.startsWith('bathrooms:'));
+        
+        buyerPreferences.preferred_bedrooms = bedroomPref ? parseInt(bedroomPref.split(':')[1]) : 2;
+        buyerPreferences.preferred_bathrooms = bathroomPref ? parseInt(bathroomPref.split(':')[1]) : 2;
+        
+        // Filter out bedroom/bathroom preferences from areas
+        buyerPreferences.preferred_areas = preferences.preferred_areas.filter(area => 
+          !area.startsWith('bedrooms:') && !area.startsWith('bathrooms:')
+        );
+      } else {
+        buyerPreferences.preferred_bedrooms = 2;
+        buyerPreferences.preferred_bathrooms = 2;
+      }
+
+      // Set default values for fields that don't exist in the database
+      buyerPreferences.move_in_timeline = 'flexible';
+      buyerPreferences.financing_pre_approved = false;
+      buyerPreferences.first_time_buyer = false;
+
+      return buyerPreferences;
     } catch (error) {
       console.error('Error fetching buyer preferences:', error);
       return null;
@@ -49,8 +85,46 @@ export class BuyerProfileService extends ProfileService {
     preferences: Partial<BuyerPreferences>
   ): Promise<{ success: boolean; error?: string }> {
     try {
+      // Convert numeric budget fields to budget_range text for database compatibility
+      const dbPreferences: any = { ...preferences };
+      
+      // Convert min_budget and max_budget to budget_range
+      if (preferences.min_budget !== undefined || preferences.max_budget !== undefined) {
+        const min = preferences.min_budget || 0;
+        const max = preferences.max_budget || 1000000;
+        dbPreferences.budget_range = `${min}-${max}`;
+        
+        // Remove the numeric fields that don't exist in the database
+        delete dbPreferences.min_budget;
+        delete dbPreferences.max_budget;
+      }
+
+      // Store bedrooms and bathrooms in preferred_areas array for now (temporary solution)
+      if (preferences.preferred_bedrooms || preferences.preferred_bathrooms) {
+        const existingAreas = dbPreferences.preferred_areas || [];
+        const bedroomPref = preferences.preferred_bedrooms ? `bedrooms:${preferences.preferred_bedrooms}` : null;
+        const bathroomPref = preferences.preferred_bathrooms ? `bathrooms:${preferences.preferred_bathrooms}` : null;
+        
+        // Remove existing bedroom/bathroom preferences and add new ones
+        const filteredAreas = existingAreas.filter(area => !area.startsWith('bedrooms:') && !area.startsWith('bathrooms:'));
+        const newAreas = [...filteredAreas];
+        if (bedroomPref) newAreas.push(bedroomPref);
+        if (bathroomPref) newAreas.push(bathroomPref);
+        
+        dbPreferences.preferred_areas = newAreas;
+      }
+
+      // Remove other fields that don't exist in the database schema
+      delete dbPreferences.preferred_bedrooms;
+      delete dbPreferences.preferred_bathrooms;
+      delete dbPreferences.preferred_square_feet_min;
+      delete dbPreferences.preferred_square_feet_max;
+      delete dbPreferences.move_in_timeline;
+      delete dbPreferences.financing_pre_approved;
+      delete dbPreferences.first_time_buyer;
+
       // First update the basic preferences
-      const result = await super.updateUserPreferences(userId, preferences);
+      const result = await super.updateUserPreferences(userId, dbPreferences);
       
       if (result.success) {
         // Log the preference update for analytics

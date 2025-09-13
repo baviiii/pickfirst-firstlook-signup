@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { analyticsService, BuyerMetrics } from '@/services/analyticsService';
 import { appointmentService } from '@/services/appointmentService';
+import { BuyerProfileService } from '@/services/buyerProfileService';
 import { toast } from 'sonner';
 
 const BuyerDashboardComponent = () => {
@@ -21,6 +22,7 @@ const BuyerDashboardComponent = () => {
   const [loadingMetrics, setLoadingMetrics] = useState(true);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(true);
+  const [buyerPreferences, setBuyerPreferences] = useState<any>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -28,15 +30,17 @@ const BuyerDashboardComponent = () => {
       setLoadingMetrics(true);
       setLoadingAppointments(true);
       
-      const [listingsResult, metricsResult, myAppts] = await Promise.all([
+      const [listingsResult, metricsResult, myAppts, preferences] = await Promise.all([
         PropertyService.getApprovedListings(),
         analyticsService.getBuyerMetrics(),
-        appointmentService.getMyAppointments()
+        appointmentService.getMyAppointments(),
+        profile ? BuyerProfileService.getBuyerPreferences(profile.id) : Promise.resolve(null)
       ]);
       
       setListings(listingsResult.data || []);
       setMetrics(metricsResult.data);
       setAppointments(myAppts.data || []);
+      setBuyerPreferences(preferences);
       setLoadingListings(false);
       setLoadingMetrics(false);
       setLoadingAppointments(false);
@@ -87,6 +91,34 @@ const BuyerDashboardComponent = () => {
       console.error(e);
       toast.error('Failed to decline appointment');
     }
+  };
+
+  const getRecommendedProperties = (allListings: PropertyListing[]) => {
+    if (!buyerPreferences) return allListings.slice(0, 3);
+    
+    return allListings.filter(listing => {
+      // Price range matching
+      if (buyerPreferences.min_budget && listing.price < buyerPreferences.min_budget) return false;
+      if (buyerPreferences.max_budget && listing.price > buyerPreferences.max_budget) return false;
+      
+      // Bedrooms matching
+      if (buyerPreferences.preferred_bedrooms && listing.bedrooms && listing.bedrooms < buyerPreferences.preferred_bedrooms) return false;
+      
+      // Bathrooms matching
+      if (buyerPreferences.preferred_bathrooms && listing.bathrooms && listing.bathrooms < buyerPreferences.preferred_bathrooms) return false;
+      
+      // Location matching
+      if (buyerPreferences.preferred_areas && buyerPreferences.preferred_areas.length > 0) {
+        const propertyLocation = `${listing.city}, ${listing.state}`.toLowerCase();
+        const hasLocationMatch = buyerPreferences.preferred_areas.some(area => 
+          propertyLocation.includes(area.toLowerCase()) || 
+          listing.city.toLowerCase().includes(area.toLowerCase())
+        );
+        if (!hasLocationMatch) return false;
+      }
+      
+      return true;
+    }).slice(0, 3);
   };
 
   const buyerActions = [
@@ -255,53 +287,103 @@ const BuyerDashboardComponent = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2"><Calendar className="h-5 w-5" /> My Appointments</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white flex items-center gap-2">
+                <Calendar className="h-5 w-5" /> My Appointments
+              </CardTitle>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 border-gray-600 hover:border-pickfirst-yellow/50"
+                onClick={() => navigate('/buyer-account-settings?tab=appointments')}
+              >
+                View All
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {loadingAppointments ? (
               <div className="text-gray-300">Loading appointments...</div>
             ) : appointments.length === 0 ? (
-              <div className="text-gray-400">No appointments scheduled yet.</div>
+              <div className="text-center py-6">
+                <Calendar className="h-12 w-12 text-gray-600 mx-auto mb-3" />
+                <div className="text-gray-400">No appointments scheduled yet</div>
+                <div className="text-gray-500 text-sm mt-1">Agents will schedule appointments with you here</div>
+              </div>
             ) : (
               <div className="space-y-3">
-                {appointments.map((appt: any) => (
-                  <div key={appt.id} className="p-4 bg-white/5 rounded-lg border border-white/10">
+                {appointments.slice(0, 3).map((appt: any) => (
+                  <div key={appt.id} className="p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="uppercase">{appt.appointment_type?.replace('_',' ') || 'Meeting'}</Badge>
-                          <span className="text-white font-medium">{appt.date} @ {appt.time}</span>
+                          <Badge variant="secondary" className="uppercase text-xs">
+                            {appt.appointment_type?.replace('_',' ') || 'Meeting'}
+                          </Badge>
+                          <span className="text-white font-medium text-sm">
+                            {appt.date} @ {appt.time}
+                          </span>
                         </div>
-                        <div className="text-gray-300 text-sm">{appt.property_address || 'Virtual/Office Meeting'}</div>
-                        <div className="text-gray-400 text-xs">Duration: {appt.duration || 60} min</div>
+                        <div className="text-gray-300 text-sm">
+                          {appt.property_address || 'Virtual/Office Meeting'}
+                        </div>
+                        <div className="text-gray-400 text-xs">
+                          Duration: {appt.duration || 60} min
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {appt.status === 'pending' && (
+                        {appt.status === 'scheduled' && (
                           <>
-                            <Button size="sm" className="bg-green-500/20 text-green-300 hover:bg-green-500/30" onClick={() => handleConfirmAppointment(appt.id)}>
+                            <Button 
+                              size="sm" 
+                              className="bg-green-500/20 text-green-300 hover:bg-green-500/30 border-green-500/30" 
+                              onClick={() => handleConfirmAppointment(appt.id)}
+                            >
                               <Check className="h-4 w-4 mr-1" /> Confirm
                             </Button>
-                            <Button size="sm" variant="outline" className="text-red-300 border-red-400/30 hover:bg-red-500/10" onClick={() => handleDeclineAppointment(appt.id)}>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-red-300 border-red-400/30 hover:bg-red-500/10" 
+                              onClick={() => handleDeclineAppointment(appt.id)}
+                            >
                               <X className="h-4 w-4 mr-1" /> Decline
                             </Button>
                           </>
                         )}
-                        {appt.status && appt.status !== 'pending' && (
+                        {appt.status && appt.status !== 'scheduled' && (
                           <Badge className={
-                            appt.status === 'confirmed' ? 'bg-green-500/20 text-green-300' :
-                            appt.status === 'declined' ? 'bg-red-500/20 text-red-300' :
-                            'bg-yellow-500/20 text-yellow-300'
+                            appt.status === 'confirmed' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
+                            appt.status === 'declined' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
+                            appt.status === 'completed' ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' :
+                            appt.status === 'cancelled' ? 'bg-gray-500/20 text-gray-300 border-gray-500/30' :
+                            appt.status === 'no_show' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
+                            'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
                           }>
-                            {appt.status}
+                            {appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}
                           </Badge>
                         )}
                       </div>
                     </div>
                     {appt.notes && (
-                      <div className="text-gray-400 text-sm mt-2">Notes: {appt.notes}</div>
+                      <div className="text-gray-400 text-sm mt-2 p-2 bg-gray-800/30 rounded">
+                        <strong>Notes:</strong> {appt.notes}
+                      </div>
                     )}
                   </div>
                 ))}
+                {appointments.length > 3 && (
+                  <div className="text-center pt-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-gray-400 hover:text-pickfirst-yellow"
+                      onClick={() => navigate('/buyer-account-settings?tab=appointments')}
+                    >
+                      View {appointments.length - 3} more appointments
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -386,7 +468,7 @@ const BuyerDashboardComponent = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(loadingMetrics ? listings.slice(0, 3) : metrics?.recommendedProperties?.slice(0, 3) || listings.slice(0, 3)).map((listing) => (
+            {(loadingMetrics ? listings.slice(0, 3) : getRecommendedProperties(listings).slice(0, 3)).map((listing) => (
               <div key={listing.id} className="p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
                 <div className="aspect-video bg-gray-700 rounded-md mb-3 overflow-hidden">
                   {listing.images && listing.images.length > 0 ? (

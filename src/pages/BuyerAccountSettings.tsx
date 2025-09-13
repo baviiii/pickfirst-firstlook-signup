@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Settings, User, Bell, Lock, CreditCard, Eye, EyeOff, Heart, Search, Activity, Home, Calendar, Check, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Settings, User, Bell, Lock, CreditCard, Eye, EyeOff, Heart, Search, Activity, Home, Calendar, Check, X, MapPin } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 
 const BuyerAccountSettingsPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { profile, user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -68,6 +69,14 @@ const BuyerAccountSettingsPage = () => {
   const [matchingProperties, setMatchingProperties] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
+
+  // Handle URL parameters for tab navigation
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['profile', 'search', 'favorites', 'appointments', 'notifications', 'privacy'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   // Load buyer data on component mount
   useEffect(() => {
@@ -492,6 +501,56 @@ const BuyerAccountSettingsPage = () => {
                           </SelectContent>
                         </Select>
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="preferredLocation" className="text-card-foreground font-medium flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          Preferred Location
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="preferredLocation"
+                            value={buyerPreferences.preferred_areas?.[0] || ''}
+                            onChange={(e) => setBuyerPreferences(prev => ({ 
+                              ...prev, 
+                              preferred_areas: e.target.value ? [e.target.value] : [] 
+                            }))}
+                            placeholder="Search for your preferred Australian area..."
+                            className="bg-input border border-border text-foreground pr-10 focus:ring-primary focus:border-primary"
+                            onFocus={() => {
+                              if (typeof window !== 'undefined' && window.google) {
+                                const input = document.getElementById('preferredLocation') as HTMLInputElement;
+                                if (input && !input.dataset.autocomplete) {
+                                  const autocomplete = new window.google.maps.places.Autocomplete(input, {
+                                    types: ['(regions)', 'locality', 'sublocality'],
+                                    componentRestrictions: { country: 'au' },
+                                    fields: ['formatted_address', 'address_components']
+                                  });
+                                  
+                                  autocomplete.addListener('place_changed', () => {
+                                    const place = autocomplete.getPlace();
+                                    if (place.formatted_address) {
+                                      const cityComponent = place.address_components?.find(component => 
+                                        component.types.includes('locality') || 
+                                        component.types.includes('sublocality_level_1')
+                                      );
+                                      const displayName = cityComponent?.long_name || place.formatted_address;
+                                      setBuyerPreferences(prev => ({ 
+                                        ...prev, 
+                                        preferred_areas: [displayName] 
+                                      }));
+                                      toast.success(`Preferred location set to: ${displayName}`);
+                                    }
+                                  });
+                                  input.dataset.autocomplete = 'true';
+                                }
+                              }
+                            }}
+                          />
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                      </div>
                       <div className="space-y-4 pt-2">
                         <div className="flex items-center space-x-3">
                           <Switch
@@ -539,14 +598,60 @@ const BuyerAccountSettingsPage = () => {
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <Label htmlFor="location" className="text-white">Preferred Location</Label>
-                      <Input
-                        id="location"
-                        value={searchCriteria.location}
-                        onChange={(e) => setSearchCriteria(prev => ({ ...prev, location: e.target.value }))}
-                        placeholder="City, State"
-                        className="bg-white/5 border-white/20 text-white"
-                      />
+                      <Label htmlFor="location" className="text-white flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Preferred Suburb/Location
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="location"
+                          value={searchCriteria.location}
+                          onChange={(e) => setSearchCriteria(prev => ({ ...prev, location: e.target.value }))}
+                          placeholder="Type to search Australian suburbs, cities, or areas..."
+                          className="bg-white/5 border-white/20 text-white pr-10 focus:ring-2 focus:ring-pickfirst-yellow/50 focus:border-pickfirst-yellow/50"
+                          onFocus={() => {
+                            // Initialize Google Maps Places Autocomplete
+                            if (typeof window !== 'undefined' && window.google) {
+                              const input = document.getElementById('location') as HTMLInputElement;
+                              if (input && !input.dataset.autocomplete) {
+                                const autocomplete = new window.google.maps.places.Autocomplete(input, {
+                                  types: ['(regions)', 'locality', 'sublocality'],
+                                  componentRestrictions: { country: 'au' },
+                                  fields: ['formatted_address', 'address_components', 'geometry']
+                                });
+                                
+                                autocomplete.addListener('place_changed', () => {
+                                  const place = autocomplete.getPlace();
+                                  if (place.formatted_address) {
+                                    // Extract just the city/suburb name for cleaner display
+                                    const cityComponent = place.address_components?.find(component => 
+                                      component.types.includes('locality') || 
+                                      component.types.includes('sublocality_level_1') ||
+                                      component.types.includes('administrative_area_level_2')
+                                    );
+                                    
+                                    const displayName = cityComponent?.long_name || place.formatted_address;
+                                    setSearchCriteria(prev => ({ ...prev, location: displayName }));
+                                    
+                                    // Show success feedback
+                                    toast.success(`Location set to: ${displayName}`);
+                                  }
+                                });
+                                
+                                input.dataset.autocomplete = 'true';
+                              }
+                            } else {
+                              toast.error('Google Maps not loaded. Please refresh the page.');
+                            }
+                          }}
+                        />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <MapPin className="h-4 w-4 text-gray-400" />
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">
+                        💡 Start typing to see location suggestions powered by Google Maps
+                      </p>
                     </div>
                     <div>
                       <Label htmlFor="propertyType" className="text-white">Property Type</Label>
