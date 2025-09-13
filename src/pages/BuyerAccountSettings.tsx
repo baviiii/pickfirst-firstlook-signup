@@ -248,6 +248,44 @@ const BuyerAccountSettingsPage = () => {
     }
   };
 
+  const handleChangePassword = async () => {
+    if (!user) return;
+    
+    if (!settings.currentPassword || !settings.newPassword || !settings.confirmPassword) {
+      toast.error('Please fill in all password fields');
+      return;
+    }
+    
+    if (settings.newPassword !== settings.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    
+    if (settings.newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters long');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      // TODO: Implement password change with Supabase Auth
+      toast.success('Password change functionality will be implemented with Supabase Auth');
+      
+      // Clear password fields
+      setSettings(prev => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }));
+    } catch (error) {
+      console.error('Error changing password:', error);
+      toast.error('Failed to change password. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSaveNotificationsPrivacy = async () => {
     if (!user) return;
     setIsLoading(true);
@@ -530,60 +568,6 @@ const BuyerAccountSettingsPage = () => {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="preferredLocation" className="text-card-foreground font-medium flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
-                          Preferred Location
-                        </Label>
-                        <div className="relative">
-                          <Input
-                            id="preferredLocation"
-                            value={buyerPreferences.preferred_areas?.[0] || ''}
-                            onChange={(e) => setBuyerPreferences(prev => ({ 
-                              ...prev, 
-                              preferred_areas: e.target.value ? [e.target.value] : [] 
-                            }))}
-                            placeholder="Search for your preferred Australian area..."
-                            className="bg-input border border-border text-foreground pr-10 focus:ring-primary focus:border-primary"
-                            onFocus={() => {
-                              if (googleMapsLoaded && typeof window !== 'undefined' && window.google) {
-                                const input = document.getElementById('preferredLocation') as HTMLInputElement;
-                                if (input && !input.dataset.autocomplete) {
-                                  const autocomplete = new window.google.maps.places.Autocomplete(input, {
-                                    types: ['(regions)', 'locality', 'sublocality'],
-                                    componentRestrictions: { country: 'au' },
-                                    fields: ['formatted_address', 'address_components']
-                                  });
-                                  
-                                  autocomplete.addListener('place_changed', () => {
-                                    const place = autocomplete.getPlace();
-                                    if (place.formatted_address) {
-                                      const cityComponent = place.address_components?.find(component => 
-                                        component.types.includes('locality') || 
-                                        component.types.includes('sublocality_level_1')
-                                      );
-                                      const displayName = cityComponent?.long_name || place.formatted_address;
-                                      setBuyerPreferences(prev => ({ 
-                                        ...prev, 
-                                        preferred_areas: [displayName] 
-                                      }));
-                                      toast.success(`Preferred location set to: ${displayName}`);
-                                    }
-                                  });
-                                  input.dataset.autocomplete = 'true';
-                                }
-                              } else if (!googleMapsLoaded) {
-                                toast.error('Location services are still loading. Please wait a moment and try again.');
-                              } else {
-                                toast.error('Google Maps not available. Please refresh the page.');
-                              }
-                            }}
-                          />
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        </div>
-                      </div>
                       <div className="space-y-4 pt-2">
                         <div className="flex items-center space-x-3">
                           <Switch
@@ -612,6 +596,74 @@ const BuyerAccountSettingsPage = () => {
                   >
                     {isLoading ? 'Saving...' : 'Save Profile'}
                   </Button>
+                </CardContent>
+              </Card>
+
+              {/* Password & Security */}
+              <Card className="bg-card border border-border shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-card-foreground flex items-center gap-2">
+                    <Lock className="h-5 w-5 text-primary" />
+                    Password & Security
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    Change your password and security settings
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="currentPassword" className="text-card-foreground font-medium">Current Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="currentPassword"
+                        type={showPassword ? "text" : "password"}
+                        value={settings.currentPassword}
+                        onChange={(e) => setSettings(prev => ({ ...prev, currentPassword: e.target.value }))}
+                        placeholder="Enter your current password"
+                        className="bg-input border border-border text-foreground pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="newPassword" className="text-card-foreground font-medium">New Password</Label>
+                      <Input
+                        id="newPassword"
+                        type={showPassword ? "text" : "password"}
+                        value={settings.newPassword}
+                        onChange={(e) => setSettings(prev => ({ ...prev, newPassword: e.target.value }))}
+                        placeholder="Enter new password"
+                        className="bg-input border border-border text-foreground"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="confirmPassword" className="text-card-foreground font-medium">Confirm New Password</Label>
+                      <Input
+                        id="confirmPassword"
+                        type={showPassword ? "text" : "password"}
+                        value={settings.confirmPassword}
+                        onChange={(e) => setSettings(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        placeholder="Confirm new password"
+                        className="bg-input border border-border text-foreground"
+                      />
+                    </div>
+                  </div>
+                  <div className="pt-2">
+                    <Button 
+                      onClick={handleChangePassword} 
+                      disabled={isLoading} 
+                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      {isLoading ? 'Updating...' : 'Update Password'}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -865,58 +917,6 @@ const BuyerAccountSettingsPage = () => {
               </Card>
             </TabsContent>
 
-        {/* Password Security */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Lock className="h-5 w-5 text-primary" />
-              Password & Security
-            </CardTitle>
-            <CardDescription className="text-gray-300">
-              Change your password and security settings
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Current Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={settings.currentPassword}
-                  onChange={(e) => setSettings(prev => ({ ...prev, currentPassword: e.target.value }))}
-                  className="w-full px-3 py-2 pr-10 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={settings.newPassword}
-                  onChange={(e) => setSettings(prev => ({ ...prev, newPassword: e.target.value }))}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Confirm New Password</label>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={settings.confirmPassword}
-                  onChange={(e) => setSettings(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
             {/* Notifications Tab */}
             <TabsContent value="notifications" className="space-y-6">
@@ -994,6 +994,49 @@ const BuyerAccountSettingsPage = () => {
                   <div className="pt-2">
                     <Button onClick={handleSaveNotificationsPrivacy} disabled={isLoading} className="bg-primary text-black hover:bg-primary/90">
                       {isLoading ? 'Saving...' : 'Save Privacy Settings'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Account Deletion - Required by Law */}
+              <Card className="bg-card border border-destructive/20 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-destructive flex items-center gap-2">
+                    <X className="h-5 w-5" />
+                    Delete Account
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    Permanently delete your account and all associated data. This action cannot be undone.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <h4 className="text-destructive font-medium mb-2">⚠️ Warning</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Deleting your account will permanently remove:
+                    </p>
+                    <ul className="text-sm text-muted-foreground mt-2 ml-4 list-disc">
+                      <li>Your profile and personal information</li>
+                      <li>All saved properties and preferences</li>
+                      <li>Message history with agents</li>
+                      <li>Appointment history</li>
+                      <li>All account data and settings</li>
+                    </ul>
+                  </div>
+                  <div className="pt-2">
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => {
+                        if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                          if (confirm('This will permanently delete all your data. Type "DELETE" to confirm.')) {
+                            toast.error('Account deletion not yet implemented. Please contact support.');
+                          }
+                        }
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete My Account
                     </Button>
                   </div>
                 </CardContent>
