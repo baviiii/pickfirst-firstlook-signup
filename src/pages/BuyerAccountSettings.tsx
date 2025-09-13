@@ -14,6 +14,7 @@ import BuyerProfileService, { BuyerPreferences, PropertySearchCriteria } from '@
 import { appointmentService } from '@/services/appointmentService';
 import ProfileService from '@/services/profileService';
 import { toast } from 'sonner';
+import { loadGoogleMapsAPI, getGoogleMapsAPIKey } from '@/utils/googleMapsLoader';
 
 const BuyerAccountSettingsPage = () => {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ const BuyerAccountSettingsPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const [googleMapsLoaded, setGoogleMapsLoaded] = useState(false);
   
   const [settings, setSettings] = useState({
     fullName: profile?.full_name || '',
@@ -77,6 +79,33 @@ const BuyerAccountSettingsPage = () => {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
+
+  // Load Google Maps API
+  useEffect(() => {
+    const loadMaps = async () => {
+      try {
+        // Get API key from environment (configured via GitHub secrets)
+        const apiKey = getGoogleMapsAPIKey();
+        
+        if (apiKey === 'YOUR_GOOGLE_MAPS_API_KEY') {
+          console.warn('⚠️ Google Maps API key not configured. Autocomplete will not work.');
+          toast.error('Location services not configured. Please contact support.');
+          return;
+        }
+        
+        await loadGoogleMapsAPI(apiKey);
+        setGoogleMapsLoaded(true);
+        console.log('✅ Google Maps loaded for autocomplete');
+        console.log('🔍 Google Maps object:', window.google);
+        console.log('🔍 Places API available:', !!window.google?.maps?.places);
+      } catch (error) {
+        console.error('❌ Failed to load Google Maps:', error);
+        toast.error('Failed to load location services. Please refresh the page.');
+      }
+    };
+    
+    loadMaps();
+  }, []);
 
   // Load buyer data on component mount
   useEffect(() => {
@@ -517,7 +546,7 @@ const BuyerAccountSettingsPage = () => {
                             placeholder="Search for your preferred Australian area..."
                             className="bg-input border border-border text-foreground pr-10 focus:ring-primary focus:border-primary"
                             onFocus={() => {
-                              if (typeof window !== 'undefined' && window.google) {
+                              if (googleMapsLoaded && typeof window !== 'undefined' && window.google) {
                                 const input = document.getElementById('preferredLocation') as HTMLInputElement;
                                 if (input && !input.dataset.autocomplete) {
                                   const autocomplete = new window.google.maps.places.Autocomplete(input, {
@@ -543,6 +572,10 @@ const BuyerAccountSettingsPage = () => {
                                   });
                                   input.dataset.autocomplete = 'true';
                                 }
+                              } else if (!googleMapsLoaded) {
+                                toast.error('Location services are still loading. Please wait a moment and try again.');
+                              } else {
+                                toast.error('Google Maps not available. Please refresh the page.');
                               }
                             }}
                           />
@@ -611,7 +644,7 @@ const BuyerAccountSettingsPage = () => {
                           className="bg-white/5 border-white/20 text-white pr-10 focus:ring-2 focus:ring-pickfirst-yellow/50 focus:border-pickfirst-yellow/50"
                           onFocus={() => {
                             // Initialize Google Maps Places Autocomplete
-                            if (typeof window !== 'undefined' && window.google) {
+                            if (googleMapsLoaded && typeof window !== 'undefined' && window.google) {
                               const input = document.getElementById('location') as HTMLInputElement;
                               if (input && !input.dataset.autocomplete) {
                                 const autocomplete = new window.google.maps.places.Autocomplete(input, {
@@ -640,8 +673,10 @@ const BuyerAccountSettingsPage = () => {
                                 
                                 input.dataset.autocomplete = 'true';
                               }
+                            } else if (!googleMapsLoaded) {
+                              toast.error('Location services are still loading. Please wait a moment and try again.');
                             } else {
-                              toast.error('Google Maps not loaded. Please refresh the page.');
+                              toast.error('Google Maps not available. Please refresh the page.');
                             }
                           }}
                         />
@@ -650,7 +685,11 @@ const BuyerAccountSettingsPage = () => {
                         </div>
                       </div>
                       <p className="text-xs text-gray-400 mt-1">
-                        💡 Start typing to see location suggestions powered by Google Maps
+                        {googleMapsLoaded ? (
+                          <>💡 Start typing to see location suggestions powered by Google Maps</>
+                        ) : (
+                          <>⏳ Loading location services...</>
+                        )}
                       </p>
                     </div>
                     <div>
