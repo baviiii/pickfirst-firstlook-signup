@@ -14,12 +14,12 @@ import BuyerProfileService, { BuyerPreferences, PropertySearchCriteria } from '@
 import { appointmentService } from '@/services/appointmentService';
 import ProfileService from '@/services/profileService';
 import { toast } from 'sonner';
-import { loadGoogleMapsAPI, getGoogleMapsAPIKey } from '@/utils/googleMapsLoader';
+import { supabase } from '@/integrations/supabase/client';
 
 const BuyerAccountSettingsPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { profile, user } = useAuth();
+  const { profile, user, updateProfile } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
@@ -28,7 +28,7 @@ const BuyerAccountSettingsPage = () => {
   const [settings, setSettings] = useState({
     fullName: profile?.full_name || '',
     email: profile?.email || '',
-    phone: '',
+    phone: profile?.phone || '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -71,6 +71,19 @@ const BuyerAccountSettingsPage = () => {
   const [matchingProperties, setMatchingProperties] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+
+  // Australian cities and suburbs for autocomplete fallback
+  const australianLocations = [
+    'Sydney, NSW', 'Melbourne, VIC', 'Brisbane, QLD', 'Perth, WA', 'Adelaide, SA',
+    'Gold Coast, QLD', 'Newcastle, NSW', 'Canberra, ACT', 'Sunshine Coast, QLD',
+    'Wollongong, NSW', 'Geelong, VIC', 'Hobart, TAS', 'Townsville, QLD',
+    'Cairns, QLD', 'Toowoomba, QLD', 'Darwin, NT', 'Ballarat, VIC', 'Bendigo, VIC',
+    'Albury, NSW', 'Launceston, TAS', 'Mackay, QLD', 'Rockhampton, QLD',
+    'Bunbury, WA', 'Bundaberg, QLD', 'Coffs Harbour, NSW', 'Wagga Wagga, NSW',
+    'Hervey Bay, QLD', 'Mildura, VIC', 'Shepparton, VIC', 'Port Macquarie, NSW'
+  ];
 
   // Handle URL parameters for tab navigation
   useEffect(() => {
@@ -80,31 +93,40 @@ const BuyerAccountSettingsPage = () => {
     }
   }, [searchParams]);
 
-  // Load Google Maps API
+  // Load Google Maps API with fallback
   useEffect(() => {
-    const loadMaps = async () => {
+    const loadGoogleMaps = async () => {
       try {
-        // Get API key from environment (configured via GitHub secrets)
-        const apiKey = getGoogleMapsAPIKey();
-        
-        if (apiKey === 'YOUR_GOOGLE_MAPS_API_KEY') {
-          console.warn('⚠️ Google Maps API key not configured. Autocomplete will not work.');
-          toast.error('Location services not configured. Please contact support.');
+        // Check if Google Maps is already loaded
+        if (window.google && window.google.maps) {
+          setGoogleMapsLoaded(true);
           return;
         }
+
+        // Try to load Google Maps
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&libraries=places`;
+        script.async = true;
+        script.defer = true;
         
-        await loadGoogleMapsAPI(apiKey);
-        setGoogleMapsLoaded(true);
-        console.log('✅ Google Maps loaded for autocomplete');
-        console.log('🔍 Google Maps object:', window.google);
-        console.log('🔍 Places API available:', !!window.google?.maps?.places);
+        script.onload = () => {
+          setGoogleMapsLoaded(true);
+          console.log('Google Maps loaded successfully');
+        };
+        
+        script.onerror = () => {
+          console.warn('Failed to load Google Maps, using fallback autocomplete');
+          setGoogleMapsLoaded(false);
+        };
+
+        document.head.appendChild(script);
       } catch (error) {
-        console.error('❌ Failed to load Google Maps:', error);
-        toast.error('Failed to load location services. Please refresh the page.');
+        console.error('Error loading Google Maps:', error);
+        setGoogleMapsLoaded(false);
       }
     };
-    
-    loadMaps();
+
+    loadGoogleMaps();
   }, []);
 
   // Load buyer data on component mount
@@ -175,6 +197,55 @@ const BuyerAccountSettingsPage = () => {
     loadBuyerData();
   }, [user]);
 
+  // Handle location search with fallback autocomplete
+  const handleLocationSearch = (query: string) => {
+    if (!query) {
+      setLocationSuggestions([]);
+      setShowLocationSuggestions(false);
+      return;
+    }
+
+    // Fallback to local filtering if Google Maps isn't available
+    if (!googleMapsLoaded) {
+      const filtered = australianLocations
+        .filter(location => 
+          location.toLowerCase().includes(query.toLowerCase())
+        )
+        .slice(0, 5);
+      setLocationSuggestions(filtered);
+      setShowLocationSuggestions(filtered.length > 0);
+    } else {
+      // Use Google Maps Places API if available
+      try {
+        const service = new window.google.maps.places.AutocompleteService();
+        service.getPlacePredictions({
+          input: query,
+          types: ['(regions)'],
+          componentRestrictions: { country: 'au' }
+        }, (predictions, status) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+            const suggestions = predictions.map(p => p.description).slice(0, 5);
+            setLocationSuggestions(suggestions);
+            setShowLocationSuggestions(suggestions.length > 0);
+          } else {
+            setLocationSuggestions([]);
+            setShowLocationSuggestions(false);
+          }
+        });
+      } catch (error) {
+        console.error('Error with Google Places:', error);
+        // Fallback to local filtering
+        const filtered = australianLocations
+          .filter(location => 
+            location.toLowerCase().includes(query.toLowerCase())
+          )
+          .slice(0, 5);
+        setLocationSuggestions(filtered);
+        setShowLocationSuggestions(filtered.length > 0);
+      }
+    }
+  };
+
   const handleNotificationChange = (key: string, value: boolean) => {
     setSettings(prev => ({
       ...prev,
@@ -205,9 +276,11 @@ const BuyerAccountSettingsPage = () => {
         // Reload matching properties
         const matches = await BuyerProfileService.getMatchingProperties(user.id, 5);
         setMatchingProperties(matches);
+        toast.success('Search preferences saved successfully');
       }
     } catch (error) {
       console.error('Error saving search criteria:', error);
+      toast.error('Failed to save search preferences');
     } finally {
       setIsLoading(false);
     }
@@ -218,31 +291,43 @@ const BuyerAccountSettingsPage = () => {
     
     setIsLoading(true);
     try {
-      // Save personal info to profile first
-      await (async () => {
-        const updates: any = {};
-        if (settings.fullName) updates.full_name = settings.fullName;
-        if (settings.phone) updates.phone = settings.phone;
-        if (Object.keys(updates).length > 0) {
-          await (await import('@/hooks/useAuth')).useAuth; // no-op import guard for bundlers
-          await (await import('@/hooks/useAuth'));
-        }
-      })();
-
-      // Use auth context updateProfile for immediate local state update
-      if (settings.fullName || settings.phone) {
-        try {
-          await (await import('@/hooks/useAuth')).useAuth; // type guard
-        } catch {}
+      // Update profile information
+      const profileUpdates: any = {};
+      if (settings.fullName !== profile?.full_name) {
+        profileUpdates.full_name = settings.fullName;
+      }
+      if (settings.phone !== profile?.phone) {
+        profileUpdates.phone = settings.phone;
       }
 
-      // Persist preferences
+      // Update profile if there are changes
+      if (Object.keys(profileUpdates).length > 0) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update(profileUpdates)
+          .eq('id', user.id);
+
+        if (profileError) {
+          throw profileError;
+        }
+
+        // Update local auth context
+        if (updateProfile) {
+          updateProfile(profileUpdates);
+        }
+      }
+
+      // Save buyer preferences
       const result = await BuyerProfileService.updateBuyerPreferences(user.id, buyerPreferences);
       if (!result.success) {
         toast.error(result.error || 'Failed to update preferences');
+        return;
       }
+
+      toast.success('Profile updated successfully');
     } catch (error) {
       console.error('Error saving preferences:', error);
+      toast.error('Failed to save profile changes');
     } finally {
       setIsLoading(false);
     }
@@ -268,8 +353,16 @@ const BuyerAccountSettingsPage = () => {
     
     setIsLoading(true);
     try {
-      // TODO: Implement password change with Supabase Auth
-      toast.success('Password change functionality will be implemented with Supabase Auth');
+      // Use Supabase Auth to update password
+      const { error } = await supabase.auth.updateUser({
+        password: settings.newPassword
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('Password updated successfully');
       
       // Clear password fields
       setSettings(prev => ({
@@ -278,9 +371,9 @@ const BuyerAccountSettingsPage = () => {
         newPassword: '',
         confirmPassword: ''
       }));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error changing password:', error);
-      toast.error('Failed to change password. Please try again.');
+      toast.error(error.message || 'Failed to change password. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -303,6 +396,8 @@ const BuyerAccountSettingsPage = () => {
       const res = await ProfileService.updateUserPreferences(user.id, payload as any);
       if (!res.success) {
         toast.error(res.error || 'Failed to save preferences');
+      } else {
+        toast.success('Settings saved successfully');
       }
     } catch (error) {
       console.error('Error saving notification/privacy:', error);
@@ -409,6 +504,7 @@ const BuyerAccountSettingsPage = () => {
                 </TabsTrigger>
               </TabsList>
             </div>
+            
             {/* Appointments Tab */}
             <TabsContent value="appointments" className="space-y-6">
               <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
@@ -683,7 +779,7 @@ const BuyerAccountSettingsPage = () => {
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <Label htmlFor="location" className="text-white flex items-center gap-2">
+                      <Label htmlFor="location" className="text-card-foreground flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
                         Preferred Suburb/Location
                       </Label>
@@ -691,66 +787,63 @@ const BuyerAccountSettingsPage = () => {
                         <Input
                           id="location"
                           value={searchCriteria.location}
-                          onChange={(e) => setSearchCriteria(prev => ({ ...prev, location: e.target.value }))}
-                          placeholder="Type to search Australian suburbs, cities, or areas..."
-                          className="bg-white/5 border-white/20 text-white pr-10 focus:ring-2 focus:ring-pickfirst-yellow/50 focus:border-pickfirst-yellow/50"
+                          onChange={(e) => {
+                            setSearchCriteria(prev => ({ ...prev, location: e.target.value }));
+                            handleLocationSearch(e.target.value);
+                          }}
                           onFocus={() => {
-                            // Initialize Google Maps Places Autocomplete
-                            if (googleMapsLoaded && typeof window !== 'undefined' && window.google) {
-                              const input = document.getElementById('location') as HTMLInputElement;
-                              if (input && !input.dataset.autocomplete) {
-                                const autocomplete = new window.google.maps.places.Autocomplete(input, {
-                                  types: ['(regions)', 'locality', 'sublocality'],
-                                  componentRestrictions: { country: 'au' },
-                                  fields: ['formatted_address', 'address_components', 'geometry']
-                                });
-                                
-                                autocomplete.addListener('place_changed', () => {
-                                  const place = autocomplete.getPlace();
-                                  if (place.formatted_address) {
-                                    // Extract just the city/suburb name for cleaner display
-                                    const cityComponent = place.address_components?.find(component => 
-                                      component.types.includes('locality') || 
-                                      component.types.includes('sublocality_level_1') ||
-                                      component.types.includes('administrative_area_level_2')
-                                    );
-                                    
-                                    const displayName = cityComponent?.long_name || place.formatted_address;
-                                    setSearchCriteria(prev => ({ ...prev, location: displayName }));
-                                    
-                                    // Show success feedback
-                                    toast.success(`Location set to: ${displayName}`);
-                                  }
-                                });
-                                
-                                input.dataset.autocomplete = 'true';
-                              }
-                            } else if (!googleMapsLoaded) {
-                              toast.error('Location services are still loading. Please wait a moment and try again.');
-                            } else {
-                              toast.error('Google Maps not available. Please refresh the page.');
+                            if (searchCriteria.location) {
+                              handleLocationSearch(searchCriteria.location);
                             }
                           }}
+                          onBlur={() => {
+                            // Delay hiding suggestions to allow for click
+                            setTimeout(() => setShowLocationSuggestions(false), 150);
+                          }}
+                          placeholder="Type to search Australian suburbs, cities, or areas..."
+                          className="bg-input border border-border text-foreground pr-10 focus:ring-2 focus:ring-primary/50 focus:border-primary/50"
                         />
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          <MapPin className="h-4 w-4 text-gray-400" />
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
                         </div>
+                        
+                        {/* Location Suggestions Dropdown */}
+                        {showLocationSuggestions && locationSuggestions.length > 0 && (
+                          <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                            {locationSuggestions.map((suggestion, index) => (
+                              <button
+                                key={index}
+                                type="button"
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors"
+                                onMouseDown={(e) => {
+                                  e.preventDefault(); // Prevent blur event
+                                  setSearchCriteria(prev => ({ ...prev, location: suggestion }));
+                                  setShowLocationSuggestions(false);
+                                  toast.success(`Location set to: ${suggestion}`);
+                                }}
+                              >
+                                <MapPin className="h-3 w-3 inline mr-2" />
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {googleMapsLoaded ? (
-                          <>💡 Start typing to see location suggestions powered by Google Maps</>
+                          <>Start typing to see location suggestions powered by Google Maps</>
                         ) : (
-                          <>⏳ Loading location services...</>
+                          <>Using local location database (Google Maps unavailable)</>
                         )}
                       </p>
                     </div>
                     <div>
-                      <Label htmlFor="propertyType" className="text-white">Property Type</Label>
+                      <Label htmlFor="propertyType" className="text-card-foreground">Property Type</Label>
                       <Select
                         value={searchCriteria.propertyType}
                         onValueChange={(value) => setSearchCriteria(prev => ({ ...prev, propertyType: value }))}
                       >
-                        <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                        <SelectTrigger className="bg-input border border-border text-foreground">
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -765,35 +858,35 @@ const BuyerAccountSettingsPage = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <Label htmlFor="minPrice" className="text-white">Min Price ($)</Label>
+                      <Label htmlFor="minPrice" className="text-card-foreground">Min Price ($)</Label>
                       <Input
                         id="minPrice"
                         type="number"
                         value={searchCriteria.minPrice}
                         onChange={(e) => setSearchCriteria(prev => ({ ...prev, minPrice: parseInt(e.target.value) || 0 }))}
-                        className="bg-white/5 border-white/20 text-white"
+                        className="bg-input border border-border text-foreground"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="maxPrice" className="text-white">Max Price ($)</Label>
+                      <Label htmlFor="maxPrice" className="text-card-foreground">Max Price ($)</Label>
                       <Input
                         id="maxPrice"
                         type="number"
                         value={searchCriteria.maxPrice}
                         onChange={(e) => setSearchCriteria(prev => ({ ...prev, maxPrice: parseInt(e.target.value) || 0 }))}
-                        className="bg-white/5 border-white/20 text-white"
+                        className="bg-input border border-border text-foreground"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <Label htmlFor="bedrooms" className="text-white">Bedrooms</Label>
+                      <Label htmlFor="bedrooms" className="text-card-foreground">Bedrooms</Label>
                       <Select
                         value={searchCriteria.bedrooms?.toString()}
                         onValueChange={(value) => setSearchCriteria(prev => ({ ...prev, bedrooms: parseInt(value) }))}
                       >
-                        <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                        <SelectTrigger className="bg-input border border-border text-foreground">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -806,12 +899,12 @@ const BuyerAccountSettingsPage = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="bathrooms" className="text-white">Bathrooms</Label>
+                      <Label htmlFor="bathrooms" className="text-card-foreground">Bathrooms</Label>
                       <Select
                         value={searchCriteria.bathrooms?.toString()}
                         onValueChange={(value) => setSearchCriteria(prev => ({ ...prev, bathrooms: parseInt(value) }))}
                       >
-                        <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                        <SelectTrigger className="bg-input border border-border text-foreground">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -827,20 +920,20 @@ const BuyerAccountSettingsPage = () => {
                   <Button 
                     onClick={handleSaveSearchCriteria}
                     disabled={isLoading}
-                    className="bg-primary text-black hover:bg-primary/90 w-full sm:w-auto"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
                   >
                     {isLoading ? 'Saving...' : 'Save Search Preferences'}
                   </Button>
 
                   {/* Matching Properties Preview */}
                   {matchingProperties.length > 0 && (
-                    <div className="pt-6 border-t border-gray-700">
-                      <h3 className="text-lg font-semibold text-white mb-4">Properties Matching Your Criteria</h3>
+                    <div className="pt-6 border-t border-border">
+                      <h3 className="text-lg font-semibold text-card-foreground mb-4">Properties Matching Your Criteria</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                         {matchingProperties.slice(0, 4).map((property: any) => (
-                          <div key={property.id} className="bg-gray-800/50 p-3 sm:p-4 rounded-lg">
-                            <h4 className="text-white font-medium">{property.title}</h4>
-                            <p className="text-gray-300">{property.city}, {property.state}</p>
+                          <div key={property.id} className="bg-muted/50 p-3 sm:p-4 rounded-lg border border-border">
+                            <h4 className="text-card-foreground font-medium">{property.title}</h4>
+                            <p className="text-muted-foreground">{property.city}, {property.state}</p>
                             <p className="text-primary font-bold">${property.price?.toLocaleString()}</p>
                             <div className="flex justify-between items-center mt-2 gap-2">
                               <Badge variant="secondary" className="text-xs">{property.bedrooms}br/{property.bathrooms}ba</Badge>
@@ -848,7 +941,7 @@ const BuyerAccountSettingsPage = () => {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleToggleFavorite(property.id)}
-                                className="text-gray-300 hover:text-red-400 px-2 h-8"
+                                className="text-muted-foreground hover:text-red-400 px-2 h-8"
                               >
                                 <Heart className="h-4 w-4" />
                               </Button>
@@ -917,7 +1010,6 @@ const BuyerAccountSettingsPage = () => {
               </Card>
             </TabsContent>
 
-
             {/* Notifications Tab */}
             <TabsContent value="notifications" className="space-y-6">
               <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
@@ -952,7 +1044,7 @@ const BuyerAccountSettingsPage = () => {
                     </div>
                   ))}
                   <div className="pt-2">
-                    <Button onClick={handleSaveNotificationsPrivacy} disabled={isLoading} className="bg-primary text-black hover:bg-primary/90">
+                    <Button onClick={handleSaveNotificationsPrivacy} disabled={isLoading} className="bg-primary text-primary-foreground hover:bg-primary/90">
                       {isLoading ? 'Saving...' : 'Save Notification Preferences'}
                     </Button>
                   </div>
@@ -992,7 +1084,7 @@ const BuyerAccountSettingsPage = () => {
                     </div>
                   ))}
                   <div className="pt-2">
-                    <Button onClick={handleSaveNotificationsPrivacy} disabled={isLoading} className="bg-primary text-black hover:bg-primary/90">
+                    <Button onClick={handleSaveNotificationsPrivacy} disabled={isLoading} className="bg-primary text-primary-foreground hover:bg-primary/90">
                       {isLoading ? 'Saving...' : 'Save Privacy Settings'}
                     </Button>
                   </div>
@@ -1012,7 +1104,7 @@ const BuyerAccountSettingsPage = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-                    <h4 className="text-destructive font-medium mb-2">⚠️ Warning</h4>
+                    <h4 className="text-destructive font-medium mb-2">Warning</h4>
                     <p className="text-sm text-muted-foreground">
                       Deleting your account will permanently remove:
                     </p>
@@ -1029,7 +1121,7 @@ const BuyerAccountSettingsPage = () => {
                       variant="destructive" 
                       onClick={() => {
                         if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                          if (confirm('This will permanently delete all your data. Type "DELETE" to confirm.')) {
+                          if (confirm('This will permanently delete all your data. Are you absolutely sure?')) {
                             toast.error('Account deletion not yet implemented. Please contact support.');
                           }
                         }
