@@ -185,10 +185,16 @@ const BuyerDashboardComponent = () => {
         })}
       </div>
 
-      {/* Approved Property Listings for Buyers */}
+      {/* Personalized Property Recommendations */}
+      <PersonalizedPropertyRecommendations />
+
+      {/* All Available Properties */}
       <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
         <CardHeader>
-          <CardTitle className="text-white">Available Properties</CardTitle>
+          <CardTitle className="text-white">All Available Properties</CardTitle>
+          <CardDescription className="text-gray-300">
+            Browse all properties on the market
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {loadingListings ? (
@@ -197,7 +203,7 @@ const BuyerDashboardComponent = () => {
             <div className="text-gray-400">No properties available at the moment.</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {listings.map(listing => (
+              {listings.slice(0, 6).map(listing => (
                 <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10 hover:border-pickfirst-yellow/40 transition-all duration-300 group">
                   <CardHeader className="p-0 relative">
                     <div className="aspect-video bg-gray-700 rounded-t-md overflow-hidden relative">
@@ -279,6 +285,18 @@ const BuyerDashboardComponent = () => {
                 </Card>
               ))}
             </div>
+            
+            {listings.length > 6 && (
+              <div className="mt-6 text-center">
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/browse-properties')}
+                  className="text-white border-white/20 hover:bg-white/5"
+                >
+                  View All {listings.length} Properties
+                </Button>
+              </div>
+            )}
           )}
         </CardContent>
       </Card>

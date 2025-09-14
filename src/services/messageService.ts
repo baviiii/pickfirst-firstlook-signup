@@ -131,7 +131,8 @@ class MessageService {
   async getOrCreateConversation(
     clientId: string, 
     subject?: string,
-    inquiryId?: string
+    inquiryId?: string,
+    propertyId?: string
   ): Promise<string | null> {
     try {
       const { data, error } = await supabase.functions.invoke('messaging', {
@@ -139,7 +140,8 @@ class MessageService {
           action: 'createConversation', 
           clientId, 
           subject,
-          inquiryId
+          inquiryId,
+          propertyId
         }
       });
 

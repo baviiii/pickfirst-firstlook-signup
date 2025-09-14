@@ -10,38 +10,38 @@ import { toast } from 'sonner';
 
 interface ConversationWithDetails {
   id: string;
-  agent_id: string;
-  client_id: string;
-  inquiry_id?: string;
-  subject?: string;
-  status?: string;
-  priority?: string;
-  tags?: string[];
-  metadata?: Record<string, any>;
-  last_message_at: string;
-  created_at: string;
-  updated_at: string;
+  agent_id: string | null;
+  client_id: string | null;
+  inquiry_id?: string | null;
+  subject?: string | null;
+  status?: string | null;
+  priority?: string | null;
+  tags?: string[] | null;
+  metadata?: any;
+  last_message_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
   agent_profile?: {
     id: string;
     full_name: string;
     email: string;
-  };
+  } | null;
   client_profile?: {
     id: string;
     full_name: string;
     email: string;
-  };
+  } | null;
   property?: {
     id: string;
     title: string;
     address: string;
-    price: number;
-  };
+    price?: number;
+  } | null;
   last_message?: {
     content: string;
     created_at: string;
     sender_id: string;
-  };
+  } | null;
   unread_count?: number;
 }
 
@@ -89,7 +89,7 @@ export const ConversationList = ({ onSelectConversation, selectedConversationId 
         let property = null;
         
         // Get property from inquiry if available
-        if (conv.property_inquiries && conv.property_inquiries.length > 0) {
+        if (conv.property_inquiries && Array.isArray(conv.property_inquiries) && conv.property_inquiries.length > 0) {
           const inquiry = conv.property_inquiries[0];
           if (inquiry.property_listings) {
             property = inquiry.property_listings;
@@ -97,16 +97,33 @@ export const ConversationList = ({ onSelectConversation, selectedConversationId 
         }
         
         // Get property from metadata if available (fallback)
-        if (!property && conv.metadata?.property_id) {
-          // This would require an additional query, but for now we'll handle it in the UI
-          property = { id: conv.metadata.property_id, title: 'Property', address: 'Address not available' };
+        if (!property && conv.metadata && typeof conv.metadata === 'object' && !Array.isArray(conv.metadata)) {
+          const metadata = conv.metadata as Record<string, any>;
+          if (metadata.property_id) {
+            property = { id: metadata.property_id, title: 'Property', address: 'Address not available' };
+          }
         }
 
         return {
-          ...conv,
+          id: conv.id,
+          agent_id: conv.agent_id,
+          client_id: conv.client_id,
+          inquiry_id: conv.inquiry_id,
+          subject: conv.subject,
+          status: conv.status,
+          priority: conv.priority,
+          tags: conv.tags,
+          metadata: typeof conv.metadata === 'object' && !Array.isArray(conv.metadata) 
+            ? conv.metadata as Record<string, any> 
+            : {},
+          last_message_at: conv.last_message_at,
+          created_at: conv.created_at,
+          updated_at: conv.updated_at,
+          agent_profile: null,
+          client_profile: null,
           property: property || null,
           unread_count: 0 // TODO: Calculate unread count
-        };
+        } as ConversationWithDetails;
       });
 
       setConversations(transformedConversations);

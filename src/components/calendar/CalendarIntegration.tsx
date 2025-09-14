@@ -10,7 +10,7 @@ import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 interface CalendarIntegration {
   id: string;
-  provider: 'google' | 'outlook' | 'apple';
+  provider: string;
   calendar_name: string;
   is_active: boolean;
   created_at: string;

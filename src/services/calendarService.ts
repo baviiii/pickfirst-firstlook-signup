@@ -40,7 +40,18 @@ export class CalendarService {
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
-      return { data: data || [], error };
+      const transformedData = (data || []).map(item => ({
+        id: item.id,
+        userId: item.user_id,
+        provider: item.provider as 'google' | 'outlook' | 'apple',
+        accessToken: item.access_token,
+        refreshToken: item.refresh_token,
+        calendarId: item.calendar_id,
+        isActive: item.is_active,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at
+      }));
+      return { data: transformedData, error };
     } catch (error) {
       return { data: [], error };
     }

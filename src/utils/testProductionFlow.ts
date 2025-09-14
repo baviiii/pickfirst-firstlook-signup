@@ -23,7 +23,7 @@ export const testProductionFlow = async () => {
     // Test 2: Database Tables Access
     console.log('\n📊 Testing Database Access...');
     
-    const tables = ['appointments', 'clients', 'conversations', 'property_inquiries', 'calendar_integrations'];
+    const tables = ['appointments', 'clients', 'conversations', 'property_inquiries', 'calendar_integrations'] as const;
     for (const table of tables) {
       try {
         const { data, error } = await supabase.from(table).select('*').limit(1);

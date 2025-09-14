@@ -323,7 +323,7 @@ serve(async (req) => {
       }
 
       case 'createConversation': {
-        const { clientId, subject = 'New Conversation' } = params
+        const { clientId, subject = 'New Conversation', inquiryId, propertyId } = params
         
         if (!clientId) {
           return new Response(
@@ -333,48 +333,112 @@ serve(async (req) => {
         }
 
         try {
-          // Verify current user is an agent
+          // Get current user profile to handle both agents and buyers creating conversations
           const { data: userProfile, error: profileError } = await supabaseClient
             .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single()
 
-          if (profileError || userProfile.role !== 'agent') {
+          if (profileError || !userProfile) {
             return new Response(
-              JSON.stringify({ error: 'Only agents can create conversations' }),
+              JSON.stringify({ error: 'User profile not found' }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+            )
+          }
+
+          // Determine agent and client IDs based on user role
+          let agentId, actualClientId;
+          if (userProfile.role === 'agent') {
+            agentId = user.id;
+            actualClientId = clientId;
+          } else if (userProfile.role === 'buyer') {
+            agentId = clientId; // clientId is actually agentId when buyer creates conversation
+            actualClientId = user.id;
+          } else {
+            return new Response(
+              JSON.stringify({ error: 'Invalid user role for creating conversations' }),
               { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
             )
           }
 
-          // Check if conversation already exists
-          const { data: existing } = await supabaseClient
-            .from('conversations')
-            .select('id')
-            .eq('agent_id', user.id)
-            .eq('client_id', clientId)
-            .single()
+          console.log('Creating conversation between agent:', agentId, 'and client:', actualClientId, 'for property:', propertyId);
 
-          if (existing) {
-            return new Response(
-              JSON.stringify({ id: existing.id, existing: true }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-            )
+          // Check if conversation already exists for this specific context
+          let existingQuery = supabaseClient
+            .from('conversations')
+            .select('id, metadata, subject')
+            .eq('agent_id', agentId)
+            .eq('client_id', actualClientId);
+
+          const { data: existingConversations } = await existingQuery;
+          console.log('Found existing conversations:', existingConversations);
+
+          // For property-specific conversations, check metadata
+          if (propertyId && existingConversations) {
+            const propertyConversation = existingConversations.find(conv => 
+              conv.metadata && 
+              typeof conv.metadata === 'object' && 
+              conv.metadata.property_id === propertyId
+            );
+            
+            if (propertyConversation) {
+              console.log('Found existing property conversation:', propertyConversation.id);
+              return new Response(
+                JSON.stringify({ id: propertyConversation.id, existing: true }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+              )
+            }
           }
 
-          // Create new conversation
+          // For inquiry-specific conversations
+          if (inquiryId && existingConversations) {
+            const inquiryConversation = existingConversations.find(conv => 
+              conv.inquiry_id === inquiryId
+            );
+            
+            if (inquiryConversation) {
+              console.log('Found existing inquiry conversation:', inquiryConversation.id);
+              return new Response(
+                JSON.stringify({ id: inquiryConversation.id, existing: true }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+              )
+            }
+          }
+
+          // Create new conversation with proper metadata
+          const conversationData: any = {
+            agent_id: agentId,
+            client_id: actualClientId,
+            subject: subject.trim(),
+            metadata: {}
+          };
+
+          // Add inquiry ID if provided
+          if (inquiryId) {
+            conversationData.inquiry_id = inquiryId;
+          }
+
+          // Add property ID to metadata if provided
+          if (propertyId) {
+            conversationData.metadata.property_id = propertyId;
+            console.log('Adding property ID to metadata:', propertyId);
+          }
+
+          console.log('Creating new conversation with data:', conversationData);
+
           const { data, error } = await supabaseClient
             .from('conversations')
-            .insert({
-              agent_id: user.id, // Use authenticated user ID
-              client_id: clientId,
-              subject: subject.trim()
-            })
+            .insert(conversationData)
             .select('id')
             .single()
 
-          if (error) throw error
+          if (error) {
+            console.error('Error creating conversation:', error);
+            throw error;
+          }
 
+          console.log('Created new conversation:', data.id);
           return new Response(
             JSON.stringify({ id: data.id, existing: false }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }

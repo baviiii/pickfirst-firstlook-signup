@@ -15,6 +15,8 @@ import { appointmentService } from '@/services/appointmentService';
 import ProfileService from '@/services/profileService';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { LocationAutocomplete } from '@/components/ui/LocationAutocomplete';
+import { googleMapsService } from '@/services/googleMapsService';
 
 const BuyerAccountSettingsPage = () => {
   const navigate = useNavigate();
@@ -71,19 +73,38 @@ const BuyerAccountSettingsPage = () => {
   const [matchingProperties, setMatchingProperties] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [currentPreferredArea, setCurrentPreferredArea] = useState('');
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
 
-  // Australian cities and suburbs for autocomplete fallback
-  const australianLocations = [
-    'Sydney, NSW', 'Melbourne, VIC', 'Brisbane, QLD', 'Perth, WA', 'Adelaide, SA',
-    'Gold Coast, QLD', 'Newcastle, NSW', 'Canberra, ACT', 'Sunshine Coast, QLD',
-    'Wollongong, NSW', 'Geelong, VIC', 'Hobart, TAS', 'Townsville, QLD',
-    'Cairns, QLD', 'Toowoomba, QLD', 'Darwin, NT', 'Ballarat, VIC', 'Bendigo, VIC',
-    'Albury, NSW', 'Launceston, TAS', 'Mackay, QLD', 'Rockhampton, QLD',
-    'Bunbury, WA', 'Bundaberg, QLD', 'Coffs Harbour, NSW', 'Wagga Wagga, NSW',
-    'Hervey Bay, QLD', 'Mildura, VIC', 'Shepparton, VIC', 'Port Macquarie, NSW'
-  ];
+  const handleLocationSearch = async (query: string) => {
+    if (!query || query.length < 2) {
+      setLocationSuggestions([]);
+      setShowLocationSuggestions(false);
+      return;
+    }
+
+    try {
+      // Use our fast location autocomplete service
+      const results = await googleMapsService.searchPlaces(query, 'AU');
+      const suggestions = results.slice(0, 5).map(result => result.description);
+      setLocationSuggestions(suggestions);
+      setShowLocationSuggestions(suggestions.length > 0);
+    } catch (error) {
+      console.error('Error searching locations:', error);
+      // Fallback to Australian locations
+      const australianLocations = [
+        'Sydney, NSW', 'Melbourne, VIC', 'Brisbane, QLD', 'Perth, WA', 'Adelaide, SA',
+        'Gold Coast, QLD', 'Newcastle, NSW', 'Canberra, ACT', 'Sunshine Coast, QLD',
+        'Wollongong, NSW', 'Geelong, VIC', 'Hobart, TAS', 'Townsville, QLD'
+      ];
+      const filtered = australianLocations
+        .filter(location => location.toLowerCase().includes(query.toLowerCase()))
+        .slice(0, 5);
+      setLocationSuggestions(filtered);
+      setShowLocationSuggestions(filtered.length > 0);
+    }
+  };
 
   // Handle URL parameters for tab navigation
   useEffect(() => {
@@ -93,41 +114,6 @@ const BuyerAccountSettingsPage = () => {
     }
   }, [searchParams]);
 
-  // Load Google Maps API with fallback
-  useEffect(() => {
-    const loadGoogleMaps = async () => {
-      try {
-        // Check if Google Maps is already loaded
-        if (window.google && window.google.maps) {
-          setGoogleMapsLoaded(true);
-          return;
-        }
-
-        // Try to load Google Maps
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&libraries=places`;
-        script.async = true;
-        script.defer = true;
-        
-        script.onload = () => {
-          setGoogleMapsLoaded(true);
-          console.log('Google Maps loaded successfully');
-        };
-        
-        script.onerror = () => {
-          console.warn('Failed to load Google Maps, using fallback autocomplete');
-          setGoogleMapsLoaded(false);
-        };
-
-        document.head.appendChild(script);
-      } catch (error) {
-        console.error('Error loading Google Maps:', error);
-        setGoogleMapsLoaded(false);
-      }
-    };
-
-    loadGoogleMaps();
-  }, []);
 
   // Load buyer data on component mount
   useEffect(() => {
@@ -197,53 +183,24 @@ const BuyerAccountSettingsPage = () => {
     loadBuyerData();
   }, [user]);
 
-  // Handle location search with fallback autocomplete
-  const handleLocationSearch = (query: string) => {
-    if (!query) {
-      setLocationSuggestions([]);
-      setShowLocationSuggestions(false);
-      return;
+  const handleAddPreferredArea = (location: string) => {
+    if (!location.trim()) return;
+    
+    const currentAreas = buyerPreferences.preferred_areas || [];
+    if (!currentAreas.includes(location.trim())) {
+      setBuyerPreferences(prev => ({
+        ...prev,
+        preferred_areas: [...currentAreas, location.trim()]
+      }));
     }
+    setCurrentPreferredArea('');
+  };
 
-    // Fallback to local filtering if Google Maps isn't available
-    if (!googleMapsLoaded) {
-      const filtered = australianLocations
-        .filter(location => 
-          location.toLowerCase().includes(query.toLowerCase())
-        )
-        .slice(0, 5);
-      setLocationSuggestions(filtered);
-      setShowLocationSuggestions(filtered.length > 0);
-    } else {
-      // Use Google Maps Places API if available
-      try {
-        const service = new window.google.maps.places.AutocompleteService();
-        service.getPlacePredictions({
-          input: query,
-          types: ['(regions)'],
-          componentRestrictions: { country: 'au' }
-        }, (predictions, status) => {
-          if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-            const suggestions = predictions.map(p => p.description).slice(0, 5);
-            setLocationSuggestions(suggestions);
-            setShowLocationSuggestions(suggestions.length > 0);
-          } else {
-            setLocationSuggestions([]);
-            setShowLocationSuggestions(false);
-          }
-        });
-      } catch (error) {
-        console.error('Error with Google Places:', error);
-        // Fallback to local filtering
-        const filtered = australianLocations
-          .filter(location => 
-            location.toLowerCase().includes(query.toLowerCase())
-          )
-          .slice(0, 5);
-        setLocationSuggestions(filtered);
-        setShowLocationSuggestions(filtered.length > 0);
-      }
-    }
+  const handleRemovePreferredArea = (areaToRemove: string) => {
+    setBuyerPreferences(prev => ({
+      ...prev,
+      preferred_areas: (prev.preferred_areas || []).filter(area => area !== areaToRemove)
+    }));
   };
 
   const handleNotificationChange = (key: string, value: boolean) => {

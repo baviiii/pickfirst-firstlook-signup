@@ -230,46 +230,44 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
                 <div key={alert.id} className="p-4 rounded-lg bg-gray-800/50 border border-gray-700">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h4 className="text-white font-medium">
-                        {alert.property_listings?.title || 'Property Alert'}
-                      </h4>
-                      <p className="text-sm text-gray-400 mt-1">
-                        {formatDate(alert.sent_at)}
-                      </p>
-                    </div>
-                    <Badge className={`${getStatusColor(alert.status)} text-white`}>
-                      {alert.status}
-                    </Badge>
-                  </div>
-                  
-                  {alert.property_listings && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-400">Price:</span>
-                        <p className="text-white font-medium">
-                          {formatPrice(alert.property_listings.price)}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Location:</span>
-                        <p className="text-white">
-                          {alert.property_listings.city}, {alert.property_listings.state}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Type:</span>
-                        <p className="text-white capitalize">
-                          {alert.property_listings.property_type}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Bed/Bath:</span>
-                        <p className="text-white">
-                          {alert.property_listings.bedrooms || 0}/{alert.property_listings.bathrooms || 0}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                       <h4 className="text-white font-medium">
+                         Property Alert
+                       </h4>
+                       <p className="text-sm text-gray-400 mt-1">
+                         {formatDate(alert.sent_at)}
+                       </p>
+                     </div>
+                     <Badge className={`${getStatusColor(alert.status)} text-white`}>
+                       {alert.status}
+                     </Badge>
+                   </div>
+                   
+                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                     <div>
+                       <span className="text-gray-400">Status:</span>
+                       <p className="text-white font-medium capitalize">
+                         {alert.status}
+                       </p>
+                     </div>
+                     <div>
+                       <span className="text-gray-400">Property ID:</span>
+                       <p className="text-white">
+                         {alert.property_id}
+                       </p>
+                     </div>
+                     <div>
+                       <span className="text-gray-400">Template:</span>
+                       <p className="text-white capitalize">
+                         {alert.email_template}
+                       </p>
+                     </div>
+                     <div>
+                       <span className="text-gray-400">Sent:</span>
+                       <p className="text-white">
+                         {formatDate(alert.sent_at)}
+                       </p>
+                     </div>
+                   </div>
                 </div>
               ))}
             </div>
