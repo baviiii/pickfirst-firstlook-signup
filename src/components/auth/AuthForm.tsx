@@ -150,6 +150,15 @@ export const AuthForm = () => {
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
               </Button>
+              
+              <div className="text-center">
+                <a 
+                  href="/forgot-password" 
+                  className="text-pickfirst-yellow hover:text-pickfirst-yellow/80 text-sm font-medium transition-colors"
+                >
+                  Forgot your password?
+                </a>
+              </div>
             </form>
           </TabsContent>
           

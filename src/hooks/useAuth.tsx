@@ -15,6 +15,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: any }>;
   refetchProfile: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<{ error: any }>;
+  resetPassword: (password: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -170,6 +172,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
+  const forgotPassword = async (email: string) => {
+    try {
+      const redirectUrl = `${window.location.origin}/reset-password`;
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl
+      });
+      
+      // Send custom password reset email for better branding
+      if (!error) {
+        setTimeout(async () => {
+          try {
+            const { EmailService } = await import('@/services/emailService');
+            await EmailService.sendPasswordResetEmail(email);
+          } catch (emailError) {
+            console.error('Failed to send password reset email:', emailError);
+          }
+        }, 1000);
+      }
+      
+      return { error };
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      return { error };
+    }
+  };
+
+  const resetPassword = async (password: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+      
+      if (error) {
+        await handleAuthError(error);
+      }
+      
+      return { error };
+    } catch (error) {
+      console.error('Reset password error:', error);
+      await handleAuthError(error);
+      return { error };
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -180,7 +227,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signIn,
       signOut,
       updateProfile,
-      refetchProfile
+      refetchProfile,
+      forgotPassword,
+      resetPassword
     }}>
       {children}
     </AuthContext.Provider>

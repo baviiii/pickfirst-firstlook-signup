@@ -375,6 +375,29 @@ export class EmailService {
       console.error('Error sending appointment status update email:', error);
     }
   }
+
+  /**
+   * Send password reset email
+   */
+  static async sendPasswordResetEmail(userEmail: string, resetUrl?: string): Promise<void> {
+    try {
+      await supabase.functions.invoke('send-email', {
+        body: {
+          to: userEmail,
+          template: 'passwordReset',
+          data: {
+            email: userEmail,
+            resetUrl: resetUrl || `${window.location.origin}/reset-password`,
+            platformName: 'PickFirst Real Estate',
+            platformUrl: 'https://baviiii.github.io/pickfirst-firstlook-signup'
+          },
+          subject: 'Reset Your Password - PickFirst Real Estate'
+        }
+      });
+    } catch (error) {
+      console.error('Error sending password reset email:', error);
+    }
+  }
 }
 
 export default EmailService;
