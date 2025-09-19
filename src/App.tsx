@@ -1,10 +1,10 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { SubscriptionProvider } from "@/hooks/useSubscription";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Registration from "./pages/Registration";
@@ -45,48 +45,50 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter basename={import.meta.env.BASE_URL}>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/signup" element={<Registration />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/admin-properties" element={<AdminPropertyManagementPage />} />
-            <Route path="/admin-users" element={<AdminUserManagementPage />} />
-            <Route path="/database-management" element={<DatabaseManagementPage />} />
-            <Route path="/system-alerts" element={<SystemAlertsPage />} />
-            <Route path="/system-logs" element={<SystemLogsPage />} />
-            <Route path="/platform-settings" element={<PlatformSettingsPage />} />
-            <Route path="/security-permissions" element={<SecurityPermissionsPage />} />
-            <Route path="/platform-analytics" element={<PlatformAnalyticsPage />} />
-            <Route path="/my-clients" element={<MyClientsPage />} />
-            <Route path="/appointments" element={<AppointmentsPage />} />
-            <Route path="/agent-analytics" element={<AgentAnalyticsPage />} />
-            <Route path="/agent-messages" element={<AgentMessagesPage />} />
-            <Route path="/agent-leads" element={<AgentLeadsPage />} />
-            <Route path="/agent-profile" element={<AgentProfilePage />} />
-            <Route path="/my-listings" element={<MyListingsPage />} />
-            <Route path="/buyer-messages" element={<BuyerMessagesPage />} />
-            <Route path="/browse-properties" element={<BrowsePropertiesPage />} />
-            <Route path="/saved-properties" element={<SavedPropertiesPage />} />
-            <Route path="/property-map" element={<PropertyMapPage />} />
-            <Route path="/search-filters" element={<SearchFiltersPage />} />
-            <Route path="/buyer-account-settings" element={<BuyerAccountSettingsPage />} />
-            <Route path="/profile-settings" element={<ProfileSettingsPage />} />
-            <Route path="/subscription-management" element={<SubscriptionManagementPage />} />
-            <Route path="/property/:id" element={<PropertyDetails />} />
-            <Route path="/system-testing" element={<SystemTestingPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <SubscriptionProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter basename={import.meta.env.BASE_URL}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/signup" element={<Registration />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/admin-properties" element={<AdminPropertyManagementPage />} />
+              <Route path="/admin-users" element={<AdminUserManagementPage />} />
+              <Route path="/database-management" element={<DatabaseManagementPage />} />
+              <Route path="/system-alerts" element={<SystemAlertsPage />} />
+              <Route path="/system-logs" element={<SystemLogsPage />} />
+              <Route path="/platform-settings" element={<PlatformSettingsPage />} />
+              <Route path="/security-permissions" element={<SecurityPermissionsPage />} />
+              <Route path="/platform-analytics" element={<PlatformAnalyticsPage />} />
+              <Route path="/my-clients" element={<MyClientsPage />} />
+              <Route path="/appointments" element={<AppointmentsPage />} />
+              <Route path="/agent-analytics" element={<AgentAnalyticsPage />} />
+              <Route path="/agent-messages" element={<AgentMessagesPage />} />
+              <Route path="/agent-leads" element={<AgentLeadsPage />} />
+              <Route path="/agent-profile" element={<AgentProfilePage />} />
+              <Route path="/my-listings" element={<MyListingsPage />} />
+              <Route path="/buyer-messages" element={<BuyerMessagesPage />} />
+              <Route path="/browse-properties" element={<BrowsePropertiesPage />} />
+              <Route path="/saved-properties" element={<SavedPropertiesPage />} />
+              <Route path="/property-map" element={<PropertyMapPage />} />
+              <Route path="/search-filters" element={<SearchFiltersPage />} />
+              <Route path="/buyer-account-settings" element={<BuyerAccountSettingsPage />} />
+              <Route path="/profile-settings" element={<ProfileSettingsPage />} />
+              <Route path="/subscription-management" element={<SubscriptionManagementPage />} />
+              <Route path="/property/:id" element={<PropertyDetails />} />
+              <Route path="/system-testing" element={<SystemTestingPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </SubscriptionProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
