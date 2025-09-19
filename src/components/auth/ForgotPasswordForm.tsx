@@ -7,6 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Mail } from 'lucide-react';
+import { InputSanitizer } from '@/utils/inputSanitization';
+import { auditService } from '@/services/auditService';
+import { rateLimitService } from '@/services/rateLimitService';
 
 export const ForgotPasswordForm = () => {
   const { forgotPassword } = useAuth();
@@ -17,20 +20,65 @@ export const ForgotPasswordForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email) {
-      toast.error('Please enter your email address');
+    // Input validation and sanitization
+    const emailValidation = InputSanitizer.validateEmail(email);
+    if (!emailValidation.isValid) {
+      toast.error(emailValidation.error || 'Invalid email address');
+      await auditService.log('anonymous', 'VALIDATION_ERROR', 'password_reset', {
+        newValues: { error: 'Invalid email format', email: email.substring(0, 5) + '***' }
+      });
+      return;
+    }
+
+    // Rate limiting check
+    const rateCheck = await rateLimitService.checkRateLimit(
+      emailValidation.sanitizedValue || email, 
+      'password_reset'
+    );
+    
+    if (!rateCheck.allowed) {
+      toast.error(`Too many password reset attempts. Try again in ${Math.ceil((rateCheck.resetTime - Date.now()) / (60 * 60 * 1000))} hours.`);
+      await auditService.log('anonymous', 'RATE_LIMIT_EXCEEDED', 'password_reset', {
+        newValues: { 
+          email: emailValidation.sanitizedValue!.substring(0, 5) + '***',
+          remaining: rateCheck.remaining,
+          resetTime: rateCheck.resetTime
+        }
+      });
       return;
     }
 
     setLoading(true);
     
-    const { error } = await forgotPassword(email);
-    
-    if (error) {
-      toast.error(error.message || 'Failed to send reset email');
-    } else {
-      setEmailSent(true);
-      toast.success('Password reset email sent! Check your inbox.');
+    try {
+      const { error } = await forgotPassword(emailValidation.sanitizedValue!);
+      
+      if (error) {
+        await auditService.log('anonymous', 'PASSWORD_RESET_FAILED', 'password_reset', {
+          newValues: { 
+            error: error.message,
+            email: emailValidation.sanitizedValue!.substring(0, 5) + '***'
+          }
+        });
+        toast.error(error.message || 'Failed to send reset email');
+      } else {
+        await auditService.log('anonymous', 'PASSWORD_RESET_REQUEST', 'password_reset', {
+          newValues: { 
+            email: emailValidation.sanitizedValue!.substring(0, 5) + '***',
+            timestamp: new Date().toISOString()
+          }
+        });
+        setEmailSent(true);
+        toast.success('Password reset email sent! Check your inbox.');
+      }
+    } catch (error) {
+      await auditService.log('anonymous', 'SYSTEM_ERROR', 'password_reset', {
+        newValues: { 
+          error: error instanceof Error ? error.message : 'Unknown error',
+          email: emailValidation.sanitizedValue!.substring(0, 5) + '***'
+        }
+      });
+      toast.error('An unexpected error occurred. Please try again.');
     }
     
     setLoading(false);

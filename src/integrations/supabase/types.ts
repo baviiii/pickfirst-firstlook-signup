@@ -492,7 +492,10 @@ export type Database = {
           location: string | null
           phone: string | null
           role: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
           subscription_expires_at: string | null
+          subscription_product_id: string | null
           subscription_status: string | null
           subscription_tier: string | null
           updated_at: string | null
@@ -509,7 +512,10 @@ export type Database = {
           location?: string | null
           phone?: string | null
           role?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           subscription_expires_at?: string | null
+          subscription_product_id?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
           updated_at?: string | null
@@ -526,7 +532,10 @@ export type Database = {
           location?: string | null
           phone?: string | null
           role?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           subscription_expires_at?: string | null
+          subscription_product_id?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
           updated_at?: string | null
@@ -857,11 +866,14 @@ export type Database = {
           featured_listings_included: number | null
           features: Json
           id: string
+          is_active: boolean | null
           max_listings: number | null
           name: string
           price_monthly: number | null
           price_yearly: number | null
           priority_support: boolean | null
+          stripe_price_id: string | null
+          stripe_product_id: string | null
         }
         Insert: {
           advanced_analytics?: boolean | null
@@ -869,11 +881,14 @@ export type Database = {
           featured_listings_included?: number | null
           features?: Json
           id?: string
+          is_active?: boolean | null
           max_listings?: number | null
           name: string
           price_monthly?: number | null
           price_yearly?: number | null
           priority_support?: boolean | null
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
         }
         Update: {
           advanced_analytics?: boolean | null
@@ -881,11 +896,14 @@ export type Database = {
           featured_listings_included?: number | null
           features?: Json
           id?: string
+          is_active?: boolean | null
           max_listings?: number | null
           name?: string
           price_monthly?: number | null
           price_yearly?: number | null
           priority_support?: boolean | null
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
         }
         Relationships: []
       }

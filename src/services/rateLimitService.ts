@@ -43,6 +43,10 @@ class RateLimitService {
     this.configs.set('api:general', { maxRequests: 100, windowMs: 60000 }); // 100 requests per minute
     this.configs.set('api:auth', { maxRequests: 5, windowMs: 300000 }); // 5 auth attempts per 5 minutes
     
+    // Password reset rate limits (security critical)
+    this.configs.set('password_reset', { maxRequests: 3, windowMs: 24 * 60 * 60 * 1000 }); // 3 attempts per day
+    this.configs.set('password_update', { maxRequests: 5, windowMs: 60 * 60 * 1000 }); // 5 updates per hour
+    
     // Database operation limits
     this.configs.set('db:read', { maxRequests: 200, windowMs: 60000 }); // 200 reads per minute
     this.configs.set('db:write', { maxRequests: 50, windowMs: 60000 }); // 50 writes per minute

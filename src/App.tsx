@@ -36,6 +36,7 @@ import PropertyMapPage from './pages/PropertyMap';
 import SearchFiltersPage from './pages/SearchFilters';
 import BuyerAccountSettingsPage from './pages/BuyerAccountSettings';
 import ProfileSettingsPage from './pages/ProfileSettings';
+import SubscriptionManagementPage from './pages/SubscriptionManagement';
 import PropertyDetails from './pages/PropertyDetails';
 import SystemTestingPage from './pages/SystemTesting';
 
@@ -79,6 +80,7 @@ const App = () => (
             <Route path="/search-filters" element={<SearchFiltersPage />} />
             <Route path="/buyer-account-settings" element={<BuyerAccountSettingsPage />} />
             <Route path="/profile-settings" element={<ProfileSettingsPage />} />
+            <Route path="/subscription-management" element={<SubscriptionManagementPage />} />
             <Route path="/property/:id" element={<PropertyDetails />} />
             <Route path="/system-testing" element={<SystemTestingPage />} />
             <Route path="*" element={<NotFound />} />

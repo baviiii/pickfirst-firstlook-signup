@@ -5,8 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Lock, Eye, EyeOff } from 'lucide-react';
+import { InputSanitizer } from '@/utils/inputSanitization';
+import { auditService } from '@/services/auditService';
+import { rateLimitService } from '@/services/rateLimitService';
 
 export const ResetPasswordForm = () => {
   const { resetPassword } = useAuth();
@@ -24,30 +28,75 @@ export const ResetPasswordForm = () => {
     // Check if we have the required tokens from the URL
     const accessToken = searchParams.get('access_token');
     const refreshToken = searchParams.get('refresh_token');
+    const type = searchParams.get('type');
     
-    if (!accessToken || !refreshToken) {
+    // Validate URL parameters for security
+    const tokenValidation = InputSanitizer.validateUrlParam(accessToken || '', 'access_token');
+    const refreshValidation = InputSanitizer.validateUrlParam(refreshToken || '', 'refresh_token');
+    
+    if (!tokenValidation.isValid || !refreshValidation.isValid || type !== 'recovery') {
+      auditService.log('anonymous', 'PASSWORD_RESET_TOKEN_INVALID', 'password_reset', {
+        newValues: { 
+          reason: 'Invalid or missing tokens in URL',
+          type,
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken
+        }
+      });
       toast.error('Invalid or expired reset link');
       navigate('/forgot-password');
+      return;
     }
+
+    // Set the session but don't consider user as fully authenticated until password is updated
+    const setSessionWithTokens = async () => {
+      try {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+        
+        if (error) {
+          console.error('Failed to set session:', error);
+          await auditService.log('anonymous', 'PASSWORD_RESET_TOKEN_INVALID', 'password_reset', {
+            newValues: { 
+              reason: 'Session setup failed',
+              error: error.message 
+            }
+          });
+          toast.error('Invalid or expired reset link');
+          navigate('/forgot-password');
+        }
+      } catch (error) {
+        console.error('Session setup error:', error);
+        await auditService.log('anonymous', 'SYSTEM_ERROR', 'password_reset', {
+          newValues: { 
+            error: error instanceof Error ? error.message : 'Unknown session error'
+          }
+        });
+        toast.error('An error occurred. Please try again.');
+        navigate('/forgot-password');
+      }
+    };
+
+    setSessionWithTokens();
   }, [searchParams, navigate]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const validatePassword = (password: string) => {
-    if (password.length < 8) {
-      return 'Password must be at least 8 characters long';
+  const validatePasswords = (password: string, confirmPassword: string) => {
+    // Use comprehensive input sanitization
+    const passwordValidation = InputSanitizer.validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return passwordValidation.error || 'Invalid password';
     }
-    if (!/(?=.*[a-z])/.test(password)) {
-      return 'Password must contain at least one lowercase letter';
+
+    if (password !== confirmPassword) {
+      return 'Passwords do not match';
     }
-    if (!/(?=.*[A-Z])/.test(password)) {
-      return 'Password must contain at least one uppercase letter';
-    }
-    if (!/(?=.*\d)/.test(password)) {
-      return 'Password must contain at least one number';
-    }
+
     return null;
   };
 
@@ -56,31 +105,76 @@ export const ResetPasswordForm = () => {
     
     const { password, confirmPassword } = formData;
     
+    // Input validation
     if (!password || !confirmPassword) {
       toast.error('Please fill in all fields');
       return;
     }
 
-    if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-
-    const passwordError = validatePassword(password);
+    // Comprehensive password validation
+    const passwordError = validatePasswords(password, confirmPassword);
     if (passwordError) {
       toast.error(passwordError);
+      await auditService.log('anonymous', 'VALIDATION_ERROR', 'password_reset', {
+        newValues: { error: passwordError }
+      });
       return;
     }
 
     setLoading(true);
     
-    const { error } = await resetPassword(password);
-    
-    if (error) {
-      toast.error(error.message || 'Failed to reset password');
-    } else {
-      toast.success('Password reset successfully! You can now sign in with your new password.');
-      navigate('/auth');
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || 'anonymous';
+      
+      // Rate limiting check
+      const rateCheck = await rateLimitService.checkRateLimit(userId, 'password_update');
+      if (!rateCheck.allowed) {
+        toast.error(`Too many password update attempts. Try again in ${Math.ceil((rateCheck.resetTime - Date.now()) / (60 * 1000))} minutes.`);
+        await auditService.log(userId, 'RATE_LIMIT_EXCEEDED', 'password_reset', {
+          newValues: { 
+            action: 'password_update',
+            remaining: rateCheck.remaining,
+            resetTime: rateCheck.resetTime
+          }
+        });
+        setLoading(false);
+        return;
+      }
+      
+      const { error } = await resetPassword(password);
+      
+      if (error) {
+        await auditService.log(userId, 'PASSWORD_RESET_FAILED', 'password_reset', {
+          newValues: { 
+            error: error.message,
+            timestamp: new Date().toISOString()
+          }
+        });
+        toast.error(error.message || 'Failed to reset password');
+      } else {
+        await auditService.log(userId, 'PASSWORD_RESET_SUCCESS', 'password_reset', {
+          newValues: { 
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent
+          }
+        });
+        toast.success('Password updated successfully! Signing you in...');
+        
+        // Small delay to show success message, then redirect to dashboard
+        setTimeout(() => {
+          navigate('/dashboard', { replace: true });
+        }, 1500);
+      }
+    } catch (error) {
+      const { data: { user } } = await supabase.auth.getUser();
+      await auditService.log(user?.id || 'anonymous', 'SYSTEM_ERROR', 'password_reset', {
+        newValues: { 
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date().toISOString()
+        }
+      });
+      toast.error('An unexpected error occurred. Please try again.');
     }
     
     setLoading(false);

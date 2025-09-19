@@ -8,11 +8,8 @@ const ResetPassword = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user && !loading) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [user, loading, navigate]);
+  // Don't auto-redirect logged in users during password reset flow
+  // They need to complete the password reset first
 
   if (loading) {
     return (

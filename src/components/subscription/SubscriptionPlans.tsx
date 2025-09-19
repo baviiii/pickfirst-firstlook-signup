@@ -7,6 +7,7 @@ import { Check, Star, Home } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,6 +18,7 @@ export const SubscriptionPlans = () => {
   const [loading, setLoading] = useState(true);
   const [isYearly, setIsYearly] = useState(false);
   const { user, profile } = useAuth();
+  const { openCustomerPortal } = useSubscription();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,12 +53,41 @@ export const SubscriptionPlans = () => {
     }
   };
 
-  const handleSubscribe = (planName: string) => {
+  const handleSubscribe = async (plan: SubscriptionPlan) => {
     if (!user) {
       toast.error('Please sign in to subscribe');
       return;
     }
-    toast.info(`Subscription to ${planName} plan coming soon!`);
+
+    if (plan.name === 'Free') {
+      toast.info('You are already on the free plan');
+      return;
+    }
+
+    if (!plan.stripe_price_id) {
+      toast.error('Subscription not available for this plan');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { priceId: plan.stripe_price_id },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+        toast.success('Redirecting to checkout...');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast.error('Failed to start checkout process');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isCurrentPlan = (planName: string) => {
@@ -144,12 +175,24 @@ export const SubscriptionPlans = () => {
                     ? 'bg-white/10 text-gray-400 border border-white/20' 
                     : 'pickfirst-gradient-yellow-amber text-black hover:shadow-pickfirst-yellow/25'
                 }`}
-                onClick={() => handleSubscribe(plan.name)}
+                onClick={() => handleSubscribe(plan)}
                 disabled={isCurrentPlan(plan.name)}
               >
                 {isCurrentPlan(plan.name) ? 'Current Plan' : 
                  plan.name === 'Free' ? 'Get Started' : 'Subscribe'}
               </Button>
+              
+              {/* Manage Subscription Button for Premium Users */}
+              {isCurrentPlan(plan.name) && plan.name !== 'Free' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 w-full border-pickfirst-yellow/30 text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
+                  onClick={openCustomerPortal}
+                >
+                  Manage Subscription
+                </Button>
+              )}
             </CardContent>
           </Card>
         ))}

@@ -31,7 +31,12 @@ export type AuditAction =
   | 'IMAGE_UPLOAD_SUCCESS'
   | 'IMAGE_UPLOAD_FAILED'
   | 'CREATE_FAILED'
-  | 'SYSTEM_ERROR';
+  | 'SYSTEM_ERROR'
+  | 'PASSWORD_RESET_REQUEST'
+  | 'PASSWORD_RESET_SUCCESS' 
+  | 'PASSWORD_RESET_FAILED'
+  | 'PASSWORD_RESET_TOKEN_INVALID'
+  | 'SUSPICIOUS_ACTIVITY';
 
 class AuditService {
   private queue: AuditLog[] = [];
