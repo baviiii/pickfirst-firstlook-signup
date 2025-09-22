@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Star, Archive, Plus, Send, Paperclip, Filter, MoreVertical, Phone, Video, MessageSquare, ArrowLeft, Menu, X } from 'lucide-react';
+import { Search, Star, Archive, Plus, Send, Paperclip, Filter, MoreVertical, Phone, Video, MessageSquare, ArrowLeft, Menu, X, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,14 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { BuyerProfileView } from '@/components/buyer/BuyerProfileView';
+import { enhancedConversationService } from '@/services/enhancedConversationService';
+import type { EnhancedConversation } from '@/services/enhancedConversationService';
 
 export const AgentMessages = () => {
   const { user, profile } = useAuth();
-  const [conversations, setConversations] = useState([]);
-  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [conversations, setConversations] = useState<EnhancedConversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<EnhancedConversation | null>(null);
   const [messages, setMessages] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessage, setNewMessage] = useState('');
@@ -31,6 +34,7 @@ export const AgentMessages = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [showConversations, setShowConversations] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [showBuyerProfile, setShowBuyerProfile] = useState(false);
   const messagesEndRef = useRef(null);
   const unsubscribeRef = useRef(null);
 
@@ -67,58 +71,6 @@ export const AgentMessages = () => {
       }
     }
   }, [selectedConversation, user]);
-
-  // Subscribe to real-time updates
-  useEffect(() => {
-    if (!user) return;
-
-    // Temporarily disable real-time subscriptions until Edge Function is fixed
-    console.log('Real-time subscriptions temporarily disabled - fixing Edge Function first');
-    
-    // TODO: Re-enable after Edge Function is deployed
-    /*
-    // Subscribe to conversation updates
-    const conversationSub = messageService.subscribeToConversations(
-      (updatedConversation) => {
-        setConversations(prev => 
-          prev.map(conv => 
-            conv.id === updatedConversation.id ? updatedConversation : conv
-          )
-        );
-      },
-      (error) => {
-        console.error('Conversation subscription error:', error);
-        toast.error('Connection error. Please refresh the page.');
-      }
-    );
-
-    // Subscribe to message updates for selected conversation
-    if (selectedConversation) {
-      const messageSub = messageService.subscribeToMessages(
-        selectedConversation.id,
-        (newMessage) => {
-          setMessages(prev => [...prev, newMessage]);
-          // Mark as read if it's from the client
-          if (newMessage.sender_id !== user.id) {
-            messageService.markMessagesAsRead(selectedConversation.id).catch(console.error);
-          }
-        },
-        (error) => {
-          console.error('Message subscription error:', error);
-        }
-      );
-
-      unsubscribeRef.current = messageSub;
-    }
-
-    return () => {
-      conversationSub.unsubscribe();
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current.unsubscribe();
-      }
-    };
-    */
-  }, [user, selectedConversation]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -162,8 +114,10 @@ export const AgentMessages = () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase.functions.invoke('messaging', {
-        body: { action: 'getConversations' }
+      const { data, error } = await enhancedConversationService.getConversations({
+        search: searchTerm || undefined,
+        status: filterStatus === 'all' ? undefined : filterStatus as 'active' | 'archived',
+        unread_only: filterStatus === 'unread'
       });
       
       if (error) {
@@ -264,8 +218,12 @@ export const AgentMessages = () => {
   };
 
   const filteredConversations = conversations.filter(conv => {
-    const matchesSearch = 
-      conv.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const conversationTitle = enhancedConversationService.getConversationTitle(conv, user?.id || '');
+    const conversationSubtitle = enhancedConversationService.getConversationSubtitle(conv);
+    
+    const matchesSearch = !searchTerm || 
+      conversationTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      conversationSubtitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
       conv.client_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       conv.client_profile?.email?.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -572,24 +530,35 @@ export const AgentMessages = () => {
               <div className="border-b border-gray-700 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
+                    <Avatar className="h-10 w-10 lg:h-12 lg:w-12">
                       <AvatarImage src={selectedConversation.client_profile?.avatar_url} />
                       <AvatarFallback className="bg-pickfirst-yellow text-black">
                         {selectedConversation.client_profile?.full_name?.split(' ').map(n => n[0]).join('') || 'C'}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="min-w-0">
-                      <div className="font-semibold text-white">
-                        {selectedConversation.client_profile?.full_name}
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-white truncate">
+                        {selectedConversation.client_profile?.full_name || 'Client'}
                       </div>
                       <div className="text-sm text-gray-400 truncate">
-                        {selectedConversation.subject}
+                        {selectedConversation.client_profile?.email}
                       </div>
+                      {selectedConversation.property && (
+                        <div className="text-xs text-pickfirst-yellow mt-1 bg-pickfirst-yellow/10 px-2 py-1 rounded">
+                          🏠 {selectedConversation.property.title} - ${selectedConversation.property.price?.toLocaleString()}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow">
-                      <Phone className="h-4 w-4" />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-gray-400 hover:text-pickfirst-yellow"
+                      onClick={() => setShowBuyerProfile(true)}
+                      title="View Buyer Profile"
+                    >
+                      <User className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow">
                       <Video className="h-4 w-4" />
@@ -678,15 +647,30 @@ export const AgentMessages = () => {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="text-center text-gray-400">
+          <div className="flex-1 flex items-center justify-center text-center">
+            <div className="text-gray-400">
               <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-50" />
-              <div className="text-lg font-medium mb-2">Select a conversation</div>
-              <div className="text-sm">Choose a conversation to view messages</div>
+              <h3 className="text-xl font-medium mb-2">Select a conversation</h3>
+              <p className="text-sm">Choose a conversation from the list to start messaging</p>
             </div>
           </div>
         )}
       </div>
+
+      {/* Buyer Profile Modal */}
+      {selectedConversation && (
+        <BuyerProfileView
+          buyerId={selectedConversation.client_id}
+          isOpen={showBuyerProfile}
+          onClose={() => setShowBuyerProfile(false)}
+          onStartConversation={() => {
+            setShowBuyerProfile(false);
+            // Focus on the message input
+            const messageInput = document.querySelector('textarea[placeholder*="Type"]') as HTMLTextAreaElement;
+            messageInput?.focus();
+          }}
+        />
+      )}
     </div>
   );
 };

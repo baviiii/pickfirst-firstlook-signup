@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Phone, Mail, MapPin, Building, Star, MessageSquare } from 'lucide-react';
+import { Phone, Mail, MapPin, Building, Star, MessageSquare, Calendar, Award, TrendingUp, Home } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface AgentProfile {
   id: string;
@@ -14,38 +16,117 @@ interface AgentProfile {
   company?: string;
   avatar_url?: string;
   bio?: string;
+  location?: string;
+  website?: string;
+  created_at: string;
+  // Agent-specific calculated fields
   specialties?: string[];
   rating?: number;
-  total_sales?: number;
-  years_experience?: number;
+  total_listings?: number;
+  active_listings?: number;
+  total_inquiries?: number;
+  response_time?: string;
+  joined_date?: string;
 }
 
 interface AgentProfileViewProps {
-  agent: AgentProfile | null;
+  agentId: string | null;
   isOpen: boolean;
   onClose: () => void;
   onStartConversation?: () => void;
 }
 
-export const AgentProfileView = ({ agent, isOpen, onClose, onStartConversation }: AgentProfileViewProps) => {
-  console.log('AgentProfileView rendered with:', { agent, isOpen });
-  
-  if (!isOpen) {
-    console.log('Modal is not open, returning null');
-    return null;
+export const AgentProfileView = ({ agentId, isOpen, onClose, onStartConversation }: AgentProfileViewProps) => {
+  const [agent, setAgent] = useState<AgentProfile | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && agentId) {
+      loadAgentProfile();
+    }
+  }, [isOpen, agentId]);
+
+  const loadAgentProfile = async () => {
+    if (!agentId) return;
+    
+    setLoading(true);
+    try {
+      // Get basic profile information
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', agentId)
+        .eq('role', 'agent')
+        .single();
+
+      if (profileError || !profile) {
+        toast.error('Failed to load agent profile');
+        return;
+      }
+
+      // Get agent statistics
+      const { count: totalListings } = await supabase
+        .from('property_listings')
+        .select('*', { count: 'exact', head: true })
+        .eq('agent_id', agentId);
+
+      const { count: activeListings } = await supabase
+        .from('property_listings')
+        .select('*', { count: 'exact', head: true })
+        .eq('agent_id', agentId)
+        .eq('status', 'approved');
+
+      const { count: totalInquiries } = await supabase
+        .from('property_inquiries')
+        .select('property_listings!inner(*)', { count: 'exact', head: true })
+        .eq('property_listings.agent_id', agentId);
+
+      // Create enhanced agent profile
+      const agentProfile: AgentProfile = {
+        ...profile,
+        total_listings: totalListings || 0,
+        active_listings: activeListings || 0,
+        total_inquiries: totalInquiries || 0,
+        rating: 4.8, // This would come from a reviews system
+        response_time: '< 2 hours', // This would be calculated from message response times
+        specialties: ['Residential', 'First-time Buyers', 'Investment Properties'], // This would come from agent settings
+        joined_date: profile.created_at,
+      };
+
+      setAgent(agentProfile);
+    } catch (error) {
+      console.error('Error loading agent profile:', error);
+      toast.error('Failed to load agent profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  if (loading) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="bg-gray-900 border border-pickfirst-yellow/20 max-w-2xl">
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pickfirst-yellow"></div>
+            <span className="ml-3 text-white">Loading agent profile...</span>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
   }
-  
+
   if (!agent) {
-    console.log('No agent data, showing fallback');
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="bg-gray-900 border border-pickfirst-yellow/20 max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-white text-xl">Agent Profile</DialogTitle>
           </DialogHeader>
-          <div className="p-4 text-white">
-            <p>No agent data available</p>
-            <Button onClick={onClose} className="mt-4">Close</Button>
+          <div className="p-4 text-white text-center">
+            <p className="mb-4">Unable to load agent profile</p>
+            <Button onClick={onClose}>Close</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -76,12 +157,8 @@ export const AgentProfileView = ({ agent, isOpen, onClose, onStartConversation }
                 <span className="text-gray-300">
                   {agent.rating ? `${agent.rating.toFixed(1)}/5` : 'No rating yet'}
                 </span>
-                {agent.total_sales && (
-                  <span className="text-gray-400">• {agent.total_sales} sales</span>
-                )}
-                {agent.years_experience && (
-                  <span className="text-gray-400">• {agent.years_experience} years experience</span>
-                )}
+                <span className="text-gray-400">• {agent.total_listings} listings</span>
+                <span className="text-gray-400">• Member since {new Date(agent.joined_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
               </div>
               
               {agent.company && (
@@ -90,13 +167,53 @@ export const AgentProfileView = ({ agent, isOpen, onClose, onStartConversation }
                   <span className="text-gray-300">{agent.company}</span>
                 </div>
               )}
+
+              {agent.location && (
+                <div className="flex items-center gap-1 mt-1">
+                  <MapPin className="h-4 w-4 text-gray-400" />
+                  <span className="text-gray-300">{agent.location}</span>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Agent Performance Stats */}
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white text-lg flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-pickfirst-yellow" />
+                Performance & Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-3 bg-gray-700/50 rounded-lg">
+                  <div className="text-xl font-bold text-pickfirst-yellow">{agent.active_listings}</div>
+                  <div className="text-sm text-gray-400">Active Listings</div>
+                </div>
+                <div className="text-center p-3 bg-gray-700/50 rounded-lg">
+                  <div className="text-xl font-bold text-pickfirst-yellow">{agent.total_listings}</div>
+                  <div className="text-sm text-gray-400">Total Listings</div>
+                </div>
+                <div className="text-center p-3 bg-gray-700/50 rounded-lg">
+                  <div className="text-xl font-bold text-pickfirst-yellow">{agent.total_inquiries}</div>
+                  <div className="text-sm text-gray-400">Inquiries Received</div>
+                </div>
+                <div className="text-center p-3 bg-gray-700/50 rounded-lg">
+                  <div className="text-xl font-bold text-pickfirst-yellow">{agent.response_time}</div>
+                  <div className="text-sm text-gray-400">Avg Response</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Contact Information */}
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
-              <CardTitle className="text-white text-lg">Contact Information</CardTitle>
+              <CardTitle className="text-white text-lg flex items-center gap-2">
+                <Mail className="h-5 w-5 text-pickfirst-yellow" />
+                Contact Information
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center gap-3">
@@ -107,6 +224,14 @@ export const AgentProfileView = ({ agent, isOpen, onClose, onStartConversation }
                 <div className="flex items-center gap-3">
                   <Phone className="h-4 w-4 text-pickfirst-yellow" />
                   <span className="text-gray-300">{agent.phone}</span>
+                </div>
+              )}
+              {agent.website && (
+                <div className="flex items-center gap-3">
+                  <Building className="h-4 w-4 text-pickfirst-yellow" />
+                  <a href={agent.website} target="_blank" rel="noopener noreferrer" className="text-pickfirst-yellow hover:underline">
+                    {agent.website}
+                  </a>
                 </div>
               )}
             </CardContent>

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 interface SubscriptionContextType {
@@ -30,7 +29,8 @@ interface SubscriptionProviderProps {
 }
 
 export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) => {
-  const { user, session } = useAuth();
+  const [user, setUser] = useState<any>(null);
+  const [session, setSession] = useState<any>(null);
   const [subscribed, setSubscribed] = useState(false);
   const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'premium'>('free');
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
@@ -38,7 +38,10 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
   const [loading, setLoading] = useState(true);
 
   const checkSubscription = useCallback(async () => {
-    if (!user || !session) {
+    // Get current session directly from supabase
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    
+    if (!currentSession || !currentSession.user) {
       setSubscribed(false);
       setSubscriptionTier('free');
       setSubscriptionEnd(null);
@@ -52,7 +55,7 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
       
       const { data, error } = await supabase.functions.invoke('check-subscription', {
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${currentSession.access_token}`,
         },
       });
 
@@ -73,10 +76,12 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     } finally {
       setLoading(false);
     }
-  }, [user, session]);
+  }, []);
 
   const createCheckout = async (priceId: string) => {
-    if (!user || !session) {
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    
+    if (!currentSession || !currentSession.user) {
       toast.error('Please sign in to subscribe');
       return;
     }
@@ -85,7 +90,7 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { priceId },
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${currentSession.access_token}`,
         },
       });
 
@@ -101,7 +106,9 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
   };
 
   const openCustomerPortal = async () => {
-    if (!user || !session) {
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    
+    if (!currentSession || !currentSession.user) {
       toast.error('Please sign in to manage subscription');
       return;
     }
@@ -109,7 +116,7 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal', {
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${currentSession.access_token}`,
         },
       });
 
@@ -124,49 +131,102 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     }
   };
 
-  // Feature gating logic
+  // Dynamic feature gating logic
+  const [featureConfigs, setFeatureConfigs] = useState<{[key: string]: {free: boolean, premium: boolean}}>({});
+  
+  // Fetch feature configurations
+  useEffect(() => {
+    const fetchFeatureConfigs = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('feature_configurations')
+          .select('feature_key, free_tier_enabled, premium_tier_enabled');
+        
+        if (error) throw error;
+        
+        const configs: {[key: string]: {free: boolean, premium: boolean}} = {};
+        data?.forEach(config => {
+          configs[config.feature_key] = {
+            free: config.free_tier_enabled,
+            premium: config.premium_tier_enabled
+          };
+        });
+        setFeatureConfigs(configs);
+      } catch (error) {
+        console.error('Error fetching feature configurations:', error);
+        // Fallback to default configs if fetch fails
+        setFeatureConfigs({
+          'basic_search': { free: true, premium: true },
+          'limited_favorites': { free: true, premium: true },
+          'standard_agent_contact': { free: true, premium: true },
+          'unlimited_favorites': { free: false, premium: true },
+          'advanced_search_filters': { free: false, premium: true },
+          'priority_agent_connections': { free: false, premium: true },
+          'email_property_alerts': { free: false, premium: true },
+          'market_insights': { free: false, premium: true },
+          'direct_messaging': { free: false, premium: true }
+        });
+      }
+    };
+    
+    fetchFeatureConfigs();
+  }, []);
+
   const isFeatureEnabled = (feature: string): boolean => {
-    const freeFeatures = [
-      'basic_search',
-      'limited_favorites', // up to 10
-      'standard_agent_contact'
-    ];
-
-    const premiumFeatures = [
-      'unlimited_favorites',
-      'advanced_search_filters', 
-      'priority_agent_connections',
-      'email_property_alerts',
-      'market_insights',
-      'direct_messaging'
-    ];
-
-    if (freeFeatures.includes(feature)) {
-      return true; // Available to all users
+    const config = featureConfigs[feature];
+    if (!config) return false; // Unknown feature, default to disabled
+    
+    if (subscriptionTier === 'premium' && subscribed) {
+      return config.premium;
+    } else {
+      return config.free;
     }
-
-    if (premiumFeatures.includes(feature)) {
-      return subscribed && subscriptionTier === 'premium';
-    }
-
-    return false; // Unknown feature, default to disabled
   };
 
-  // Check subscription when user changes or component mounts
+  // Set up auth state listener
   useEffect(() => {
-    checkSubscription();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Delay subscription check slightly to ensure auth is fully set up
+          setTimeout(() => {
+            checkSubscription();
+          }, 500);
+        } else {
+          setSubscribed(false);
+          setSubscriptionTier('free');
+          setSubscriptionEnd(null);
+          setProductId(null);
+          setLoading(false);
+        }
+      }
+    );
+
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        checkSubscription();
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [checkSubscription]);
 
   // Auto-refresh subscription status every 5 minutes
   useEffect(() => {
-    if (!user) return;
-
     const interval = setInterval(() => {
       checkSubscription();
     }, 5 * 60 * 1000); // 5 minutes
 
     return () => clearInterval(interval);
-  }, [user, checkSubscription]);
+  }, [checkSubscription]);
 
   return (
     <SubscriptionContext.Provider

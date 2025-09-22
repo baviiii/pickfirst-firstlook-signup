@@ -3,7 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PersonalizedPropertyRecommendations } from '@/components/buyer/PersonalizedPropertyRecommendations';
+import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { 
   Search, 
   Heart, 
@@ -17,7 +19,8 @@ import {
   X,
   TrendingUp,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Crown
 } from 'lucide-react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { useNavigate } from 'react-router-dom';
@@ -54,6 +57,7 @@ interface Appointment {
 
 const BuyerDashboardComponent = () => {
   const { profile } = useAuth();
+  const { subscribed, subscriptionTier, openCustomerPortal, isFeatureEnabled } = useSubscription();
   const navigate = useNavigate();
   
   // State management
@@ -101,18 +105,20 @@ const BuyerDashboardComponent = () => {
 
   // Get subscription badge with proper typing
   const getSubscriptionBadge = () => {
-    const tier = profile?.subscription_tier || 'free';
+    const tier = profile?.subscription_tier || subscriptionTier || 'free';
     const badgeConfig = {
-      free: { color: 'bg-gray-500', label: 'Free' },
-      basic: { color: 'bg-pickfirst-yellow', label: 'Basic' },
-      premium: { color: 'bg-pickfirst-amber', label: 'Premium' },
-      pro: { color: 'bg-pickfirst-yellow', label: 'Pro' }
+      free: { color: 'bg-gray-500', label: 'Free', icon: null },
+      basic: { color: 'bg-pickfirst-yellow', label: 'Basic', icon: Crown },
+      premium: { color: 'bg-pickfirst-amber', label: 'Premium', icon: Crown },
+      pro: { color: 'bg-pickfirst-yellow', label: 'Pro', icon: Crown }
     };
     
     const config = badgeConfig[tier as keyof typeof badgeConfig] || badgeConfig.free;
+    const IconComponent = config.icon;
     
     return (
-      <Badge className={`${config.color} text-black`}>
+      <Badge className={`${config.color} text-black flex items-center gap-1`}>
+        {IconComponent && <IconComponent className="w-3 h-3" />}
         {config.label}
       </Badge>
     );
@@ -292,15 +298,27 @@ const BuyerDashboardComponent = () => {
           </div>
           <div className="flex items-center gap-2">
             {getSubscriptionBadge()}
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-all duration-300 border border-white/20 hover:border-pickfirst-yellow/30"
-              onClick={() => navigate('/upgrade')}
-            >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Upgrade Plan
-            </Button>
+            {subscriptionTier === 'free' ? (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-all duration-300 border border-white/20 hover:border-pickfirst-yellow/30"
+                onClick={() => navigate('/pricing')}
+              >
+                <Crown className="h-4 w-4 mr-2" />
+                Upgrade Plan
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-all duration-300 border border-white/20 hover:border-pickfirst-yellow/30"
+                onClick={openCustomerPortal}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Manage Subscription
+              </Button>
+            )}
           </div>
         </div>
 
@@ -308,18 +326,32 @@ const BuyerDashboardComponent = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {buyerActions.map((action, index) => {
             const Icon = action.icon;
+            
+            // Show premium badge for premium actions if user is on free tier  
+            const showPremiumBadge = (action as any).premium && subscriptionTier === 'free';
+            
             return (
               <Card 
                 key={index} 
-                className="hover:shadow-md transition-all cursor-pointer bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105" 
+                className={`hover:shadow-md transition-all cursor-pointer bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105 ${
+                  showPremiumBadge ? 'opacity-75' : ''
+                }`}
                 onClick={action.onClick}
               >
                 <CardHeader className="pb-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${action.color}`}>
-                      <Icon className="h-5 w-5" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${action.color}`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <CardTitle className="text-base text-white">{action.label}</CardTitle>
                     </div>
-                    <CardTitle className="text-base text-white">{action.label}</CardTitle>
+                    {showPremiumBadge && (
+                      <Badge className="bg-pickfirst-yellow/20 text-pickfirst-yellow border-pickfirst-yellow/30 text-xs">
+                        <Crown className="w-3 h-3 mr-1" />
+                        Premium
+                      </Badge>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -334,6 +366,24 @@ const BuyerDashboardComponent = () => {
 
         {/* Personalized Property Recommendations */}
         <PersonalizedPropertyRecommendations />
+
+        {/* Subscription Plans Section - Show only for free users */}
+        {subscriptionTier === 'free' && (
+          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Crown className="h-5 w-5 text-pickfirst-yellow" />
+                Upgrade Your Experience
+              </CardTitle>
+              <CardDescription className="text-gray-300">
+                Unlock premium features and get the most out of your property search
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SubscriptionPlans />
+            </CardContent>
+          </Card>
+        )}
 
         {/* All Available Properties */}
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">

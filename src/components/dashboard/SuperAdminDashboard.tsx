@@ -68,6 +68,7 @@ export const SuperAdminDashboard = () => {
     { icon: AlertTriangle, label: 'System Alerts', description: 'Monitor critical issues', color: 'bg-orange-500/10 text-orange-500', onClick: () => navigate('/system-alerts'), adminOnly: true },
     { icon: Activity, label: 'System Logs', description: 'View platform activity', color: 'bg-cyan-500/10 text-cyan-500', onClick: () => navigate('/system-logs') },
     { icon: TestTube, label: 'System Testing', description: 'Test property alerts, emails, and system components', color: 'bg-yellow-500/10 text-yellow-500', onClick: () => navigate('/system-testing'), adminOnly: true },
+    { icon: Users, label: 'Subscription Management', description: 'Manage user subscriptions', color: 'bg-emerald-500/10 text-emerald-500', onClick: () => navigate('/subscription-management'), adminOnly: true },
     { icon: Settings, label: 'Platform Settings', description: 'Configure system settings', color: 'bg-gray-500/10 text-gray-500', onClick: () => navigate('/platform-settings') }
   ];
 
@@ -84,19 +85,21 @@ export const SuperAdminDashboard = () => {
           </h1>
           <p className="text-gray-300">Welcome to the system administration panel, {profile?.full_name}!</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge className="bg-red-500 text-white">
-            <Shield className="w-3 h-3 mr-1" />
-            Super Admin
-          </Badge>
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-all duration-300 border border-white/20 hover:border-pickfirst-yellow/30"
-          >
-            System Status
-          </Button>
-        </div>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-red-500 text-white">
+              <Shield className="w-3 h-3 mr-1" />
+              Super Admin
+            </Badge>
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-all duration-300 border border-white/20 hover:border-pickfirst-yellow/30"
+              onClick={() => navigate('/subscription-management')}
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Manage Subscriptions
+            </Button>
+          </div>
       </div>
 
       {/* System Overview Cards */}

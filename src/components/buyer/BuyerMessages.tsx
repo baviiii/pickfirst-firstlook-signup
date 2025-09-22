@@ -9,12 +9,14 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { AgentProfileView } from '@/components/agent/AgentProfileView';
+import { enhancedConversationService } from '@/services/enhancedConversationService';
+import type { EnhancedConversation } from '@/services/enhancedConversationService';
 import { toast } from 'sonner';
 
 export const BuyerMessages = () => {
   const { user, profile } = useAuth();
-  const [conversations, setConversations] = useState([]);
-  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [conversations, setConversations] = useState<EnhancedConversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<EnhancedConversation | null>(null);
   const [messages, setMessages] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessage, setNewMessage] = useState('');
@@ -84,8 +86,8 @@ export const BuyerMessages = () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase.functions.invoke('messaging', {
-        body: { action: 'getConversations' }
+      const { data, error } = await enhancedConversationService.getConversations({
+        search: searchTerm || undefined
       });
       
       if (error) {
@@ -287,6 +289,9 @@ export const BuyerMessages = () => {
             ) : (
               filteredConversations.map((conv) => {
                 const agent = conv.agent_profile;
+                const conversationTitle = enhancedConversationService.getConversationTitle(conv, user?.id || '');
+                const conversationSubtitle = enhancedConversationService.getConversationSubtitle(conv);
+                
                 return (
                   <div
                     key={conv.id}
@@ -324,7 +329,11 @@ export const BuyerMessages = () => {
                         )}
                         
                         <div className="text-sm font-medium mb-1 text-gray-300 truncate">
-                          {conv.property ? `About ${conv.property.title}` : conv.subject}
+                          {conversationTitle}
+                        </div>
+                        
+                        <div className="text-xs text-gray-500 truncate mb-1">
+                          {conversationSubtitle}
                         </div>
                         
                         {conv.last_message_at && (
@@ -495,20 +504,17 @@ export const BuyerMessages = () => {
       {/* Agent Profile Modal */}
       {selectedConversation && (
         <AgentProfileView
-          agent={selectedConversation.agent_profile ? {
-            id: selectedConversation.agent_profile.id,
-            full_name: selectedConversation.agent_profile.full_name,
-            email: selectedConversation.agent_profile.email,
-            phone: selectedConversation.agent_profile.phone,
-            company: selectedConversation.agent_profile.company,
-            avatar_url: selectedConversation.agent_profile.avatar_url,
-          } : null}
+          agentId={selectedConversation.agent_id}
           isOpen={showAgentProfile}
           onClose={() => setShowAgentProfile(false)}
           onStartConversation={() => {
             setShowAgentProfile(false);
             // Conversation is already started, just focus on message input
-            const messageInput = document.querySelector(
+            const messageInput = document.querySelector('textarea[placeholder*="Type"]') as HTMLTextAreaElement;
+            messageInput?.focus();
+          }}
+        />
+      )}
               'textarea[placeholder="Type your reply..."]'
             ) as HTMLTextAreaElement | null;
             messageInput?.focus();

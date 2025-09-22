@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Users, DollarSign, Calendar, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { FeatureManagement } from './FeatureManagement';
 
 interface UserSubscription {
   id: string;
@@ -140,9 +142,17 @@ export const SubscriptionManagement = () => {
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Subscription Management</h2>
         <p className="text-muted-foreground">
-          Monitor and manage user subscriptions across your platform
+          Monitor and manage user subscriptions and feature access across your platform
         </p>
       </div>
+
+      <Tabs defaultValue="subscriptions" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="subscriptions">User Subscriptions</TabsTrigger>
+          <TabsTrigger value="features">Feature Gates</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="subscriptions" className="space-y-6">
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -292,6 +302,12 @@ export const SubscriptionManagement = () => {
           </Table>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="features">
+          <FeatureManagement />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

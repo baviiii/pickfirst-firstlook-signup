@@ -429,6 +429,39 @@ export type Database = {
           },
         ]
       }
+      feature_configurations: {
+        Row: {
+          created_at: string
+          description: string | null
+          feature_key: string
+          feature_name: string
+          free_tier_enabled: boolean
+          id: string
+          premium_tier_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          feature_key: string
+          feature_name: string
+          free_tier_enabled?: boolean
+          id?: string
+          premium_tier_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          feature_key?: string
+          feature_name?: string
+          free_tier_enabled?: boolean
+          id?: string
+          premium_tier_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
