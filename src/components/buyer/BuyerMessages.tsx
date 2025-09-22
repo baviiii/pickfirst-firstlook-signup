@@ -180,62 +180,62 @@ export const BuyerMessages = () => {
       {/* Mobile Header */}
       {isMobile && (
         <div className="bg-gray-900/90 border-b border-pickfirst-yellow/20 p-4 flex items-center justify-between flex-shrink-0">
-          {!showConversations && selectedConversation && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBackToConversations}
-                className="text-gray-400 hover:text-pickfirst-yellow p-0"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div className="flex items-center gap-2 flex-1 ml-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={selectedConversation.agent_profile?.avatar_url} />
-                  <AvatarFallback className="bg-pickfirst-yellow text-black text-xs">
-                    {selectedConversation.agent_profile?.full_name?.split(' ').map(n => n[0]).join('') || 'A'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="text-white font-medium text-sm truncate">
-                    {selectedConversation.agent_profile?.full_name || 'Agent'}
-                  </div>
-                  {selectedConversation.property ? (
-                    <div className="text-xs text-pickfirst-yellow truncate">
-                      🏠 {selectedConversation.property.title}
-                    </div>
-                  ) : (
-                    <div className="text-xs text-gray-400 truncate">
-                      {selectedConversation.subject}
-                    </div>
-                  )}
+        {!showConversations && selectedConversation && (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToConversations}
+              className="text-gray-400 hover:text-pickfirst-yellow p-0"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex items-center gap-2 flex-1 ml-3">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={selectedConversation.agent_profile?.avatar_url} />
+                <AvatarFallback className="bg-pickfirst-yellow text-black text-xs">
+                  {selectedConversation.agent_profile?.full_name?.split(' ').map(n => n[0]).join('') || 'A'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <div className="text-white font-medium text-sm truncate">
+                  {selectedConversation.agent_profile?.full_name || 'Agent'}
                 </div>
+                {selectedConversation.property ? (
+                  <div className="text-xs text-pickfirst-yellow truncate">
+                    🏠 {selectedConversation.property.title}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-400 truncate">
+                    {selectedConversation.subject}
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-gray-400 hover:text-pickfirst-yellow p-2"
-                  onClick={() => setShowAgentProfile(true)}
-                >
-                  <User className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow p-2">
-                  <Phone className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow p-2">
-                  <Video className="h-4 w-4" />
-                </Button>
-              </div>
-            </>
-          )}
-          {showConversations && (
-            <div className="flex items-center justify-between w-full">
-              <h1 className="text-xl font-bold text-white">Messages</h1>
             </div>
-          )}
-        </div>
+            <div className="flex items-center gap-1">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-gray-400 hover:text-pickfirst-yellow p-2"
+                onClick={() => setShowAgentProfile(true)}
+              >
+                <User className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow p-2">
+                <Phone className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow p-2">
+                <Video className="h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        )}
+        {showConversations && (
+          <div className="flex items-center justify-between w-full">
+            <h1 className="text-xl font-bold text-white">Messages</h1>
+          </div>
+        )}
+      </div>
       )}
 
       {/* Conversations List */}
@@ -509,14 +509,7 @@ export const BuyerMessages = () => {
           onClose={() => setShowAgentProfile(false)}
           onStartConversation={() => {
             setShowAgentProfile(false);
-            // Conversation is already started, just focus on message input
-            const messageInput = document.querySelector('textarea[placeholder*="Type"]') as HTMLTextAreaElement;
-            messageInput?.focus();
-          }}
-        />
-      )}
-              'textarea[placeholder="Type your reply..."]'
-            ) as HTMLTextAreaElement | null;
+            const messageInput = document.querySelector('textarea[placeholder="Type your reply..."]') as HTMLTextAreaElement;
             messageInput?.focus();
           }}
         />

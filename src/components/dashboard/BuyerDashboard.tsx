@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PersonalizedPropertyRecommendations } from '@/components/buyer/PersonalizedPropertyRecommendations';
+import { PropertyComparisonTool } from '@/components/property/PropertyComparisonTool';
 import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -769,6 +770,16 @@ const BuyerDashboardComponent = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Property Comparison Tool */}
+        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
+          <CardHeader>
+            <CardTitle className="text-white">Property Comparison Tool</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PropertyComparisonTool />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
+import { FeatureGate } from '@/components/ui/FeatureGate';
 import { 
   Search, 
   MapPin, 
@@ -614,6 +615,45 @@ const EnhancedFilterSystem: React.FC<FilterComponentsProps> = ({
               </div>
             );
           })}
+        </div>
+      </ExpandableSection>
+
+      {/* Advanced Filters */}
+      <ExpandableSection
+        title="Advanced Filters"
+        icon={<DollarSign className="h-5 w-5 text-yellow-400" />}
+        sectionKey="advanced"
+      >
+        <div className="space-y-6">
+          <FeatureGate feature="premium">
+            {/* Premium feature: Square Footage */}
+            <div>
+              <Label className="text-gray-300 mb-4 block">
+                Square Footage Range: {filters.squareFootageRange[0]} - {filters.squareFootageRange[1]}
+              </Label>
+              <Slider
+                value={filters.squareFootageRange}
+                onValueChange={(value) => handleFilterChange('squareFootageRange', value)}
+                max={10000}
+                step={100}
+                className="w-full"
+              />
+            </div>
+
+            {/* Premium feature: Year Built */}
+            <div>
+              <Label className="text-gray-300 mb-4 block">
+                Year Built Range: {filters.yearBuiltRange[0]} - {filters.yearBuiltRange[1]}
+              </Label>
+              <Slider
+                value={filters.yearBuiltRange}
+                onValueChange={(value) => handleFilterChange('yearBuiltRange', value)}
+                max={2022}
+                step={1}
+                className="w-full"
+              />
+            </div>
+          </FeatureGate>
         </div>
       </ExpandableSection>
     </div>

@@ -164,7 +164,9 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
           'priority_agent_connections': { free: false, premium: true },
           'email_property_alerts': { free: false, premium: true },
           'market_insights': { free: false, premium: true },
-          'direct_messaging': { free: false, premium: true }
+          'direct_messaging': { free: false, premium: true },
+          'property_comparison': { free: false, premium: true },
+          'property_alerts': { free: false, premium: true }
         });
       }
     };

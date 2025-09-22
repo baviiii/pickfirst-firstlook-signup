@@ -2,6 +2,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { PropertyListing } from './propertyService';
 import { googleMapsService } from './googleMapsService';
 
+// Extended PropertyListing with fuzzy matching properties
+export interface PropertyListingWithFuzzyMatch extends PropertyListing {
+  similarityScore?: number;
+  matchReason?: string;
+}
+
 export interface AdvancedPropertyFilters {
   // Basic filters
   searchTerm?: string;
@@ -65,7 +71,7 @@ export interface AdvancedPropertyFilters {
 }
 
 export interface FilterResult {
-  properties: PropertyListing[];
+  properties: PropertyListingWithFuzzyMatch[];
   totalCount: number;
   page: number;
   totalPages: number;
@@ -111,11 +117,51 @@ export class FilterService {
 
       // Apply basic filters
       if (filters.searchTerm) {
-        query = query.or(`title.ilike.%${filters.searchTerm}%,description.ilike.%${filters.searchTerm}%,address.ilike.%${filters.searchTerm}%`);
+        query = query.or(`title.ilike."%${filters.searchTerm}%",description.ilike."%${filters.searchTerm}%",address.ilike."%${filters.searchTerm}%"`);
       }
 
+      let hasLocationFilter = false;
       if (filters.location) {
-        query = query.or(`city.ilike.%${filters.location}%,state.ilike.%${filters.location}%,address.ilike.%${filters.location}%`);
+        hasLocationFilter = true;
+        // Extract potential suburb/city names from the location string
+        const locationParts = filters.location.split(',').map(part => part.trim());
+        const searchTerms = [];
+        
+        // Add the full location string
+        searchTerms.push(filters.location);
+        
+        // Add individual parts (suburb, city, state, etc.)
+        locationParts.forEach(part => {
+          if (part && part.length > 2) {
+            searchTerms.push(part);
+          }
+        });
+        
+        // For better matching, also add partial matches
+        const mainSuburb = locationParts.find(part => 
+          part && !part.toLowerCase().includes('australia') && 
+          !part.toLowerCase().includes('sa') && 
+          !part.toLowerCase().includes('nsw') && 
+          !part.toLowerCase().includes('vic') &&
+          part.length > 3
+        );
+        
+        if (mainSuburb) {
+          // Add variations of the main suburb
+          const suburbWords = mainSuburb.split(' ');
+          suburbWords.forEach(word => {
+            if (word.length > 3) {
+              searchTerms.push(word);
+            }
+          });
+        }
+        
+        // Create OR conditions for all search terms against city, state, and address
+        const orConditions = searchTerms.map(term => 
+          `city.ilike."%${term}%",state.ilike."%${term}%",address.ilike."%${term}%"`
+        ).join(',');
+        
+        query = query.or(orConditions);
       }
 
       if (filters.priceMin !== undefined) {
@@ -257,6 +303,64 @@ export class FilterService {
         throw new Error(`Database error: ${error.message}`);
       }
 
+      let enhancedProperties: PropertyListingWithFuzzyMatch[] = properties || [];
+
+      // Apply fuzzy matching if location filter was used and we have limited results
+      if (hasLocationFilter && filters.location && enhancedProperties.length < 10) {
+        // Get additional properties without location filter for fuzzy matching
+        let fuzzyQuery = supabase
+          .from('property_listings')
+          .select('*');
+
+        // Apply all filters except location
+        if (filters.searchTerm) {
+          fuzzyQuery = fuzzyQuery.or(`title.ilike."%${filters.searchTerm}%",description.ilike."%${filters.searchTerm}%",address.ilike."%${filters.searchTerm}%"`);
+        }
+        if (filters.priceMin !== undefined) {
+          fuzzyQuery = fuzzyQuery.gte('price', filters.priceMin);
+        }
+        if (filters.priceMax !== undefined) {
+          fuzzyQuery = fuzzyQuery.lte('price', filters.priceMax);
+        }
+        if (filters.bedrooms !== undefined) {
+          fuzzyQuery = fuzzyQuery.gte('bedrooms', filters.bedrooms);
+        }
+        if (filters.bathrooms !== undefined) {
+          fuzzyQuery = fuzzyQuery.gte('bathrooms', filters.bathrooms);
+        }
+        if (filters.propertyType) {
+          fuzzyQuery = fuzzyQuery.eq('property_type', filters.propertyType);
+        }
+        
+        // Default to approved properties
+        fuzzyQuery = fuzzyQuery.eq('status', 'approved');
+        
+        // Limit to reasonable number for fuzzy matching
+        fuzzyQuery = fuzzyQuery.limit(50);
+
+        const { data: fuzzyProperties } = await fuzzyQuery;
+        
+        if (fuzzyProperties && fuzzyProperties.length > 0) {
+          // Apply fuzzy matching to all properties
+          const fuzzyMatched = this.applyFuzzyMatching(fuzzyProperties, filters.location, 0.3);
+          
+          // Filter out properties that don't meet minimum similarity
+          const similarProperties = fuzzyMatched.filter(p => p.similarityScore !== undefined);
+          
+          // Combine exact matches with fuzzy matches, avoiding duplicates
+          const exactIds = new Set(enhancedProperties.map(p => p.id));
+          const newFuzzyMatches = similarProperties.filter(p => !exactIds.has(p.id));
+          
+          enhancedProperties = [
+            ...enhancedProperties.map(p => ({ ...p })), // Convert exact matches
+            ...newFuzzyMatches
+          ];
+        }
+      } else {
+        // Convert to enhanced properties without fuzzy matching
+        enhancedProperties = enhancedProperties.map(p => ({ ...p }));
+      }
+
       // Get total count for stats
       const { count: totalCount } = await supabase
         .from('property_listings')
@@ -264,14 +368,14 @@ export class FilterService {
         .eq('status', 'approved');
 
       // Calculate filter stats
-      const filterStats = await this.calculateFilterStats(filters, count || 0, totalCount || 0);
+      const filterStats = await this.calculateFilterStats(filters, enhancedProperties.length, totalCount || 0);
 
       const result: FilterResult = {
-        properties: properties || [],
-        totalCount: count || 0,
-        page,
-        totalPages: Math.ceil((count || 0) / limit),
-        hasMore: page < Math.ceil((count || 0) / limit),
+        properties: enhancedProperties,
+        totalCount: enhancedProperties.length,
+        page: filters.page || 1,
+        totalPages: Math.ceil(enhancedProperties.length / (filters.limit || 20)),
+        hasMore: (filters.page || 1) < Math.ceil(enhancedProperties.length / (filters.limit || 20)),
         appliedFilters: filters,
         filterStats
       };
@@ -463,6 +567,107 @@ export class FilterService {
         priceRange: { min: 0, max: 0 }
       };
     }
+  }
+
+  /**
+   * Calculate similarity between two strings using Levenshtein distance and substring matching
+   */
+  private static calculateSimilarity(str1: string, str2: string): number {
+    if (!str1 || !str2) return 0;
+    
+    const s1 = str1.toLowerCase().trim();
+    const s2 = str2.toLowerCase().trim();
+    
+    // Exact match
+    if (s1 === s2) return 1.0;
+    
+    // Substring match
+    if (s1.includes(s2) || s2.includes(s1)) return 0.8;
+    
+    // Levenshtein distance calculation
+    const matrix = Array(s2.length + 1).fill(null).map(() => Array(s1.length + 1).fill(null));
+    
+    for (let i = 0; i <= s1.length; i++) matrix[0][i] = i;
+    for (let j = 0; j <= s2.length; j++) matrix[j][0] = j;
+    
+    for (let j = 1; j <= s2.length; j++) {
+      for (let i = 1; i <= s1.length; i++) {
+        const indicator = s1[i - 1] === s2[j - 1] ? 0 : 1;
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1,     // deletion
+          matrix[j - 1][i] + 1,     // insertion
+          matrix[j - 1][i - 1] + indicator // substitution
+        );
+      }
+    }
+    
+    const maxLength = Math.max(s1.length, s2.length);
+    const distance = matrix[s2.length][s1.length];
+    return Math.max(0, (maxLength - distance) / maxLength);
+  }
+
+  /**
+   * Extract suburb name from full address string
+   */
+  private static extractSuburb(location: string): string {
+    if (!location) return '';
+    
+    const parts = location.split(',').map(part => part.trim());
+    
+    // Find the main suburb (usually the part that's not a state or country)
+    const suburb = parts.find(part => 
+      part && 
+      !part.toLowerCase().includes('australia') && 
+      !part.toLowerCase().match(/\b(sa|nsw|vic|qld|wa|tas|nt|act)\b/) &&
+      part.length > 2
+    );
+    
+    return suburb || parts[0] || location;
+  }
+
+  /**
+   * Apply fuzzy matching to properties when exact matches are limited
+   */
+  private static applyFuzzyMatching(
+    properties: PropertyListing[], 
+    searchLocation: string, 
+    minSimilarity: number = 0.3
+  ): PropertyListingWithFuzzyMatch[] {
+    if (!searchLocation || properties.length === 0) {
+      return properties.map(p => ({ ...p }));
+    }
+
+    const searchSuburb = this.extractSuburb(searchLocation);
+    
+    return properties.map(property => {
+      const propertyLocation = `${property.city}, ${property.state}`;
+      const propertySuburb = this.extractSuburb(propertyLocation);
+      
+      // Calculate similarity scores
+      const cityScore = this.calculateSimilarity(searchSuburb, property.city);
+      const fullLocationScore = this.calculateSimilarity(searchLocation, propertyLocation);
+      const suburbScore = this.calculateSimilarity(searchSuburb, propertySuburb);
+      
+      // Use the highest similarity score
+      const similarityScore = Math.max(cityScore, fullLocationScore, suburbScore);
+      
+      let matchReason = '';
+      if (similarityScore >= 0.8) {
+        matchReason = `Strong match in ${property.city}`;
+      } else if (similarityScore >= 0.5) {
+        matchReason = `Good match near ${property.city}`;
+      } else if (similarityScore >= minSimilarity) {
+        matchReason = `Similar area to your search`;
+      }
+
+      const result: PropertyListingWithFuzzyMatch = {
+        ...property,
+        similarityScore: similarityScore >= minSimilarity ? similarityScore : undefined,
+        matchReason: similarityScore >= minSimilarity ? matchReason : undefined
+      };
+
+      return result;
+    });
   }
 }
 

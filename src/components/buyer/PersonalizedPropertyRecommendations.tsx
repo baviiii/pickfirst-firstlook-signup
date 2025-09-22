@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { FeatureGate } from '@/components/ui/FeatureGate';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { PropertyListing } from '@/services/propertyService';
 import { BuyerProfileService } from '@/services/buyerProfileService';
-import { FilterService, AdvancedPropertyFilters } from '@/services/filterService';
+import { FilterService, AdvancedPropertyFilters, PropertyListingWithFuzzyMatch } from '@/services/filterService';
 import { 
   Home, 
   MapPin, 
@@ -33,7 +33,7 @@ interface MatchCriteria {
   matchedCriteria: string[];
 }
 
-interface RecommendedProperty extends PropertyListing {
+interface RecommendedProperty extends PropertyListingWithFuzzyMatch {
   matchCriteria: MatchCriteria;
   matchPercentage: number;
 }
@@ -85,17 +85,40 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
         if (result.properties) {
           // Calculate match criteria for each property
           const enhancedProperties = result.properties.map(property => {
-            const matchCriteria = calculateMatchCriteria(property, preferences);
+            // Check if this property has fuzzy matching data
+            const hasFuzzyMatch = property.similarityScore !== undefined;
+            
+            let matchCriteria: MatchCriteria;
+            let matchPercentage: number;
+            
+            if (hasFuzzyMatch) {
+              // Use fuzzy matching data
+              matchPercentage = Math.round(property.similarityScore * 100);
+              matchCriteria = {
+                priceMatch: property.price >= (preferences.min_budget || 0) && property.price <= (preferences.max_budget || 10000000),
+                bedroomsMatch: !preferences.preferred_bedrooms || (property.bedrooms && property.bedrooms >= preferences.preferred_bedrooms),
+                bathroomsMatch: !preferences.preferred_bathrooms || (property.bathrooms && property.bathrooms >= preferences.preferred_bathrooms),
+                locationMatch: true, // Fuzzy match already found location similarity
+                propertyTypeMatch: !preferences.property_type_preferences || preferences.property_type_preferences.includes(property.property_type),
+                score: property.similarityScore,
+                matchedCriteria: [property.matchReason || 'Location similarity']
+              };
+            } else {
+              // Use traditional matching
+              matchCriteria = calculateMatchCriteria(property, preferences);
+              matchPercentage = Math.round(matchCriteria.score * 100);
+            }
+            
             return {
               ...property,
               matchCriteria,
-              matchPercentage: Math.round(matchCriteria.score * 100)
+              matchPercentage
             };
           });
 
-          // Sort by match percentage and relevance
+          // Sort by match percentage and relevance - lower threshold for fuzzy matches
           const sortedProperties = enhancedProperties
-            .filter(p => p.matchPercentage >= 60) // Only show good matches
+            .filter(p => p.matchPercentage >= 30) // Show matches with 30%+ similarity
             .sort((a, b) => {
               // First sort by match percentage
               if (b.matchPercentage !== a.matchPercentage) {
@@ -123,7 +146,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
     loadRecommendations();
   }, [user]);
 
-  const calculateMatchCriteria = (property: PropertyListing, preferences: any): MatchCriteria => {
+  const calculateMatchCriteria = (property: PropertyListingWithFuzzyMatch, preferences: any): MatchCriteria => {
     const criteria: MatchCriteria = {
       priceMatch: false,
       bedroomsMatch: false,
