@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { LocationAutocomplete } from '@/components/ui/LocationAutocomplete';
 import { googleMapsService } from '@/services/googleMapsService';
+import { ipDetectionService } from '@/services/ipDetectionService';
 
 const BuyerAccountSettingsPage = () => {
   const navigate = useNavigate();
@@ -291,8 +292,12 @@ const BuyerAccountSettingsPage = () => {
   };
 
   const handleChangePassword = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error('You must be logged in to change your password');
+      return;
+    }
     
+    // Input validation
     if (!settings.currentPassword || !settings.newPassword || !settings.confirmPassword) {
       toast.error('Please fill in all password fields');
       return;
@@ -303,21 +308,51 @@ const BuyerAccountSettingsPage = () => {
       return;
     }
     
-    if (settings.newPassword.length < 6) {
-      toast.error('New password must be at least 6 characters long');
+    if (settings.newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters long');
+      return;
+    }
+
+    // Check if new password is different from current
+    if (settings.currentPassword === settings.newPassword) {
+      toast.error('New password must be different from current password');
       return;
     }
     
     setIsLoading(true);
     try {
-      // Use Supabase Auth to update password
-      const { error } = await supabase.auth.updateUser({
+      // First verify current password by signing in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email || '',
+        password: settings.currentPassword,
+      });
+
+      if (signInError) {
+        if (signInError.message.includes('Invalid login credentials')) {
+          throw new Error('Current password is incorrect');
+        }
+        throw signInError;
+      }
+
+      // Update to new password
+      const { error: updateError } = await supabase.auth.updateUser({
         password: settings.newPassword
       });
 
-      if (error) {
-        throw error;
-      }
+      if (updateError) throw updateError;
+
+      // Log successful password change
+      await supabase.from('audit_logs').insert({
+        user_id: user.id,
+        action: 'PASSWORD_CHANGED',
+        table_name: 'auth',
+        user_agent: navigator.userAgent,
+        ip_address: (await ipDetectionService.getClientIP()) || 'unknown',
+        new_values: {
+          event: 'password_changed',
+          timestamp: new Date().toISOString()
+        }
+      });
 
       toast.success('Password updated successfully');
       
@@ -328,8 +363,26 @@ const BuyerAccountSettingsPage = () => {
         newPassword: '',
         confirmPassword: ''
       }));
+
     } catch (error: any) {
-      console.error('Error changing password:', error);
+      console.error('Password change error:', error);
+      
+      // Log failed attempt
+      if (user) {
+        await supabase.from('audit_logs').insert({
+          user_id: user.id,
+          action: 'PASSWORD_CHANGE_FAILED',
+          table_name: 'auth',
+          user_agent: navigator.userAgent,
+          ip_address: (await ipDetectionService.getClientIP()) || 'unknown',
+          new_values: {
+            event: 'password_change_failed',
+            timestamp: new Date().toISOString(),
+            error: error.message || 'Unknown error'
+          }
+        });
+      }
+      
       toast.error(error.message || 'Failed to change password. Please try again.');
     } finally {
       setIsLoading(false);

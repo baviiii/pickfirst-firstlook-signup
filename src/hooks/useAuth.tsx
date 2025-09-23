@@ -5,6 +5,7 @@ import { Tables } from '@/integrations/supabase/types';
 import { ipTrackingService } from '@/services/ipTrackingService';
 import { rateLimitService } from '@/services/rateLimitService';
 import { InputSanitizer } from '@/utils/inputSanitization';
+import { auditService } from '@/services/auditService';
 
 type Profile = Tables<'profiles'>;
 
@@ -13,6 +14,13 @@ interface AuthContextType {
   profile: Profile | null;
   session: Session | null;
   loading: boolean;
+  error: {
+    signUp: any;
+    signIn: any;
+    updateProfile: any;
+    forgotPassword: any;
+    resetPassword: any;
+  };
   signUp: (email: string, password: string, fullName?: string, userType?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -29,6 +37,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState({
+    signUp: null,
+    signIn: null,
+    updateProfile: null,
+    forgotPassword: null,
+    resetPassword: null,
+  });
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -100,21 +115,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Input validation and sanitization
     const emailValidation = InputSanitizer.validateEmail(email);
     if (!emailValidation.isValid) {
+      setError(prev => ({ ...prev, signUp: new Error(emailValidation.error || 'Invalid email address') }));
       return { error: new Error(emailValidation.error || 'Invalid email address') };
     }
 
     const passwordValidation = InputSanitizer.validatePassword(password);
     if (!passwordValidation.isValid) {
+      setError(prev => ({ ...prev, signUp: new Error(passwordValidation.error || 'Invalid password') }));
       return { error: new Error(passwordValidation.error || 'Invalid password') };
     }
 
     const fullNameValidation = fullName ? InputSanitizer.sanitizeText(fullName, 100) : { isValid: true, sanitizedValue: undefined };
     if (!fullNameValidation.isValid) {
+      setError(prev => ({ ...prev, signUp: new Error(fullNameValidation.error || 'Invalid full name') }));
       return { error: new Error(fullNameValidation.error || 'Invalid full name') };
     }
 
     const userTypeValidation = userType ? InputSanitizer.sanitizeText(userType, 20) : { isValid: true, sanitizedValue: 'buyer' };
     if (!userTypeValidation.isValid) {
+      setError(prev => ({ ...prev, signUp: new Error('Invalid user type') }));
       return { error: new Error('Invalid user type') };
     }
 
@@ -159,6 +178,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }, 2000); // Send after 2 seconds to ensure profile is created
     }
     
+    setError(prev => ({ ...prev, signUp: error }));
     return { error };
   };
 
@@ -166,17 +186,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Input validation and sanitization
     const emailValidation = InputSanitizer.validateEmail(email);
     if (!emailValidation.isValid) {
+      setError(prev => ({ ...prev, signIn: new Error(emailValidation.error || 'Invalid email address') }));
       return { error: new Error(emailValidation.error || 'Invalid email address') };
     }
 
     const passwordValidation = InputSanitizer.validatePassword(password);
     if (!passwordValidation.isValid) {
+      setError(prev => ({ ...prev, signIn: new Error(passwordValidation.error || 'Invalid password') }));
       return { error: new Error(passwordValidation.error || 'Invalid password') };
     }
 
     try {
       const rateLimitResult = await rateLimitService.checkRateLimit(emailValidation.sanitizedValue!, 'signIn');
       if (!rateLimitResult.allowed) {
+        setError(prev => ({ ...prev, signIn: new Error('Too many login attempts. Please try again later.') }));
         return { error: new Error('Too many login attempts. Please try again later.') };
       }
       
@@ -199,6 +222,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await handleAuthError(error);
       }
       
+      setError(prev => ({ ...prev, signIn: error }));
       return { error };
     } catch (error) {
       console.error('Sign in error:', error);
@@ -210,6 +234,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         failure_reason: error.message
       });
       await handleAuthError(error);
+      setError(prev => ({ ...prev, signIn: error }));
       return { error };
     }
   };
@@ -254,6 +279,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (typeof value === 'string') {
         const validation = InputSanitizer.sanitizeText(value, 500);
         if (!validation.isValid) {
+          setError(prev => ({ ...prev, updateProfile: new Error(`Invalid ${key}: ${validation.error}`) }));
           return { error: new Error(`Invalid ${key}: ${validation.error}`) };
         }
         sanitizedUpdates[key as keyof Profile] = validation.sanitizedValue as any;
@@ -271,6 +297,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setProfile(prev => prev ? { ...prev, ...sanitizedUpdates } : null);
     }
     
+    setError(prev => ({ ...prev, updateProfile: error }));
     return { error };
   };
 
@@ -278,6 +305,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Input validation and sanitization
     const emailValidation = InputSanitizer.validateEmail(email);
     if (!emailValidation.isValid) {
+      setError(prev => ({ ...prev, forgotPassword: new Error(emailValidation.error || 'Invalid email address') }));
       return { error: new Error(emailValidation.error || 'Invalid email address') };
     }
 
@@ -308,6 +336,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }, 1000);
       }
       
+      setError(prev => ({ ...prev, forgotPassword: error }));
       return { error };
     } catch (error) {
       console.error('Forgot password error:', error);
@@ -318,6 +347,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         success: false,
         failure_reason: error.message
       });
+      setError(prev => ({ ...prev, forgotPassword: error }));
       return { error };
     }
   };
@@ -326,46 +356,136 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Input validation and sanitization
     const passwordValidation = InputSanitizer.validatePassword(password);
     if (!passwordValidation.isValid) {
-      return { error: new Error(passwordValidation.error || 'Invalid password') };
+      setError(prev => ({ ...prev, resetPassword: new Error(passwordValidation.error || 'Invalid password format') }));
+      return { error: new Error(passwordValidation.error || 'Invalid password format') };
     }
 
     try {
       // Get current user before password reset
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
       
-      const { error } = await supabase.auth.updateUser({
-        password: passwordValidation.sanitizedValue!
-      });
-      
-      // Log reset password attempt
-      await ipTrackingService.logLoginActivity({
-        user_id: currentUser?.id,
-        email: currentUser?.email || '',
-        login_type: 'password_reset',
-        success: !error,
-        failure_reason: error?.message
-      });
-      
-      if (error) {
-        await handleAuthError(error);
+      if (userError || !currentUser) {
+        throw new Error('User not authenticated');
+      }
+
+      // Check rate limit for password reset attempts
+      const rateLimitResult = await rateLimitService.checkRateLimit(currentUser.id, 'password_reset');
+      const isRateLimited = !rateLimitResult.allowed;
+
+      if (isRateLimited) {
+        throw new Error('Too many password reset attempts. Please try again later.');
       }
       
-      return { error };
-    } catch (error) {
-      console.error('Reset password error:', error);
-      
-      // Log failed reset password attempt
-      await ipTrackingService.logLoginActivity({
-        user_id: user?.id,
-        email: user?.email || '',
-        login_type: 'password_reset',
-        success: false,
-        failure_reason: error.message
+      // Check password against previous passwords (last 5)
+      const { data: passwordHistory, error: historyError } = await supabase
+        .from('user_password_history')
+        .select('password_hash')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!historyError && passwordHistory) {
+        const isReused = await Promise.any(
+          passwordHistory.map(async (record) => {
+            return await verifyPassword(password, record.password_hash);
+          })
+        );
+
+        if (isReused) {
+          throw new Error('You cannot reuse a previous password');
+        }
+      }
+
+      // Update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: passwordValidation.sanitizedValue!,
       });
-      await handleAuthError(error);
-      return { error };
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Log the new password hash in history
+      const hashedPassword = await hashPassword(password);
+      await supabase
+        .from('user_password_history')
+        .insert([
+          { 
+            user_id: user?.id, 
+            password_hash: hashedPassword,
+            changed_at: new Date().toISOString()
+          }
+        ]);
+
+      // Invalidate all active sessions except current one
+      await supabase.auth.signOut({ scope: 'others' });
+
+      // Log successful password reset
+      await auditService.log(user?.id, 'UPDATE', 'authentication', {
+        recordId: user?.id,
+        newValues: {
+          timestamp: new Date().toISOString()
+        },
+        userAgent: navigator.userAgent,
+        ipAddress: await getClientIP(),
+      });
+
+      // Invalidate all refresh tokens for the user
+      if (user?.id) {
+        await supabase.auth.admin.signOut(user.id);
+      }
+
+      setError(prev => ({ ...prev, resetPassword: null }));
+      return { error: null };
+
+    } catch (error) {
+      console.error('Password reset error:', error);
+      
+      // Log failed attempt
+      if (user?.id) {
+        await auditService.log(user.id, 'PASSWORD_UPDATE_FAILED', 'authentication', {
+          recordId: user.id,
+          newValues: {
+            error: error instanceof Error ? error.message : String(error),
+            timestamp: new Date().toISOString()
+          },
+          userAgent: navigator.userAgent,
+          ipAddress: await getClientIP(),
+        });
+      }
+
+      setError(prev => ({ ...prev, resetPassword: error }));
+      return { 
+        error: error instanceof Error ? error : new Error('Failed to reset password') 
+      };
     }
   };
+
+  async function hashPassword(password: string): Promise<string> {
+    // This is a simplified example - in production, use a proper password hashing library
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+
+  async function verifyPassword(password: string, hash: string): Promise<boolean> {
+    const hashedPassword = await hashPassword(password);
+    return hashedPassword === hash;
+  }
+
+  async function getClientIP(): Promise<string> {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json');
+      const data = await response.json();
+      return data.ip || 'unknown';
+    } catch (error) {
+      console.error('Error getting client IP:', error);
+      return 'unknown';
+    }
+  }
 
   return (
     <AuthContext.Provider value={{
@@ -373,6 +493,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       profile,
       session,
       loading,
+      error,
       signUp,
       signIn,
       signOut,

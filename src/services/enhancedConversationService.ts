@@ -48,26 +48,26 @@ class EnhancedConversationService {
   async getConversations(filters: ConversationFilters = {}): Promise<{ data: EnhancedConversation[]; error: any }> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        return { data: [], error: { message: 'User not authenticated' } };
-      }
-
-      const rateLimit = await rateLimitService.checkRateLimit(user.id, 'db:read');
-      if (!rateLimit.allowed) {
-        return { 
-          data: [], 
-          error: { 
-            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimit.resetTime - Date.now()) / 1000)} seconds.` 
-          } 
-        };
-      }
-
+      
+      // Build the base query
       let query = supabase
         .from('conversations')
         .select(`
           *,
-          agent_profile:profiles!conversations_agent_id_fkey(full_name, email, phone, company, avatar_url),
-          client_profile:profiles!conversations_client_id_fkey(full_name, email, phone, avatar_url)
+          agent_profile:profiles!conversations_agent_id_fkey(
+            id,
+            full_name,
+            email,
+            phone,
+            company,
+            avatar_url
+          ),
+          client_profile:profiles!conversations_client_id_fkey(
+            full_name,
+            email,
+            phone,
+            avatar_url
+          )
         `);
 
       // Apply user-specific filters
@@ -95,62 +95,7 @@ class EnhancedConversationService {
 
       // Enhance conversations with property and inquiry data
       const enhancedConversations = await Promise.all(
-        (conversations || []).map(async (conv) => {
-          const enhanced: EnhancedConversation = { ...conv };
-
-          // Get property information if available
-          const propertyId = (conv.metadata as any)?.property_id;
-          if (propertyId) {
-            const { data: property } = await supabase
-              .from('property_listings')
-              .select('id, title, price, address, images')
-              .eq('id', propertyId)
-              .single();
-            
-            if (property) {
-              enhanced.property = property;
-            }
-          }
-
-          // Get inquiry information if available
-          const inquiryId = conv.inquiry_id;
-          if (inquiryId) {
-            const { data: inquiry } = await supabase
-              .from('property_inquiries')
-              .select('id, message, created_at')
-              .eq('id', inquiryId)
-              .single();
-            
-            if (inquiry) {
-              enhanced.inquiry = inquiry;
-            }
-          }
-
-          // Get unread count for current user
-          const { count: unreadCount } = await supabase
-            .from('messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('conversation_id', conv.id)
-            .neq('sender_id', user.id)
-            .is('read_at', null);
-
-          enhanced.unread_count = unreadCount || 0;
-
-          // Get last message preview
-          const { data: lastMessage } = await supabase
-            .from('messages')
-            .select('content')
-            .eq('conversation_id', conv.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-
-          if (lastMessage) {
-            enhanced.last_message_preview = lastMessage.content.substring(0, 100);
-          }
-
-          return enhanced;
-        })
+        (conversations || []).map(conv => this.enhanceSingleConversation(conv as Tables<'conversations'>))
       );
 
       // Apply search filter after enhancement
@@ -174,6 +119,7 @@ class EnhancedConversationService {
 
       return { data: filteredConversations, error: null };
     } catch (error) {
+      console.error('Error fetching conversations:', error);
       return { data: [], error };
     }
   }
@@ -404,6 +350,29 @@ class EnhancedConversationService {
       if (inquiry) {
         enhanced.inquiry = inquiry;
       }
+    }
+
+    // Get unread count for current user
+    const { count: unreadCount } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('conversation_id', conversation.id)
+      .neq('sender_id', conversation.agent_id)
+      .is('read_at', null);
+
+    enhanced.unread_count = unreadCount || 0;
+
+    // Get last message preview
+    const { data: lastMessage } = await supabase
+      .from('messages')
+      .select('content')
+      .eq('conversation_id', conversation.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (lastMessage) {
+      enhanced.last_message_preview = lastMessage.content.substring(0, 100);
     }
 
     return enhanced;

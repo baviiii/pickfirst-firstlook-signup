@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,260 +7,324 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Lock, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Lock, Eye, EyeOff, ShieldAlert } from 'lucide-react';
 import { InputSanitizer } from '@/utils/inputSanitization';
 import { auditService } from '@/services/auditService';
 import { rateLimitService } from '@/services/rateLimitService';
 
 export const ResetPasswordForm = () => {
-  const { resetPassword } = useAuth();
+  const { resetPassword, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordScore, setPasswordScore] = useState(0);
   const [formData, setFormData] = useState({
     password: '',
     confirmPassword: ''
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Validate password strength
+  const validatePasswordStrength = useCallback((password: string) => {
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    return score;
+  }, []);
 
   useEffect(() => {
-    // Check if we have the required tokens from the URL
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
-    const type = searchParams.get('type');
-    
-    // Validate URL parameters for security
-    const tokenValidation = InputSanitizer.validateUrlParam(accessToken || '', 'access_token');
-    const refreshValidation = InputSanitizer.validateUrlParam(refreshToken || '', 'refresh_token');
-    
-    if (!tokenValidation.isValid || !refreshValidation.isValid || type !== 'recovery') {
-      auditService.log('anonymous', 'PASSWORD_RESET_TOKEN_INVALID', 'password_reset', {
-        newValues: { 
-          reason: 'Invalid or missing tokens in URL',
-          type,
-          hasAccessToken: !!accessToken,
-          hasRefreshToken: !!refreshToken
-        }
-      });
-      toast.error('Invalid or expired reset link');
-      navigate('/forgot-password');
-      return;
-    }
+    const score = validatePasswordStrength(formData.password);
+    setPasswordScore(score);
+  }, [formData.password, validatePasswordStrength]);
 
-    // Set the session but don't consider user as fully authenticated until password is updated
-    const setSessionWithTokens = async () => {
+  useEffect(() => {
+    const validateResetToken = async () => {
+      const accessToken = searchParams.get('access_token');
+      const refreshToken = searchParams.get('refresh_token');
+      const type = searchParams.get('type');
+      
+      // Basic URL parameter validation
+      if (!accessToken || !refreshToken || type !== 'recovery') {
+        handleInvalidToken();
+        return;
+      }
+
       try {
-        const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken
+        // Verify the reset token with Supabase
+        const { error } = await supabase.auth.verifyOtp({
+          token: accessToken,
+          type: 'recovery',
+          token_hash: accessToken
         });
-        
+
         if (error) {
-          console.error('Failed to set session:', error);
-          await auditService.log('anonymous', 'PASSWORD_RESET_TOKEN_INVALID', 'password_reset', {
-            newValues: { 
-              reason: 'Session setup failed',
-              error: error.message 
-            }
-          });
-          toast.error('Invalid or expired reset link');
-          navigate('/forgot-password');
+          throw error;
         }
       } catch (error) {
-        console.error('Session setup error:', error);
-        await auditService.log('anonymous', 'SYSTEM_ERROR', 'password_reset', {
-          newValues: { 
-            error: error instanceof Error ? error.message : 'Unknown session error'
-          }
-        });
-        toast.error('An error occurred. Please try again.');
-        navigate('/forgot-password');
+        console.error('Token validation error:', error);
+        handleInvalidToken();
       }
     };
 
-    setSessionWithTokens();
-  }, [searchParams, navigate]);
+    validateResetToken();
+  }, [searchParams]);
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInvalidToken = () => {
+    auditService.log('anonymous', 'PASSWORD_RESET_TOKEN_INVALID', 'password_reset', {
+      newValues: {
+        reason: 'Invalid or expired reset token',
+        hasAccessToken: !!searchParams.get('access_token'),
+        hasRefreshToken: !!searchParams.get('refresh_token'),
+        type: searchParams.get('type')
+      }
+    });
+    
+    toast.error('Invalid or expired reset link. Please request a new one.', {
+      icon: <ShieldAlert className="w-5 h-5" />
+    });
+    navigate('/forgot-password');
   };
 
-  const validatePasswords = (password: string, confirmPassword: string) => {
-    // Use comprehensive input sanitization
-    const passwordValidation = InputSanitizer.validatePassword(password);
-    if (!passwordValidation.isValid) {
-      return passwordValidation.error || 'Invalid password';
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
     }
+  };
 
-    if (password !== confirmPassword) {
-      return 'Passwords do not match';
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    } else if (passwordScore < 3) {
+      newErrors.password = 'Please choose a stronger password';
     }
-
-    return null;
+    
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const { password, confirmPassword } = formData;
+    if (!validateForm()) return;
     
-    // Input validation
-    if (!password || !confirmPassword) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
-    // Comprehensive password validation
-    const passwordError = validatePasswords(password, confirmPassword);
-    if (passwordError) {
-      toast.error(passwordError);
-      await auditService.log('anonymous', 'VALIDATION_ERROR', 'password_reset', {
-        newValues: { error: passwordError }
+    // Check rate limit
+    const rateLimitResult = await rateLimitService.checkRateLimit(
+      user?.id || 'unknown',
+      'password_reset'
+    );
+    
+    if (!rateLimitResult.allowed) {
+      toast.error('Too many attempts. Please try again later.', {
+        icon: <ShieldAlert className="w-5 h-5" />
       });
       return;
     }
-
+    
     setLoading(true);
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const userId = user?.id || 'anonymous';
-      
-      // Rate limiting check
-      const rateCheck = await rateLimitService.checkRateLimit(userId, 'password_update');
-      if (!rateCheck.allowed) {
-        toast.error(`Too many password update attempts. Try again in ${Math.ceil((rateCheck.resetTime - Date.now()) / (60 * 1000))} minutes.`);
-        await auditService.log(userId, 'RATE_LIMIT_EXCEEDED', 'password_reset', {
-          newValues: { 
-            action: 'password_update',
-            remaining: rateCheck.remaining,
-            resetTime: rateCheck.resetTime
-          }
-        });
-        setLoading(false);
-        return;
-      }
-      
-      const { error } = await resetPassword(password);
+      const { error } = await resetPassword(formData.password);
       
       if (error) {
-        await auditService.log(userId, 'PASSWORD_RESET_FAILED', 'password_reset', {
-          newValues: { 
-            error: error.message,
-            timestamp: new Date().toISOString()
-          }
-        });
-        toast.error(error.message || 'Failed to reset password');
-      } else {
-        await auditService.log(userId, 'PASSWORD_RESET_SUCCESS', 'password_reset', {
-          newValues: { 
-            timestamp: new Date().toISOString(),
-            userAgent: navigator.userAgent
-          }
-        });
-        toast.success('Password updated successfully! Signing you in...');
-        
-        // Small delay to show success message, then redirect to dashboard
-        setTimeout(() => {
-          navigate('/dashboard', { replace: true });
-        }, 1500);
+        throw error;
       }
-    } catch (error) {
-      const { data: { user } } = await supabase.auth.getUser();
-      await auditService.log(user?.id || 'anonymous', 'SYSTEM_ERROR', 'password_reset', {
-        newValues: { 
-          error: error instanceof Error ? error.message : 'Unknown error',
-          timestamp: new Date().toISOString()
+      
+      // Log successful password reset
+      await auditService.log(user?.id || 'unknown', 'PASSWORD_RESET_SUCCESS', 'password_reset', {
+        userAgent: navigator.userAgent,
+        ipAddress: await getClientIP()
+      });
+      
+      toast.success('Password updated successfully! Please log in with your new password.');
+      
+      // Clear sensitive data from state
+      setFormData({ password: '', confirmPassword: '' });
+      
+      // Redirect to login after a short delay
+      setTimeout(() => {
+        navigate('/auth');
+      }, 2000);
+      
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      
+      // Log failed attempt
+      await auditService.log(user?.id || 'unknown', 'PASSWORD_RESET_FAILED', 'password_reset', {
+        newValues: {
+          error: error.message,
+          userAgent: navigator.userAgent,
+          ipAddress: await getClientIP()
         }
       });
-      toast.error('An unexpected error occurred. Please try again.');
+      
+      toast.error(error.message || 'Failed to reset password. Please try again.', {
+        icon: <ShieldAlert className="w-5 h-5" />
+      });
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
+  };
+
+  const getPasswordStrengthColor = () => {
+    if (passwordScore <= 1) return 'bg-red-500';
+    if (passwordScore <= 2) return 'bg-yellow-500';
+    if (passwordScore <= 3) return 'bg-blue-500';
+    return 'bg-green-500';
+  };
+
+  const getPasswordStrengthText = () => {
+    if (!formData.password) return '';
+    if (passwordScore <= 1) return 'Weak';
+    if (passwordScore <= 2) return 'Moderate';
+    if (passwordScore <= 3) return 'Strong';
+    return 'Very Strong';
   };
 
   return (
-    <Card className="w-full max-w-md bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl shadow-pickfirst-yellow/10">
-      <CardHeader className="text-center">
-        <div className="mx-auto w-16 h-16 bg-pickfirst-yellow/20 rounded-full flex items-center justify-center mb-4">
-          <Lock className="w-8 h-8 text-pickfirst-yellow" />
-        </div>
-        <CardTitle className="text-2xl font-bold text-white">
-          Set New Password
-        </CardTitle>
-        <CardDescription className="text-gray-300">
-          Choose a strong password for your account
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
+        <CardDescription>
+          Enter your new password below.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-white font-semibold">
-              New Password
-            </Label>
+            <Label htmlFor="password">New Password</Label>
             <div className="relative">
               <Input
                 id="password"
+                name="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your new password"
                 value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                className="h-12 bg-white/5 border border-white/20 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring pr-10"
-                required
+                onChange={handleChange}
+                className={`pr-10 ${errors.password ? 'border-red-500' : ''}`}
+                placeholder="Enter new password"
+                autoComplete="new-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                className="absolute right-2.5 top-2.5 text-gray-500 hover:text-gray-700"
+                tabIndex={-1}
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
               </button>
             </div>
-            <div className="text-xs text-gray-400 space-y-1">
-              <p>Password requirements:</p>
-              <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>At least 8 characters long</li>
-                <li>One uppercase and one lowercase letter</li>
-                <li>At least one number</li>
-              </ul>
-            </div>
+            {formData.password && (
+              <div className="mt-1">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full ${getPasswordStrengthColor()}`} 
+                    style={{ width: `${(passwordScore / 4) * 100}%` }}
+                  />
+                </div>
+                <p className="text-xs mt-1 text-gray-500">
+                  Password strength: {getPasswordStrengthText()}
+                </p>
+              </div>
+            )}
+            {errors.password && (
+              <p className="text-xs text-red-500 mt-1">{errors.password}</p>
+            )}
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword" className="text-white font-semibold">
-              Confirm New Password
-            </Label>
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
             <div className="relative">
               <Input
                 id="confirmPassword"
+                name="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
-                placeholder="Confirm your new password"
                 value={formData.confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                className="h-12 bg-white/5 border border-white/20 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring pr-10"
-                required
+                onChange={handleChange}
+                className={`pr-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                placeholder="Confirm new password"
+                autoComplete="new-password"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                className="absolute right-2.5 top-2.5 text-gray-500 hover:text-gray-700"
+                tabIndex={-1}
               >
-                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showConfirmPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
               </button>
             </div>
+            {errors.confirmPassword && (
+              <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>
+            )}
           </div>
           
           <Button 
             type="submit" 
-            className="w-full pickfirst-gradient-yellow-amber text-black font-bold h-12 rounded-xl" 
+            className="w-full"
             disabled={loading}
           >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Update Password
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              'Reset Password'
+            )}
           </Button>
         </form>
+        
+        <div className="mt-4 text-center text-sm">
+          <button
+            onClick={() => navigate('/auth')}
+            className="text-primary hover:underline"
+            disabled={loading}
+          >
+            Back to Login
+          </button>
+        </div>
       </CardContent>
     </Card>
   );
 };
+
+// Helper function to get client IP (you may need to adjust this based on your setup)
+async function getClientIP() {
+  try {
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    return data.ip || 'unknown';
+  } catch (error) {
+    console.error('Error getting client IP:', error);
+    return 'unknown';
+  }
+}

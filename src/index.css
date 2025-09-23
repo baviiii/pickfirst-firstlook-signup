@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -36,9 +35,6 @@ All colors MUST be HSL.
     --border: 217 32% 20%;
     --input: 217 32% 15%;
     --ring: 45 100% 51%;
-
-    --radius: 0.5rem;
-
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -273,4 +269,149 @@ All colors MUST be HSL.
     opacity: 0.15;
     animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
+}
+
+/* Messaging Components */
+@layer components {
+  /* Scrollbar styling for chat containers */
+  .chat-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+  
+  .chat-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .chat-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .chat-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 3px;
+  }
+  
+  .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+  
+  /* Message bubbles */
+  .message-bubble {
+    @apply max-w-[85%] p-3 rounded-2xl break-words;
+  }
+  
+  .message-bubble.self {
+    @apply bg-pickfirst-yellow text-pickfirst-gray rounded-br-md;
+  }
+  
+  .message-bubble.other {
+    @apply bg-gray-100 text-gray-900 rounded-bl-md;
+  }
+  
+  .dark .message-bubble.other {
+    @apply bg-gray-800 text-gray-100;
+  }
+  
+  /* Message input */
+  .message-input {
+    @apply min-h-[40px] max-h-32 resize-none border-0 focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-0;
+  }
+  
+  /* Conversation list item */
+  .conversation-item {
+    @apply p-3 rounded-lg border cursor-pointer transition-all duration-200 border-gray-700 hover:bg-gray-800/50 hover:border-gray-600;
+  }
+  
+  .conversation-item.active {
+    @apply bg-pickfirst-yellow/20 border-pickfirst-yellow shadow-md;
+  }
+  
+  /* Smooth scrolling for messages */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Animation for new messages */
+@keyframes newMessage {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.message-enter {
+  animation: newMessage 0.2s ease-out forwards;
+}
+
+/* Typing indicator */
+.typing-indicator {
+  @apply flex items-center space-x-1 p-2 bg-gray-100 dark:bg-gray-800 rounded-full w-fit;
+}
+
+.typing-dot {
+  @apply w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full;
+  animation: typingAnimation 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingAnimation {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+
+/* Message status indicators */
+.message-status {
+  @apply inline-flex items-center text-xs text-gray-400 ml-2;
+}
+
+.message-status.sent {
+  @apply text-gray-400;
+}
+
+.message-status.delivered {
+  @apply text-gray-300;
+}
+
+.message-status.read {
+  @apply text-pickfirst-yellow;
+}
+
+/* Message timestamp */
+.message-time {
+  @apply text-xs mt-1 opacity-70;
+}
+
+/* Custom scrollbar for webkit browsers */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.5);
 }

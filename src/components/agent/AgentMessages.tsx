@@ -262,353 +262,118 @@ export const AgentMessages = () => {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-900 to-black flex flex-col md:flex-row overflow-hidden">
-      {/* Mobile Header */}
-      {isMobile && (
-        <div className="bg-gray-900/90 border-b border-pickfirst-yellow/20 p-4 flex items-center justify-between flex-shrink-0">
-          {!showConversations && selectedConversation && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBackToConversations}
-                className="text-gray-400 hover:text-pickfirst-yellow p-0"
+    <div className="h-screen flex flex-col">
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar - Conversations List */}
+        <div 
+          className={`${showConversations ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-80 border-r bg-card`}
+        >
+          <div className="p-4 border-b">
+            <h2 className="text-xl font-semibold">Messages</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {filteredConversations.map((conv) => (
+              <div
+                key={conv.id}
+                className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
+                  selectedConversation?.id === conv.id 
+                    ? 'bg-pickfirst-yellow/20 border-pickfirst-yellow shadow-md' 
+                    : 'border-gray-700 hover:bg-gray-800/50 hover:border-gray-600'
+                }`}
+                onClick={() => handleConversationSelect(conv)}
               >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div className="flex items-center gap-2 flex-1 ml-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={selectedConversation.client_profile?.avatar_url} />
-                  <AvatarFallback className="bg-pickfirst-yellow text-black text-xs">
-                    {selectedConversation.client_profile?.full_name?.split(' ').map(n => n[0]).join('') || 'C'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="text-white font-medium text-sm truncate">
-                    {selectedConversation.client_profile?.full_name}
-                  </div>
-                  <div className="text-xs text-gray-400 truncate">
-                    {selectedConversation.subject}
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-10 w-10 flex-shrink-0">
+                    <AvatarImage src={conv.client_profile?.avatar_url} />
+                    <AvatarFallback>
+                      {conv.client_profile?.full_name?.charAt(0) || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="font-medium text-white text-sm truncate">
+                        {conv.client_profile?.full_name || 'Unknown User'}
+                      </div>
+                      {conv.unread_count && conv.unread_count > 0 && (
+                        <Badge className="bg-pickfirst-yellow text-black text-xs ml-2 flex-shrink-0">
+                          {conv.unread_count}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-sm font-medium mb-1 text-gray-300 truncate">
+                      {conv.subject}
+                    </div>
+                    {conv.last_message_at && (
+                      <div className="text-xs text-gray-500">
+                        {new Date(conv.last_message_at).toLocaleDateString([], { 
+                          month: 'short', 
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow p-2">
-                  <Phone className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow p-2">
-                  <Video className="h-4 w-4" />
-                </Button>
-              </div>
-            </>
-          )}
-          {showConversations && (
-            <div className="flex items-center justify-between w-full">
-              <h1 className="text-xl font-bold text-white">Messages</h1>
-              <Dialog open={isNewMessageOpen} onOpenChange={setIsNewMessageOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="bg-pickfirst-yellow text-black hover:bg-pickfirst-yellow/90">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-gray-900 border border-pickfirst-yellow/20 mx-4 rounded-lg">
-                  <DialogHeader>
-                    <DialogTitle className="text-white">Send New Message</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="clientEmail" className="text-white text-sm">Client Email</Label>
-                      <Input
-                        id="clientEmail"
-                        type="email"
-                        placeholder="client@example.com"
-                        value={newMessageForm.clientEmail}
-                        onChange={(e) => setNewMessageForm({...newMessageForm, clientEmail: e.target.value})}
-                        className="bg-gray-800 border-gray-700 text-white mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="subject" className="text-white text-sm">Subject</Label>
-                      <Input
-                        id="subject"
-                        placeholder="Message subject"
-                        value={newMessageForm.subject}
-                        onChange={(e) => setNewMessageForm({...newMessageForm, subject: e.target.value})}
-                        className="bg-gray-800 border-gray-700 text-white mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="content" className="text-white text-sm">Message</Label>
-                      <Textarea
-                        id="content"
-                        placeholder="Type your message..."
-                        className="min-h-[80px] bg-gray-800 border-gray-700 text-white mt-1 resize-none"
-                        value={newMessageForm.content}
-                        onChange={(e) => setNewMessageForm({...newMessageForm, content: e.target.value})}
-                      />
-                    </div>
-                    <Button onClick={handleNewMessage} className="w-full bg-pickfirst-yellow text-black hover:bg-pickfirst-yellow/90">
-                      Send Message
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Conversations List */}
-      <div className={`${
-        isMobile 
-          ? (showConversations ? 'flex' : 'hidden')
-          : 'flex'
-      } ${
-        isMobile ? 'flex-1' : 'w-80 lg:w-96'
-      } flex-col bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border-r border-pickfirst-yellow/20`}>
-        
-        {/* Desktop Header */}
-        {!isMobile && (
-          <div className="p-4 border-b border-gray-700">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-white">Conversations</h2>
-              <Dialog open={isNewMessageOpen} onOpenChange={setIsNewMessageOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="bg-pickfirst-yellow text-black hover:bg-pickfirst-yellow/90">
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Message
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-gray-900 border border-pickfirst-yellow/20">
-                  <DialogHeader>
-                    <DialogTitle className="text-white">Send New Message</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="clientEmail" className="text-white">Client Email</Label>
-                      <Input
-                        id="clientEmail"
-                        type="email"
-                        placeholder="client@example.com"
-                        value={newMessageForm.clientEmail}
-                        onChange={(e) => setNewMessageForm({...newMessageForm, clientEmail: e.target.value})}
-                        className="bg-gray-800 border-gray-700 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="subject" className="text-white">Subject</Label>
-                      <Input
-                        id="subject"
-                        placeholder="Message subject"
-                        value={newMessageForm.subject}
-                        onChange={(e) => setNewMessageForm({...newMessageForm, subject: e.target.value})}
-                        className="bg-gray-800 border-gray-700 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="content" className="text-white">Message</Label>
-                      <Textarea
-                        id="content"
-                        placeholder="Type your message..."
-                        className="min-h-[100px] bg-gray-800 border-gray-700 text-white resize-none"
-                        value={newMessageForm.content}
-                        onChange={(e) => setNewMessageForm({...newMessageForm, content: e.target.value})}
-                      />
-                    </div>
-                    <Button onClick={handleNewMessage} className="w-full bg-pickfirst-yellow text-black hover:bg-pickfirst-yellow/90">
-                      Send Message
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-            
-            {/* Search and Filters */}
-            <div className="space-y-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search conversations..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-gray-800 border-gray-700 text-white"
-                />
-              </div>
-              <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value)}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                  <SelectValue placeholder="Filter conversations" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectItem value="all">All Conversations</SelectItem>
-                  <SelectItem value="unread">Unread Only</SelectItem>
-                  <SelectItem value="recent">Recent (24h)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-
-        {/* Mobile Search */}
-        {isMobile && showConversations && (
-          <div className="p-4 border-b border-gray-700">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search conversations..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-gray-800 border-gray-700 text-white"
-              />
-            </div>
-          </div>
-        )}
-        
-        {/* Conversations List */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-2 space-y-1">
-            {filteredConversations.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
-                <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">No conversations found</p>
-              </div>
-            ) : (
-              filteredConversations.map((conv) => {
-                const otherUser = profile?.role === 'agent' ? conv.client_profile : conv.agent_profile;
-                return (
-                  <div
-                    key={conv.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
-                      selectedConversation?.id === conv.id 
-                        ? 'bg-pickfirst-yellow/20 border-pickfirst-yellow shadow-md' 
-                        : 'border-gray-700 hover:bg-gray-800/50 hover:border-gray-600'
-                    }`}
-                    onClick={() => handleConversationSelect(conv)}
-                  >
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-10 w-10 flex-shrink-0">
-                        <AvatarImage src={otherUser?.avatar_url} />
-                        <AvatarFallback className="bg-pickfirst-yellow text-black text-sm">
-                          {otherUser?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="font-medium text-white text-sm truncate">
-                            {otherUser?.full_name || 'Unknown User'}
-                          </div>
-                          {conv.unread_count && conv.unread_count > 0 && (
-                            <Badge className="bg-pickfirst-yellow text-black text-xs ml-2 flex-shrink-0">
-                              {conv.unread_count}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-sm font-medium mb-1 text-gray-300 truncate">
-                          {conv.subject}
-                        </div>
-                        {conv.last_message_at && (
-                          <div className="text-xs text-gray-500">
-                            {new Date(conv.last_message_at).toLocaleDateString([], { 
-                              month: 'short', 
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
+            ))}
           </div>
         </div>
-      </div>
 
-      {/* Messages Area */}
-      <div className={`${
-        isMobile 
-          ? (showConversations ? 'hidden' : 'flex')
-          : 'flex'
-      } flex-1 flex-col bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl`}>
-        {selectedConversation ? (
-          <>
-            {/* Mobile Header */}
-            <div className="sticky top-0 z-10 bg-gray-900/80 backdrop-blur-md border-b border-gray-700 p-3">
-              <div className="flex items-center gap-3">
-                {isMobile && (
+        {/* Main Content - Messages */}
+        <div className={`${!showConversations ? 'flex' : 'hidden'} lg:flex flex-col flex-1 bg-background`}>
+          {selectedConversation ? (
+            <>
+              <div className="border-b p-4 flex items-center justify-between bg-card">
+                <div className="flex items-center space-x-4">
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="text-gray-400 hover:text-pickfirst-yellow"
                     onClick={handleBackToConversations}
+                    className="lg:hidden"
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
-                )}
-                <Avatar className="h-10 w-10">
-                  <AvatarImage 
-                    src={selectedConversation.client_profile?.avatar_url}
-                    alt={selectedConversation.client_profile?.full_name || 'Client'}
-                  />
-                  <AvatarFallback className="bg-pickfirst-yellow text-black">
-                    {selectedConversation.client_profile?.full_name?.split(' ').map(n => n[0]).join('') || 'C'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-white truncate">
-                    {selectedConversation.client_profile?.full_name || 'Client'}
-                  </div>
-                  <div className="text-xs text-gray-400 truncate">
-                    {selectedConversation.client_profile?.email}
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={selectedConversation.client_profile?.avatar_url} />
+                      <AvatarFallback>
+                        {selectedConversation.client_profile?.full_name?.charAt(0) || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-medium">
+                        {selectedConversation.client_profile?.full_name || 'Unknown Client'}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedConversation.property?.title || 'New conversation'}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-gray-400 hover:text-pickfirst-yellow"
-                    onClick={() => setShowBuyerProfile(true)}
-                    title="View Profile"
-                  >
+                <div className="flex items-center space-x-2">
+                  <Button variant="ghost" size="icon" onClick={() => setShowBuyerProfile(true)}>
                     <User className="h-5 w-5" />
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-gray-400 hover:text-pickfirst-yellow"
-                    title="Video Call"
-                  >
-                    <Video className="h-5 w-5" />
+                  <Button variant="ghost" size="icon">
+                    <Phone className="h-5 w-5" />
                   </Button>
                 </div>
               </div>
-              {selectedConversation.property && (
-                <div className="text-xs text-pickfirst-yellow mt-1 bg-pickfirst-yellow/10 px-2 py-1 rounded truncate">
-                  🏠 {selectedConversation.property.title} - ${selectedConversation.property.price?.toLocaleString()}
-                </div>
-              )}
-            </div>
-            
-            {/* Messages */}
-            <div 
-              ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto p-4 space-y-4"
-              style={{
-                WebkitOverflowScrolling: 'touch',
-                scrollBehavior: 'smooth'
-              }}
-            >
-              {messages.map((msg) => {
-                const isCurrentUser = msg.sender_id === user?.id;
-                return (
+
+              {/* Messages Container */}
+              <div 
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto p-4 space-y-4"
+              >
+                {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
                       className={`max-w-[85%] md:max-w-[70%] p-3 rounded-2xl break-words ${
-                        isCurrentUser
+                        msg.sender_id === user?.id
                           ? 'bg-pickfirst-yellow text-black rounded-br-md'
                           : 'bg-gray-800 text-white rounded-bl-md'
                       }`}
@@ -622,65 +387,97 @@ export const AgentMessages = () => {
                         {msg.content}
                       </div>
                       <div className={`text-xs mt-1 ${
-                        isCurrentUser ? 'text-black/70' : 'text-gray-400'
+                        msg.sender_id === user?.id ? 'text-black/70' : 'text-gray-400'
                       }`}>
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
                   </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
-            
-            {/* Message Input */}
-            <div className="border-t border-gray-700 p-3 md:p-4">
-              <div className="flex gap-2 items-end">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-gray-400 hover:text-pickfirst-yellow flex-shrink-0 mb-1"
-                >
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-                <div className="flex-1">
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Message Input */}
+              <div className="border-t p-4 bg-card">
+                <div className="flex items-end space-x-2">
                   <Textarea
-                    placeholder="Type your reply..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="min-h-[44px] max-h-32 resize-none bg-gray-800 border-gray-700 text-white rounded-2xl px-4 py-3"
-                    style={{
-                      lineHeight: '1.4',
-                    }}
+                    onKeyDown={handleKeyPress}
+                    placeholder="Type a message..."
+                    className="min-h-[40px] max-h-32 resize-none"
+                    rows={1}
                   />
+                  <Button 
+                    size="icon" 
+                    onClick={handleSendMessage}
+                    disabled={!newMessage.trim() || sending}
+                  >
+                    <Send className="h-5 w-5" />
+                  </Button>
                 </div>
-                <Button 
-                  onClick={handleSendMessage} 
-                  disabled={!newMessage.trim() || sending}
-                  className="bg-pickfirst-yellow text-black hover:bg-pickfirst-yellow/90 disabled:opacity-50 rounded-full p-3 flex-shrink-0"
-                >
-                  {sending ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black"></div>
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center space-y-2 max-w-md p-8">
+                <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground" />
+                <h3 className="text-lg font-medium">No conversation selected</h3>
+                <p className="text-sm text-muted-foreground">
+                  Select a conversation or start a new one
+                </p>
               </div>
             </div>
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-center">
-            <div className="text-gray-400">
-              <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-50" />
-              <h3 className="text-xl font-medium mb-2">Select a conversation</h3>
-              <p className="text-sm">Choose a conversation from the list to start messaging</p>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Buyer Profile Modal */}
+      {/* New Message Dialog */}
+      <Dialog open={isNewMessageOpen} onOpenChange={setIsNewMessageOpen}>
+        <DialogContent className="bg-gray-900 border border-pickfirst-yellow/20">
+          <DialogHeader>
+            <DialogTitle className="text-white">Send New Message</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="clientEmail" className="text-white">Client Email</Label>
+              <Input
+                id="clientEmail"
+                type="email"
+                placeholder="client@example.com"
+                value={newMessageForm.clientEmail}
+                onChange={(e) => setNewMessageForm({...newMessageForm, clientEmail: e.target.value})}
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+            </div>
+            <div>
+              <Label htmlFor="subject" className="text-white">Subject</Label>
+              <Input
+                id="subject"
+                placeholder="Message subject"
+                value={newMessageForm.subject}
+                onChange={(e) => setNewMessageForm({...newMessageForm, subject: e.target.value})}
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+            </div>
+            <div>
+              <Label htmlFor="content" className="text-white">Message</Label>
+              <Textarea
+                id="content"
+                placeholder="Type your message..."
+                className="min-h-[100px] bg-gray-800 border-gray-700 text-white resize-none"
+                value={newMessageForm.content}
+                onChange={(e) => setNewMessageForm({...newMessageForm, content: e.target.value})}
+              />
+            </div>
+            <Button onClick={handleNewMessage} className="w-full bg-pickfirst-yellow text-black hover:bg-pickfirst-yellow/90">
+              Send Message
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Buyer Profile Dialog */}
       {selectedConversation?.client_profile && (
         <Dialog open={showBuyerProfile} onOpenChange={setShowBuyerProfile}>
           <DialogContent className="max-w-md w-[calc(100%-2rem)] sm:max-w-lg bg-gray-800 border-gray-700 text-white">

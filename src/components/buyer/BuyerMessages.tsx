@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Phone, Video, Send, MessageSquare, MoreVertical, User, ArrowLeft } from 'lucide-react';
+import { Search, Phone, Video, Send, MessageSquare, MoreVertical, User, ArrowLeft, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -191,229 +191,97 @@ export const BuyerMessages = () => {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-900 to-black flex flex-col lg:flex-row overflow-hidden">
-      {/* Mobile Header */}
-      {isMobile && (
-        <div className="bg-gray-900/90 border-b border-pickfirst-yellow/20 p-4 flex items-center justify-between flex-shrink-0">
-        {!showConversations && selectedConversation && (
-          <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToConversations}
-              className="text-gray-400 hover:text-pickfirst-yellow p-0"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex items-center gap-2 flex-1 ml-3">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={selectedConversation.agent_profile?.avatar_url} />
-                <AvatarFallback className="bg-pickfirst-yellow text-black text-xs">
-                  {selectedConversation.agent_profile?.full_name?.split(' ').map(n => n[0]).join('') || 'A'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <div className="text-white font-medium text-sm truncate">
-                  {selectedConversation.agent_profile?.full_name || 'Agent'}
-                </div>
-                {selectedConversation.property ? (
-                  <div className="text-xs text-pickfirst-yellow truncate">
-                    🏠 {selectedConversation.property.title}
-                  </div>
-                ) : (
-                  <div className="text-xs text-gray-400 truncate">
-                    {selectedConversation.subject}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-gray-400 hover:text-pickfirst-yellow p-2"
-                onClick={() => setShowAgentProfile(true)}
+    <div className="h-screen flex flex-col bg-background">
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar - Conversations List */}
+        <div 
+          className={`${showConversations ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-80 border-r bg-card`}
+        >
+          <div className="p-4 border-b">
+            <h2 className="text-xl font-semibold">Messages</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {filteredConversations.map((conv) => (
+              <div
+                key={conv.id}
+                className={`conversation-item ${
+                  selectedConversation?.id === conv.id ? 'active' : ''
+                } m-2`}
+                onClick={() => handleConversationSelect(conv)}
               >
-                <User className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow p-2">
-                <Phone className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow p-2">
-                <Video className="h-4 w-4" />
-              </Button>
-            </div>
-          </>
-        )}
-        {showConversations && (
-          <div className="flex items-center justify-between w-full">
-            <h1 className="text-xl font-bold text-white">Messages</h1>
-          </div>
-        )}
-      </div>
-      )}
-
-      {/* Conversations List */}
-      <div className={`${
-        isMobile 
-          ? (showConversations ? 'flex' : 'hidden')
-          : 'flex'
-      } ${
-        isMobile ? 'flex-1' : 'w-80 lg:w-96'
-      } flex-col bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border-r border-pickfirst-yellow/20`}>
-        
-        {/* Desktop Header */}
-        {!isMobile && (
-          <div className="p-4 border-b border-gray-700">
-            <h2 className="text-lg font-semibold text-white mb-4">Conversations</h2>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search conversations..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-gray-800 border-gray-700 text-white"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Mobile Search */}
-        {isMobile && showConversations && (
-          <div className="p-4 border-b border-gray-700">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search conversations..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-gray-800 border-gray-700 text-white"
-              />
-            </div>
-          </div>
-        )}
-        
-        {/* Conversations List */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-2 space-y-1">
-            {filteredConversations.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
-                <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">No conversations found</p>
-              </div>
-            ) : (
-              filteredConversations.map((conv) => {
-                const agent = conv.agent_profile;
-                const conversationTitle = enhancedConversationService.getConversationTitle(conv, user?.id || '');
-                const conversationSubtitle = enhancedConversationService.getConversationSubtitle(conv);
-                
-                return (
-                  <div
-                    key={conv.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
-                      selectedConversation?.id === conv.id 
-                        ? 'bg-pickfirst-yellow/20 border-pickfirst-yellow shadow-md' 
-                        : 'border-gray-700 hover:bg-gray-800/50 hover:border-gray-600'
-                    }`}
-                    onClick={() => handleConversationSelect(conv)}
-                  >
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-10 w-10 flex-shrink-0">
-                        <AvatarImage src={agent?.avatar_url} />
-                        <AvatarFallback className="bg-pickfirst-yellow text-black text-sm">
-                          {agent?.full_name?.split(' ').map(n => n[0]).join('') || 'A'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="font-medium text-white text-sm truncate">
-                            {agent?.full_name || 'Agent'}
-                          </div>
-                          {conv.unread_count && conv.unread_count > 0 && (
-                            <Badge className="bg-pickfirst-yellow text-black text-xs ml-2 flex-shrink-0">
-                              {conv.unread_count}
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        {/* Property Information */}
-                        {conv.property && (
-                          <div className="text-xs text-pickfirst-yellow mb-2 bg-pickfirst-yellow/10 px-2 py-1 rounded truncate">
-                            🏠 {conv.property.title} - ${conv.property.price?.toLocaleString()}
-                          </div>
-                        )}
-                        
-                        <div className="text-sm font-medium mb-1 text-gray-300 truncate">
-                          {conversationTitle}
-                        </div>
-                        
-                        <div className="text-xs text-gray-500 truncate mb-1">
-                          {conversationSubtitle}
-                        </div>
-                        
-                        {conv.last_message_at && (
-                          <div className="text-xs text-gray-500">
-                            {new Date(conv.last_message_at).toLocaleDateString([], { 
-                              month: 'short', 
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </div>
-                        )}
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-10 w-10 flex-shrink-0">
+                    <AvatarImage src={conv.agent_profile?.avatar_url} />
+                    <AvatarFallback>
+                      {conv.agent_profile?.full_name?.charAt(0) || 'A'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="font-medium text-foreground text-sm truncate">
+                        {conv.agent_profile?.full_name || 'Agent'}
                       </div>
+                      {conv.unread_count && conv.unread_count > 0 && (
+                        <Badge className="bg-pickfirst-yellow text-black text-xs ml-2 flex-shrink-0">
+                          {conv.unread_count}
+                        </Badge>
+                      )}
                     </div>
+                    <div className="text-sm font-medium text-muted-foreground truncate">
+                      {conv.subject}
+                    </div>
+                    {conv.last_message_at && (
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(conv.last_message_at).toLocaleDateString([], { 
+                          month: 'short', 
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    )}
                   </div>
-                );
-              })
-            )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
 
-      {/* Messages Area */}
-      <div className={`${
-        isMobile 
-          ? (showConversations ? 'hidden' : 'flex')
-          : 'flex'
-      } flex-1 flex-col bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl`}>
-        {selectedConversation ? (
-          <>
-            {/* Mobile Header */}
-            <div className="sticky top-0 z-10 bg-gray-900/80 backdrop-blur-md border-b border-gray-700 p-3">
-              <div className="flex items-center gap-3">
-                {isMobile && (
+        {/* Main Content - Messages */}
+        <div className={`${!showConversations ? 'flex' : 'hidden'} lg:flex flex-col flex-1 bg-background`}>
+          {selectedConversation ? (
+            <>
+              <div className="border-b p-4 flex items-center justify-between bg-card">
+                <div className="flex items-center space-x-4">
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="text-gray-400 hover:text-pickfirst-yellow"
                     onClick={handleBackToConversations}
+                    className="lg:hidden"
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
-                )}
-                <Avatar className="h-10 w-10">
-                  <AvatarImage 
-                    src={selectedConversation.agent_profile?.avatar_url} 
-                    alt={selectedConversation.agent_profile?.full_name}
-                  />
-                  <AvatarFallback className="bg-pickfirst-yellow text-black">
-                    {selectedConversation.agent_profile?.full_name?.split(' ').map(n => n[0]).join('') || 'A'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-white truncate">
-                    {selectedConversation.agent_profile?.full_name || 'Agent'}
-                  </div>
-                  <div className="text-xs text-gray-400 truncate">
-                    {selectedConversation.agent_profile?.email}
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={selectedConversation.agent_profile?.avatar_url} />
+                      <AvatarFallback>
+                        {selectedConversation.agent_profile?.full_name?.charAt(0) || 'A'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-medium text-foreground">
+                        {selectedConversation.agent_profile?.full_name || 'Agent'}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedConversation.property?.title || 'New conversation'}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center space-x-2">
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="text-gray-400 hover:text-pickfirst-yellow"
                     onClick={() => setShowAgentProfile(true)}
                     title="View Profile"
                   >
@@ -421,113 +289,102 @@ export const BuyerMessages = () => {
                   </Button>
                   <Button 
                     variant="ghost" 
-                    size="icon" 
-                    className="text-gray-400 hover:text-pickfirst-yellow"
-                    title="Call"
+                    size="icon"
+                    title="Call Agent"
                   >
                     <Phone className="h-5 w-5" />
                   </Button>
                 </div>
               </div>
-            </div>
-            
-            {/* Messages */}
-            <div 
-              ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto p-4 space-y-4"
-              style={{
-                WebkitOverflowScrolling: 'touch',
-                scrollBehavior: 'smooth'
-              }}
-            >
-              {messages.map((msg) => {
-                const isCurrentUser = msg.sender_id === user?.id;
-                return (
+
+              {/* Messages Container */}
+              <div 
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto p-4 space-y-4 chat-scrollbar smooth-scroll"
+              >
+                {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[85%] lg:max-w-[70%] p-3 rounded-2xl break-words ${
-                        isCurrentUser
-                          ? 'bg-pickfirst-yellow text-black rounded-br-md'
-                          : 'bg-gray-800 text-white rounded-bl-md'
+                      className={`message-bubble ${
+                        msg.sender_id === user?.id ? 'self' : 'other'
                       }`}
-                      style={{
-                        wordWrap: 'break-word',
-                        overflowWrap: 'break-word',
-                        hyphens: 'auto'
-                      }}
                     >
-                      <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                      <div className="text-sm">
                         {msg.content}
                       </div>
-                      <div className={`text-xs mt-1 ${
-                        isCurrentUser ? 'text-black/70' : 'text-gray-400'
-                      }`}>
-                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <div className="message-time">
+                        {new Date(msg.created_at).toLocaleTimeString([], { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
                       </div>
                     </div>
                   </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
-            
-            {/* Message Input */}
-            <div className="border-t border-gray-700 p-3 lg:p-4">
-              <div className="flex gap-2 items-end">
-                <div className="flex-1">
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Message Input */}
+              <div className="border-t p-4 bg-card">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSendMessage();
+                }} className="flex items-end space-x-2">
                   <Textarea
-                    placeholder="Type your reply..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="min-h-[44px] max-h-32 resize-none bg-gray-800 border-gray-700 text-white rounded-2xl px-4 py-3"
-                    style={{
-                      lineHeight: '1.4',
-                    }}
+                    onKeyDown={handleKeyPress}
+                    placeholder="Type a message..."
+                    className="message-input flex-1"
+                    rows={1}
                   />
-                </div>
+                  <Button 
+                    type="submit"
+                    size="icon" 
+                    disabled={!newMessage.trim() || sending}
+                    className="bg-pickfirst-yellow hover:bg-pickfirst-yellow/90 text-foreground"
+                  >
+                    {sending ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Send className="h-5 w-5" />
+                    )}
+                  </Button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center space-y-2 max-w-md p-8">
+                <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground" />
+                <h3 className="text-lg font-medium text-foreground">No conversation selected</h3>
+                <p className="text-sm text-muted-foreground">
+                  Select a conversation to start messaging
+                </p>
                 <Button 
-                  onClick={handleSendMessage} 
-                  disabled={!newMessage.trim() || sending}
-                  className="bg-pickfirst-yellow text-black hover:bg-pickfirst-yellow/90 disabled:opacity-50 rounded-full p-3 flex-shrink-0"
+                  variant="outline" 
+                  className="mt-4 lg:hidden"
+                  onClick={() => setShowConversations(true)}
                 >
-                  {sending ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black"></div>
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  View Conversations
                 </Button>
               </div>
             </div>
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="text-center text-gray-400">
-              <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-50" />
-              <div className="text-lg font-medium mb-2">Select a conversation</div>
-              <div className="text-sm">Choose a conversation to view messages</div>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Agent Profile Modal */}
+      {/* Agent Profile Dialog */}
       {selectedConversation?.agent_profile && (
-        <Dialog open={showAgentProfile} onOpenChange={setShowAgentProfile}>
-          <DialogContent className="max-w-md w-[calc(100%-2rem)] sm:max-w-lg bg-gray-800 border-gray-700 text-white">
-            <DialogHeader>
-              <DialogTitle className="text-white">Agent Profile</DialogTitle>
-            </DialogHeader>
-            <AgentProfileView
-              agentId={selectedConversation.agent_profile.id}
-              isOpen={showAgentProfile}
-              onClose={() => setShowAgentProfile(false)}
-            />
-          </DialogContent>
-        </Dialog>
+        <AgentProfileView 
+          isOpen={showAgentProfile}
+          onClose={() => setShowAgentProfile(false)}
+          agentId={selectedConversation.agent_id}
+        />
       )}
     </div>
   );

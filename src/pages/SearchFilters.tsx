@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Search, Zap, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Search, Zap, TrendingUp, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
@@ -8,9 +8,12 @@ import { toast } from 'sonner';
 import ProductionFilterSystem from '@/components/property/ProductionFilterSystem';
 import { AdvancedPropertyFilters, FilterResult } from '@/services/filterService';
 import PropertyInsights from '@/components/property/PropertyInsights';
+import { useSubscription } from '@/hooks/useSubscription';
+import { FeatureGate } from '@/components/ui/FeatureGate';
 
 const EnhancedSearchFiltersPage = () => {
   const navigate = useNavigate();
+  const { isFeatureEnabled } = useSubscription();
   
   const [results, setResults] = useState<FilterResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -119,11 +122,17 @@ const EnhancedSearchFiltersPage = () => {
         <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
           
           {/* Production Filter System */}
-          <ProductionFilterSystem
-            onResultsChange={handleResultsChange}
-            onLoadingChange={handleLoadingChange}
-            showResults={showResults}
-          />
+          <FeatureGate 
+            feature="advanced_property_search"
+            title="Advanced Search"
+            description="Upgrade to Premium to unlock advanced search filters and in-depth property insights."
+          >
+            <ProductionFilterSystem
+              onResultsChange={handleResultsChange}
+              onLoadingChange={handleLoadingChange}
+              showResults={showResults}
+            />
+          </FeatureGate>
 
           {/* Results Section */}
           {showResults && (
@@ -161,14 +170,54 @@ const EnhancedSearchFiltersPage = () => {
                         <div key={property.id} className="space-y-4">
                           <PropertyCard property={property} />
                           {/* Property Insights for filtered results */}
-                          {property.latitude && property.longitude && (
+                          <FeatureGate 
+                            feature="advanced_property_search"
+                            fallback={
+                              <Button variant="outline" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                                <Lock className="w-4 h-4 mr-2" />
+                                Show Basic Results
+                              </Button>
+                            }
+                          >
+                            <Button variant="outline" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                              <TrendingUp className="w-4 h-4 mr-2" />
+                              View Advanced Insights
+                            </Button>
+                          </FeatureGate>
+                          <FeatureGate 
+                            feature="advanced_property_search"
+                            fallback={
+                              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                                <div className="flex">
+                                  <div className="flex-shrink-0">
+                                    <Zap className="h-5 w-5 text-yellow-400" />
+                                  </div>
+                                  <div className="ml-3">
+                                    <p className="text-sm text-yellow-700">
+                                      Upgrade to Premium to unlock advanced property insights, in-depth analytics, and personalized recommendations.
+                                    </p>
+                                    <div className="mt-2">
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        onClick={() => navigate('/subscription')}
+                                        className="mt-2"
+                                      >
+                                        Upgrade Now
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            }
+                          >
                             <PropertyInsights
                               address={property.address}
                               latitude={property.latitude}
                               longitude={property.longitude}
                               propertyId={property.id}
                             />
-                          )}
+                          </FeatureGate>
                         </div>
                       ))}
                     </div>
