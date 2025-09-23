@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Registration from "./pages/Registration";
@@ -52,40 +53,51 @@ const App = () => (
           <Sonner />
           <BrowserRouter basename={import.meta.env.BASE_URL}>
             <Routes>
+              {/* Public Routes - No Authentication Required */}
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/signup" element={<Registration />} />
-              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/about" element={<About />} />
-              <Route path="/admin-properties" element={<AdminPropertyManagementPage />} />
-              <Route path="/admin-users" element={<AdminUserManagementPage />} />
-              <Route path="/database-management" element={<DatabaseManagementPage />} />
-              <Route path="/system-alerts" element={<SystemAlertsPage />} />
-              <Route path="/system-logs" element={<SystemLogsPage />} />
-              <Route path="/platform-settings" element={<PlatformSettingsPage />} />
-              <Route path="/security-permissions" element={<SecurityPermissionsPage />} />
-              <Route path="/platform-analytics" element={<PlatformAnalyticsPage />} />
-              <Route path="/my-clients" element={<MyClientsPage />} />
-              <Route path="/appointments" element={<AppointmentsPage />} />
-              <Route path="/agent-analytics" element={<AgentAnalyticsPage />} />
-              <Route path="/agent-messages" element={<AgentMessagesPage />} />
-              <Route path="/agent-leads" element={<AgentLeadsPage />} />
-              <Route path="/agent-profile" element={<AgentProfilePage />} />
-              <Route path="/my-listings" element={<MyListingsPage />} />
-              <Route path="/buyer-messages" element={<BuyerMessagesPage />} />
               <Route path="/browse-properties" element={<BrowsePropertiesPage />} />
-              <Route path="/saved-properties" element={<SavedPropertiesPage />} />
               <Route path="/property-map" element={<PropertyMapPage />} />
-              <Route path="/search-filters" element={<SearchFiltersPage />} />
-              <Route path="/buyer-account-settings" element={<BuyerAccountSettingsPage />} />
-              <Route path="/profile-settings" element={<ProfileSettingsPage />} />
-              <Route path="/subscription-management" element={<SubscriptionManagementPage />} />
               <Route path="/property/:id" element={<PropertyDetails />} />
-              <Route path="/system-testing" element={<SystemTestingPage />} />
-              <Route path="/login-history" element={<LoginHistoryManagementPage />} />
+              
+              {/* Protected Routes - Authentication Required */}
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/profile-settings" element={<ProtectedRoute><ProfileSettingsPage /></ProtectedRoute>} />
+              <Route path="/subscription-management" element={<ProtectedRoute><SubscriptionManagementPage /></ProtectedRoute>} />
+              
+              {/* Admin Routes - Admin Role Required */}
+              <Route path="/admin-properties" element={<ProtectedRoute requiredRole="super_admin"><AdminPropertyManagementPage /></ProtectedRoute>} />
+              <Route path="/admin-users" element={<ProtectedRoute requiredRole="super_admin"><AdminUserManagementPage /></ProtectedRoute>} />
+              <Route path="/database-management" element={<ProtectedRoute requiredRole="super_admin"><DatabaseManagementPage /></ProtectedRoute>} />
+              <Route path="/system-alerts" element={<ProtectedRoute requiredRole="super_admin"><SystemAlertsPage /></ProtectedRoute>} />
+              <Route path="/system-logs" element={<ProtectedRoute requiredRole="super_admin"><SystemLogsPage /></ProtectedRoute>} />
+              <Route path="/platform-settings" element={<ProtectedRoute requiredRole="super_admin"><PlatformSettingsPage /></ProtectedRoute>} />
+              <Route path="/security-permissions" element={<ProtectedRoute requiredRole="super_admin"><SecurityPermissionsPage /></ProtectedRoute>} />
+              <Route path="/platform-analytics" element={<ProtectedRoute requiredRole="super_admin"><PlatformAnalyticsPage /></ProtectedRoute>} />
+              <Route path="/system-testing" element={<ProtectedRoute requiredRole="super_admin"><SystemTestingPage /></ProtectedRoute>} />
+              <Route path="/login-history" element={<ProtectedRoute requiredRole="super_admin"><LoginHistoryManagementPage /></ProtectedRoute>} />
+              
+              {/* Agent Routes - Agent Role Required */}
+              <Route path="/my-clients" element={<ProtectedRoute requiredRole="agent"><MyClientsPage /></ProtectedRoute>} />
+              <Route path="/appointments" element={<ProtectedRoute requiredRole="agent"><AppointmentsPage /></ProtectedRoute>} />
+              <Route path="/agent-analytics" element={<ProtectedRoute requiredRole="agent"><AgentAnalyticsPage /></ProtectedRoute>} />
+              <Route path="/agent-messages" element={<ProtectedRoute requiredRole="agent"><AgentMessagesPage /></ProtectedRoute>} />
+              <Route path="/agent-leads" element={<ProtectedRoute requiredRole="agent"><AgentLeadsPage /></ProtectedRoute>} />
+              <Route path="/agent-profile" element={<ProtectedRoute requiredRole="agent"><AgentProfilePage /></ProtectedRoute>} />
+              <Route path="/my-listings" element={<ProtectedRoute requiredRole="agent"><MyListingsPage /></ProtectedRoute>} />
+              
+              {/* Buyer Routes - Buyer Role Required */}
+              <Route path="/buyer-messages" element={<ProtectedRoute requiredRole="buyer"><BuyerMessagesPage /></ProtectedRoute>} />
+              <Route path="/saved-properties" element={<ProtectedRoute requiredRole="buyer"><SavedPropertiesPage /></ProtectedRoute>} />
+              <Route path="/search-filters" element={<ProtectedRoute requiredRole="buyer"><SearchFiltersPage /></ProtectedRoute>} />
+              <Route path="/buyer-account-settings" element={<ProtectedRoute requiredRole="buyer"><BuyerAccountSettingsPage /></ProtectedRoute>} />
+              
+              {/* 404 Route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
