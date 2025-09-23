@@ -2,6 +2,8 @@ import { useState, useEffect, createContext, useContext, ReactNode, useCallback 
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, clearAuthTokens, handleAuthError } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
+import { ipTrackingService } from '@/services/ipTrackingService';
+import { rateLimitService } from '@/services/rateLimitService';
 
 type Profile = Tables<'profiles'>;
 
@@ -108,6 +110,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     
+    // Log signup attempt
+    await ipTrackingService.logLoginActivity({
+      user_id: data.user?.id,
+      email,
+      login_type: 'signup',
+      success: !error,
+      failure_reason: error?.message,
+      session_id: data.session?.access_token
+    });
+    
     // Send welcome email for new users (async, don't wait for it)
     if (!error && data.user && !data.user.email_confirmed_at) {
       // Use setTimeout to send email without blocking the signup process
@@ -130,9 +142,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const rateLimitResult = await rateLimitService.checkRateLimit(email, 'signIn');
+      if (!rateLimitResult.allowed) {
+        return { error: new Error('Too many login attempts. Please try again later.') };
+      }
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
+      });
+      
+      // Log signin attempt
+      await ipTrackingService.logLoginActivity({
+        user_id: data.user?.id,
+        email,
+        login_type: 'signin',
+        success: !error,
+        failure_reason: error?.message,
+        session_id: data.session?.access_token
       });
       
       if (error) {
@@ -142,6 +169,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { error };
     } catch (error) {
       console.error('Sign in error:', error);
+      // Log failed signin attempt
+      await ipTrackingService.logLoginActivity({
+        email,
+        login_type: 'signin',
+        success: false,
+        failure_reason: error.message
+      });
       await handleAuthError(error);
       return { error };
     }
@@ -149,11 +183,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
+      // Get current user before signing out
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
       await supabase.auth.signOut();
       clearAuthTokens(); // Clear any remaining tokens
+      
+      // Log signout attempt
+      await ipTrackingService.logLoginActivity({
+        user_id: currentUser?.id,
+        email: currentUser?.email || '',
+        login_type: 'logout',
+        success: true
+      });
     } catch (error) {
       console.error('Sign out error:', error);
       clearAuthTokens(); // Clear tokens even if signout fails
+      
+      // Log failed signout attempt
+      await ipTrackingService.logLoginActivity({
+        user_id: user?.id,
+        email: user?.email || '',
+        login_type: 'logout',
+        success: false,
+        failure_reason: error.message
+      });
     }
   };
 
@@ -180,6 +234,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         redirectTo: redirectUrl
       });
       
+      // Log forgot password attempt
+      await ipTrackingService.logLoginActivity({
+        email,
+        login_type: 'forgot_password',
+        success: !error,
+        failure_reason: error?.message
+      });
+      
       // Send custom password reset email for better branding
       if (!error) {
         setTimeout(async () => {
@@ -195,14 +257,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { error };
     } catch (error) {
       console.error('Forgot password error:', error);
+      // Log forgot password attempt
+      await ipTrackingService.logLoginActivity({
+        email,
+        login_type: 'forgot_password',
+        success: false,
+        failure_reason: error.message
+      });
       return { error };
     }
   };
 
   const resetPassword = async (password: string) => {
     try {
+      // Get current user before password reset
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
       const { error } = await supabase.auth.updateUser({
         password: password
+      });
+      
+      // Log reset password attempt
+      await ipTrackingService.logLoginActivity({
+        user_id: currentUser?.id,
+        email: currentUser?.email || '',
+        login_type: 'password_reset',
+        success: !error,
+        failure_reason: error?.message
       });
       
       if (error) {
@@ -212,6 +293,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { error };
     } catch (error) {
       console.error('Reset password error:', error);
+      
+      // Log failed reset password attempt
+      await ipTrackingService.logLoginActivity({
+        user_id: user?.id,
+        email: user?.email || '',
+        login_type: 'password_reset',
+        success: false,
+        failure_reason: error.message
+      });
       await handleAuthError(error);
       return { error };
     }

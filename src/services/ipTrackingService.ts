@@ -29,7 +29,7 @@ export interface IPTrackingData {
 export interface LoginActivityData {
   user_id?: string;
   email: string;
-  login_type: 'signin' | 'signup' | 'password_reset' | 'logout';
+  login_type: 'signin' | 'signup' | 'password_reset' | 'logout' | 'forgot_password';
   success: boolean;
   failure_reason?: string;
   session_id?: string;
