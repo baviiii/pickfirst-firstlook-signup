@@ -33,16 +33,29 @@ export const AgentMessages = () => {
   const [sending, setSending] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
   const [showConversations, setShowConversations] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [showBuyerProfile, setShowBuyerProfile] = useState(false);
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const unsubscribeRef = useRef(null);
 
-  // Check for mobile screen size
+  const scrollToBottom = useCallback(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  }, []);
+
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth >= 768) {
+      const wasMobile = isMobile;
+      const nowMobile = window.innerWidth < 1024;
+      setIsMobile(nowMobile);
+      
+      // Reset conversation view when resizing to desktop
+      if (wasMobile && !nowMobile) {
         setShowConversations(true);
       }
     };
@@ -50,16 +63,14 @@ export const AgentMessages = () => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  }, [isMobile]);
 
-  // Load conversations
   useEffect(() => {
     if (user) {
       loadConversations();
     }
   }, [user]);
 
-  // Load messages when conversation is selected
   useEffect(() => {
     if (selectedConversation) {
       loadMessages(selectedConversation.id);
@@ -72,12 +83,10 @@ export const AgentMessages = () => {
     }
   }, [selectedConversation, user]);
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
-  // Handle mobile conversation selection
   const handleConversationSelect = (conv) => {
     setSelectedConversation(conv);
     if (isMobile) {
@@ -85,7 +94,6 @@ export const AgentMessages = () => {
     }
   };
 
-  // Handle back to conversations on mobile
   const handleBackToConversations = () => {
     setShowConversations(true);
     if (isMobile) {
@@ -525,54 +533,72 @@ export const AgentMessages = () => {
       } flex-1 flex-col bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl`}>
         {selectedConversation ? (
           <>
-            {/* Desktop Header */}
-            {!isMobile && (
-              <div className="border-b border-gray-700 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 lg:h-12 lg:w-12">
-                      <AvatarImage src={selectedConversation.client_profile?.avatar_url} />
-                      <AvatarFallback className="bg-pickfirst-yellow text-black">
-                        {selectedConversation.client_profile?.full_name?.split(' ').map(n => n[0]).join('') || 'C'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-white truncate">
-                        {selectedConversation.client_profile?.full_name || 'Client'}
-                      </div>
-                      <div className="text-sm text-gray-400 truncate">
-                        {selectedConversation.client_profile?.email}
-                      </div>
-                      {selectedConversation.property && (
-                        <div className="text-xs text-pickfirst-yellow mt-1 bg-pickfirst-yellow/10 px-2 py-1 rounded">
-                          🏠 {selectedConversation.property.title} - ${selectedConversation.property.price?.toLocaleString()}
-                        </div>
-                      )}
-                    </div>
+            {/* Mobile Header */}
+            <div className="sticky top-0 z-10 bg-gray-900/80 backdrop-blur-md border-b border-gray-700 p-3">
+              <div className="flex items-center gap-3">
+                {isMobile && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-gray-400 hover:text-pickfirst-yellow"
+                    onClick={handleBackToConversations}
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </Button>
+                )}
+                <Avatar className="h-10 w-10">
+                  <AvatarImage 
+                    src={selectedConversation.client_profile?.avatar_url}
+                    alt={selectedConversation.client_profile?.full_name || 'Client'}
+                  />
+                  <AvatarFallback className="bg-pickfirst-yellow text-black">
+                    {selectedConversation.client_profile?.full_name?.split(' ').map(n => n[0]).join('') || 'C'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-white truncate">
+                    {selectedConversation.client_profile?.full_name || 'Client'}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-gray-400 hover:text-pickfirst-yellow"
-                      onClick={() => setShowBuyerProfile(true)}
-                      title="View Buyer Profile"
-                    >
-                      <User className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow">
-                      <Video className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
+                  <div className="text-xs text-gray-400 truncate">
+                    {selectedConversation.client_profile?.email}
                   </div>
                 </div>
+                <div className="flex items-center gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-gray-400 hover:text-pickfirst-yellow"
+                    onClick={() => setShowBuyerProfile(true)}
+                    title="View Profile"
+                  >
+                    <User className="h-5 w-5" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-gray-400 hover:text-pickfirst-yellow"
+                    title="Video Call"
+                  >
+                    <Video className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
-            )}
+              {selectedConversation.property && (
+                <div className="text-xs text-pickfirst-yellow mt-1 bg-pickfirst-yellow/10 px-2 py-1 rounded truncate">
+                  🏠 {selectedConversation.property.title} - ${selectedConversation.property.price?.toLocaleString()}
+                </div>
+              )}
+            </div>
             
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div 
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto p-4 space-y-4"
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                scrollBehavior: 'smooth'
+              }}
+            >
               {messages.map((msg) => {
                 const isCurrentUser = msg.sender_id === user?.id;
                 return (
@@ -595,13 +621,10 @@ export const AgentMessages = () => {
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">
                         {msg.content}
                       </div>
-                      <div className={`text-xs mt-2 ${
+                      <div className={`text-xs mt-1 ${
                         isCurrentUser ? 'text-black/70' : 'text-gray-400'
                       }`}>
-                        {new Date(msg.created_at).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
                   </div>
@@ -658,18 +681,19 @@ export const AgentMessages = () => {
       </div>
 
       {/* Buyer Profile Modal */}
-      {selectedConversation && (
-        <BuyerProfileView
-          buyerId={selectedConversation.client_id}
-          isOpen={showBuyerProfile}
-          onClose={() => setShowBuyerProfile(false)}
-          onStartConversation={() => {
-            setShowBuyerProfile(false);
-            // Focus on the message input
-            const messageInput = document.querySelector('textarea[placeholder*="Type"]') as HTMLTextAreaElement;
-            messageInput?.focus();
-          }}
-        />
+      {selectedConversation?.client_profile && (
+        <Dialog open={showBuyerProfile} onOpenChange={setShowBuyerProfile}>
+          <DialogContent className="max-w-md w-[calc(100%-2rem)] sm:max-w-lg bg-gray-800 border-gray-700 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-white">Buyer Profile</DialogTitle>
+            </DialogHeader>
+            <BuyerProfileView
+              buyerId={selectedConversation.client_id}
+              isOpen={showBuyerProfile}
+              onClose={() => setShowBuyerProfile(false)}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

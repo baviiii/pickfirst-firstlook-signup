@@ -5,6 +5,7 @@ import { auditService } from './auditService';
 
 export interface EnhancedConversation extends Tables<'conversations'> {
   agent_profile?: {
+    id: string;
     full_name: string;
     email: string;
     phone?: string;
@@ -326,20 +327,57 @@ class EnhancedConversationService {
     const [agentProfile, clientProfile] = await Promise.all([
       supabase
         .from('profiles')
-        .select('full_name, email, phone, company, avatar_url')
+        .select('id, full_name, email, phone, company, avatar_url')
         .eq('id', conversation.agent_id)
         .single()
-        .then(({ data }) => data),
+        .then(({ data }) => data || null),
       supabase
         .from('profiles')
         .select('full_name, email, phone, avatar_url')
         .eq('id', conversation.client_id)
         .single()
-        .then(({ data }) => data)
+        .then(({ data }) => data || null)
     ]);
 
-    enhanced.agent_profile = agentProfile;
-    enhanced.client_profile = clientProfile;
+    // Set agent profile with required fields
+    if (agentProfile && agentProfile.id) {
+      enhanced.agent_profile = {
+        id: agentProfile.id,
+        full_name: agentProfile.full_name || 'Unknown Agent',
+        email: agentProfile.email || '',
+        phone: agentProfile.phone,
+        company: agentProfile.company,
+        avatar_url: agentProfile.avatar_url
+      };
+    } else {
+      // Fallback for missing agent profile
+      enhanced.agent_profile = {
+        id: conversation.agent_id || 'unknown',
+        full_name: 'Unknown Agent',
+        email: '',
+        phone: '',
+        company: '',
+        avatar_url: ''
+      };
+    }
+
+    // Set client profile
+    if (clientProfile) {
+      enhanced.client_profile = {
+        full_name: clientProfile.full_name || 'Unknown Client',
+        email: clientProfile.email || '',
+        phone: clientProfile.phone,
+        avatar_url: clientProfile.avatar_url
+      };
+    } else {
+      // Fallback for missing client profile
+      enhanced.client_profile = {
+        full_name: 'Unknown Client',
+        email: '',
+        phone: '',
+        avatar_url: ''
+      };
+    }
 
     // Get property if available
     const propertyId = (conversation.metadata as any)?.property_id;

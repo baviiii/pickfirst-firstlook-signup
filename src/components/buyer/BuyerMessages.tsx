@@ -12,6 +12,7 @@ import { AgentProfileView } from '@/components/agent/AgentProfileView';
 import { enhancedConversationService } from '@/services/enhancedConversationService';
 import type { EnhancedConversation } from '@/services/enhancedConversationService';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export const BuyerMessages = () => {
   const { user, profile } = useAuth();
@@ -24,14 +25,19 @@ export const BuyerMessages = () => {
   const [sending, setSending] = useState(false);
   const [showAgentProfile, setShowAgentProfile] = useState(false);
   const [showConversations, setShowConversations] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Check for mobile screen size
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-      if (window.innerWidth >= 1024) {
+      const wasMobile = isMobile;
+      const nowMobile = window.innerWidth < 1024;
+      setIsMobile(nowMobile);
+      
+      // Reset conversation view when resizing to desktop
+      if (wasMobile && !nowMobile) {
         setShowConversations(true);
       }
     };
@@ -39,7 +45,7 @@ export const BuyerMessages = () => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  }, [isMobile]);
 
   // Load conversations
   useEffect(() => {
@@ -61,9 +67,18 @@ export const BuyerMessages = () => {
     }
   }, [selectedConversation, user]);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Scroll to bottom when new messages arrive
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollToBottom();
   }, [messages]);
 
   // Handle mobile conversation selection
@@ -364,66 +379,67 @@ export const BuyerMessages = () => {
       } flex-1 flex-col bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl`}>
         {selectedConversation ? (
           <>
-            {/* Desktop Header */}
-            {!isMobile && (
-              <div className="border-b border-gray-700 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 lg:h-12 lg:w-12">
-                      <AvatarImage src={selectedConversation.agent_profile?.avatar_url} />
-                      <AvatarFallback className="bg-pickfirst-yellow text-black">
-                        {selectedConversation.agent_profile?.full_name?.split(' ').map(n => n[0]).join('') || 'A'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-white truncate">
-                        {selectedConversation.agent_profile?.full_name || 'Agent'}
-                      </div>
-                      <div className="text-sm text-gray-400 truncate">
-                        {selectedConversation.agent_profile?.email}
-                      </div>
-                      {selectedConversation.agent_profile?.phone && (
-                        <div className="text-xs text-gray-500">📞 {selectedConversation.agent_profile.phone}</div>
-                      )}
-                      {selectedConversation.agent_profile?.company && (
-                        <div className="text-xs text-gray-500">🏢 {selectedConversation.agent_profile.company}</div>
-                      )}
-                      {selectedConversation.property && (
-                        <div className="text-xs text-pickfirst-yellow mt-1 bg-pickfirst-yellow/10 px-2 py-1 rounded">
-                          🏠 {selectedConversation.property.title} - ${selectedConversation.property.price?.toLocaleString()}
-                        </div>
-                      )}
-                      {!selectedConversation.property && (
-                        <div className="text-sm text-gray-400 truncate">{selectedConversation.subject}</div>
-                      )}
-                    </div>
+            {/* Mobile Header */}
+            <div className="sticky top-0 z-10 bg-gray-900/80 backdrop-blur-md border-b border-gray-700 p-3">
+              <div className="flex items-center gap-3">
+                {isMobile && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-gray-400 hover:text-pickfirst-yellow"
+                    onClick={handleBackToConversations}
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </Button>
+                )}
+                <Avatar className="h-10 w-10">
+                  <AvatarImage 
+                    src={selectedConversation.agent_profile?.avatar_url} 
+                    alt={selectedConversation.agent_profile?.full_name}
+                  />
+                  <AvatarFallback className="bg-pickfirst-yellow text-black">
+                    {selectedConversation.agent_profile?.full_name?.split(' ').map(n => n[0]).join('') || 'A'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-white truncate">
+                    {selectedConversation.agent_profile?.full_name || 'Agent'}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-gray-400 hover:text-pickfirst-yellow"
-                      onClick={() => setShowAgentProfile(true)}
-                      title="View Agent Profile"
-                    >
-                      <User className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow">
-                      <Phone className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow">
-                      <Video className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-400 hover:text-pickfirst-yellow">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
+                  <div className="text-xs text-gray-400 truncate">
+                    {selectedConversation.agent_profile?.email}
                   </div>
                 </div>
+                <div className="flex items-center gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-gray-400 hover:text-pickfirst-yellow"
+                    onClick={() => setShowAgentProfile(true)}
+                    title="View Profile"
+                  >
+                    <User className="h-5 w-5" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-gray-400 hover:text-pickfirst-yellow"
+                    title="Call"
+                  >
+                    <Phone className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
-            )}
+            </div>
             
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div 
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto p-4 space-y-4"
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                scrollBehavior: 'smooth'
+              }}
+            >
               {messages.map((msg) => {
                 const isCurrentUser = msg.sender_id === user?.id;
                 return (
@@ -446,13 +462,10 @@ export const BuyerMessages = () => {
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">
                         {msg.content}
                       </div>
-                      <div className={`text-xs mt-2 ${
+                      <div className={`text-xs mt-1 ${
                         isCurrentUser ? 'text-black/70' : 'text-gray-400'
                       }`}>
-                        {new Date(msg.created_at).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
                   </div>
@@ -502,17 +515,19 @@ export const BuyerMessages = () => {
       </div>
 
       {/* Agent Profile Modal */}
-      {selectedConversation && (
-        <AgentProfileView
-          agentId={selectedConversation.agent_id}
-          isOpen={showAgentProfile}
-          onClose={() => setShowAgentProfile(false)}
-          onStartConversation={() => {
-            setShowAgentProfile(false);
-            const messageInput = document.querySelector('textarea[placeholder="Type your reply..."]') as HTMLTextAreaElement;
-            messageInput?.focus();
-          }}
-        />
+      {selectedConversation?.agent_profile && (
+        <Dialog open={showAgentProfile} onOpenChange={setShowAgentProfile}>
+          <DialogContent className="max-w-md w-[calc(100%-2rem)] sm:max-w-lg bg-gray-800 border-gray-700 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-white">Agent Profile</DialogTitle>
+            </DialogHeader>
+            <AgentProfileView
+              agentId={selectedConversation.agent_profile.id}
+              isOpen={showAgentProfile}
+              onClose={() => setShowAgentProfile(false)}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

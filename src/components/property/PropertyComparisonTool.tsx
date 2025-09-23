@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PropertyComparisonToolProps {
   className?: string;
@@ -45,13 +46,31 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
 
     setLoading(true);
     try {
+      // Search in both city and address fields for better matching
       const { data, error } = await PropertyService.getApprovedListings({
         city: term
       });
       
       if (error) throw error;
+      
+      // Also search in address if needed
+      let filteredResults = data || [];
+      
+      // If no results from city search, try searching in address
+      if (filteredResults.length === 0) {
+        const { data: addressData } = await supabase
+          .from('property_listings')
+          .select('*')
+          .ilike('address', `%${term}%`)
+          .eq('status', 'approved');
+          
+        if (addressData) {
+          filteredResults = addressData;
+        }
+      }
+      
       // Limit results to 10 items for search
-      setSearchResults((data || []).slice(0, 10));
+      setSearchResults(filteredResults.slice(0, 10));
     } catch (error) {
       console.error('Error searching properties:', error);
       toast.error('Failed to search properties');
@@ -59,6 +78,18 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchTerm.trim()) {
+        searchProperties(searchTerm);
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
 
   const addPropertyToComparison = (property: PropertyListing) => {
     if (selectedProperties.length >= MAX_COMPARISONS) {
@@ -135,50 +166,66 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2">
+              <div className="relative">
                 <Input
-                  placeholder="Search properties to add to comparison..."
+                  type="text"
+                  placeholder="Search properties by city or address..."
                   value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    searchProperties(e.target.value);
-                  }}
-                  className="flex-1"
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full"
                 />
-                {selectedProperties.length > 0 && (
-                  <Button variant="outline" onClick={clearComparison}>
-                    Clear All
-                  </Button>
+                {loading && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+                
+                {searchTerm && searchResults.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                    {searchResults.map((property) => (
+                      <div
+                        key={property.id}
+                        className="p-2 hover:bg-muted cursor-pointer flex items-center gap-2"
+                        onClick={() => addPropertyToComparison(property)}
+                      >
+                        <div className="flex-shrink-0 w-10 h-10 bg-muted rounded overflow-hidden">
+                          {property.images?.[0] ? (
+                            <img 
+                              src={property.images[0]} 
+                              alt={property.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-muted">
+                              <Home className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{property.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {property.address}, {property.city}
+                          </p>
+                          <p className="text-xs font-semibold text-primary">
+                            ${property.price?.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {searchTerm && searchResults.length === 0 && !loading && (
+                  <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg p-4 text-sm text-muted-foreground">
+                    No properties found matching "{searchTerm}"
+                  </div>
                 )}
               </div>
 
-              {/* Search Results */}
-              {searchResults.length > 0 && (
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {searchResults.map((property) => (
-                    <div
-                      key={property.id}
-                      className="flex items-center justify-between p-3 bg-muted/10 rounded-lg hover:bg-muted/20 transition-colors"
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium text-foreground">{property.title}</div>
-                        <div className="text-sm text-muted-foreground flex items-center gap-2">
-                          <MapPin className="h-3 w-3" />
-                          {property.city}, {property.state}
-                          <DollarSign className="h-3 w-3 ml-2" />
-                          ${property.price.toLocaleString()}
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => addPropertyToComparison(property)}
-                        disabled={selectedProperties.length >= MAX_COMPARISONS}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+              {selectedProperties.length > 0 && (
+                <Button variant="outline" onClick={clearComparison}>
+                  Clear All
+                </Button>
               )}
             </CardContent>
           </Card>

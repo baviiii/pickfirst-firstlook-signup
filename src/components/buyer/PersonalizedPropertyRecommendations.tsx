@@ -359,15 +359,15 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
             </div>
 
             {/* Property Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {recommendations.map((property) => (
                 <Card 
                   key={property.id} 
-                  className="group cursor-pointer hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/50 bg-card/50 backdrop-blur-sm"
+                  className="group cursor-pointer hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/50 bg-card/50 backdrop-blur-sm flex flex-col h-full"
                   onClick={() => handlePropertyClick(property.id)}
                 >
-                  <CardHeader className="p-0 relative">
-                    <div className="aspect-video bg-muted rounded-t-md overflow-hidden relative">
+                  <CardHeader className="p-0 relative flex-1 flex flex-col">
+                    <div className="aspect-video bg-muted rounded-t-md overflow-hidden relative flex-shrink-0">
                       {property.images && property.images.length > 0 ? (
                         <img
                           src={property.images[0]}
@@ -402,84 +402,98 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                       </Button>
                     </div>
                     
-                    <div className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <CardTitle className="text-base text-foreground line-clamp-1">
+                    <div className="p-3 sm:p-4 flex-1 flex flex-col">
+                      <div className="flex justify-between items-start mb-2 gap-2">
+                        <CardTitle className="text-sm sm:text-base text-foreground line-clamp-1 flex-1">
                           {property.title}
                         </CardTitle>
-                        <div className="text-primary font-bold text-lg">
+                        <div className="text-primary font-bold text-sm sm:text-base whitespace-nowrap">
                           ${property.price.toLocaleString()}
                         </div>
                       </div>
-                      <CardDescription className="text-muted-foreground text-sm line-clamp-1 mb-3">
-                        <MapPin className="h-3 w-3 inline mr-1" />
+                      
+                      <CardDescription className="text-muted-foreground text-xs sm:text-sm line-clamp-1 mb-2 sm:mb-3">
+                        <MapPin className="h-2.5 w-2.5 sm:h-3 sm:w-3 inline mr-1" />
                         {property.address}, {property.city}, {property.state}
                       </CardDescription>
                       
-                      {/* Property details */}
-                      <div className="flex flex-wrap gap-2 mb-3">
+                      {/* Property details - more compact on mobile */}
+                      <div className="flex flex-wrap gap-1 sm:gap-2 mb-2 sm:mb-3">
                         {property.bedrooms !== null && (
-                          <div className="flex items-center text-xs bg-blue-500/10 text-blue-300 px-2 py-1 rounded">
-                            <Bed className="h-3 w-3 mr-1" />
-                            {property.bedrooms} beds
+                          <div className="flex items-center text-[10px] sm:text-xs bg-blue-500/10 text-blue-300 px-1.5 sm:px-2 py-0.5 rounded">
+                            <Bed className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" />
+                            {property.bedrooms} bd
                           </div>
                         )}
                         {property.bathrooms !== null && (
-                          <div className="flex items-center text-xs bg-purple-500/10 text-purple-300 px-2 py-1 rounded">
-                            <Bath className="h-3 w-3 mr-1" />
-                            {property.bathrooms} baths
+                          <div className="flex items-center text-[10px] sm:text-xs bg-purple-500/10 text-purple-300 px-1.5 sm:px-2 py-0.5 rounded">
+                            <Bath className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" />
+                            {property.bathrooms} ba
                           </div>
                         )}
                         {property.square_feet !== null && (
-                          <div className="flex items-center text-xs bg-green-500/10 text-green-300 px-2 py-1 rounded">
-                            <Square className="h-3 w-3 mr-1" />
-                            {property.square_feet.toLocaleString()} sq ft
+                          <div className="flex items-center text-[10px] sm:text-xs bg-green-500/10 text-green-300 px-1.5 sm:px-2 py-0.5 rounded">
+                            <Square className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" />
+                            {Math.round(property.square_feet / 100) / 10}k sqft
                           </div>
                         )}
                       </div>
                       
-                      {/* Match criteria */}
-                      <div className="mb-3">
-                        <div className="text-xs text-muted-foreground mb-1">
+                      {/* Match criteria - simplified on mobile */}
+                      <div className="mb-2 sm:mb-3">
+                        <div className="text-xs text-muted-foreground mb-1 hidden sm:block">
                           Matches: {property.matchCriteria.matchedCriteria.join(', ')}
                         </div>
                         <div className="flex flex-wrap gap-1">
-                          {property.matchCriteria.matchedCriteria.map((criteria) => (
-                            <Badge key={criteria} variant="secondary" className="text-xs bg-primary/10 text-primary">
-                              <CheckCircle className="h-2 w-2 mr-1" />
+                          {property.matchCriteria.matchedCriteria.slice(0, 3).map((criteria) => (
+                            <Badge 
+                              key={criteria} 
+                              variant="secondary" 
+                              className="text-[10px] sm:text-xs bg-primary/10 text-primary h-5 sm:h-6 px-1.5 sm:px-2"
+                            >
+                              <CheckCircle className="h-2 w-2 sm:h-2.5 sm:w-2.5 mr-1" />
                               {criteria}
                             </Badge>
                           ))}
+                          {property.matchCriteria.matchedCriteria.length > 3 && (
+                            <Badge 
+                              variant="outline" 
+                              className="text-[10px] sm:text-xs h-5 sm:h-6 px-1.5 sm:px-2"
+                            >
+                              +{property.matchCriteria.matchedCriteria.length - 3}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
+                    
+                    <CardContent className="pt-0 px-3 sm:px-4 pb-3 sm:pb-4">
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="default" 
+                          size="sm"
+                          className="flex-1 text-xs sm:text-sm h-8 sm:h-9"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePropertyClick(property.id);
+                          }}
+                        >
+                          View Details
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="h-8 w-8 sm:h-9 sm:w-10 p-0 flex-shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/property/${property.id}?action=inquiry`);
+                          }}
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
                   </CardHeader>
-                  
-                  <CardContent className="pt-0 px-4 pb-4">
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="default" 
-                        size="sm"
-                        className="flex-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePropertyClick(property.id);
-                        }}
-                      >
-                        View Details
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/property/${property.id}?action=inquiry`);
-                        }}
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
                 </Card>
               ))}
             </div>
