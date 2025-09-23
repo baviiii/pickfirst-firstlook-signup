@@ -4,6 +4,7 @@ import { supabase, clearAuthTokens, handleAuthError } from '@/integrations/supab
 import { Tables } from '@/integrations/supabase/types';
 import { ipTrackingService } from '@/services/ipTrackingService';
 import { rateLimitService } from '@/services/rateLimitService';
+import { InputSanitizer } from '@/utils/inputSanitization';
 
 type Profile = Tables<'profiles'>;
 
@@ -96,16 +97,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string, userType?: string) => {
+    // Input validation and sanitization
+    const emailValidation = InputSanitizer.validateEmail(email);
+    if (!emailValidation.isValid) {
+      return { error: new Error(emailValidation.error || 'Invalid email address') };
+    }
+
+    const passwordValidation = InputSanitizer.validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return { error: new Error(passwordValidation.error || 'Invalid password') };
+    }
+
+    const fullNameValidation = fullName ? InputSanitizer.sanitizeText(fullName, 100) : { isValid: true, sanitizedValue: undefined };
+    if (!fullNameValidation.isValid) {
+      return { error: new Error(fullNameValidation.error || 'Invalid full name') };
+    }
+
+    const userTypeValidation = userType ? InputSanitizer.sanitizeText(userType, 20) : { isValid: true, sanitizedValue: 'buyer' };
+    if (!userTypeValidation.isValid) {
+      return { error: new Error('Invalid user type') };
+    }
+
     const redirectUrl = `${window.location.origin}/`;
     
     const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
+      email: emailValidation.sanitizedValue!,
+      password: passwordValidation.sanitizedValue!,
       options: {
         emailRedirectTo: redirectUrl,
         data: { 
-          full_name: fullName,
-          user_type: userType || 'buyer'
+          full_name: fullNameValidation.sanitizedValue,
+          user_type: userTypeValidation.sanitizedValue || 'buyer'
         }
       }
     });
@@ -113,7 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Log signup attempt
     await ipTrackingService.logLoginActivity({
       user_id: data.user?.id,
-      email,
+      email: emailValidation.sanitizedValue!,
       login_type: 'signup',
       success: !error,
       failure_reason: error?.message,
@@ -128,8 +150,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const { EmailService } = await import('@/services/emailService');
           await EmailService.sendWelcomeEmail(
             data.user.id, 
-            email, 
-            fullName
+            emailValidation.sanitizedValue!, 
+            fullNameValidation.sanitizedValue
           );
         } catch (emailError) {
           console.error('Failed to send welcome email:', emailError);
@@ -141,21 +163,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
+    // Input validation and sanitization
+    const emailValidation = InputSanitizer.validateEmail(email);
+    if (!emailValidation.isValid) {
+      return { error: new Error(emailValidation.error || 'Invalid email address') };
+    }
+
+    const passwordValidation = InputSanitizer.validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return { error: new Error(passwordValidation.error || 'Invalid password') };
+    }
+
     try {
-      const rateLimitResult = await rateLimitService.checkRateLimit(email, 'signIn');
+      const rateLimitResult = await rateLimitService.checkRateLimit(emailValidation.sanitizedValue!, 'signIn');
       if (!rateLimitResult.allowed) {
         return { error: new Error('Too many login attempts. Please try again later.') };
       }
       
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+        email: emailValidation.sanitizedValue!,
+        password: passwordValidation.sanitizedValue!
       });
       
       // Log signin attempt
       await ipTrackingService.logLoginActivity({
         user_id: data.user?.id,
-        email,
+        email: emailValidation.sanitizedValue!,
         login_type: 'signin',
         success: !error,
         failure_reason: error?.message,
@@ -171,7 +204,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Sign in error:', error);
       // Log failed signin attempt
       await ipTrackingService.logLoginActivity({
-        email,
+        email: emailValidation.sanitizedValue!,
         login_type: 'signin',
         success: false,
         failure_reason: error.message
@@ -214,29 +247,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) return { error: new Error('No user logged in') };
     
+    // Sanitize profile updates
+    const sanitizedUpdates: Partial<Profile> = {};
+    
+    for (const [key, value] of Object.entries(updates)) {
+      if (typeof value === 'string') {
+        const validation = InputSanitizer.sanitizeText(value, 500);
+        if (!validation.isValid) {
+          return { error: new Error(`Invalid ${key}: ${validation.error}`) };
+        }
+        sanitizedUpdates[key as keyof Profile] = validation.sanitizedValue as any;
+      } else {
+        sanitizedUpdates[key as keyof Profile] = value;
+      }
+    }
+    
     const { error } = await supabase
       .from('profiles')
-      .update(updates)
+      .update(sanitizedUpdates)
       .eq('id', user.id);
     
     if (!error) {
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      setProfile(prev => prev ? { ...prev, ...sanitizedUpdates } : null);
     }
     
     return { error };
   };
 
   const forgotPassword = async (email: string) => {
+    // Input validation and sanitization
+    const emailValidation = InputSanitizer.validateEmail(email);
+    if (!emailValidation.isValid) {
+      return { error: new Error(emailValidation.error || 'Invalid email address') };
+    }
+
     try {
       const redirectUrl = `${window.location.origin}/reset-password`;
       
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(emailValidation.sanitizedValue!, {
         redirectTo: redirectUrl
       });
       
       // Log forgot password attempt
       await ipTrackingService.logLoginActivity({
-        email,
+        email: emailValidation.sanitizedValue!,
         login_type: 'forgot_password',
         success: !error,
         failure_reason: error?.message
@@ -247,7 +301,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setTimeout(async () => {
           try {
             const { EmailService } = await import('@/services/emailService');
-            await EmailService.sendPasswordResetEmail(email);
+            await EmailService.sendPasswordResetEmail(emailValidation.sanitizedValue!);
           } catch (emailError) {
             console.error('Failed to send password reset email:', emailError);
           }
@@ -259,7 +313,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Forgot password error:', error);
       // Log forgot password attempt
       await ipTrackingService.logLoginActivity({
-        email,
+        email: emailValidation.sanitizedValue!,
         login_type: 'forgot_password',
         success: false,
         failure_reason: error.message
@@ -269,12 +323,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const resetPassword = async (password: string) => {
+    // Input validation and sanitization
+    const passwordValidation = InputSanitizer.validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return { error: new Error(passwordValidation.error || 'Invalid password') };
+    }
+
     try {
       // Get current user before password reset
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       
       const { error } = await supabase.auth.updateUser({
-        password: password
+        password: passwordValidation.sanitizedValue!
       });
       
       // Log reset password attempt

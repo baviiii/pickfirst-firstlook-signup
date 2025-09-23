@@ -43,6 +43,11 @@ class RateLimitService {
     this.configs.set('api:general', { maxRequests: 100, windowMs: 60000 }); // 100 requests per minute
     this.configs.set('api:auth', { maxRequests: 5, windowMs: 300000 }); // 5 auth attempts per 5 minutes
     
+    // Authentication rate limits (security critical)
+    this.configs.set('signIn', { maxRequests: 5, windowMs: 300000 }); // 5 sign in attempts per 5 minutes
+    this.configs.set('signUp', { maxRequests: 3, windowMs: 300000 }); // 3 sign up attempts per 5 minutes
+    this.configs.set('forgot_password', { maxRequests: 3, windowMs: 3600000 }); // 3 attempts per hour
+    
     // Password reset rate limits (security critical)
     this.configs.set('password_reset', { maxRequests: 3, windowMs: 24 * 60 * 60 * 1000 }); // 3 attempts per day
     this.configs.set('password_update', { maxRequests: 5, windowMs: 60 * 60 * 1000 }); // 5 updates per hour

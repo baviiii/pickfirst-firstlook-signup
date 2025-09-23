@@ -58,30 +58,32 @@ class IPTrackingService {
     }
 
     try {
-      const response = await fetch('/functions/v1/client-ip', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      // First try the Supabase Edge Function using the existing client configuration
+      // This uses the public anon key which is safe to expose
+      const response = await supabase.functions.invoke('client-ip', {
+        method: 'GET'
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      console.log('Client-IP function response:', response);
+      
+      if (response.data && !response.error) {
+        const data = response.data;
+        console.log('Client-IP response data:', data);
         
         const ipData: IPTrackingData = {
           ip: data.ip || 'unknown',
-          userAgent: data.userAgent || 'unknown',
+          userAgent: data.userAgent || navigator.userAgent || 'unknown',
           deviceInfo: data.deviceInfo || {
             browser: 'Unknown',
             os: 'Unknown',
             device: 'Unknown',
-            isMobile: false,
-            isTablet: false,
-            isDesktop: false
+            isMobile: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent),
+            isTablet: /iPad|Tablet/.test(navigator.userAgent),
+            isDesktop: !/Mobile|Android|iPhone|iPad|Tablet/.test(navigator.userAgent)
           },
           locationInfo: data.locationInfo,
-          referer: data.referer,
-          origin: data.origin,
+          referer: data.referer || document.referrer,
+          origin: data.origin || window.location.origin,
           timestamp: data.timestamp || new Date().toISOString()
         };
 
@@ -89,12 +91,48 @@ class IPTrackingService {
         this.clientIPCache = ipData;
         this.cacheExpiry = Date.now() + this.CACHE_DURATION;
 
+        console.log('Successfully cached IP data from Edge Function:', ipData);
         return ipData;
+      } else {
+        console.error('Client-IP function error:', response.error);
       }
     } catch (error) {
-      console.error('Failed to get client IP info:', error);
+      console.error('Edge Function failed, trying fallback:', error);
     }
 
+    // Fallback: Use public IP service + browser detection
+    try {
+      console.log('Using fallback IP detection...');
+      const fallbackIP = await this.getFallbackIP();
+      
+      const ipData: IPTrackingData = {
+        ip: fallbackIP,
+        userAgent: navigator.userAgent || 'unknown',
+        deviceInfo: {
+          browser: this.detectBrowser(),
+          os: this.detectOS(),
+          device: this.detectDevice(),
+          isMobile: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent),
+          isTablet: /iPad|Tablet/.test(navigator.userAgent),
+          isDesktop: !/Mobile|Android|iPhone|iPad|Tablet/.test(navigator.userAgent)
+        },
+        locationInfo: undefined, // No location data in fallback
+        referer: document.referrer || undefined,
+        origin: window.location.origin || undefined,
+        timestamp: new Date().toISOString()
+      };
+
+      // Cache the result
+      this.clientIPCache = ipData;
+      this.cacheExpiry = Date.now() + this.CACHE_DURATION;
+
+      console.log('Successfully cached fallback IP data:', ipData);
+      return ipData;
+    } catch (error) {
+      console.error('Fallback IP detection also failed:', error);
+    }
+
+    console.warn('All IP detection methods failed, returning null');
     return null;
   }
 
@@ -103,11 +141,27 @@ class IPTrackingService {
    */
   async logLoginActivity(activityData: LoginActivityData): Promise<void> {
     try {
-      const clientInfo = await this.getClientInfo();
+      let clientInfo = await this.getClientInfo();
       
+      // Provide fallback values if getClientInfo fails
       if (!clientInfo) {
-        console.warn('Could not get client IP info for login activity');
-        return;
+        console.warn('Could not get client IP info, using fallback values');
+        clientInfo = {
+          ip: 'unknown',
+          userAgent: navigator.userAgent || 'unknown',
+          deviceInfo: {
+            browser: 'Unknown',
+            os: 'Unknown', 
+            device: 'Unknown',
+            isMobile: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent),
+            isTablet: /iPad|Tablet/.test(navigator.userAgent),
+            isDesktop: !/Mobile|Android|iPhone|iPad|Tablet/.test(navigator.userAgent)
+          },
+          locationInfo: undefined,
+          referer: document.referrer || undefined,
+          origin: window.location.origin || undefined,
+          timestamp: new Date().toISOString()
+        };
       }
 
       const { error } = await supabase
@@ -129,6 +183,15 @@ class IPTrackingService {
 
       if (error) {
         console.error('Failed to log login activity:', error);
+        // Log the specific error details for debugging
+        console.error('Login activity data:', {
+          user_id: activityData.user_id,
+          email: activityData.email,
+          login_type: activityData.login_type,
+          success: activityData.success
+        });
+      } else {
+        console.log('Successfully logged login activity for:', activityData.email);
       }
     } catch (error) {
       console.error('Error logging login activity:', error);
@@ -269,6 +332,79 @@ class IPTrackingService {
     } catch (error) {
       console.error('Error getting login locations:', error);
       return [];
+    }
+  }
+
+  /**
+   * Get fallback IP address from public service
+   */
+  private async getFallbackIP(): Promise<string> {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json');
+      const data = await response.json();
+      return data.ip || 'unknown';
+    } catch (error) {
+      console.error('Failed to get fallback IP:', error);
+      return 'unknown';
+    }
+  }
+
+  /**
+   * Detect browser from user agent
+   */
+  private detectBrowser(): string {
+    const userAgent = navigator.userAgent;
+    
+    if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
+      return 'Chrome';
+    } else if (userAgent.includes('Firefox')) {
+      return 'Firefox';
+    } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+      return 'Safari';
+    } else if (userAgent.includes('Edg')) {
+      return 'Edge';
+    } else if (userAgent.includes('Opera') || userAgent.includes('OPR')) {
+      return 'Opera';
+    } else if (userAgent.includes('Trident')) {
+      return 'Internet Explorer';
+    }
+    
+    return 'Unknown';
+  }
+
+  /**
+   * Detect operating system from user agent
+   */
+  private detectOS(): string {
+    const userAgent = navigator.userAgent;
+    
+    if (userAgent.includes('Windows NT')) {
+      return 'Windows';
+    } else if (userAgent.includes('Mac OS X')) {
+      return 'macOS';
+    } else if (userAgent.includes('Linux')) {
+      return 'Linux';
+    } else if (userAgent.includes('Android')) {
+      return 'Android';
+    } else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
+      return 'iOS';
+    }
+    
+    return 'Unknown';
+  }
+
+  /**
+   * Detect device type from user agent
+   */
+  private detectDevice(): string {
+    const userAgent = navigator.userAgent;
+    
+    if (/Mobile|Android|iPhone/.test(userAgent)) {
+      return 'Mobile';
+    } else if (/iPad|Tablet/.test(userAgent)) {
+      return 'Tablet';
+    } else {
+      return 'Desktop';
     }
   }
 }

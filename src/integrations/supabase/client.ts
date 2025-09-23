@@ -39,10 +39,11 @@ export const clearAuthTokens = () => {
 
 // Enhanced error handling for auth errors
 export const handleAuthError = async (error: any) => {
+  // Only redirect on actual token/session errors, not authentication failures
   if (error?.message?.includes('Invalid Refresh Token') || 
       error?.message?.includes('Refresh Token Not Found') ||
-      error?.status === 400 || 
-      error?.status === 404) {
+      error?.message?.includes('JWT expired') ||
+      error?.message?.includes('Invalid JWT')) {
     
     console.log('Detected auth token error, clearing tokens...');
     clearAuthTokens();
@@ -51,5 +52,15 @@ export const handleAuthError = async (error: any) => {
     if (typeof window !== 'undefined') {
       window.location.href = '/auth';
     }
+  }
+  
+  // Don't redirect on authentication failures like wrong password
+  // These should be handled by the calling function
+  if (error?.message?.includes('Invalid login credentials') ||
+      error?.message?.includes('Email not confirmed') ||
+      error?.message?.includes('Invalid email or password')) {
+    console.log('Authentication failed:', error.message);
+    // Don't redirect, let the calling function handle the error
+    return;
   }
 };
