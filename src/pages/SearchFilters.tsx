@@ -77,26 +77,21 @@ const EnhancedSearchFiltersPage = () => {
       </div>
 
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-yellow-400/20">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+      <div className="sticky top-0 z-50 bg-gradient-to-r from-gray-900 to-black border-b border-yellow-400/20 backdrop-blur-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center space-x-4">
               <Button
                 variant="ghost"
-                size="sm"
-                onClick={() => navigate('/dashboard')}
-                className="text-gray-300 hover:text-yellow-400 hover:bg-yellow-400/10"
+                size="icon"
+                onClick={() => navigate(-1)}
+                className="text-yellow-400 hover:bg-yellow-400/10"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Back to Dashboard</span>
-                <span className="sm:hidden">Back</span>
+                <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
-                  <TrendingUp className="h-6 w-6 text-yellow-400" />
-                  Advanced Property Search with Insights
-                </h1>
-                <p className="text-sm text-yellow-400/80">
+                <h1 className="text-xl font-bold text-yellow-400">Advanced Search</h1>
+                <p className="text-sm text-gray-400">
                   Find properties with intelligent insights and ratings
                 </p>
               </div>
@@ -119,7 +114,7 @@ const EnhancedSearchFiltersPage = () => {
 
       {/* Content */}
       <div className="relative z-10">
-        <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+        <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 pt-20">
           
           {/* Production Filter System */}
           <FeatureGate 

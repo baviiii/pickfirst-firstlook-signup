@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -152,12 +151,12 @@ export const AuthForm = () => {
               </Button>
               
               <div className="text-center">
-                <a 
-                  href="/forgot-password" 
+                <Link 
+                  to="/forgot-password" 
                   className="text-pickfirst-yellow hover:text-pickfirst-yellow/80 text-sm font-medium transition-colors"
                 >
                   Forgot your password?
-                </a>
+                </Link>
               </div>
             </form>
           </TabsContent>

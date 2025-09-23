@@ -239,10 +239,10 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
   };
 
   const getMatchColor = (percentage: number) => {
-    if (percentage >= 90) return 'bg-green-500/20 text-green-300 border-green-500/30';
-    if (percentage >= 80) return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
-    if (percentage >= 70) return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
-    return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
+    if (percentage >= 90) return 'bg-green-500/90 text-white';
+    if (percentage >= 80) return 'bg-blue-500/90 text-white';
+    if (percentage >= 70) return 'bg-yellow-500/90 text-white';
+    return 'bg-gray-500/90 text-white';
   };
 
   if (!buyerPreferences) {
@@ -384,21 +384,20 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                       </div>
                       
                       {/* Match percentage badge */}
-                      <div className="absolute top-2 left-2">
-                        <Badge className={`${getMatchColor(property.matchPercentage)} border`}>
-                          <TrendingUp className="h-3 w-3 mr-1" />
-                          {property.matchPercentage}% match
-                        </Badge>
+                      <div className="absolute top-2 left-2 z-10">
+                        <div className={`px-2 py-1 rounded-md text-xs font-bold ${getMatchColor(property.matchPercentage)} shadow-md`}>
+                          {property.matchPercentage}% Match
+                        </div>
                       </div>
                       
                       {/* Favorite button */}
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="absolute top-2 right-2 h-8 w-8 p-0 bg-background/80 backdrop-blur-sm hover:bg-background"
+                        className="absolute top-2 right-2 h-8 w-8 p-0 bg-background/90 backdrop-blur-sm hover:bg-background rounded-full flex items-center justify-center"
                         onClick={(e) => handleToggleFavorite(property.id, e)}
                       >
-                        <Heart className="h-4 w-4" />
+                        <Heart className="h-4 w-4" fill="currentColor" />
                       </Button>
                     </div>
                     
@@ -468,11 +467,11 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                     </div>
                     
                     <CardContent className="pt-0 px-3 sm:px-4 pb-3 sm:pb-4">
-                      <div className="flex gap-2">
+                      <div className="mt-auto pt-3 flex flex-col sm:flex-row gap-2">
                         <Button 
-                          variant="default" 
-                          size="sm"
-                          className="flex-1 text-xs sm:text-sm h-8 sm:h-9"
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full sm:w-auto text-xs sm:text-sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             handlePropertyClick(property.id);
@@ -481,15 +480,15 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                           View Details
                         </Button>
                         <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="h-8 w-8 sm:h-9 sm:w-10 p-0 flex-shrink-0"
+                          size="sm" 
+                          className="w-full sm:w-auto text-xs sm:text-sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/property/${property.id}?action=inquiry`);
+                            // Handle contact agent
+                            // You might want to implement this functionality
                           }}
                         >
-                          <MessageSquare className="h-4 w-4" />
+                          Contact Agent
                         </Button>
                       </div>
                     </CardContent>
