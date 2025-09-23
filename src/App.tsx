@@ -39,6 +39,7 @@ import ProfileSettingsPage from './pages/ProfileSettings';
 import SubscriptionManagementPage from './pages/SubscriptionManagement';
 import PropertyDetails from './pages/PropertyDetails';
 import SystemTestingPage from './pages/SystemTesting';
+import LoginHistoryManagementPage from './pages/LoginHistoryManagement';
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,7 @@ const App = () => (
               <Route path="/subscription-management" element={<SubscriptionManagementPage />} />
               <Route path="/property/:id" element={<PropertyDetails />} />
               <Route path="/system-testing" element={<SystemTestingPage />} />
+              <Route path="/login-history" element={<LoginHistoryManagementPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

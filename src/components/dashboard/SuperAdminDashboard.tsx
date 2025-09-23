@@ -1,10 +1,9 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
-import { Users, Building, Shield, Settings, BarChart3, Database, AlertTriangle, Activity, TestTube } from 'lucide-react';
+import { Users, Building, Shield, Settings, BarChart3, Database, AlertTriangle, Activity, TestTube, History } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { analyticsService, DashboardMetrics } from '@/services/analyticsService';
@@ -63,6 +62,7 @@ export const SuperAdminDashboard = () => {
     { icon: Users, label: 'Manage Users', description: 'View and manage all users', color: 'bg-blue-500/10 text-blue-500', onClick: () => navigate('/admin-users') },
     { icon: Building, label: 'Property Management', description: 'Oversee all property listings', color: 'bg-green-500/10 text-green-500', onClick: () => navigate('/admin-properties') },
     { icon: Shield, label: 'Security & Permissions', description: 'Manage user roles and access', color: 'bg-red-500/10 text-red-500', onClick: () => navigate('/security-permissions'), adminOnly: true },
+    { icon: History, label: 'Login History', description: 'Monitor user login activity and security', color: 'bg-teal-500/10 text-teal-500', onClick: () => navigate('/login-history'), adminOnly: true },
     { icon: BarChart3, label: 'Platform Analytics', description: 'View system-wide metrics', color: 'bg-purple-500/10 text-purple-500', onClick: () => navigate('/platform-analytics') },
     { icon: Database, label: 'Database Management', description: 'Monitor database health', color: 'bg-indigo-500/10 text-indigo-500', onClick: () => navigate('/database-management'), adminOnly: true },
     { icon: AlertTriangle, label: 'System Alerts', description: 'Monitor critical issues', color: 'bg-orange-500/10 text-orange-500', onClick: () => navigate('/system-alerts'), adminOnly: true },

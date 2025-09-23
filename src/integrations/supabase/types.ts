@@ -462,6 +462,65 @@ export type Database = {
         }
         Relationships: []
       }
+      login_history: {
+        Row: {
+          id: string
+          user_id: string | null
+          email: string
+          ip_address: string
+          user_agent: string | null
+          device_info: Json | null
+          location_info: Json | null
+          login_type: string
+          success: boolean
+          failure_reason: string | null
+          session_id: string | null
+          referer: string | null
+          origin: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          email: string
+          ip_address: string
+          user_agent?: string | null
+          device_info?: Json | null
+          location_info?: Json | null
+          login_type?: string
+          success?: boolean
+          failure_reason?: string | null
+          session_id?: string | null
+          referer?: string | null
+          origin?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          email?: string
+          ip_address?: string
+          user_agent?: string | null
+          device_info?: Json | null
+          location_info?: Json | null
+          login_type?: string
+          success?: boolean
+          failure_reason?: string | null
+          session_id?: string | null
+          referer?: string | null
+          origin?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "login_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -1082,7 +1141,43 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      suspicious_logins: {
+        Row: {
+          id: string
+          user_id: string | null
+          email: string
+          ip_address: string
+          user_agent: string | null
+          device_info: Json | null
+          location_info: Json | null
+          login_type: string
+          success: boolean
+          failure_reason: string | null
+          session_id: string | null
+          referer: string | null
+          origin: string | null
+          created_at: string
+          full_name: string | null
+          role: string | null
+          attempts_last_hour: number
+          email_attempts_last_hour: number
+        }
+        Insert: {
+          [_ in never]: never
+        }
+        Update: {
+          [_ in never]: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "login_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       create_system_alert: {

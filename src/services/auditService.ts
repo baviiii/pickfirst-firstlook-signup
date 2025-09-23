@@ -1,6 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { ipDetectionService } from './ipDetectionService';
-import { userContextService } from './userContextService';
+import { ipTrackingService } from './ipTrackingService';
 
 export interface AuditLog {
   id?: string;
@@ -49,7 +48,9 @@ class AuditService {
     setInterval(() => this.flush(), this.flushInterval);
     
     // Flush on page unload
-    window.addEventListener('beforeunload', () => this.flush());
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', () => this.flush());
+    }
   }
 
   async log(
@@ -65,7 +66,24 @@ class AuditService {
     } = {}
   ): Promise<void> {
     try {
-      // Simple audit log without external API calls to prevent infinite loops
+      // Get real IP address and device info for enhanced security
+      let realIpAddress = options.ipAddress;
+      let realUserAgent = options.userAgent;
+
+      if (!realIpAddress || realIpAddress === 'client-ip' || realIpAddress === 'unknown') {
+        try {
+          const clientInfo = await ipTrackingService.getClientInfo();
+          if (clientInfo) {
+            realIpAddress = clientInfo.ip;
+            realUserAgent = clientInfo.userAgent;
+          }
+        } catch (error) {
+          console.warn('Failed to get real IP for audit log:', error);
+          // Fallback to provided values or defaults
+          realIpAddress = options.ipAddress || 'ip-detection-failed';
+        }
+      }
+
       const auditLog: AuditLog = {
         user_id: userId,
         action,
@@ -73,8 +91,8 @@ class AuditService {
         record_id: options.recordId,
         old_values: options.oldValues,
         new_values: options.newValues,
-        ip_address: options.ipAddress || 'client-ip',
-        user_agent: options.userAgent || navigator.userAgent || 'unknown',
+        ip_address: realIpAddress || 'unknown',
+        user_agent: realUserAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'),
       };
 
       // Add to queue
@@ -94,7 +112,7 @@ class AuditService {
         record_id: options.recordId,
         old_values: options.oldValues,
         new_values: options.newValues,
-        ip_address: 'unknown',
+        ip_address: 'audit-error',
         user_agent: 'unknown',
       };
       
@@ -103,6 +121,34 @@ class AuditService {
       if (this.queue.length >= this.batchSize) {
         await this.flush();
       }
+    }
+  }
+
+  /**
+   * Enhanced logging method that automatically captures real IP and device info
+   */
+  async logWithRealIP(
+    userId: string,
+    action: AuditAction,
+    tableName: string,
+    options: {
+      recordId?: string;
+      oldValues?: any;
+      newValues?: any;
+    } = {}
+  ): Promise<void> {
+    try {
+      const clientInfo = await ipTrackingService.getClientInfo();
+      
+      await this.log(userId, action, tableName, {
+        ...options,
+        ipAddress: clientInfo?.ip || 'ip-detection-failed',
+        userAgent: clientInfo?.userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown')
+      });
+    } catch (error) {
+      console.error('Error in enhanced audit logging:', error);
+      // Fallback to regular logging
+      await this.log(userId, action, tableName, options);
     }
   }
 
@@ -128,17 +174,6 @@ class AuditService {
       this.queue.unshift(...batch);
     } finally {
       this.isProcessing = false;
-    }
-  }
-
-  private async getClientIP(): Promise<string> {
-    try {
-      // Use the production-ready IP detection service
-      const clientInfo = await ipDetectionService.getClientInfo();
-      return clientInfo.ip;
-    } catch (error) {
-      console.error('Error getting client IP:', error);
-      return 'error-detecting-ip';
     }
   }
 
@@ -341,6 +376,63 @@ class AuditService {
       return { data: null, error };
     }
   }
+
+  /**
+   * Get audit logs with suspicious IP activity
+   */
+  async getSuspiciousAuditActivity(hours: number = 24): Promise<{ data: any[]; error: any }> {
+    try {
+      const startDate = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+      
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select(`
+          *,
+          profiles!audit_logs_user_id_fkey (
+            email,
+            full_name
+          )
+        `)
+        .gte('created_at', startDate)
+        .order('created_at', { ascending: false });
+
+      if (error) return { data: [], error };
+
+      // Group by IP address and look for suspicious patterns
+      const ipActivity: Record<string, any[]> = {};
+      
+      data?.forEach(log => {
+        if (log.ip_address && log.ip_address !== 'unknown') {
+          if (!ipActivity[log.ip_address]) {
+            ipActivity[log.ip_address] = [];
+          }
+          ipActivity[log.ip_address].push(log);
+        }
+      });
+
+      // Find suspicious IPs (multiple users from same IP, high activity, etc.)
+      const suspicious = Object.entries(ipActivity)
+        .filter(([ip, logs]) => {
+          const uniqueUsers = new Set(logs.map(log => log.user_id)).size;
+          const activityCount = logs.length;
+          
+          // Flag as suspicious if:
+          // - More than 3 different users from same IP
+          // - More than 50 actions from same IP in time period
+          return uniqueUsers > 3 || activityCount > 50;
+        })
+        .map(([ip, logs]) => ({
+          ip_address: ip,
+          activity_count: logs.length,
+          unique_users: new Set(logs.map(log => log.user_id)).size,
+          recent_logs: logs.slice(0, 10) // Most recent 10 logs
+        }));
+
+      return { data: suspicious, error: null };
+    } catch (error) {
+      return { data: [], error };
+    }
+  }
 }
 
-export const auditService = new AuditService(); 
+export const auditService = new AuditService();
