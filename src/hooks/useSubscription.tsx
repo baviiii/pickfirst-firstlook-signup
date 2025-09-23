@@ -12,6 +12,7 @@ interface SubscriptionContextType {
   createCheckout: (priceId: string) => Promise<void>;
   openCustomerPortal: () => Promise<void>;
   isFeatureEnabled: (feature: string) => boolean;
+  refreshFeatures: () => Promise<void>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -174,6 +175,27 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     fetchFeatureConfigs();
   }, []);
 
+  const refreshFeatures = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('feature_configurations')
+        .select('feature_key, free_tier_enabled, premium_tier_enabled');
+      
+      if (error) throw error;
+      
+      const configs: {[key: string]: {free: boolean, premium: boolean}} = {};
+      data?.forEach(config => {
+        configs[config.feature_key] = {
+          free: config.free_tier_enabled,
+          premium: config.premium_tier_enabled
+        };
+      });
+      setFeatureConfigs(configs);
+    } catch (error) {
+      console.error('Error refreshing feature configurations:', error);
+    }
+  }, []);
+
   const isFeatureEnabled = (feature: string): boolean => {
     const config = featureConfigs[feature];
     if (!config) return false; // Unknown feature, default to disabled
@@ -242,6 +264,7 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
         createCheckout,
         openCustomerPortal,
         isFeatureEnabled,
+        refreshFeatures,
       }}
     >
       {children}
