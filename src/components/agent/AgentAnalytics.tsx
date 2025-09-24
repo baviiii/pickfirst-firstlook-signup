@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,62 +15,123 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import { analyticsService, AnalyticsService } from '@/services/analyticsService';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 export const AgentAnalytics = () => {
   const [timeRange, setTimeRange] = useState('30d');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  // Agent-specific analytics data
-  const performanceData = [
-    { month: 'Jan', listings: 12, showings: 45, sales: 3, revenue: 18500 },
-    { month: 'Feb', listings: 15, showings: 52, sales: 4, revenue: 24200 },
-    { month: 'Mar', listings: 18, showings: 67, sales: 5, revenue: 31800 },
-    { month: 'Apr', listings: 22, showings: 78, sales: 6, revenue: 42300 },
-    { month: 'May', listings: 19, showings: 84, sales: 7, revenue: 48900 },
-    { month: 'Jun', listings: 25, showings: 91, sales: 8, revenue: 56200 },
-  ];
-
-  const clientSourceData = [
-    { name: 'Referrals', value: 45, count: 28 },
-    { name: 'Online', value: 30, count: 19 },
-    { name: 'Walk-ins', value: 15, count: 9 },
-    { name: 'Marketing', value: 10, count: 6 },
-  ];
-
-  const propertyTypeData = [
-    { type: 'Single Family', sold: 12, avg_price: 485000 },
-    { type: 'Condo', sold: 8, avg_price: 320000 },
-    { type: 'Townhouse', sold: 5, avg_price: 395000 },
-    { type: 'Luxury', sold: 3, avg_price: 750000 },
-  ];
-
-  const weeklyActivity = [
-    { day: 'Mon', calls: 12, emails: 8, showings: 3 },
-    { day: 'Tue', calls: 15, emails: 12, showings: 4 },
-    { day: 'Wed', calls: 18, emails: 15, showings: 5 },
-    { day: 'Thu', calls: 22, emails: 18, showings: 6 },
-    { day: 'Fri', calls: 25, emails: 20, showings: 7 },
-    { day: 'Sat', calls: 14, emails: 6, showings: 8 },
-    { day: 'Sun', calls: 8, emails: 4, showings: 3 },
-  ];
+  // Real analytics data state
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [performanceData, setPerformanceData] = useState<any[]>([]);
+  const [clientSourceData, setClientSourceData] = useState<any[]>([]);
+  const [propertyTypeData, setPropertyTypeData] = useState<any[]>([]);
+  const [weeklyActivity, setWeeklyActivity] = useState<any[]>([]);
 
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
+  const fetchAnalyticsData = async () => {
+    if (!user?.id) return;
+
+    setLoading(true);
+    try {
+      // Fetch all analytics data in parallel
+      const [
+        analyticsResponse,
+        performanceResponse,
+        clientSourceResponse,
+        propertyTypeResponse,
+        weeklyActivityResponse
+      ] = await Promise.all([
+        AnalyticsService.getAgentAnalytics(user.id),
+        AnalyticsService.getMonthlyPerformance(user.id, 6),
+        AnalyticsService.getClientSources(user.id),
+        AnalyticsService.getPropertyTypeAnalytics(user.id),
+        AnalyticsService.getWeeklyActivity(user.id)
+      ]);
+
+      if (analyticsResponse.error) {
+        console.error('Analytics error:', analyticsResponse.error);
+      } else {
+        setAnalytics(analyticsResponse.data);
+      }
+
+      if (performanceResponse.error) {
+        console.error('Performance error:', performanceResponse.error);
+      } else {
+        setPerformanceData(performanceResponse.data);
+      }
+
+      if (clientSourceResponse.error) {
+        console.error('Client source error:', clientSourceResponse.error);
+      } else {
+        setClientSourceData(clientSourceResponse.data);
+      }
+
+      if (propertyTypeResponse.error) {
+        console.error('Property type error:', propertyTypeResponse.error);
+      } else {
+        setPropertyTypeData(propertyTypeResponse.data);
+      }
+
+      if (weeklyActivityResponse.error) {
+        console.error('Weekly activity error:', weeklyActivityResponse.error);
+      } else {
+        setWeeklyActivity(weeklyActivityResponse.data);
+      }
+
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      toast.error('Failed to load analytics data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [user?.id, timeRange]);
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await fetchAnalyticsData();
     setIsRefreshing(false);
+    toast.success('Analytics refreshed');
   };
 
   const handleExport = () => {
-    const data = JSON.stringify({ performanceData, clientSourceData, propertyTypeData }, null, 2);
+    const data = JSON.stringify({ 
+      analytics, 
+      performanceData, 
+      clientSourceData, 
+      propertyTypeData,
+      weeklyActivity,
+      exportedAt: new Date().toISOString(),
+      timeRange 
+    }, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `agent-analytics-${timeRange}-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
+    toast.success('Analytics data exported');
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-lg">Loading analytics...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -109,11 +170,11 @@ export const AgentAnalytics = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">28</div>
+            <div className="text-2xl font-bold text-primary">{analytics?.active_listings || 0}</div>
             <div className="flex items-center gap-1 text-xs">
               <TrendingUp className="h-3 w-3 text-primary" />
-              <span className="text-primary">+12%</span>
-              <span className="text-muted-foreground">vs last month</span>
+              <span className="text-primary">Live</span>
+              <span className="text-muted-foreground">properties</span>
             </div>
           </CardContent>
         </Card>
@@ -128,11 +189,10 @@ export const AgentAnalytics = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-secondary">156</div>
+            <div className="text-2xl font-bold text-secondary">{analytics?.total_clients || 0}</div>
             <div className="flex items-center gap-1 text-xs">
-              <TrendingUp className="h-3 w-3 text-secondary" />
-              <span className="text-secondary">+8%</span>
-              <span className="text-muted-foreground">vs last month</span>
+              <span className="text-secondary">{analytics?.monthly_appointments || 0}</span>
+              <span className="text-muted-foreground">appointments this month</span>
             </div>
           </CardContent>
         </Card>
@@ -147,11 +207,12 @@ export const AgentAnalytics = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-accent">$56.2K</div>
+            <div className="text-2xl font-bold text-accent">
+              ${(analytics?.monthly_revenue || 0).toLocaleString()}
+            </div>
             <div className="flex items-center gap-1 text-xs">
-              <TrendingUp className="h-3 w-3 text-accent" />
-              <span className="text-accent">+15%</span>
-              <span className="text-muted-foreground">vs last month</span>
+              <span className="text-accent">{analytics?.monthly_sales || 0}</span>
+              <span className="text-muted-foreground">sales this month</span>
             </div>
           </CardContent>
         </Card>
@@ -162,15 +223,16 @@ export const AgentAnalytics = () => {
               <div className="p-2 rounded-lg bg-orange-500/10">
                 <Eye className="h-5 w-5 text-orange-500" />
               </div>
-              <CardTitle className="text-base">Showings</CardTitle>
+              <CardTitle className="text-base">Total Sales</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-500">91</div>
+            <div className="text-2xl font-bold text-orange-500">{analytics?.total_sales || 0}</div>
             <div className="flex items-center gap-1 text-xs">
-              <TrendingUp className="h-3 w-3 text-orange-500" />
-              <span className="text-orange-500">+23%</span>
-              <span className="text-muted-foreground">vs last month</span>
+              <span className="text-orange-500">
+                ${(analytics?.avg_sale_price || 0).toLocaleString()}
+              </span>
+              <span className="text-muted-foreground">avg price</span>
             </div>
           </CardContent>
         </Card>
@@ -294,28 +356,37 @@ export const AgentAnalytics = () => {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Sales Goal</span>
-                <span>8/10</span>
+                <span>{analytics?.monthly_sales || 0}/10</span>
               </div>
               <div className="w-full bg-secondary/20 rounded-full h-2">
-                <div className="bg-primary h-2 rounded-full" style={{ width: '80%' }}></div>
+                <div 
+                  className="bg-primary h-2 rounded-full" 
+                  style={{ width: `${Math.min(((analytics?.monthly_sales || 0) / 10) * 100, 100)}%` }}
+                ></div>
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Listings Goal</span>
-                <span>28/30</span>
+                <span>{analytics?.active_listings || 0}/30</span>
               </div>
               <div className="w-full bg-secondary/20 rounded-full h-2">
-                <div className="bg-secondary h-2 rounded-full" style={{ width: '93%' }}></div>
+                <div 
+                  className="bg-secondary h-2 rounded-full" 
+                  style={{ width: `${Math.min(((analytics?.active_listings || 0) / 30) * 100, 100)}%` }}
+                ></div>
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Revenue Goal</span>
-                <span>$56K/$60K</span>
+                <span>${(analytics?.monthly_revenue || 0).toLocaleString()}/$60K</span>
               </div>
               <div className="w-full bg-secondary/20 rounded-full h-2">
-                <div className="bg-accent h-2 rounded-full" style={{ width: '93%' }}></div>
+                <div 
+                  className="bg-accent h-2 rounded-full" 
+                  style={{ width: `${Math.min(((analytics?.monthly_revenue || 0) / 60000) * 100, 100)}%` }}
+                ></div>
               </div>
             </div>
           </div>

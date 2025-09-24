@@ -4,21 +4,25 @@ import { Button } from '@/components/ui/button';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2, Edit, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit, Eye, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
 
 const MyListingsPage = () => {
   const [listings, setListings] = useState<PropertyListing[]>([]);
   const [loadingListings, setLoadingListings] = useState(true);
   const [selectedListing, setSelectedListing] = useState<PropertyListing | null>(null);
   const [editingListing, setEditingListing] = useState<PropertyListing | null>(null);
+  const [soldListing, setSoldListing] = useState<PropertyListing | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [editForm, setEditForm] = useState<any>({});
+  const [soldForm, setSoldForm] = useState<any>({});
   const [isUpdating, setIsUpdating] = useState(false);
+  const [clients, setClients] = useState<any[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -97,6 +101,47 @@ const MyListingsPage = () => {
     }
   };
 
+  const handleMarkAsSold = (listing: PropertyListing) => {
+    setSoldListing(listing);
+    setSoldForm({
+      sold_price: listing.price,
+      sold_date: new Date().toISOString().split('T')[0],
+      sold_to_client_id: ''
+    });
+    fetchClients();
+  };
+
+  const fetchClients = async () => {
+    const { data } = await supabase
+      .from('clients')
+      .select('id, name, email')
+      .order('name');
+    setClients(data || []);
+  };
+
+  const handleSoldSubmit = async () => {
+    if (!soldListing) return;
+    
+    setIsUpdating(true);
+    const { error } = await PropertyService.updateListing(soldListing.id, {
+      status: 'sold',
+      sold_price: parseFloat(soldForm.sold_price),
+      sold_date: soldForm.sold_date,
+      sold_to_client_id: soldForm.sold_to_client_id || null
+    });
+    
+    setIsUpdating(false);
+    
+    if (error) {
+      toast.error(error.message || 'Failed to mark as sold');
+    } else {
+      toast.success('Property marked as sold!');
+      setSoldListing(null);
+      const { data } = await PropertyService.getMyListings();
+      setListings(data || []);
+    }
+  };
+
   const nextImage = () => {
     if (selectedListing?.images && selectedListing.images.length > 1) {
       setCurrentImageIndex((prev) => (prev + 1) % selectedListing.images.length);
@@ -167,6 +212,7 @@ const MyListingsPage = () => {
                       listing.status === 'approved' ? 'text-green-400' :
                       listing.status === 'pending' ? 'text-yellow-400' :
                       listing.status === 'rejected' ? 'text-red-400' :
+                      listing.status === 'sold' ? 'text-blue-400' :
                       'text-gray-400'
                     }>{listing.status.charAt(0).toUpperCase() + listing.status.slice(1)}</span></div>
                     {listing.status === 'rejected' && listing.rejection_reason && (
@@ -177,9 +223,16 @@ const MyListingsPage = () => {
                     <Button size="sm" variant="outline" className="text-blue-500 border-blue-500 hover:bg-blue-500/10 flex items-center" onClick={() => handleViewDetails(listing)}>
                       <Eye className="h-4 w-4 mr-1" /> View
                     </Button>
-                    <Button size="sm" variant="outline" className="text-yellow-500 border-yellow-500 hover:bg-yellow-500/10 flex items-center" onClick={() => handleEditListing(listing)}>
-                      <Edit className="h-4 w-4 mr-1" /> Edit
-                    </Button>
+                    {listing.status !== 'sold' && (
+                      <>
+                        <Button size="sm" variant="outline" className="text-yellow-500 border-yellow-500 hover:bg-yellow-500/10 flex items-center" onClick={() => handleEditListing(listing)}>
+                          <Edit className="h-4 w-4 mr-1" /> Edit
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-green-500 border-green-500 hover:bg-green-500/10 flex items-center" onClick={() => handleMarkAsSold(listing)}>
+                          <CheckCircle className="h-4 w-4 mr-1" /> Mark Sold
+                        </Button>
+                      </>
+                    )}
                     <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-500/10 flex items-center" onClick={() => handleDelete(listing.id)}>
                       <Trash2 className="h-4 w-4 mr-1" /> Delete
                     </Button>
@@ -246,23 +299,23 @@ const MyListingsPage = () => {
                   <div>
                     <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Basic Information</h3>
                     <div className="space-y-2 text-gray-300">
-                      <p><span className="text-gray-400">Address:</span> {selectedListing.address}</p>
-                      <p><span className="text-gray-400">City:</span> {selectedListing.city}</p>
-                      <p><span className="text-gray-400">State:</span> {selectedListing.state}</p>
-                      <p><span className="text-gray-400">ZIP:</span> {selectedListing.zip_code}</p>
-                      <p><span className="text-gray-400">Property Type:</span> {selectedListing.property_type?.replace(/\b\w/g, l => l.toUpperCase())}</p>
+                      <p><span className="text-gray-400">Address:</span> {selectedListing?.address}</p>
+                      <p><span className="text-gray-400">City:</span> {selectedListing?.city}</p>
+                      <p><span className="text-gray-400">State:</span> {selectedListing?.state}</p>
+                      <p><span className="text-gray-400">ZIP:</span> {selectedListing?.zip_code}</p>
+                      <p><span className="text-gray-400">Property Type:</span> {selectedListing?.property_type?.replace(/\b\w/g, l => l.toUpperCase())}</p>
                     </div>
                   </div>
                   
                   <div>
                     <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Pricing & Details</h3>
                     <div className="space-y-2 text-gray-300">
-                      <p><span className="text-gray-400">Price:</span> <span className="text-white font-bold text-xl">${selectedListing.price.toLocaleString()}</span></p>
-                      {selectedListing.bedrooms !== null && <p><span className="text-gray-400">Bedrooms:</span> {selectedListing.bedrooms}</p>}
-                      {selectedListing.bathrooms !== null && <p><span className="text-gray-400">Bathrooms:</span> {selectedListing.bathrooms}</p>}
-                      {selectedListing.square_feet !== null && <p><span className="text-gray-400">Square Feet:</span> {selectedListing.square_feet.toLocaleString()}</p>}
-                      {selectedListing.lot_size !== null && <p><span className="text-gray-400">Lot Size:</span> {selectedListing.lot_size.toLocaleString()} sq ft</p>}
-                      {selectedListing.year_built !== null && <p><span className="text-gray-400">Year Built:</span> {selectedListing.year_built}</p>}
+                      <p><span className="text-gray-400">Price:</span> <span className="text-white font-bold text-xl">${selectedListing?.price.toLocaleString()}</span></p>
+                      {selectedListing?.bedrooms !== null && <p><span className="text-gray-400">Bedrooms:</span> {selectedListing.bedrooms}</p>}
+                      {selectedListing?.bathrooms !== null && <p><span className="text-gray-400">Bathrooms:</span> {selectedListing.bathrooms}</p>}
+                      {selectedListing?.square_feet !== null && <p><span className="text-gray-400">Square Feet:</span> {selectedListing.square_feet.toLocaleString()}</p>}
+                      {selectedListing?.lot_size !== null && <p><span className="text-gray-400">Lot Size:</span> {selectedListing.lot_size.toLocaleString()} sq ft</p>}
+                      {selectedListing?.year_built !== null && <p><span className="text-gray-400">Year Built:</span> {selectedListing.year_built}</p>}
                     </div>
                   </div>
                 </div>
@@ -272,20 +325,21 @@ const MyListingsPage = () => {
                     <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Status & Contact</h3>
                     <div className="space-y-2 text-gray-300">
                       <p><span className="text-gray-400">Status:</span> <span className={`font-semibold ${
-                        selectedListing.status === 'approved' ? 'text-green-400' :
-                        selectedListing.status === 'pending' ? 'text-yellow-400' :
-                        selectedListing.status === 'rejected' ? 'text-red-400' :
+                        selectedListing?.status === 'approved' ? 'text-green-400' :
+                        selectedListing?.status === 'pending' ? 'text-yellow-400' :
+                        selectedListing?.status === 'rejected' ? 'text-red-400' :
+                        selectedListing?.status === 'sold' ? 'text-blue-400' :
                         'text-gray-400'
-                      }`}>{selectedListing.status?.charAt(0).toUpperCase() + selectedListing.status?.slice(1)}</span></p>
-                      {selectedListing.status === 'rejected' && selectedListing.rejection_reason && (
+                      }`}>{selectedListing?.status?.charAt(0).toUpperCase() + selectedListing?.status?.slice(1)}</span></p>
+                      {selectedListing?.status === 'rejected' && selectedListing?.rejection_reason && (
                         <p><span className="text-gray-400">Rejection Reason:</span> <span className="text-red-400">{selectedListing.rejection_reason}</span></p>
                       )}
-                      {selectedListing.contact_phone && <p><span className="text-gray-400">Phone:</span> {selectedListing.contact_phone}</p>}
-                      {selectedListing.contact_email && <p><span className="text-gray-400">Email:</span> {selectedListing.contact_email}</p>}
+                      {selectedListing?.contact_phone && <p><span className="text-gray-400">Phone:</span> {selectedListing.contact_phone}</p>}
+                      {selectedListing?.contact_email && <p><span className="text-gray-400">Email:</span> {selectedListing.contact_email}</p>}
                     </div>
                   </div>
                   
-                  {selectedListing.features && selectedListing.features.length > 0 && (
+                  {selectedListing?.features && selectedListing.features.length > 0 && (
                     <div>
                       <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Features</h3>
                       <div className="flex flex-wrap gap-2">
@@ -300,14 +354,14 @@ const MyListingsPage = () => {
                 </div>
               </div>
               
-              {selectedListing.description && (
+              {selectedListing?.description && (
                 <div>
                   <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Description</h3>
                   <p className="text-gray-300 leading-relaxed">{selectedListing.description}</p>
                 </div>
               )}
               
-              {selectedListing.showing_instructions && (
+              {selectedListing?.showing_instructions && (
                 <div>
                   <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Showing Instructions</h3>
                   <p className="text-gray-300 leading-relaxed">{selectedListing.showing_instructions}</p>
@@ -522,6 +576,80 @@ const MyListingsPage = () => {
                 <Button 
                   variant="outline" 
                   onClick={() => setEditingListing(null)}
+                  className="text-gray-300 border-gray-600 hover:bg-gray-800"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Mark as Sold Modal */}
+      <Dialog open={!!soldListing} onOpenChange={() => setSoldListing(null)}>
+        <DialogContent className="max-w-md bg-gradient-to-br from-gray-900/95 to-black/95 border border-pickfirst-yellow/20">
+          <DialogHeader>
+            <DialogTitle className="text-pickfirst-yellow text-xl">Mark Property as Sold</DialogTitle>
+          </DialogHeader>
+          
+          {soldListing && (
+            <div className="space-y-4">
+              <div className="text-gray-300 text-sm">
+                <strong>{soldListing.title}</strong><br />
+                {soldListing.address}, {soldListing.city}
+              </div>
+              
+              <div>
+                <Label htmlFor="sold_price" className="text-gray-300">Sale Price *</Label>
+                <Input
+                  id="sold_price"
+                  type="number"
+                  value={soldForm.sold_price || ''}
+                  onChange={(e) => setSoldForm({...soldForm, sold_price: e.target.value})}
+                  className="bg-gray-800 border-gray-700 text-white"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="sold_date" className="text-gray-300">Sale Date *</Label>
+                <Input
+                  id="sold_date"
+                  type="date"
+                  value={soldForm.sold_date || ''}
+                  onChange={(e) => setSoldForm({...soldForm, sold_date: e.target.value})}
+                  className="bg-gray-800 border-gray-700 text-white"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="sold_to_client" className="text-gray-300">Sold to Client (Optional)</Label>
+                <Select value={soldForm.sold_to_client_id} onValueChange={(value) => setSoldForm({...soldForm, sold_to_client_id: value})}>
+                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                    <SelectValue placeholder="Select client (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No client selected</SelectItem>
+                    {clients.map(client => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name} ({client.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  onClick={handleSoldSubmit} 
+                  disabled={isUpdating || !soldForm.sold_price || !soldForm.sold_date}
+                  className="bg-green-600 text-white hover:bg-green-700"
+                >
+                  {isUpdating ? 'Marking as Sold...' : 'Mark as Sold'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSoldListing(null)}
                   className="text-gray-300 border-gray-600 hover:bg-gray-800"
                 >
                   Cancel

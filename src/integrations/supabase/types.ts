@@ -828,6 +828,9 @@ export type Database = {
           property_type: string
           rejection_reason: string | null
           showing_instructions: string | null
+          sold_date: string | null
+          sold_price: number | null
+          sold_to_client_id: string | null
           square_feet: number | null
           state: string
           status: string
@@ -858,6 +861,9 @@ export type Database = {
           property_type: string
           rejection_reason?: string | null
           showing_instructions?: string | null
+          sold_date?: string | null
+          sold_price?: number | null
+          sold_to_client_id?: string | null
           square_feet?: number | null
           state: string
           status?: string
@@ -888,6 +894,9 @@ export type Database = {
           property_type?: string
           rejection_reason?: string | null
           showing_instructions?: string | null
+          sold_date?: string | null
+          sold_price?: number | null
+          sold_to_client_id?: string | null
           square_feet?: number | null
           state?: string
           status?: string
@@ -1205,6 +1214,120 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      agent_analytics: {
+        Row: {
+          agent_id: string | null
+          active_listings: number | null
+          total_sales: number | null
+          monthly_sales: number | null
+          weekly_sales: number | null
+          monthly_revenue: number | null
+          avg_sale_price: number | null
+          total_clients: number | null
+          total_appointments: number | null
+          monthly_appointments: number | null
+          total_inquiries: number | null
+          monthly_inquiries: number | null
+        }
+        Insert: {
+          agent_id?: never
+          active_listings?: never
+          total_sales?: never
+          monthly_sales?: never
+          weekly_sales?: never
+          monthly_revenue?: never
+          avg_sale_price?: never
+          total_clients?: never
+          total_appointments?: never
+          monthly_appointments?: never
+          total_inquiries?: never
+          monthly_inquiries?: never
+        }
+        Update: {
+          agent_id?: never
+          active_listings?: never
+          total_sales?: never
+          monthly_sales?: never
+          weekly_sales?: never
+          monthly_revenue?: never
+          avg_sale_price?: never
+          total_clients?: never
+          total_appointments?: never
+          monthly_appointments?: never
+          total_inquiries?: never
+          monthly_inquiries?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_analytics_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      agent_monthly_performance: {
+        Row: {
+          agent_id: string | null
+          month: string | null
+          listings: number | null
+          showings: number | null
+          sales: number | null
+          revenue: number | null
+        }
+        Insert: {
+          agent_id?: never
+          month?: never
+          listings?: never
+          showings?: never
+          sales?: never
+          revenue?: never
+        }
+        Update: {
+          agent_id?: never
+          month?: never
+          listings?: never
+          showings?: never
+          sales?: never
+          revenue?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_monthly_performance_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      agent_client_sources: {
+        Row: {
+          agent_id: string | null
+          source: string | null
+          count: number | null
+        }
+        Insert: {
+          agent_id?: never
+          source?: never
+          count?: never
+        }
+        Update: {
+          agent_id?: never
+          source?: never
+          count?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_client_sources_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
         ]
       }
     }

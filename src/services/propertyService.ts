@@ -34,6 +34,9 @@ export interface CreatePropertyListingData {
 export interface UpdatePropertyListingData extends Partial<CreatePropertyListingData> {
   status?: string;
   rejection_reason?: string;
+  sold_price?: number;
+  sold_date?: string;
+  sold_to_client_id?: string;
 }
 
 export interface PropertyFilters {

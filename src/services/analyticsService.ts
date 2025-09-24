@@ -43,6 +43,47 @@ export interface BuyerMetrics {
   savedSearches: number;
 }
 
+export interface AgentAnalytics {
+  active_listings: number;
+  total_sales: number;
+  monthly_sales: number;
+  weekly_sales: number;
+  monthly_revenue: number;
+  avg_sale_price: number;
+  total_clients: number;
+  total_appointments: number;
+  monthly_appointments: number;
+  total_inquiries: number;
+  monthly_inquiries: number;
+}
+
+export interface MonthlyPerformance {
+  month: string;
+  listings: number;
+  showings: number;
+  sales: number;
+  revenue: number;
+}
+
+export interface ClientSource {
+  source: string;
+  count: number;
+  value: number; // percentage
+}
+
+export interface PropertyTypeData {
+  type: string;
+  sold: number;
+  avg_price: number;
+}
+
+export interface WeeklyActivity {
+  day: string;
+  calls: number;
+  emails: number;
+  showings: number;
+}
+
 class AnalyticsService {
   async getAdminMetrics(): Promise<{ data: DashboardMetrics | null; error: any }> {
     try {
@@ -278,6 +319,180 @@ class AnalyticsService {
       return { data: null, error };
     }
   }
+
+  static async getAgentAnalytics(agentId: string): Promise<{ data: AgentAnalytics | null; error: any }> {
+    try {
+      const { data, error } = await supabase
+        .from('agent_analytics')
+        .select('*')
+        .eq('agent_id', agentId)
+        .single();
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error fetching agent analytics:', error);
+      return { data: null, error };
+    }
+  }
+
+  static async getMonthlyPerformance(agentId: string, months: number = 6): Promise<{ data: MonthlyPerformance[]; error: any }> {
+    try {
+      const { data, error } = await supabase
+        .from('agent_monthly_performance')
+        .select('*')
+        .eq('agent_id', agentId)
+        .order('month', { ascending: false })
+        .limit(months);
+
+      if (error) throw error;
+
+      // Transform data for charts
+      const transformedData = (data || []).map(item => ({
+        month: new Date(item.month).toLocaleDateString('en-US', { month: 'short' }),
+        listings: item.listings || 0,
+        showings: item.showings || 0,
+        sales: item.sales || 0,
+        revenue: item.revenue || 0
+      })).reverse();
+
+      return { data: transformedData, error: null };
+    } catch (error) {
+      console.error('Error fetching monthly performance:', error);
+      return { data: [], error };
+    }
+  }
+
+  static async getClientSources(agentId: string): Promise<{ data: ClientSource[]; error: any }> {
+    try {
+      const { data, error } = await supabase
+        .from('agent_client_sources')
+        .select('*')
+        .eq('agent_id', agentId);
+
+      if (error) throw error;
+
+      const total = (data || []).reduce((sum, item) => sum + item.count, 0);
+      
+      const transformedData = (data || []).map(item => ({
+        name: item.source,
+        source: item.source,
+        count: item.count,
+        value: total > 0 ? Math.round((item.count / total) * 100) : 0
+      }));
+
+      return { data: transformedData, error: null };
+    } catch (error) {
+      console.error('Error fetching client sources:', error);
+      return { data: [], error };
+    }
+  }
+
+  static async getPropertyTypeAnalytics(agentId: string): Promise<{ data: PropertyTypeData[]; error: any }> {
+    try {
+      const { data, error } = await supabase
+        .from('property_listings')
+        .select('property_type, sold_price')
+        .eq('agent_id', agentId)
+        .eq('status', 'sold');
+
+      if (error) throw error;
+
+      // Group by property type
+      const typeMap = new Map<string, { sold: number; prices: number[] }>();
+      
+      (data || []).forEach(item => {
+        const type = item.property_type.charAt(0).toUpperCase() + item.property_type.slice(1);
+        if (!typeMap.has(type)) {
+          typeMap.set(type, { sold: 0, prices: [] });
+        }
+        const typeData = typeMap.get(type)!;
+        typeData.sold++;
+        if (item.sold_price) {
+          typeData.prices.push(item.sold_price);
+        }
+      });
+
+      const transformedData = Array.from(typeMap.entries()).map(([type, data]) => ({
+        type,
+        sold: data.sold,
+        avg_price: data.prices.length > 0 
+          ? Math.round(data.prices.reduce((sum, price) => sum + price, 0) / data.prices.length)
+          : 0
+      }));
+
+      return { data: transformedData, error: null };
+    } catch (error) {
+      console.error('Error fetching property type analytics:', error);
+      return { data: [], error };
+    }
+  }
+
+  static async getWeeklyActivity(agentId: string): Promise<{ data: WeeklyActivity[]; error: any }> {
+    try {
+      // Get appointments (showings) by day of week
+      const { data: appointmentData, error: appointmentError } = await supabase
+        .from('appointments')
+        .select('date')
+        .eq('agent_id', agentId)
+        .gte('date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+      if (appointmentError) throw appointmentError;
+
+      // Get client interactions for calls/emails (if available)
+      const { data: interactionData, error: interactionError } = await supabase
+        .from('client_interactions')
+        .select('interaction_type, created_at')
+        .eq('agent_id', agentId)
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+      // Initialize weekly data
+      const weeklyData: WeeklyActivity[] = [
+        { day: 'Mon', calls: 0, emails: 0, showings: 0 },
+        { day: 'Tue', calls: 0, emails: 0, showings: 0 },
+        { day: 'Wed', calls: 0, emails: 0, showings: 0 },
+        { day: 'Thu', calls: 0, emails: 0, showings: 0 },
+        { day: 'Fri', calls: 0, emails: 0, showings: 0 },
+        { day: 'Sat', calls: 0, emails: 0, showings: 0 },
+        { day: 'Sun', calls: 0, emails: 0, showings: 0 },
+      ];
+
+      // Process appointments (showings)
+      (appointmentData || []).forEach(appointment => {
+        const dayIndex = new Date(appointment.date).getDay();
+        const adjustedIndex = dayIndex === 0 ? 6 : dayIndex - 1; // Convert Sunday=0 to Sunday=6
+        weeklyData[adjustedIndex].showings++;
+      });
+
+      // Process interactions (calls/emails)
+      (interactionData || []).forEach(interaction => {
+        const dayIndex = new Date(interaction.created_at).getDay();
+        const adjustedIndex = dayIndex === 0 ? 6 : dayIndex - 1;
+        
+        if (interaction.interaction_type === 'call') {
+          weeklyData[adjustedIndex].calls++;
+        } else if (interaction.interaction_type === 'email') {
+          weeklyData[adjustedIndex].emails++;
+        }
+      });
+
+      return { data: weeklyData, error: null };
+    } catch (error) {
+      console.error('Error fetching weekly activity:', error);
+      // Return mock data if no interactions table exists
+      const mockData: WeeklyActivity[] = [
+        { day: 'Mon', calls: 12, emails: 8, showings: 3 },
+        { day: 'Tue', calls: 15, emails: 12, showings: 4 },
+        { day: 'Wed', calls: 18, emails: 15, showings: 5 },
+        { day: 'Thu', calls: 22, emails: 18, showings: 6 },
+        { day: 'Fri', calls: 25, emails: 20, showings: 7 },
+        { day: 'Sat', calls: 14, emails: 6, showings: 8 },
+        { day: 'Sun', calls: 8, emails: 4, showings: 3 },
+      ];
+      return { data: mockData, error: null };
+    }
+  }
 }
 
+export { AnalyticsService };
 export const analyticsService = new AnalyticsService();

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,22 +24,39 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export const AgentProfile = () => {
-  const { profile, updateProfile } = useAuth();
+  const { profile, updateProfile, user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize with actual profile data from database
   const [profileData, setProfileData] = useState({
-    full_name: profile?.full_name || '',
-    email: profile?.email || '',
+    full_name: '',
     phone: '',
     bio: '',
-    license_number: '',
-    years_experience: 0,
-    specializations: [],
-    office_address: '',
+    company: '',
+    location: '',
     website: '',
-    social_media: {},
+    avatar_url: '',
   });
+
+  // Load profile data when component mounts or profile changes
+  useEffect(() => {
+    if (profile) {
+      setProfileData({
+        full_name: profile.full_name || '',
+        phone: profile.phone || '',
+        bio: profile.bio || '',
+        company: profile.company || '',
+        location: profile.location || '',
+        website: profile.website || '',
+        avatar_url: profile.avatar_url || '',
+      });
+    }
+  }, [profile]);
 
   const [notifications, setNotifications] = useState({
     email_inquiries: true,
@@ -79,6 +96,53 @@ export const AgentProfile = () => {
 
   const handleInputChange = (field: string, value: any) => {
     setProfileData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      
+      if (!event.target.files || event.target.files.length === 0) {
+        throw new Error('You must select an image to upload.');
+      }
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const filePath = `avatars/${user?.id}-${Math.random()}.${fileExt}`;
+
+      // Upload file to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile with new avatar URL
+      const updatedData = { ...profileData, avatar_url: data.publicUrl };
+      setProfileData(updatedData);
+      
+      const { error: updateError } = await updateProfile({ avatar_url: data.publicUrl });
+      if (updateError) {
+        throw updateError;
+      }
+
+      toast.success('Avatar updated successfully!');
+    } catch (error) {
+      toast.error(error.message || 'Error uploading avatar');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   const getSubscriptionBadge = () => {
@@ -155,15 +219,29 @@ export const AgentProfile = () => {
               <CardHeader className="text-center">
                 <div className="relative mx-auto w-32 h-32">
                   <Avatar className="w-32 h-32">
-                    <AvatarImage src="" />
+                    <AvatarImage src={profileData.avatar_url || profile?.avatar_url || ''} />
                     <AvatarFallback className="text-2xl">
                       {profile?.full_name?.split(' ').map(n => n[0]).join('') || 'AG'}
                     </AvatarFallback>
                   </Avatar>
                   {isEditing && (
-                    <Button size="sm" className="absolute bottom-0 right-0 rounded-full">
-                      <Camera className="h-4 w-4" />
-                    </Button>
+                    <>
+                      <Button 
+                        size="sm" 
+                        className="absolute bottom-0 right-0 rounded-full"
+                        onClick={triggerFileInput}
+                        disabled={uploading}
+                      >
+                        <Camera className="h-4 w-4" />
+                      </Button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                      />
+                    </>
                   )}
                 </div>
                 <CardTitle className="mt-4">{profile?.full_name || 'Agent Name'}</CardTitle>
@@ -173,12 +251,12 @@ export const AgentProfile = () => {
               <CardContent>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">License:</span>
-                    <span>{profileData.license_number || 'Not set'}</span>
+                    <span className="text-muted-foreground">Company:</span>
+                    <span>{profileData.company || 'Not set'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Experience:</span>
-                    <span>{profileData.years_experience} years</span>
+                    <span className="text-muted-foreground">Location:</span>
+                    <span>{profileData.location || 'Not set'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Member since:</span>
@@ -223,21 +301,20 @@ export const AgentProfile = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="license_number">License Number</Label>
+                    <Label htmlFor="company">Company</Label>
                     <Input
-                      id="license_number"
-                      value={profileData.license_number}
-                      onChange={(e) => handleInputChange('license_number', e.target.value)}
+                      id="company"
+                      value={profileData.company}
+                      onChange={(e) => handleInputChange('company', e.target.value)}
                       disabled={!isEditing}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="years_experience">Years of Experience</Label>
+                    <Label htmlFor="location">Location</Label>
                     <Input
-                      id="years_experience"
-                      type="number"
-                      value={profileData.years_experience}
-                      onChange={(e) => handleInputChange('years_experience', parseInt(e.target.value) || 0)}
+                      id="location"
+                      value={profileData.location}
+                      onChange={(e) => handleInputChange('location', e.target.value)}
                       disabled={!isEditing}
                     />
                   </div>
@@ -250,15 +327,6 @@ export const AgentProfile = () => {
                       disabled={!isEditing}
                     />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="office_address">Office Address</Label>
-                  <Input
-                    id="office_address"
-                    value={profileData.office_address}
-                    onChange={(e) => handleInputChange('office_address', e.target.value)}
-                    disabled={!isEditing}
-                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="bio">Professional Bio</Label>
