@@ -108,13 +108,17 @@ export const AgentMessages = () => {
       });
       
       if (error) {
-        toast.error('Failed to load messages');
+        if (error.code === 'CONVERSATION_EXISTS') {
+          toast.info('Continuing existing conversation');
+        } else {
+          toast.error('Unable to load conversation history');
+        }
         return;
       }
       setMessages(data || []);
     } catch (error) {
       console.error('Error loading messages:', error);
-      toast.error('Failed to load messages');
+      toast.error('Connection issue - please try again');
     }
   };
 
@@ -129,13 +133,13 @@ export const AgentMessages = () => {
       });
       
       if (error) {
-        toast.error('Failed to load conversations');
+        toast.error('Unable to sync conversations');
         return;
       }
       setConversations(data || []);
     } catch (error) {
       console.error('Error loading conversations:', error);
-      toast.error('Failed to load conversations');
+      toast.error('Connection issue - please refresh');
     } finally {
       setLoading(false);
     }
@@ -164,7 +168,7 @@ export const AgentMessages = () => {
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      toast.error('Failed to send message');
+      toast.error('Connection issue - please try again');
     } finally {
       setSending(false);
     }
@@ -185,7 +189,7 @@ export const AgentMessages = () => {
         .single();
 
       if (!clientData) {
-        toast.error('Client not found');
+        toast.error('Client not found - check email address');
         return;
       }
 
@@ -198,8 +202,14 @@ export const AgentMessages = () => {
         }
       });
 
-      if (conversationError || !conversation) {
-        toast.error('Failed to create conversation');
+      if (conversationError) {
+        if (conversationError.code === 'CONVERSATION_EXISTS') {
+          toast.info('Conversation already exists - opening existing chat');
+          loadConversations();
+          setIsNewMessageOpen(false);
+          return;
+        }
+        toast.error('Unable to start conversation');
         return;
       }
 
@@ -221,7 +231,7 @@ export const AgentMessages = () => {
       }
     } catch (error) {
       console.error('Error sending new message:', error);
-      toast.error('Failed to send message');
+      toast.error('Unable to send message - please try again');
     }
   };
 
@@ -248,6 +258,11 @@ export const AgentMessages = () => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const getClientInquiryCount = (clientName: string | undefined) => {
+    const clientConversations = conversations.filter(conv => conv.client_profile?.full_name === clientName);
+    return clientConversations.length;
   };
 
   if (loading) {
@@ -303,6 +318,18 @@ export const AgentMessages = () => {
                     <div className="text-sm font-medium mb-1 text-gray-300 truncate">
                       {conv.subject}
                     </div>
+                    {/* Enhanced property inquiry display */}
+                    {conv.property && (
+                      <div className="text-xs text-blue-400 mb-1 truncate">
+                        📍 {conv.property.title}
+                      </div>
+                    )}
+                    {/* Show multiple inquiries indicator */}
+                    {getClientInquiryCount(conv.client_profile?.full_name) > 1 && (
+                      <div className="text-xs text-pickfirst-yellow mb-1">
+                        🏠 {getClientInquiryCount(conv.client_profile?.full_name)} properties inquired
+                      </div>
+                    )}
                     {conv.last_message_at && (
                       <div className="text-xs text-gray-500">
                         {new Date(conv.last_message_at).toLocaleDateString([], { 
