@@ -160,12 +160,16 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
           'basic_search': { free: true, premium: true },
           'limited_favorites': { free: true, premium: true },
           'standard_agent_contact': { free: true, premium: true },
+          'property_inquiry_messaging': { free: true, premium: true },
           'unlimited_favorites': { free: false, premium: true },
           'advanced_search_filters': { free: false, premium: true },
           'priority_agent_connections': { free: false, premium: true },
           'email_property_alerts': { free: false, premium: true },
           'market_insights': { free: false, premium: true },
           'direct_messaging': { free: false, premium: true },
+          'live_messaging': { free: false, premium: true },
+          'message_history_access': { free: false, premium: true },
+          'personalized_property_notifications': { free: false, premium: true },
           'property_comparison': { free: false, premium: true },
           'property_alerts': { free: false, premium: true }
         });
@@ -173,6 +177,28 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     };
     
     fetchFeatureConfigs();
+
+    // Set up real-time subscription for feature configuration changes
+    const subscription = supabase
+      .channel('feature_configurations_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'feature_configurations'
+        },
+        (payload) => {
+          console.log('Feature configuration changed:', payload);
+          // Refetch feature configurations when changes occur
+          fetchFeatureConfigs();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const refreshFeatures = useCallback(async () => {

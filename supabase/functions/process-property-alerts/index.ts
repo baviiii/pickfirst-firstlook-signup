@@ -44,6 +44,7 @@ interface BuyerProfile {
   email: string;
   full_name: string;
   role: string;
+  subscription_tier: string;
 }
 
 interface AlertMatch {
@@ -53,6 +54,81 @@ interface AlertMatch {
   property: PropertyListing;
   matchScore: number;
   matchedCriteria: string[];
+}
+
+/**
+ * Check if a user has access to property alerts feature
+ */
+async function checkPropertyAlertsAccess(supabaseClient: any, userId: string): Promise<boolean> {
+  try {
+    const { data: featureConfig, error } = await supabaseClient
+      .from('feature_configurations')
+      .select('free_tier_enabled, premium_tier_enabled')
+      .eq('feature_key', 'property_alerts')
+      .single();
+
+    if (error || !featureConfig) {
+      console.error('Error checking property alerts feature config:', error);
+      return false;
+    }
+
+    // Get user's subscription status
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('subscription_tier')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !profile) {
+      console.error('Error fetching user profile:', profileError);
+      return false;
+    }
+
+    const subscriptionTier = profile.subscription_tier || 'free';
+    
+    // Check feature access based on subscription tier
+    if (subscriptionTier === 'free' && !featureConfig.free_tier_enabled) {
+      return false;
+    }
+    
+    if (subscriptionTier === 'premium' && !featureConfig.premium_tier_enabled) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in checkPropertyAlertsAccess:', error);
+    return false;
+  }
+}
+
+/**
+ * Log feature access attempt for audit purposes
+ */
+async function logFeatureAccessAttempt(
+  supabaseClient: any,
+  userId: string, 
+  action: string, 
+  allowed: boolean, 
+  details?: any
+): Promise<void> {
+  try {
+    await supabaseClient
+      .from('audit_logs')
+      .insert({
+        user_id: userId,
+        table_name: 'property_alerts',
+        action: `feature_access_${action}`,
+        new_values: {
+          allowed,
+          feature: 'property_alerts',
+          details,
+          timestamp: new Date().toISOString()
+        }
+      });
+  } catch (error) {
+    console.error('Error logging feature access attempt:', error);
+  }
 }
 
 serve(async (req) => {
@@ -97,6 +173,7 @@ serve(async (req) => {
     let totalProcessed = 0;
     let totalMatches = 0;
     let totalAlertsSent = 0;
+    let accessDeniedCount = 0;
 
     // Process each job
     for (const job of pendingJobs as AlertJob[]) {
@@ -127,7 +204,7 @@ serve(async (req) => {
           continue
         }
 
-        // Find buyers with property alerts enabled
+        // Find buyers with property alerts enabled - include subscription_tier
         const { data: buyersWithAlerts, error: buyersError } = await supabaseClient
           .from('user_preferences')
           .select(`
@@ -146,7 +223,8 @@ serve(async (req) => {
               id,
               email,
               full_name,
-              role
+              role,
+              subscription_tier
             )
           `)
           .eq('property_alerts', true)
@@ -169,6 +247,22 @@ serve(async (req) => {
           const buyerId = buyerPref.user_id
           const buyerEmail = buyerPref.profiles.email
           const buyerName = buyerPref.profiles.full_name || 'User'
+
+          // SECURITY: Check if buyer has access to property alerts feature
+          const hasAccess = await checkPropertyAlertsAccess(supabaseClient, buyerId);
+          if (!hasAccess) {
+            accessDeniedCount++;
+            await logFeatureAccessAttempt(supabaseClient, buyerId, 'edge_function_processing', false, {
+              property_id: job.property_id,
+              reason: 'insufficient_subscription_tier'
+            });
+            continue; // Skip users without proper subscription
+          }
+
+          // Log successful feature access
+          await logFeatureAccessAttempt(supabaseClient, buyerId, 'edge_function_processing', true, {
+            property_id: job.property_id
+          });
 
           // Check if property matches buyer preferences
           const matchResult = checkPropertyMatch(property as PropertyListing, buyerPref as BuyerPreferences)
@@ -198,6 +292,9 @@ serve(async (req) => {
           }
         }
 
+        // Log processing with access control metrics
+        await logAlertProcessing(supabaseClient, job.property_id, matches.length, alertsSent, accessDeniedCount);
+
         // Mark job as completed
         await supabaseClient
           .rpc('mark_alert_job_completed', { job_id: job.id })
@@ -206,7 +303,7 @@ serve(async (req) => {
         totalMatches += matches.length
         totalAlertsSent += alertsSent
 
-        console.log(`Processed job ${job.id}: ${matches.length} matches, ${alertsSent} alerts sent`)
+        console.log(`Processed job ${job.id}: ${matches.length} matches, ${alertsSent} alerts sent, ${accessDeniedCount} access denied`)
 
       } catch (error) {
         console.error(`Error processing job ${job.id}:`, error)
@@ -224,7 +321,8 @@ serve(async (req) => {
         message: 'Property alerts processed successfully',
         processed: totalProcessed,
         matches: totalMatches,
-        alertsSent: totalAlertsSent
+        alertsSent: totalAlertsSent,
+        accessDenied: accessDeniedCount
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -372,4 +470,34 @@ async function createAlertRecord(
       email_template: 'propertyAlert',
       sent_at: new Date().toISOString()
     })
+}
+
+/**
+ * Log alert processing activity with access control metrics
+ */
+async function logAlertProcessing(
+  supabaseClient: any,
+  propertyId: string, 
+  matchesFound: number, 
+  alertsSent: number,
+  accessDeniedCount: number = 0
+): Promise<void> {
+  try {
+    await supabaseClient
+      .from('audit_logs')
+      .insert({
+        user_id: 'system',
+        table_name: 'property_alerts',
+        action: 'edge_function_process_property',
+        new_values: {
+          property_id: propertyId,
+          matches_found: matchesFound,
+          alerts_sent: alertsSent,
+          access_denied_count: accessDeniedCount,
+          timestamp: new Date().toISOString()
+        }
+      });
+  } catch (error) {
+    console.error('Error logging alert processing:', error);
+  }
 }

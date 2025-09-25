@@ -24,6 +24,80 @@ export interface AlertMatch {
   matchedCriteria: string[];
 }
 
+/**
+ * Check if a user has access to property alerts feature
+ */
+async function checkPropertyAlertsAccess(userId: string): Promise<boolean> {
+  try {
+    const { data: featureConfig, error } = await supabase
+      .from('feature_configurations')
+      .select('free_tier_enabled, premium_tier_enabled')
+      .eq('feature_key', 'property_alerts')
+      .single();
+
+    if (error || !featureConfig) {
+      console.error('Error checking property alerts feature config:', error);
+      return false;
+    }
+
+    // Get user's subscription status
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('subscription_tier')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !profile) {
+      console.error('Error fetching user profile:', profileError);
+      return false;
+    }
+
+    const subscriptionTier = profile.subscription_tier || 'free';
+    
+    // Check feature access based on subscription tier
+    if (subscriptionTier === 'free' && !featureConfig.free_tier_enabled) {
+      return false;
+    }
+    
+    if (subscriptionTier === 'premium' && !featureConfig.premium_tier_enabled) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in checkPropertyAlertsAccess:', error);
+    return false;
+  }
+}
+
+/**
+ * Log feature access attempt for audit purposes
+ */
+async function logFeatureAccessAttempt(
+  userId: string, 
+  action: string, 
+  allowed: boolean, 
+  details?: any
+): Promise<void> {
+  try {
+    await supabase
+      .from('audit_logs')
+      .insert({
+        user_id: userId,
+        table_name: 'property_alerts',
+        action: `feature_access_${action}`,
+        new_values: {
+          allowed,
+          feature: 'property_alerts',
+          details,
+          timestamp: new Date().toISOString()
+        }
+      });
+  } catch (error) {
+    console.error('Error logging feature access attempt:', error);
+  }
+}
+
 export class PropertyAlertService {
   /**
    * Process new property and find matching buyers
@@ -58,7 +132,8 @@ export class PropertyAlertService {
             id,
             email,
             full_name,
-            role
+            role,
+            subscription_tier
           )
         `)
         .eq('property_alerts', true)
@@ -71,12 +146,29 @@ export class PropertyAlertService {
 
       const matches: AlertMatch[] = [];
       const alertsToSend: Array<{ buyerId: string; property: PropertyListing }> = [];
+      let accessDeniedCount = 0;
 
       // Check each buyer's preferences against the new property
       for (const buyerPref of buyersWithAlerts) {
         const buyerId = buyerPref.user_id;
         const buyerEmail = buyerPref.profiles.email;
         const buyerName = buyerPref.profiles.full_name || 'User';
+
+        // SECURITY: Check if buyer has access to property alerts feature
+        const hasAccess = await checkPropertyAlertsAccess(buyerId);
+        if (!hasAccess) {
+          accessDeniedCount++;
+          await logFeatureAccessAttempt(buyerId, 'property_alert_processing', false, {
+            property_id: propertyId,
+            reason: 'insufficient_subscription_tier'
+          });
+          continue; // Skip users without proper subscription
+        }
+
+        // Log successful feature access
+        await logFeatureAccessAttempt(buyerId, 'property_alert_processing', true, {
+          property_id: propertyId
+        });
 
         // Get buyer's detailed preferences
         const preferences = await BuyerProfileService.getBuyerPreferences(buyerId);
@@ -114,8 +206,8 @@ export class PropertyAlertService {
         }
       }
 
-      // Log the alert processing
-      await this.logAlertProcessing(propertyId, matches.length, alertsSent);
+      // Log the alert processing with access control stats
+      await this.logAlertProcessing(propertyId, matches.length, alertsSent, accessDeniedCount);
 
       return {
         success: true,
@@ -285,12 +377,13 @@ export class PropertyAlertService {
   }
 
   /**
-   * Log alert processing activity
+   * Log alert processing activity with access control metrics
    */
   private static async logAlertProcessing(
     propertyId: string, 
     matchesFound: number, 
-    alertsSent: number
+    alertsSent: number,
+    accessDeniedCount: number = 0
   ): Promise<void> {
     try {
       await supabase
@@ -303,6 +396,7 @@ export class PropertyAlertService {
             property_id: propertyId,
             matches_found: matchesFound,
             alerts_sent: alertsSent,
+            access_denied_count: accessDeniedCount,
             timestamp: new Date().toISOString()
           }
         });
@@ -333,10 +427,21 @@ export class PropertyAlertService {
   }
 
   /**
-   * Get alert history for a buyer
+   * Get alert history for a buyer - with feature access validation
    */
   static async getBuyerAlertHistory(buyerId: string, limit: number = 20): Promise<PropertyAlert[]> {
     try {
+      // SECURITY: Check if buyer has access to property alerts feature
+      const hasAccess = await checkPropertyAlertsAccess(buyerId);
+      if (!hasAccess) {
+        await logFeatureAccessAttempt(buyerId, 'alert_history_access', false, {
+          reason: 'insufficient_subscription_tier'
+        });
+        return []; // Return empty array for unauthorized users
+      }
+
+      await logFeatureAccessAttempt(buyerId, 'alert_history_access', true);
+
       const { data, error } = await supabase
         .from('property_alerts')
         .select(`
@@ -437,14 +542,34 @@ export class PropertyAlertService {
   }
 
   /**
-   * Test the alert system with a specific property
+   * Test the alert system with a specific property - with feature access validation
    */
-  static async testAlertSystem(propertyId: string): Promise<{
+  static async testAlertSystem(propertyId: string, testUserId?: string): Promise<{
     success: boolean;
     result: any;
     error?: string;
   }> {
     try {
+      // If testing for a specific user, validate their access
+      if (testUserId) {
+        const hasAccess = await checkPropertyAlertsAccess(testUserId);
+        if (!hasAccess) {
+          await logFeatureAccessAttempt(testUserId, 'alert_system_test', false, {
+            property_id: propertyId,
+            reason: 'insufficient_subscription_tier'
+          });
+          return {
+            success: false,
+            result: null,
+            error: 'User does not have access to property alerts feature'
+          };
+        }
+        
+        await logFeatureAccessAttempt(testUserId, 'alert_system_test', true, {
+          property_id: propertyId
+        });
+      }
+
       const result = await this.processNewProperty(propertyId);
       return { success: true, result };
     } catch (error) {

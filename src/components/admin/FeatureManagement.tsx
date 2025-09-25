@@ -36,6 +36,27 @@ export const FeatureManagement = () => {
     premium_tier_enabled: true
   });
 
+  const getFeatureDescription = (featureKey: string): string => {
+    const descriptions: { [key: string]: string } = {
+      'basic_search': 'Standard property search functionality',
+      'limited_favorites': 'Save up to 10 favorite properties',
+      'standard_agent_contact': 'Basic agent contact functionality',
+      'property_inquiry_messaging': 'Send messages to agents about specific properties',
+      'unlimited_favorites': 'Save unlimited favorite properties',
+      'advanced_search_filters': 'Advanced property filtering options',
+      'priority_agent_connections': 'Get priority response from agents',
+      'email_property_alerts': 'Receive email notifications for new properties',
+      'market_insights': 'Access to market analytics and insights',
+      'direct_messaging': 'Basic contact form functionality for reaching agents',
+      'live_messaging': 'Real-time messaging with agents and property inquiries',
+      'message_history_access': 'Access to complete conversation history with agents',
+      'personalized_property_notifications': 'AI-powered property recommendations based on buyer preferences and search history',
+      'property_comparison': 'Compare multiple properties side by side',
+      'property_alerts': 'Customized alerts for new properties matching criteria'
+    };
+    return descriptions[featureKey] || 'No description available';
+  };
+
   useEffect(() => {
     fetchFeatures();
   }, []);
@@ -163,7 +184,7 @@ export const FeatureManagement = () => {
               Feature Gate Management
             </CardTitle>
             <CardDescription>
-              Control which features are available to different subscription tiers
+              Control which features are available to different subscription tiers. Changes take effect immediately for all users.
             </CardDescription>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -279,7 +300,7 @@ export const FeatureManagement = () => {
                   </TableCell>
                   <TableCell className="max-w-xs">
                     <p className="text-sm text-muted-foreground truncate">
-                      {feature.description || 'No description'}
+                      {feature.description || getFeatureDescription(feature.feature_key)}
                     </p>
                   </TableCell>
                   <TableCell>

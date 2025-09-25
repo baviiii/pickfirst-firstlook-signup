@@ -1064,79 +1064,82 @@ export type Database = {
       }
       user_preferences: {
         Row: {
-          agent_messages: boolean | null
-          allow_marketing: boolean | null
-          appointment_reminders: boolean | null
-          budget_range: string | null
-          created_at: string | null
-          email_notifications: boolean | null
           id: string
-          market_updates: boolean | null
-          marketing_emails: boolean | null
-          new_listings: boolean | null
-          preferred_areas: string[] | null
-          preferred_contact_method: string | null
-          price_changes: boolean | null
-          profile_visibility: string | null
-          property_alerts: boolean | null
-          property_type_preferences: string[] | null
-          push_notifications: boolean | null
-          show_activity_status: boolean | null
-          show_email: boolean | null
-          show_location: boolean | null
-          show_phone: boolean | null
-          updated_at: string | null
           user_id: string
+          email_notifications: boolean
+          push_notifications: boolean
+          marketing_emails: boolean
+          property_alerts: boolean
+          agent_messages: boolean
+          appointment_reminders: boolean
+          new_listings: boolean
+          price_changes: boolean
+          market_updates: boolean
+          personalized_property_notifications: boolean
+          profile_visibility: string
+          show_email: boolean
+          show_phone: boolean
+          show_location: boolean
+          show_activity_status: boolean
+          allow_marketing: boolean
+          preferred_contact_method: string
+          budget_range: string | null
+          preferred_areas: string[] | null
+          property_type_preferences: string[] | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          agent_messages?: boolean | null
-          allow_marketing?: boolean | null
-          appointment_reminders?: boolean | null
-          budget_range?: string | null
-          created_at?: string | null
-          email_notifications?: boolean | null
           id?: string
-          market_updates?: boolean | null
-          marketing_emails?: boolean | null
-          new_listings?: boolean | null
-          preferred_areas?: string[] | null
-          preferred_contact_method?: string | null
-          price_changes?: boolean | null
-          profile_visibility?: string | null
-          property_alerts?: boolean | null
-          property_type_preferences?: string[] | null
-          push_notifications?: boolean | null
-          show_activity_status?: boolean | null
-          show_email?: boolean | null
-          show_location?: boolean | null
-          show_phone?: boolean | null
-          updated_at?: string | null
           user_id: string
+          email_notifications?: boolean
+          push_notifications?: boolean
+          marketing_emails?: boolean
+          property_alerts?: boolean
+          agent_messages?: boolean
+          appointment_reminders?: boolean
+          new_listings?: boolean
+          price_changes?: boolean
+          market_updates?: boolean
+          personalized_property_notifications?: boolean
+          profile_visibility?: string
+          show_email?: boolean
+          show_phone?: boolean
+          show_location?: boolean
+          show_activity_status?: boolean
+          allow_marketing?: boolean
+          preferred_contact_method?: string
+          budget_range?: string | null
+          preferred_areas?: string[] | null
+          property_type_preferences?: string[] | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          agent_messages?: boolean | null
-          allow_marketing?: boolean | null
-          appointment_reminders?: boolean | null
-          budget_range?: string | null
-          created_at?: string | null
-          email_notifications?: boolean | null
           id?: string
-          market_updates?: boolean | null
-          marketing_emails?: boolean | null
-          new_listings?: boolean | null
-          preferred_areas?: string[] | null
-          preferred_contact_method?: string | null
-          price_changes?: boolean | null
-          profile_visibility?: string | null
-          property_alerts?: boolean | null
-          property_type_preferences?: string[] | null
-          push_notifications?: boolean | null
-          show_activity_status?: boolean | null
-          show_email?: boolean | null
-          show_location?: boolean | null
-          show_phone?: boolean | null
-          updated_at?: string | null
           user_id?: string
+          email_notifications?: boolean
+          push_notifications?: boolean
+          marketing_emails?: boolean
+          property_alerts?: boolean
+          agent_messages?: boolean
+          appointment_reminders?: boolean
+          new_listings?: boolean
+          price_changes?: boolean
+          market_updates?: boolean
+          personalized_property_notifications?: boolean
+          profile_visibility?: string
+          show_email?: boolean
+          show_phone?: boolean
+          show_location?: boolean
+          show_activity_status?: boolean
+          allow_marketing?: boolean
+          preferred_contact_method?: string
+          budget_range?: string | null
+          preferred_areas?: string[] | null
+          property_type_preferences?: string[] | null
+          created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {

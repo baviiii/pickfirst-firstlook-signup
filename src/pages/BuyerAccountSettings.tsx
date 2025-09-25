@@ -18,11 +18,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { LocationAutocomplete } from '@/components/ui/LocationAutocomplete';
 import { googleMapsService } from '@/services/googleMapsService';
 import { ipDetectionService } from '@/services/ipDetectionService';
+import { useSubscription } from '@/hooks/useSubscription';
+import { FeatureGate } from '@/components/ui/FeatureGate';
 
 const BuyerAccountSettingsPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { profile, user, updateProfile } = useAuth();
+  const { isFeatureEnabled } = useSubscription();
+  
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
@@ -40,7 +44,8 @@ const BuyerAccountSettingsPage = () => {
       priceChanges: true,
       marketUpdates: false,
       agentMessages: true,
-      appointmentReminders: true
+      appointmentReminders: true,
+      personalizedPropertyNotifications: false
     },
     privacy: {
       profileVisible: true,
@@ -152,7 +157,8 @@ const BuyerAccountSettingsPage = () => {
             priceChanges: userPrefs?.price_changes ?? prev.notifications.priceChanges,
             marketUpdates: userPrefs?.market_updates ?? prev.notifications.marketUpdates,
             agentMessages: userPrefs?.agent_messages ?? prev.notifications.agentMessages,
-            appointmentReminders: userPrefs?.appointment_reminders ?? prev.notifications.appointmentReminders
+            appointmentReminders: userPrefs?.appointment_reminders ?? prev.notifications.appointmentReminders,
+            personalizedPropertyNotifications: userPrefs?.personalized_property_notifications ?? prev.notifications.personalizedPropertyNotifications
           },
           privacy: {
             profileVisible: (userPrefs?.profile_visibility ?? 'public') !== 'private',
@@ -205,6 +211,12 @@ const BuyerAccountSettingsPage = () => {
   };
 
   const handleNotificationChange = (key: string, value: boolean) => {
+    // Check if personalized notifications require premium access
+    if (key === 'personalizedPropertyNotifications' && value && !isFeatureEnabled('personalized_property_notifications')) {
+      toast.error('Personalized property notifications require a premium subscription');
+      return;
+    }
+    
     setSettings(prev => ({
       ...prev,
       notifications: {
@@ -399,6 +411,7 @@ const BuyerAccountSettingsPage = () => {
         market_updates: settings.notifications.marketUpdates,
         agent_messages: settings.notifications.agentMessages,
         appointment_reminders: settings.notifications.appointmentReminders,
+        personalized_property_notifications: settings.notifications.personalizedPropertyNotifications,
         allow_marketing: settings.privacy.allowMarketing,
         show_activity_status: settings.privacy.showActivityStatus,
         profile_visibility: settings.privacy.profileVisible ? 'public' : 'private' as const
@@ -1033,26 +1046,88 @@ const BuyerAccountSettingsPage = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {Object.entries(settings.notifications).map(([key, value]) => (
-                    <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50">
-                      <div>
-                        <h4 className="text-white font-medium">
-                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                        </h4>
-                        <p className="text-sm text-gray-400">
-                          {key === 'newListings' && 'Get notified when new properties match your criteria'}
-                          {key === 'priceChanges' && 'Alerts when saved properties change price'}
-                          {key === 'marketUpdates' && 'Weekly market trends and insights'}
-                          {key === 'agentMessages' && 'Notifications for new messages from agents'}
-                          {key === 'appointmentReminders' && 'Reminders for upcoming property viewings'}
-                        </p>
+                  {Object.entries(settings.notifications).map(([key, value]) => {
+                    const isPersonalizedNotifications = key === 'personalizedPropertyNotifications';
+                    const hasFeatureAccess = isFeatureEnabled('personalized_property_notifications');
+                    
+                    return (
+                      <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-white font-medium">
+                              {key === 'personalizedPropertyNotifications' ? 'Personalized Property Notifications' :
+                               key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                            </h4>
+                            {isPersonalizedNotifications && !hasFeatureAccess && (
+                              <Badge variant="outline" className="text-xs text-pickfirst-yellow border-pickfirst-yellow">
+                                Premium
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-400">
+                            {key === 'newListings' && 'Get notified when new properties match your criteria'}
+                            {key === 'priceChanges' && 'Alerts when saved properties change price'}
+                            {key === 'marketUpdates' && 'Weekly market trends and insights'}
+                            {key === 'agentMessages' && 'Notifications for new messages from agents'}
+                            {key === 'appointmentReminders' && 'Reminders for upcoming property viewings'}
+                            {key === 'personalizedPropertyNotifications' && 'AI-powered property recommendations based on your search history, preferences, and behavior patterns'}
+                          </p>
+                        </div>
+                        {isPersonalizedNotifications && !hasFeatureAccess ? (
+                          <FeatureGate 
+                            feature="personalized_property_notifications"
+                            showUpgrade={false}
+                            fallback={
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={false}
+                                  disabled={true}
+                                  className="opacity-50"
+                                />
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => navigate('/pricing')}
+                                  className="text-pickfirst-yellow border-pickfirst-yellow hover:bg-pickfirst-yellow hover:text-black text-xs px-2 py-1 h-6"
+                                >
+                                  Upgrade
+                                </Button>
+                              </div>
+                            }
+                          >
+                            <Switch
+                              checked={value}
+                              onCheckedChange={(checked) => handleNotificationChange(key, checked)}
+                            />
+                          </FeatureGate>
+                        ) : (
+                          <Switch
+                            checked={value}
+                            onCheckedChange={(checked) => handleNotificationChange(key, checked)}
+                          />
+                        )}
                       </div>
-                      <Switch
-                        checked={value}
-                        onCheckedChange={(checked) => handleNotificationChange(key, checked)}
-                      />
+                    );
+                  })}
+                  
+                  {/* Feature Information Card */}
+                  <div className="mt-6 p-4 bg-gradient-to-r from-pickfirst-yellow/10 to-pickfirst-yellow/5 border border-pickfirst-yellow/20 rounded-lg">
+                    <h4 className="text-white font-medium mb-2 flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-pickfirst-yellow" />
+                      Smart Notification Features
+                    </h4>
+                    <div className="space-y-2 text-sm text-gray-300">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">Free</Badge>
+                        <span>Basic property alerts and agent messages</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs text-pickfirst-yellow border-pickfirst-yellow">Premium</Badge>
+                        <span>AI-powered personalized recommendations and market insights</span>
+                      </div>
                     </div>
-                  ))}
+                  </div>
+                  
                   <div className="pt-2">
                     <Button onClick={handleSaveNotificationsPrivacy} disabled={isLoading} className="bg-primary text-primary-foreground hover:bg-primary/90">
                       {isLoading ? 'Saving...' : 'Save Notification Preferences'}

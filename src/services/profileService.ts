@@ -32,6 +32,7 @@ export interface UserPreferences {
   new_listings: boolean;
   price_changes: boolean;
   market_updates: boolean;
+  personalized_property_notifications?: boolean;
   
   // Privacy settings
   profile_visibility: 'public' | 'private' | 'contacts_only';
@@ -192,6 +193,7 @@ export class ProfileService {
       new_listings: true,
       price_changes: true,
       market_updates: false,
+      personalized_property_notifications: false,
       profile_visibility: 'public' as const,
       show_email: false,
       show_phone: false,
