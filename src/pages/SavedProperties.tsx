@@ -198,10 +198,20 @@ const SavedPropertiesPageComponent = () => {
                 
                 <div className="flex items-center justify-between">
                   <div className="text-2xl font-bold text-yellow-400">
-                    ${property.price.toLocaleString()}
-                    <span className="text-sm font-normal text-yellow-400/70 ml-1">
-                      {property.property_type === 'weekly' ? '/week' : property.property_type === 'monthly' ? '/month' : ''}
-                    </span>
+                    {property.status === 'sold' && property.sold_price ? (
+                      <>
+                        <span className="text-lg text-gray-400 line-through">${property.price.toLocaleString()}</span>
+                        <br />
+                        <span className="text-red-400">Sold: ${property.sold_price.toLocaleString()}</span>
+                      </>
+                    ) : (
+                      <>
+                        ${property.price.toLocaleString()}
+                        <span className="text-sm font-normal text-yellow-400/70 ml-1">
+                          {property.property_type === 'weekly' ? '/week' : property.property_type === 'monthly' ? '/month' : ''}
+                        </span>
+                      </>
+                    )}
                   </div>
                   
                   <div className="flex items-center gap-4 text-sm">
@@ -274,8 +284,14 @@ const SavedPropertiesPageComponent = () => {
           
           {/* Status Badge */}
           <div className="absolute top-3 left-3">
-            <Badge className="bg-yellow-400/90 hover:bg-yellow-400 text-black font-medium">
-              {property.status === 'available' ? 'Available' : 'Under Contract'}
+            <Badge className={`font-medium ${
+              property.status === 'sold' 
+                ? 'bg-red-500/90 hover:bg-red-500 text-white' 
+                : property.status === 'available' 
+                  ? 'bg-green-500/90 hover:bg-green-500 text-white'
+                  : 'bg-yellow-400/90 hover:bg-yellow-400 text-black'
+            }`}>
+              {property.status === 'sold' ? 'SOLD' : property.status === 'available' ? 'Available' : 'Under Contract'}
             </Badge>
           </div>
           
@@ -327,10 +343,20 @@ const SavedPropertiesPageComponent = () => {
             
             <div className="flex items-center justify-between">
               <div className="text-xl font-bold text-yellow-400">
-                ${property.price.toLocaleString()}
-                <span className="text-xs font-normal text-yellow-400/70 ml-1">
-                  {property.property_type === 'weekly' ? '/wk' : property.property_type === 'monthly' ? '/mo' : ''}
-                </span>
+                {property.status === 'sold' && property.sold_price ? (
+                  <>
+                    <span className="text-sm text-gray-400 line-through">${property.price.toLocaleString()}</span>
+                    <br />
+                    <span className="text-red-400">Sold: ${property.sold_price.toLocaleString()}</span>
+                  </>
+                ) : (
+                  <>
+                    ${property.price.toLocaleString()}
+                    <span className="text-xs font-normal text-yellow-400/70 ml-1">
+                      {property.property_type === 'weekly' ? '/wk' : property.property_type === 'monthly' ? '/mo' : ''}
+                    </span>
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-3 text-xs">
                 {property.bedrooms !== null && (

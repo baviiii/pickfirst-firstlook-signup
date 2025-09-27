@@ -73,9 +73,9 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           await loadGoogleMapsAPI(apiKey);
           setClientMapsReady(true);
           setMapsMethod('client');
-          console.log('✅ Client-side Google Maps loaded successfully');
+          // Client-side Google Maps loaded successfully
         } else {
-          console.log('🔄 Falling back to server-side Google Maps');
+          // Falling back to server-side Google Maps
           setMapsMethod('server');
         }
       } catch (error) {

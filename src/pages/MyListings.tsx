@@ -106,7 +106,7 @@ const MyListingsPage = () => {
     setSoldForm({
       sold_price: listing.price,
       sold_date: new Date().toISOString().split('T')[0],
-      sold_to_client_id: ''
+      sold_to_client_id: 'none'
     });
     fetchClients();
   };
@@ -127,7 +127,7 @@ const MyListingsPage = () => {
       status: 'sold',
       sold_price: parseFloat(soldForm.sold_price),
       sold_date: soldForm.sold_date,
-      sold_to_client_id: soldForm.sold_to_client_id || null
+      sold_to_client_id: soldForm.sold_to_client_id === 'none' ? null : soldForm.sold_to_client_id || null
     });
     
     setIsUpdating(false);
@@ -629,7 +629,7 @@ const MyListingsPage = () => {
                     <SelectValue placeholder="Select client (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No client selected</SelectItem>
+                    <SelectItem value="none">No client selected</SelectItem>
                     {clients.map(client => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name} ({client.email})

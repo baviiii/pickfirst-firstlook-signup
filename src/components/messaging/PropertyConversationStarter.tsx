@@ -41,8 +41,6 @@ export const PropertyConversationStarter: React.FC<PropertyConversationStarterPr
       const targetUserId = profile?.role === 'buyer' ? buyerId : user.id;
       const conversationSubject = `Property Inquiry: ${propertyTitle}`;
 
-      console.log('Starting conversation with:', { targetUserId, propertyId, subject: conversationSubject });
-
       // Create or get conversation with property ID for property-specific conversation
       const conversationId = await messageService.getOrCreateConversation(
         targetUserId, 

@@ -354,6 +354,117 @@ export class PropertyService {
     }
   }
 
+  // Update a property listing
+  static async updateListing(id: string, data: UpdatePropertyListingData): Promise<{ data: PropertyListing | null; error: any }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { data: null, error: new Error('User not authenticated') };
+      }
+
+      // Check if this is a status change to 'sold'
+      const wasMarkedAsSold = data.status === 'sold';
+      let previousStatus: string | null = null;
+      
+      if (wasMarkedAsSold) {
+        // Get current listing data before update
+        const { data: currentListing, error: fetchError } = await supabase
+          .from('property_listings')
+          .select('status, agent_id')
+          .eq('id', id)
+          .single();
+        
+        if (fetchError) {
+          console.error('Error fetching current listing:', fetchError);
+        } else if (currentListing) {
+          previousStatus = currentListing.status;
+        }
+      }
+
+      // Update the listing
+      const { data: updatedListing, error } = await supabase
+        .from('property_listings')
+        .update(data)
+        .eq('id', id)
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('Error updating listing:', error);
+        return { data: null, error };
+      }
+
+      // If the property was just marked as sold, notify interested buyers
+      if (wasMarkedAsSold && previousStatus !== 'sold' && updatedListing) {
+        try {
+          // Get all inquiries for this property
+          const { data: inquiries, error: inquiryError } = await supabase
+            .from('property_inquiries')
+            .select('*, buyer:profiles!buyer_id(full_name, email)')
+            .eq('property_id', id);
+
+          if (inquiryError) {
+            console.error('Error fetching inquiries:', inquiryError);
+          } else if (inquiries && inquiries.length > 0) {
+            // Get agent info for the email
+            let agentName = 'the agent';
+            if (updatedListing.agent_id) {
+              const { data: agent, error: agentError } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', updatedListing.agent_id)
+                .single();
+              
+              if (agentError) {
+                console.error('Error fetching agent:', agentError);
+              } else if (agent) {
+                agentName = agent.full_name || 'the agent';
+              }
+            }
+
+            // Send email to each inquirer
+            for (const inquiry of inquiries) {
+              if (inquiry.buyer?.email) {
+                const buyerName = (inquiry.buyer as any)?.full_name || 'there';
+                const propertyTitle = updatedListing.title || 'the property';
+                const soldPrice = data.sold_price ? `for $${data.sold_price.toLocaleString()}` : '';
+                
+                // Use a type assertion for the buyer object
+                const buyerEmail = (inquiry.buyer as any)?.email;
+                if (buyerEmail) {
+                  await supabase.functions.invoke('send-email', {
+                    body: {
+                      to: buyerEmail,
+                      template: 'property-sold',
+                      data: {
+                        name: buyerName,
+                        property: {
+                          title: propertyTitle,
+                          address: updatedListing.address || '',
+                          sold_price: soldPrice,
+                          agent_name: agentName,
+                          property_url: `${window.location.origin}/property/${id}`
+                        }
+                      }
+                    }
+                  });
+                }
+              }
+            }
+          }
+        } catch (notificationError) {
+          console.error('Error notifying buyers:', notificationError);
+          // Don't fail the update if notification fails
+        }
+      }
+
+      return { data: updatedListing, error: null };
+    } catch (error) {
+      console.error('Error in updateListing:', error);
+      return { data: null, error };
+    }
+  }
+
   // Create a new property listing
   static async createListing(listingData: CreatePropertyListingData): Promise<{ data: PropertyListing | null; error: any }> {
     try {
@@ -523,7 +634,6 @@ export class PropertyService {
   // Get all listings (for admins)
   static async getAllListings(): Promise<{ data: PropertyListing[] | null; error: any }> {
     try {
-      console.log('Fetching all listings...');
       const { data, error } = await supabase
         .from('property_listings')
         .select(`
@@ -562,19 +672,7 @@ export class PropertyService {
     return { data, error };
   }
 
-  // Update a listing
-  static async updateListing(id: string, data: UpdatePropertyListingData): Promise<{ data: PropertyListing | null; error: any }> {
-    const { data: result, error } = await supabase
-      .from('property_listings')
-      .update(data)
-      .eq('id', id)
-      .select()
-      .single();
-
-    return { data: result, error };
-  }
-
-  // Delete a listing
+  // Delete a listing (admin only)
   static async deleteListing(id: string): Promise<{ error: any }> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -992,9 +1090,7 @@ export class PropertyService {
       const result = await PropertyAlertService.processNewProperty(propertyId);
       
       if (result.success) {
-        console.log(`Property alerts processed for property ${propertyId}: ${result.matchesFound} matches found, ${result.alertsSent} alerts sent`);
       } else {
-        console.error(`Failed to process property alerts for property ${propertyId}:`, result.error);
       }
     } catch (error) {
       console.error('Error triggering property alerts:', error);

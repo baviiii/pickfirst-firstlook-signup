@@ -24,9 +24,9 @@ interface TestResult {
   timestamp: string;
 }
 
-// Mock toast function since it's not available
+// Toast function for testing purposes
 const toast = ({ title, description, variant }: { title: string; description: string; variant?: string }) => {
-  console.log(`Toast: ${title} - ${description} (${variant || 'default'})`);
+  // Toast implementation for testing
 };
 
 export default function SystemTestingDashboard() {
@@ -115,16 +115,11 @@ export default function SystemTestingDashboard() {
     } finally {
       setIsLoading(false);
     }
-  };// Add this debugging code to your runEmailTest function
+  };
 
   const runEmailTest = async () => {
-    // Enhanced validation
     const trimmedRecipient = emailRecipient.trim();
-    
-    console.log('Email recipient (raw):', JSON.stringify(emailRecipient));
-    console.log('Email recipient (trimmed):', JSON.stringify(trimmedRecipient));
-    console.log('Email recipient length:', trimmedRecipient.length);
-    
+
     if (!trimmedRecipient) {
       toast({
         title: "Error",
@@ -133,8 +128,7 @@ export default function SystemTestingDashboard() {
       });
       return;
     }
-  
-    // Email validation regex
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedRecipient)) {
       toast({
@@ -144,7 +138,7 @@ export default function SystemTestingDashboard() {
       });
       return;
     }
-  
+
     setIsLoading(true);
     try {
       let data;
@@ -153,19 +147,13 @@ export default function SystemTestingDashboard() {
       } catch {
         data = { name: "Test User", email: trimmedRecipient };
       }
-  
-      // Log the data being sent
-      console.log('Email data:', data);
-      console.log('Email template:', emailTemplate);
-  
+
       let result;
       switch (emailTemplate) {
         case 'welcome':
-          console.log('Sending welcome email to:', trimmedRecipient);
           result = await EmailService.sendWelcomeEmail(trimmedRecipient, data.name, data);
           break;
         case 'propertyAlert':
-          console.log('Sending property alert to:', trimmedRecipient);
           result = await EmailService.sendPropertyAlert(trimmedRecipient, data.name, {
             title: data.title || 'Test Property',
             price: data.price || 500000,
@@ -177,7 +165,6 @@ export default function SystemTestingDashboard() {
           });
           break;
         case 'appointmentConfirmation':
-          console.log('Sending appointment confirmation to:', trimmedRecipient);
           result = await EmailService.sendAppointmentConfirmation(trimmedRecipient, data.name, {
             propertyTitle: data.propertyTitle || 'Test Property',
             date: data.date || '2024-01-15',

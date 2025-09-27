@@ -309,8 +309,14 @@ const PropertyDetailsComponent = () => {
                   
                   {/* Status Badge */}
                   <div className="absolute top-4 left-4">
-                    <Badge className="bg-yellow-400/90 hover:bg-yellow-400 text-black font-medium">
-                      {property.status === 'available' ? 'Available' : 'Under Contract'}
+                    <Badge className={`font-medium ${
+                      property.status === 'sold' 
+                        ? 'bg-red-500/90 hover:bg-red-500 text-white' 
+                        : property.status === 'available' 
+                          ? 'bg-green-500/90 hover:bg-green-500 text-white'
+                          : 'bg-yellow-400/90 hover:bg-yellow-400 text-black'
+                    }`}>
+                      {property.status === 'sold' ? 'SOLD' : property.status === 'available' ? 'Available' : 'Under Contract'}
                     </Badge>
                   </div>
                 </div>
@@ -364,10 +370,25 @@ const PropertyDetailsComponent = () => {
                   {/* Price and Stats */}
                   <div className="bg-yellow-400/5 p-4 rounded-lg border border-yellow-400/20">
                     <div className="text-3xl font-bold text-yellow-400 mb-3">
-                      ${property.price?.toLocaleString()}
-                      <span className="text-lg font-normal text-yellow-400/70 ml-1">
-                        {property.property_type === 'weekly' ? '/week' : property.property_type === 'monthly' ? '/month' : ''}
-                      </span>
+                      {property.status === 'sold' && property.sold_price ? (
+                        <>
+                          <span className="text-xl text-gray-400 line-through">${property.price?.toLocaleString()}</span>
+                          <br />
+                          <span className="text-red-400">Sold: ${property.sold_price.toLocaleString()}</span>
+                          {property.sold_date && (
+                            <div className="text-sm text-gray-400 mt-1">
+                              Sold on {new Date(property.sold_date).toLocaleDateString()}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          ${property.price?.toLocaleString()}
+                          <span className="text-lg font-normal text-yellow-400/70 ml-1">
+                            {property.property_type === 'weekly' ? '/week' : property.property_type === 'monthly' ? '/month' : ''}
+                          </span>
+                        </>
+                      )}
                     </div>
                     
                     {/* Property Stats */}
@@ -452,6 +473,20 @@ const PropertyDetailsComponent = () => {
                       <p className="text-gray-300 text-sm">
                         Check your messages to continue the conversation with the agent.
                       </p>
+                    </div>
+                  ) : property.status === 'sold' ? (
+                    <div className="space-y-3">
+                      <div className="bg-red-500/5 p-4 rounded-lg border border-red-500/20 text-center">
+                        <p className="text-red-400 font-medium mb-2">Property Sold</p>
+                        <p className="text-gray-400 text-sm">
+                          This property is no longer available for inquiries.
+                        </p>
+                        {property.sold_date && (
+                          <p className="text-gray-500 text-xs mt-2">
+                            Sold on {new Date(property.sold_date).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-3">

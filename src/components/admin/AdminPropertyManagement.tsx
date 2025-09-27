@@ -187,7 +187,7 @@ const AdminPropertyManagementComponent = () => {
                           }
                         }}
                         onLoad={() => {
-                          console.log('Image loaded successfully:', listing.images[0], 'for listing:', listing.title);
+                          // Image loaded successfully
                         }}
                       />
                     ) : (

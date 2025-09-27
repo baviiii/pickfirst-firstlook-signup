@@ -126,8 +126,6 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
     }
 
     try {
-      console.log('🗺️ Initializing Advanced Property Map...');
-      
       // Premium dark yellow/black map style
       const mapStyles = {
         roadmap: [
@@ -195,8 +193,6 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
 
       setIsMapLoading(false);
       setIsLoaded(true);
-      
-      console.log('✅ Advanced Property Map initialized successfully');
 
     } catch (error) {
       console.error('❌ Failed to initialize map:', error);
@@ -254,7 +250,6 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
     const validProperties = properties.filter(p => p.latitude && p.longitude);
     
     if (validProperties.length === 0) {
-      console.log('No properties with coordinates to display');
       return;
     }
 

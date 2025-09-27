@@ -283,10 +283,20 @@ const BrowsePropertiesPageComponent = () => {
               
               <div className="flex items-center gap-6 mb-4">
                 <div className="text-2xl font-bold text-yellow-400">
-                  ${listing.price.toLocaleString()}
-                  <span className="text-sm font-normal text-yellow-400/70 ml-1">
-                    {listing.property_type === 'weekly' ? '/week' : listing.property_type === 'monthly' ? '/month' : ''}
-                  </span>
+                  {listing.status === 'sold' && listing.sold_price ? (
+                    <>
+                      <span className="text-lg text-gray-400 line-through">${listing.price.toLocaleString()}</span>
+                      <br />
+                      <span className="text-red-400">Sold: ${listing.sold_price.toLocaleString()}</span>
+                    </>
+                  ) : (
+                    <>
+                      ${listing.price.toLocaleString()}
+                      <span className="text-sm font-normal text-yellow-400/70 ml-1">
+                        {listing.property_type === 'weekly' ? '/week' : listing.property_type === 'monthly' ? '/month' : ''}
+                      </span>
+                    </>
+                  )}
                 </div>
                 <div className="flex items-center gap-4 text-sm">
                   {listing.bedrooms !== null && (
@@ -326,15 +336,27 @@ const BrowsePropertiesPageComponent = () => {
                   <Eye className="w-4 h-4 mr-2" />
                   View Details
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  className="text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10"
-                  onClick={(e) => handleInquireProperty(listing, e)}
-                >
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Inquire
-                </Button>
+                {listing.status !== 'sold' ? (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10"
+                    onClick={(e) => handleInquireProperty(listing, e)}
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Inquire
+                  </Button>
+                ) : (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    disabled
+                    className="text-gray-500 border-gray-500/40 cursor-not-allowed"
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Property Sold
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -362,8 +384,14 @@ const BrowsePropertiesPageComponent = () => {
           
           {/* Status Badge */}
           <div className="absolute top-3 left-3">
-            <Badge className="bg-yellow-400/90 hover:bg-yellow-400 text-black font-medium">
-              {listing.status === 'available' ? 'Available' : 'Under Contract'}
+            <Badge className={`font-medium ${
+              listing.status === 'sold' 
+                ? 'bg-red-500/90 hover:bg-red-500 text-white' 
+                : listing.status === 'available' 
+                  ? 'bg-green-500/90 hover:bg-green-500 text-white'
+                  : 'bg-yellow-400/90 hover:bg-yellow-400 text-black'
+            }`}>
+              {listing.status === 'sold' ? 'SOLD' : listing.status === 'available' ? 'Available' : 'Under Contract'}
             </Badge>
           </div>
           
@@ -399,10 +427,20 @@ const BrowsePropertiesPageComponent = () => {
             
             <div className="flex items-center justify-between">
               <div className="text-xl font-bold text-yellow-400">
-                ${listing.price.toLocaleString()}
-                <span className="text-xs font-normal text-yellow-400/70 ml-1">
-                  {listing.property_type === 'weekly' ? '/wk' : listing.property_type === 'monthly' ? '/mo' : ''}
-                </span>
+                {listing.status === 'sold' && listing.sold_price ? (
+                  <>
+                    <span className="text-sm text-gray-400 line-through">${listing.price.toLocaleString()}</span>
+                    <br />
+                    <span className="text-red-400">Sold: ${listing.sold_price.toLocaleString()}</span>
+                  </>
+                ) : (
+                  <>
+                    ${listing.price.toLocaleString()}
+                    <span className="text-xs font-normal text-yellow-400/70 ml-1">
+                      {listing.property_type === 'weekly' ? '/wk' : listing.property_type === 'monthly' ? '/mo' : ''}
+                    </span>
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-3 text-xs">
                 {listing.bedrooms !== null && (
@@ -442,15 +480,27 @@ const BrowsePropertiesPageComponent = () => {
                 <Eye className="w-3 h-3 mr-1" />
                 View
               </Button>
-              <Button 
-                size="sm" 
-                variant="outline"
-                className="flex-1 text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10 text-xs py-2"
-                onClick={(e) => handleInquireProperty(listing, e)}
-              >
-                <MessageSquare className="w-3 h-3 mr-1" />
-                Inquire
-              </Button>
+              {listing.status !== 'sold' ? (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="flex-1 text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10 text-xs py-2"
+                  onClick={(e) => handleInquireProperty(listing, e)}
+                >
+                  <MessageSquare className="w-3 h-3 mr-1" />
+                  Inquire
+                </Button>
+              ) : (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  disabled
+                  className="flex-1 text-gray-500 border-gray-500/40 cursor-not-allowed text-xs py-2"
+                >
+                  <MessageSquare className="w-3 h-3 mr-1" />
+                  Sold
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>
