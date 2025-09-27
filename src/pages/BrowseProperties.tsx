@@ -47,6 +47,7 @@ const BrowsePropertiesPageComponent = () => {
   const [isInquiryDialogOpen, setIsInquiryDialogOpen] = useState(false);
   const [submittingInquiry, setSubmittingInquiry] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [inquiredProperties, setInquiredProperties] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
@@ -62,6 +63,7 @@ const BrowsePropertiesPageComponent = () => {
     fetchListings();
     if (profile?.role === 'buyer') {
       fetchFavorites();
+      fetchUserInquiries();
     }
   }, [profile]);
 
@@ -88,6 +90,16 @@ const BrowsePropertiesPageComponent = () => {
       setFavorites(new Set(data?.map(fav => fav.id) || []));
     } catch (error) {
       console.error('Error fetching favorites:', error);
+    }
+  };
+
+  const fetchUserInquiries = async () => {
+    try {
+      const { data } = await PropertyService.getMyInquiries();
+      const inquiredPropertyIds = data?.map(inquiry => inquiry.property_id) || [];
+      setInquiredProperties(new Set(inquiredPropertyIds));
+    } catch (error) {
+      console.error('Error fetching user inquiries:', error);
     }
   };
 
@@ -223,6 +235,8 @@ const BrowsePropertiesPageComponent = () => {
       setIsInquiryDialogOpen(false);
       setInquiryMessage('');
       setSelectedProperty(null);
+      // Add the property to inquired properties
+      setInquiredProperties(prev => new Set(prev).add(selectedProperty.id));
     } catch (error) {
       toast.error('Failed to send inquiry');
     } finally {
@@ -240,6 +254,7 @@ const BrowsePropertiesPageComponent = () => {
 
   const PropertyCard = ({ listing }: { listing: PropertyListing }) => {
     const isFavorited = favorites.has(listing.id);
+    const hasInquired = inquiredProperties.has(listing.id);
     const hasImages = listing.images && listing.images.length > 0;
 
     if (viewMode === 'list') {
@@ -337,15 +352,27 @@ const BrowsePropertiesPageComponent = () => {
                   View Details
                 </Button>
                 {listing.status !== 'sold' ? (
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    className="text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10"
-                    onClick={(e) => handleInquireProperty(listing, e)}
-                  >
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Inquire
-                  </Button>
+                  hasInquired ? (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      disabled
+                      className="text-blue-400 border-blue-400/40 cursor-not-allowed"
+                    >
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      Already Inquired
+                    </Button>
+                  ) : (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10"
+                      onClick={(e) => handleInquireProperty(listing, e)}
+                    >
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      Inquire
+                    </Button>
+                  )
                 ) : (
                   <Button 
                     size="sm" 
@@ -481,15 +508,27 @@ const BrowsePropertiesPageComponent = () => {
                 View
               </Button>
               {listing.status !== 'sold' ? (
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  className="flex-1 text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10 text-xs py-2"
-                  onClick={(e) => handleInquireProperty(listing, e)}
-                >
-                  <MessageSquare className="w-3 h-3 mr-1" />
-                  Inquire
-                </Button>
+                hasInquired ? (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    disabled
+                    className="flex-1 text-blue-400 border-blue-400/40 cursor-not-allowed text-xs py-2"
+                  >
+                    <MessageSquare className="w-3 h-3 mr-1" />
+                    Inquired
+                  </Button>
+                ) : (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="flex-1 text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10 text-xs py-2"
+                    onClick={(e) => handleInquireProperty(listing, e)}
+                  >
+                    <MessageSquare className="w-3 h-3 mr-1" />
+                    Inquire
+                  </Button>
+                )
               ) : (
                 <Button 
                   size="sm" 
