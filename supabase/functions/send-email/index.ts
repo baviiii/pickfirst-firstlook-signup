@@ -213,6 +213,55 @@ const EMAIL_TEMPLATES = {
         </body>
       </html>
     `
+  }),
+
+  'property-sold': (data: any) => ({
+    subject: `Property Sold: ${data.property?.title || 'Property Update'}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Property Sold Notification</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a1a; color: #ffffff;">
+            <div style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); padding: 20px; text-align: center;">
+              <img src="https://baviiii.github.io/pickfirst-firstlook-signup/logo.jpg" alt="PickFirst Real Estate" style="height: 60px; margin-bottom: 10px;">
+              <h1 style="color: #1a1a1a; margin: 0; font-size: 24px;">Property Sold</h1>
+            </div>
+            <div style="padding: 30px;">
+              <h2 style="color: #ffd700; margin-bottom: 20px;">Hello ${data.name}!</h2>
+              <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+                We wanted to let you know that a property you inquired about has been sold.
+              </p>
+              
+              <div style="background-color: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #ffd700; margin-top: 0;">${data.property?.title || 'Property'}</h3>
+                <p><strong>Address:</strong> ${data.property?.address || 'Address not available'}</p>
+                ${data.property?.sold_price ? `<p><strong>Sold Price:</strong> ${data.property.sold_price}</p>` : ''}
+                ${data.property?.agent_name ? `<p><strong>Agent:</strong> ${data.property.agent_name}</p>` : ''}
+              </div>
+              
+              <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+                Don't worry! We have many other great properties that might interest you. 
+                Browse our latest listings to find your perfect home.
+              </p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${data.property?.property_url || 'https://baviiii.github.io/pickfirst-firstlook-signup'}" style="background-color: #ffd700; color: #1a1a1a; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; margin-right: 10px;">Browse Properties</a>
+                <a href="https://baviiii.github.io/pickfirst-firstlook-signup/saved-properties" style="background-color: transparent; color: #ffd700; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; border: 2px solid #ffd700;">View Saved Properties</a>
+              </div>
+              
+              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
+                <p style="color: #ccc; font-size: 14px;">Questions? Contact us at <a href="mailto:info@pickfirst.com.au" style="color: #ffd700;">info@pickfirst.com.au</a></p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
   })
 }
 
