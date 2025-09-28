@@ -1032,6 +1032,14 @@ export class PropertyService {
       // Don't fail the inquiry if conversation creation fails
     }
 
+    // Send email notification to agent about new inquiry
+    try {
+      await this.sendAgentInquiryNotification(propertyId, property.agent_id, user.id, message);
+    } catch (error) {
+      console.error('Failed to send agent inquiry notification:', error);
+      // Don't fail the inquiry if email notification fails
+    }
+
     return { data: inquiry, error: null };
   }
 
@@ -1081,6 +1089,87 @@ export class PropertyService {
       .single();
 
     return { data, error };
+  }
+
+  // Send email notification to agent about new property inquiry
+  private static async sendAgentInquiryNotification(
+    propertyId: string, 
+    agentId: string, 
+    buyerId: string, 
+    inquiryMessage: string
+  ): Promise<void> {
+    try {
+      // Get property details
+      const { data: property, error: propertyError } = await supabase
+        .from('property_listings')
+        .select('title, address, city, state, price, images')
+        .eq('id', propertyId)
+        .single();
+
+      if (propertyError || !property) {
+        throw new Error('Property not found');
+      }
+
+      // Get agent details
+      const { data: agent, error: agentError } = await supabase
+        .from('profiles')
+        .select('full_name, email, phone')
+        .eq('id', agentId)
+        .single();
+
+      if (agentError || !agent) {
+        throw new Error('Agent not found');
+      }
+
+      // Get buyer details
+      const { data: buyer, error: buyerError } = await supabase
+        .from('profiles')
+        .select('full_name, email, phone')
+        .eq('id', buyerId)
+        .single();
+
+      if (buyerError || !buyer) {
+        throw new Error('Buyer not found');
+      }
+
+      // Send email to agent
+      await supabase.functions.invoke('send-email', {
+        body: {
+          to: agent.email,
+          template: 'agentInquiryNotification',
+          data: {
+            agentName: agent.full_name || 'Agent',
+            propertyTitle: property.title,
+            propertyAddress: `${property.address}, ${property.city}, ${property.state}`,
+            propertyPrice: `$${property.price.toLocaleString()}`,
+            propertyImage: property.images && property.images.length > 0 ? property.images[0] : null,
+            buyerName: buyer.full_name || 'A potential buyer',
+            buyerEmail: buyer.email,
+            buyerPhone: buyer.phone || 'Not provided',
+            inquiryMessage: inquiryMessage,
+            propertyUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://pickfirst.com.au'}/property/${propertyId}`,
+            dashboardUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://pickfirst.com.au'}/agent-dashboard`,
+            platformName: 'PickFirst Real Estate'
+          }
+        }
+      });
+
+      // Log the notification for audit purposes
+      await auditService.log(agentId, 'EMAIL_SENT', 'property_inquiries', {
+        recordId: propertyId,
+        newValues: {
+          action: 'agent_inquiry_notification',
+          propertyId,
+          buyerId,
+          agentEmail: agent.email,
+          timestamp: new Date().toISOString()
+        }
+      });
+
+    } catch (error) {
+      console.error('Error sending agent inquiry notification:', error);
+      throw error;
+    }
   }
 
   // Trigger property alerts for a newly approved listing

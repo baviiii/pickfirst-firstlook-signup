@@ -38,7 +38,8 @@ export type AuditAction =
   | 'PASSWORD_UPDATE_FAILED'
   | 'PASSWORD_UPDATE_SUCCESS'
   | 'PASSWORD_UPDATE_REQUEST'
-  | 'SUSPICIOUS_ACTIVITY';
+  | 'SUSPICIOUS_ACTIVITY'
+  | 'EMAIL_SENT';
 
 class AuditService {
   private queue: AuditLog[] = [];

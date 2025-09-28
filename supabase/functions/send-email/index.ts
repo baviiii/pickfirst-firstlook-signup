@@ -262,6 +262,85 @@ const EMAIL_TEMPLATES = {
         </body>
       </html>
     `
+  }),
+
+  agentInquiryNotification: (data: any) => ({
+    subject: `🏠 New Property Inquiry: ${data.propertyTitle}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>New Property Inquiry</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a1a; color: #ffffff;">
+            <div style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); padding: 20px; text-align: center;">
+              <img src="https://baviiii.github.io/pickfirst-firstlook-signup/logo.jpg" alt="PickFirst Real Estate" style="height: 60px; margin-bottom: 10px;">
+              <h1 style="color: #1a1a1a; margin: 0; font-size: 24px;">🎉 New Property Inquiry!</h1>
+            </div>
+            <div style="padding: 30px;">
+              <h2 style="color: #ffd700; margin-bottom: 20px;">Hello ${data.agentName}!</h2>
+              <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+                Great news! You have a new inquiry for one of your property listings.
+              </p>
+              
+              <div style="background-color: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #ffd700; margin-top: 0;">📍 Property Details</h3>
+                <p><strong>Property:</strong> ${data.propertyTitle}</p>
+                <p><strong>Address:</strong> ${data.propertyAddress}</p>
+                <p><strong>Price:</strong> ${data.propertyPrice}</p>
+                ${data.propertyImage ? `
+                  <div style="text-align: center; margin: 15px 0;">
+                    <img src="${data.propertyImage}" alt="Property Image" style="max-width: 100%; height: auto; border-radius: 8px; max-height: 200px;">
+                  </div>
+                ` : ''}
+              </div>
+
+              <div style="background-color: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #ffd700; margin-top: 0;">👤 Buyer Information</h3>
+                <p><strong>Name:</strong> ${data.buyerName}</p>
+                <p><strong>Email:</strong> <a href="mailto:${data.buyerEmail}" style="color: #ffd700;">${data.buyerEmail}</a></p>
+                <p><strong>Phone:</strong> ${data.buyerPhone !== 'Not provided' ? `<a href="tel:${data.buyerPhone}" style="color: #ffd700;">${data.buyerPhone}</a>` : 'Not provided'}</p>
+              </div>
+
+              <div style="background-color: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #ffd700; margin-top: 0;">💬 Buyer's Message</h3>
+                <p style="font-style: italic; line-height: 1.6;">"${data.inquiryMessage}"</p>
+              </div>
+              
+              <div style="background-color: #ffd700; color: #1a1a1a; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 0; font-weight: bold;">💡 Quick Actions:</p>
+                <p style="margin: 5px 0 0 0; font-size: 14px;">
+                  • Reply quickly to increase your conversion rate<br>
+                  • Check your dashboard for conversation history<br>
+                  • Consider scheduling a property viewing
+                </p>
+              </div>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${data.dashboardUrl}" style="background-color: #ffd700; color: #1a1a1a; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; margin-right: 10px;">📊 View Dashboard</a>
+                <a href="${data.propertyUrl}" style="background-color: transparent; color: #ffd700; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; border: 2px solid #ffd700;">🏠 View Property</a>
+              </div>
+
+              <div style="text-align: center; margin: 20px 0;">
+                <p style="font-size: 14px; color: #ccc; margin-bottom: 10px;">Quick Contact Options:</p>
+                <a href="mailto:${data.buyerEmail}?subject=RE: ${data.propertyTitle} Inquiry" style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-size: 14px; display: inline-block; margin: 0 5px;">📧 Email Buyer</a>
+                ${data.buyerPhone !== 'Not provided' ? `<a href="tel:${data.buyerPhone}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-size: 14px; display: inline-block; margin: 0 5px;">📞 Call Buyer</a>` : ''}
+              </div>
+              
+              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
+                <p style="color: #ccc; font-size: 14px;">
+                  Questions? Contact us at <a href="mailto:info@pickfirst.com.au" style="color: #ffd700;">info@pickfirst.com.au</a><br>
+                  <span style="font-size: 12px;">This inquiry was sent through ${data.platformName}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
   })
 }
 
