@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LocationAutocomplete } from '@/components/ui/LocationAutocomplete';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { BuyerProfileService, BuyerPreferences } from '@/services/buyerProfileService';
 import { 
   MapPin, 
@@ -18,8 +19,12 @@ import {
   X, 
   Settings,
   Target,
-  Check
+  Check,
+  Bell,
+  Mail,
+  Crown
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
 interface BuyerPreferencesManagerProps {
@@ -34,6 +39,7 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
   compact = false
 }) => {
   const { user } = useAuth();
+  const { getPropertyAlertsLimit } = useSubscription();
   const [preferences, setPreferences] = useState<Partial<BuyerPreferences>>({
     min_budget: 0,
     max_budget: 1000000,
@@ -43,7 +49,13 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
     property_type_preferences: [],
     move_in_timeline: 'flexible',
     financing_pre_approved: false,
-    first_time_buyer: false
+    first_time_buyer: false,
+    // Email notification settings
+    email_notifications: true,
+    property_alerts: true,
+    new_listings: true,
+    price_changes: false,
+    market_updates: false
   });
   const [isLoading, setIsLoading] = useState(false);
   const [currentLocation, setCurrentLocation] = useState('');
@@ -340,6 +352,121 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Email Notification Settings */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-primary" />
+            <Label className="text-foreground font-medium">Email Notifications</Label>
+          </div>
+          
+          <div className="space-y-4 pl-7">
+            {/* Property Alerts */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <Bell className="h-4 w-4 text-primary" />
+                  <span className="font-medium">Property Alerts</span>
+                  {getPropertyAlertsLimit() !== -1 && (
+                    <Badge variant="outline" className="text-xs">
+                      {getPropertyAlertsLimit() === 3 ? 'Free: 3 alerts' : `Limit: ${getPropertyAlertsLimit()}`}
+                    </Badge>
+                  )}
+                  {getPropertyAlertsLimit() === -1 && (
+                    <Badge className="bg-primary text-primary-foreground text-xs">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Unlimited
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Get notified when new properties match your criteria
+                </p>
+              </div>
+              <Switch
+                checked={preferences.property_alerts || false}
+                onCheckedChange={(checked) => handlePreferenceChange('property_alerts', checked)}
+              />
+            </div>
+
+            {/* New Listings */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <Home className="h-4 w-4 text-primary" />
+                  <span className="font-medium">New Listings</span>
+                  <Badge variant="outline" className="text-xs">Free + Premium</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Weekly digest of new properties in your preferred areas
+                </p>
+              </div>
+              <Switch
+                checked={preferences.new_listings || false}
+                onCheckedChange={(checked) => handlePreferenceChange('new_listings', checked)}
+              />
+            </div>
+
+            {/* Price Changes */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-primary" />
+                  <span className="font-medium">Price Changes</span>
+                  <Badge className="bg-primary text-primary-foreground text-xs">
+                    <Crown className="h-3 w-3 mr-1" />
+                    Premium
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Get notified when saved properties change price
+                </p>
+              </div>
+              <Switch
+                checked={preferences.price_changes || false}
+                onCheckedChange={(checked) => handlePreferenceChange('price_changes', checked)}
+              />
+            </div>
+
+            {/* Market Updates */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <Target className="h-4 w-4 text-primary" />
+                  <span className="font-medium">Market Updates</span>
+                  <Badge className="bg-primary text-primary-foreground text-xs">
+                    <Crown className="h-3 w-3 mr-1" />
+                    Premium
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Monthly market insights and trends for your areas
+                </p>
+              </div>
+              <Switch
+                checked={preferences.market_updates || false}
+                onCheckedChange={(checked) => handlePreferenceChange('market_updates', checked)}
+              />
+            </div>
+
+            {/* Master Email Toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-primary" />
+                  <span className="font-medium">All Email Notifications</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Master toggle for all email notifications
+                </p>
+              </div>
+              <Switch
+                checked={preferences.email_notifications || false}
+                onCheckedChange={(checked) => handlePreferenceChange('email_notifications', checked)}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Save Button */}

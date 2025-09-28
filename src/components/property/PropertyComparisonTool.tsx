@@ -6,6 +6,7 @@ import { FeatureGate } from '@/components/ui/FeatureGate';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { useSubscription } from '@/hooks/useSubscription';
 import { 
   GitCompare, 
   Home, 
@@ -31,12 +32,14 @@ interface PropertyComparisonToolProps {
 export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ className }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { getPropertyComparisonLimit } = useSubscription();
   const [selectedProperties, setSelectedProperties] = useState<PropertyListing[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<PropertyListing[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const MAX_COMPARISONS = 4;
+  const comparisonLimit = getPropertyComparisonLimit();
+  const MAX_COMPARISONS = comparisonLimit === -1 ? 4 : comparisonLimit; // Unlimited or limited
 
   const searchProperties = async (term: string) => {
     if (!term.trim()) {
@@ -149,9 +152,9 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
   return (
     <div className={className}>
       <FeatureGate 
-        feature="property_comparison"
+        feature="property_comparison_basic"
         title="Property Comparison Tool"
-        description="Compare multiple properties side by side to make informed decisions"
+        description="Compare properties side by side to make informed decisions"
       >
         <div className="space-y-6">
           {/* Search and Add Properties */}

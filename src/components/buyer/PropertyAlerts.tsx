@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { FeatureGate } from '@/components/ui/FeatureGate';
 import { Bell, BellOff, Settings, Mail, MapPin, Home, DollarSign } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import BuyerProfileService, { BuyerPreferences } from '@/services/buyerProfileService';
 import PropertyAlertService, { PropertyAlert } from '@/services/propertyAlertService';
 import { toast } from 'sonner';
@@ -16,6 +17,7 @@ interface PropertyAlertsProps {
 
 const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
   const { profile } = useAuth();
+  const { getPropertyAlertsLimit } = useSubscription();
   const [preferences, setPreferences] = useState<BuyerPreferences | null>(null);
   const [alertHistory, setAlertHistory] = useState<PropertyAlert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,8 +119,10 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
     );
   }
 
+  const alertsLimit = getPropertyAlertsLimit();
+
   return (
-    <FeatureGate feature="premium">
+    <FeatureGate feature="property_alerts_basic">
       <div className={`space-y-6 ${className}`}>
         {/* Alert Settings */}
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
@@ -129,6 +133,11 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
             </CardTitle>
             <CardDescription className="text-gray-300">
               Get notified when new properties match your preferences
+              {alertsLimit !== -1 && (
+                <span className="ml-2 text-yellow-400">
+                  (Limit: {alertsLimit} alerts)
+                </span>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
