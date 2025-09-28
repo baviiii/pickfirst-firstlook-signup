@@ -29,18 +29,7 @@ export interface AlertMatch {
  */
 async function checkPropertyAlertsAccess(userId: string): Promise<boolean> {
   try {
-    const { data: featureConfig, error } = await supabase
-      .from('feature_configurations')
-      .select('free_tier_enabled, premium_tier_enabled')
-      .eq('feature_key', 'property_alerts')
-      .single();
-
-    if (error || !featureConfig) {
-      console.error('Error checking property alerts feature config:', error);
-      return false;
-    }
-
-    // Get user's subscription status
+    // Get user's subscription status first
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('subscription_tier')
@@ -54,6 +43,21 @@ async function checkPropertyAlertsAccess(userId: string): Promise<boolean> {
 
     const subscriptionTier = profile.subscription_tier || 'free';
     
+    // Check for basic or unlimited property alerts based on subscription tier
+    const featureKey = subscriptionTier === 'premium' ? 'property_alerts_unlimited' : 'property_alerts_basic';
+    
+    const { data: featureConfig, error } = await supabase
+      .from('feature_configurations')
+      .select('free_tier_enabled, premium_tier_enabled')
+      .eq('feature_key', featureKey)
+      .single();
+
+    if (error || !featureConfig) {
+      console.error('Error checking property alerts feature config:', error);
+      // Fallback: allow basic alerts for all users if config is missing
+      return featureKey === 'property_alerts_basic';
+    }
+    
     // Check feature access based on subscription tier
     if (subscriptionTier === 'free' && !featureConfig.free_tier_enabled) {
       return false;
@@ -66,7 +70,8 @@ async function checkPropertyAlertsAccess(userId: string): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('Error in checkPropertyAlertsAccess:', error);
-    return false;
+    // Fallback: allow basic alerts for free users
+    return true;
   }
 }
 

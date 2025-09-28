@@ -60,7 +60,7 @@ export const FeatureManagement = () => {
       
       // Notifications
       'email_notifications': 'Receive email notifications',
-      'personalized_alerts': 'AI-powered property recommendations based on preferences',
+      'personalized_alerts': 'Enhanced property recommendations based on search preferences',
       'instant_notifications': 'Real-time push notifications',
       
       // === LEGACY FEATURE GATES (for backward compatibility) ===
@@ -73,7 +73,7 @@ export const FeatureManagement = () => {
       'direct_messaging': '[LEGACY] Basic contact form functionality for reaching agents',
       'live_messaging': '[LEGACY] Real-time messaging with agents and property inquiries',
       'message_history_access': '[LEGACY] Access to complete conversation history with agents',
-      'personalized_property_notifications': '[LEGACY] AI-powered property recommendations',
+      'personalized_property_notifications': '[LEGACY] Enhanced property recommendations',
       'property_comparison': '[LEGACY] Compare multiple properties side by side',
       'property_alerts': '[LEGACY] Customized alerts for new properties matching criteria'
     };

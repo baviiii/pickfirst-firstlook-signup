@@ -17,7 +17,7 @@ interface PropertyAlertsProps {
 
 const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
   const { profile } = useAuth();
-  const { getPropertyAlertsLimit } = useSubscription();
+  const { getPropertyAlertsLimit, isFeatureEnabled } = useSubscription();
   const [preferences, setPreferences] = useState<BuyerPreferences | null>(null);
   const [alertHistory, setAlertHistory] = useState<PropertyAlert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +50,13 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
   };
 
   const handleToggleAlerts = async (enabled: boolean) => {
-    if (!profile?.id || !preferences) return;
+    if (!profile?.id) {
+      console.error('No profile ID available');
+      toast.error('User profile not found');
+      return;
+    }
+    
+    console.log('Toggling property alerts:', { enabled, profileId: profile.id, currentPreferences: preferences });
     
     setUpdating(true);
     try {
@@ -58,8 +64,50 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
         property_alerts: enabled
       });
       
+      console.log('Update result:', result);
+      
       if (result.success) {
-        setPreferences(prev => prev ? { ...prev, property_alerts: enabled } : null);
+        // Update preferences state, creating default preferences if they don't exist
+        setPreferences(prev => prev ? 
+          { ...prev, property_alerts: enabled } : 
+          { 
+            id: profile.id,
+            user_id: profile.id,
+            email_notifications: true,
+            push_notifications: false,
+            marketing_emails: false,
+            property_alerts: enabled,
+            agent_messages: true,
+            appointment_reminders: true,
+            new_listings: false,
+            price_changes: false,
+            market_updates: false,
+            personalized_property_notifications: false,
+            profile_visibility: 'private' as const,
+            show_email: false,
+            show_phone: false,
+            show_location: false,
+            show_activity_status: false,
+            allow_marketing: false,
+            preferred_contact_method: 'email' as const,
+            budget_range: undefined,
+            preferred_areas: undefined,
+            property_type_preferences: undefined,
+            // Buyer-specific fields
+            min_budget: undefined,
+            max_budget: undefined,
+            preferred_bedrooms: undefined,
+            preferred_bathrooms: undefined,
+            preferred_square_feet_min: undefined,
+            preferred_square_feet_max: undefined,
+            preferred_lot_size_min: undefined,
+            preferred_lot_size_max: undefined,
+            preferred_year_built_min: undefined,
+            preferred_year_built_max: undefined,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        );
         toast.success(enabled ? 'Property alerts enabled' : 'Property alerts disabled');
       } else {
         toast.error(result.error || 'Failed to update preferences');
@@ -120,6 +168,16 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
   }
 
   const alertsLimit = getPropertyAlertsLimit();
+  const hasBasicAlerts = isFeatureEnabled('property_alerts_basic');
+  const hasUnlimitedAlerts = isFeatureEnabled('property_alerts_unlimited');
+
+  console.log('PropertyAlerts debug:', {
+    alertsLimit,
+    hasBasicAlerts,
+    hasUnlimitedAlerts,
+    profile: profile?.id,
+    preferences: preferences?.property_alerts
+  });
 
   return (
     <FeatureGate feature="property_alerts_basic">

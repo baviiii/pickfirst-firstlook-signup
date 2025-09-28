@@ -40,7 +40,7 @@ const BuyerAccountSettingsPage = () => {
     newPassword: '',
     confirmPassword: '',
     notifications: {
-      newListings: true,
+      propertyAlerts: true,
       priceChanges: true,
       marketUpdates: false,
       agentMessages: true,
@@ -153,7 +153,7 @@ const BuyerAccountSettingsPage = () => {
           email: userProfile?.email || prev.email,
           phone: userProfile?.phone || prev.phone,
           notifications: {
-            newListings: userPrefs?.new_listings ?? prev.notifications.newListings,
+            propertyAlerts: userPrefs?.property_alerts ?? prev.notifications.propertyAlerts,
             priceChanges: userPrefs?.price_changes ?? prev.notifications.priceChanges,
             marketUpdates: userPrefs?.market_updates ?? prev.notifications.marketUpdates,
             agentMessages: userPrefs?.agent_messages ?? prev.notifications.agentMessages,
@@ -406,7 +406,7 @@ const BuyerAccountSettingsPage = () => {
     setIsLoading(true);
     try {
       const payload = {
-        new_listings: settings.notifications.newListings,
+        property_alerts: settings.notifications.propertyAlerts,
         price_changes: settings.notifications.priceChanges,
         market_updates: settings.notifications.marketUpdates,
         agent_messages: settings.notifications.agentMessages,
@@ -1065,12 +1065,12 @@ const BuyerAccountSettingsPage = () => {
                             )}
                           </div>
                           <p className="text-sm text-gray-400">
-                            {key === 'newListings' && 'Get notified when new properties match your criteria'}
+                            {key === 'propertyAlerts' && 'Property alerts for matching properties (managed in dashboard)'}
                             {key === 'priceChanges' && 'Alerts when saved properties change price'}
                             {key === 'marketUpdates' && 'Weekly market trends and insights'}
                             {key === 'agentMessages' && 'Notifications for new messages from agents'}
                             {key === 'appointmentReminders' && 'Reminders for upcoming property viewings'}
-                            {key === 'personalizedPropertyNotifications' && 'AI-powered property recommendations based on your search history, preferences, and behavior patterns'}
+                            {key === 'personalizedPropertyNotifications' && 'Enhanced property recommendations based on your search history and location preferences'}
                           </p>
                         </div>
                         {isPersonalizedNotifications && !hasFeatureAccess ? (
@@ -1123,7 +1123,7 @@ const BuyerAccountSettingsPage = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-xs text-pickfirst-yellow border-pickfirst-yellow">Premium</Badge>
-                        <span>AI-powered personalized recommendations and market insights</span>
+                        <span>Enhanced property matching and location-based market insights</span>
                       </div>
                     </div>
                   </div>

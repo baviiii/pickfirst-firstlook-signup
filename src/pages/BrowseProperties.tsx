@@ -7,8 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { 
   ArrowLeft, 
-  Search, 
-  Filter, 
+  Search,
+  Filter,
   SortAsc, 
   MessageSquare, 
   Heart,
@@ -31,6 +31,9 @@ import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import SimplePropertyFilters from '@/components/property/SimplePropertyFilters';
+// Note: DOMPurify would need to be installed with: npm install dompurify @types/dompurify
+// For now, using basic sanitization
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'price-low' | 'price-high' | 'newest' | 'oldest';
@@ -51,15 +54,20 @@ const BrowsePropertiesPageComponent = () => {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [inquiredProperties, setInquiredProperties] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Filter states
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
-  const [propertyType, setPropertyType] = useState<string>('all');
-  const [bedrooms, setBedrooms] = useState<string>('all');
-  const [bathrooms, setBathrooms] = useState<string>('all');
+  // Simple filter states
+  const [currentFilters, setCurrentFilters] = useState<any>({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [propertyType, setPropertyType] = useState('all');
+  const [bedrooms, setBedrooms] = useState('all');
+  const [bathrooms, setBathrooms] = useState('all');
+  const [priceRange, setPriceRange] = useState([0, 1000000]);
+  
+  // Rate limiting state
+  const [lastInquiryTime, setLastInquiryTime] = useState<number>(0);
+  const [inquiryCount, setInquiryCount] = useState<number>(0);
 
   useEffect(() => {
     fetchListings();
@@ -71,7 +79,7 @@ const BrowsePropertiesPageComponent = () => {
 
   useEffect(() => {
     applyFiltersAndSort();
-  }, [listings, searchTerm, sortBy, priceRange, propertyType, bedrooms, bathrooms]);
+  }, [listings, currentFilters, sortBy, searchTerm, propertyType, bedrooms, bathrooms, priceRange]);
 
   const fetchListings = async () => {
     setLoading(true);
@@ -122,34 +130,57 @@ const BrowsePropertiesPageComponent = () => {
     }
 
     // Apply property type filter
-    if (propertyType !== 'all') {
+    if (propertyType && propertyType !== 'all') {
       filtered = filtered.filter(listing => listing.property_type === propertyType);
     }
 
     // Apply bedroom filter
-    if (bedrooms !== 'all') {
-      const bedroomNum = parseInt(bedrooms);
-      filtered = filtered.filter(listing => 
-        bedrooms === '4+' 
-          ? (listing.bedrooms || 0) >= 4
-          : listing.bedrooms === bedroomNum
-      );
+    if (bedrooms && bedrooms !== 'all') {
+      const bedroomCount = bedrooms === '4+' ? 4 : parseInt(bedrooms);
+      if (bedrooms === '4+') {
+        filtered = filtered.filter(listing => (listing.bedrooms || 0) >= 4);
+      } else {
+        filtered = filtered.filter(listing => (listing.bedrooms || 0) >= bedroomCount);
+      }
     }
 
     // Apply bathroom filter
-    if (bathrooms !== 'all') {
-      const bathroomNum = parseInt(bathrooms);
-      filtered = filtered.filter(listing => 
-        bathrooms === '3+' 
-          ? (listing.bathrooms || 0) >= 3
-          : listing.bathrooms === bathroomNum
-      );
+    if (bathrooms && bathrooms !== 'all') {
+      const bathroomCount = bathrooms === '3+' ? 3 : parseInt(bathrooms);
+      if (bathrooms === '3+') {
+        filtered = filtered.filter(listing => (listing.bathrooms || 0) >= 3);
+      } else {
+        filtered = filtered.filter(listing => (listing.bathrooms || 0) >= bathroomCount);
+      }
     }
 
     // Apply price range filter
-    filtered = filtered.filter(listing => 
-      listing.price >= priceRange[0] && listing.price <= priceRange[1]
-    );
+    if (priceRange && (priceRange[0] > 0 || priceRange[1] < 1000000)) {
+      filtered = filtered.filter(listing => {
+        const price = listing.price || 0;
+        return price >= priceRange[0] && price <= priceRange[1];
+      });
+    }
+
+    // Apply currentFilters for any additional filters from SimplePropertyFilters
+    if (currentFilters.location) {
+      const location = currentFilters.location.toLowerCase();
+      filtered = filtered.filter(listing =>
+        listing.address.toLowerCase().includes(location) ||
+        listing.city.toLowerCase().includes(location) ||
+        listing.state.toLowerCase().includes(location)
+      );
+    }
+
+    // Apply square footage filter from currentFilters
+    if (currentFilters.minSquareFootage !== undefined || currentFilters.maxSquareFootage !== undefined) {
+      filtered = filtered.filter(listing => {
+        const sqft = listing.square_feet || 0; // Note: using square_feet not square_footage
+        const minSqft = currentFilters.minSquareFootage || 0;
+        const maxSqft = currentFilters.maxSquareFootage || Infinity;
+        return sqft >= minSqft && sqft <= maxSqft;
+      });
+    }
 
     // Apply sorting
     filtered.sort((a, b) => {
@@ -237,14 +268,48 @@ const BrowsePropertiesPageComponent = () => {
       return;
     }
 
+    // Input validation and basic sanitization
+    const sanitizedMessage = inquiryMessage.trim()
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .replace(/javascript:/gi, '') // Remove javascript: URLs
+      .replace(/on\w+\s*=/gi, ''); // Remove event handlers
+    if (sanitizedMessage.length < 10) {
+      toast.error('Message must be at least 10 characters long');
+      return;
+    }
+    if (sanitizedMessage.length > 1000) {
+      toast.error('Message must be less than 1000 characters');
+      return;
+    }
+
+    // Rate limiting check
+    const now = Date.now();
+    const timeSinceLastInquiry = now - lastInquiryTime;
+    const oneMinute = 60 * 1000;
+    
+    if (timeSinceLastInquiry < oneMinute && inquiryCount >= 3) {
+      toast.error('Too many inquiries. Please wait a minute before sending another.');
+      return;
+    }
+
+    // Reset count if more than a minute has passed
+    if (timeSinceLastInquiry >= oneMinute) {
+      setInquiryCount(0);
+    }
+
     setSubmittingInquiry(true);
     try {
       const { data, error } = await PropertyService.createInquiry(
         selectedProperty.id,
-        inquiryMessage.trim()
+        sanitizedMessage
       );
 
       if (error) throw error;
+
+      // Update rate limiting state
+      setLastInquiryTime(now);
+      setInquiryCount(prev => prev + 1);
 
       toast.success('Inquiry sent successfully! Check your messages to continue the conversation.');
       setIsInquiryDialogOpen(false);
@@ -253,24 +318,28 @@ const BrowsePropertiesPageComponent = () => {
       // Add the property to inquired properties
       setInquiredProperties(prev => new Set(prev).add(selectedProperty.id));
     } catch (error) {
-      toast.error('Failed to send inquiry');
+      console.error('Error submitting inquiry:', error);
+      toast.error('Failed to send inquiry. Please try again.');
     } finally {
       setSubmittingInquiry(false);
     }
   };
 
+  // Clear filters function
   const clearFilters = () => {
     setSearchTerm('');
-    setPriceRange([0, 1000000]);
     setPropertyType('all');
     setBedrooms('all');
     setBathrooms('all');
+    setPriceRange([0, 1000000]);
+    setCurrentFilters({});
   };
 
+  // Property card component
   const PropertyCard = ({ listing }: { listing: PropertyListing }) => {
+    const hasImages = listing.images && listing.images.length > 0;
     const isFavorited = favorites.has(listing.id);
     const hasInquired = inquiredProperties.has(listing.id);
-    const hasImages = listing.images && listing.images.length > 0;
 
     if (viewMode === 'list') {
       return (
@@ -285,12 +354,16 @@ const BrowsePropertiesPageComponent = () => {
                   src={listing.images[0]}
                   alt={listing.title}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.nextElementSibling?.classList.remove('hidden');
+                  }}
                 />
-              ) : (
-                <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                  <Camera className="w-12 h-12 text-gray-500" />
-                </div>
-              )}
+              ) : null}
+              <div className={`w-full h-full bg-gray-800 flex items-center justify-center ${hasImages ? 'hidden' : ''}`}>
+                <Camera className="w-12 h-12 text-gray-500" />
+              </div>
             </div>
             <div className="flex-1 p-6">
               <div className="flex justify-between items-start mb-4">
@@ -417,12 +490,16 @@ const BrowsePropertiesPageComponent = () => {
               src={listing.images[0]}
               alt={listing.title}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }}
             />
-          ) : (
-            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-              <Camera className="w-12 h-12 text-gray-500" />
-            </div>
-          )}
+          ) : null}
+          <div className={`w-full h-full bg-gray-800 flex items-center justify-center ${hasImages ? 'hidden' : ''}`}>
+            <Camera className="w-12 h-12 text-gray-500" />
+          </div>
           
           {/* Status Badge */}
           <div className="absolute top-3 left-3">

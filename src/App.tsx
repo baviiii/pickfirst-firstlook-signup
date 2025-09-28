@@ -31,7 +31,7 @@ import AgentLeadsPage from './pages/AgentLeads';
 import AgentProfilePage from './pages/AgentProfile';
 import MyListingsPage from './pages/MyListings';
 import BuyerMessagesPage from './pages/BuyerMessages';
-import BrowsePropertiesPage from './pages/BrowseProperties';
+import BrowsePropertiesPage from './pages/BrowsePropertiesSimple';
 import SavedPropertiesPage from './pages/SavedProperties';
 import PropertyMapPage from './pages/PropertyMap';
 import SearchFiltersPage from './pages/SearchFilters';
