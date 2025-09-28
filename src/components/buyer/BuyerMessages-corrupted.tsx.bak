@@ -18,7 +18,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 export const BuyerMessages = () => {
   const { user, profile } = useAuth();
-  const { getMessageHistoryDays } = useSubscription();
+  const { isFeatureEnabled, getMessageHistoryDays } = useSubscription();
   const [conversations, setConversations] = useState<EnhancedConversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<EnhancedConversation | null>(null);
   const [messages, setMessages] = useState([]);
@@ -39,6 +39,7 @@ export const BuyerMessages = () => {
       const nowMobile = window.innerWidth < 1024;
       setIsMobile(nowMobile);
       
+      // Reset conversation view when resizing to desktop
       if (wasMobile && !nowMobile) {
         setShowConversations(true);
       }
@@ -60,6 +61,7 @@ export const BuyerMessages = () => {
   useEffect(() => {
     if (selectedConversation) {
       loadMessages(selectedConversation.id);
+      // Mark messages as read
       if (user) {
         supabase.functions.invoke('messaging', {
           body: { action: 'markMessagesAsRead', conversationId: selectedConversation.id }
@@ -153,6 +155,7 @@ export const BuyerMessages = () => {
       if (data && !error) {
         setMessages(prev => [...prev, data]);
         setNewMessage('');
+        // Refresh conversations to update last message
         loadConversations();
       } else {
         toast.error('Failed to send message');
@@ -179,7 +182,9 @@ export const BuyerMessages = () => {
     }
   };
 
-  const messageHistoryDays = getMessageHistoryDays();
+  // Check messaging capabilities
+  const hasLiveMessaging = isFeatureEnabled('agent_messaging');
+  const messageHistoryDays = getMessageHistoryDays(); // 0, 30, or -1 (unlimited)
 
   if (loading) {
     return (
@@ -198,101 +203,32 @@ export const BuyerMessages = () => {
       title="Agent Messaging"
       description="Connect directly with agents through messaging to discuss properties and get responses."
       fallback={
-        <div className="h-screen flex flex-col bg-background">
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center space-y-4 max-w-md p-8">
-              <MessageSquare className="h-16 w-16 mx-auto text-muted-foreground" />
-              <h3 className="text-xl font-medium text-foreground">Messaging Not Available</h3>
-              <p className="text-sm text-muted-foreground">
-                Agent messaging is not available on your current plan.
-              </p>
-              <Button onClick={() => window.location.href = '/properties'} className="mt-4">
-                Browse Properties
-              </Button>
+        <FeatureGate 
+          feature="agent_messaging"
+          title="Agent Messaging"
+          description="Send messages to agents about properties. This feature requires an account."
+          showUpgrade={false}
+        >
+          <div className="h-screen flex flex-col bg-background">
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center space-y-4 max-w-md p-8">
+                <MessageSquare className="h-16 w-16 mx-auto text-muted-foreground" />
+                <h3 className="text-xl font-medium text-foreground">Basic Contact Available</h3>
+                <p className="text-sm text-muted-foreground">
+                  You can contact agents through property inquiry forms. Upgrade to premium for full live messaging.
+                </p>
+                <Button onClick={() => window.location.href = '/properties'} className="mt-4">
+                  Browse Properties
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        </FeatureGate>
       }
     >
       <div className="h-screen flex flex-col bg-background">
         <div className="flex-1 flex overflow-hidden">
-          {/* Conversations Sidebar */}
-          <div className={`${showConversations || !isMobile ? 'flex' : 'hidden'} flex-col w-full lg:w-80 border-r bg-card`}>
-            <div className="p-4 border-b">
-              <h2 className="text-xl font-semibold">Messages</h2>
-              {messageHistoryDays !== -1 && messageHistoryDays > 0 && (
-                <Badge variant="outline" className="mt-2 text-xs">
-                  {messageHistoryDays} Days History - Upgrade for Full Access
-                </Badge>
-              )}
-            </div>
-            
-            <div className="p-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search conversations..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto">
-              {filteredConversations.length === 0 ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  <MessageSquare className="h-8 w-8 mx-auto mb-2" />
-                  <p>No conversations yet</p>
-                </div>
-              ) : (
-                filteredConversations.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    className={`p-4 border-b cursor-pointer hover:bg-muted/50 ${
-                      selectedConversation?.id === conversation.id ? 'bg-muted' : ''
-                    }`}
-                    onClick={() => handleConversationSelect(conversation)}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={conversation.agent_profile?.avatar_url} />
-                        <AvatarFallback>
-                          {conversation.agent_profile?.full_name?.charAt(0) || 'A'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">
-                          {conversation.agent_profile?.full_name || 'Agent'}
-                        </p>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {conversation.property?.title || conversation.subject || 'New conversation'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Chat Area */}
-          <div className={`${!showConversations || !isMobile ? 'flex' : 'hidden'} flex-col flex-1`}>
-            {selectedConversation ? (
-              <>
-                {/* Chat Header */}
-                <div className="p-4 border-b bg-card flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="lg:hidden"
-                      onClick={handleBackToConversations}
-                    >
-                      <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={selectedConversation.agent_profile?.avatar_url} />
+          {/* Sidebar - Conversations List */}
                       <AvatarFallback>
                         {selectedConversation.agent_profile?.full_name?.charAt(0) || 'A'}
                       </AvatarFallback>
@@ -306,38 +242,70 @@ export const BuyerMessages = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => setShowAgentProfile(true)}
-                      title="View Profile"
-                    >
-                      <User className="h-5 w-5" />
-                    </Button>
-                  </div>
                 </div>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setShowAgentProfile(true)}
+                    title="View Profile"
+                  >
+                    <User className="h-5 w-5" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    title="Call Agent"
+                  >
+                    <Phone className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
 
-                {/* Messages Container */}
-                <div 
-                  ref={messagesContainerRef}
-                  className="flex-1 overflow-y-auto p-4 space-y-4"
-                >
-                  {messageHistoryDays === -1 ? (
-                    messages.map((msg) => (
+              {/* Messages Container */}
+              <div 
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto p-4 space-y-4 chat-scrollbar smooth-scroll"
+              >
+                {messageHistoryDays > 0 ? (
+                  messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`message-bubble ${
+                          msg.sender_id === user?.id ? 'self' : 'other'
+                        }`}
+                      >
+                        <div className="text-sm">
+                          {msg.content}
+                        </div>
+                        <div className="message-time">
+                          {new Date(msg.created_at).toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    {messages.slice(-5).map((msg) => (
                       <div
                         key={msg.id}
                         className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                            msg.sender_id === user?.id 
-                              ? 'bg-primary text-primary-foreground' 
-                              : 'bg-muted'
+                          className={`message-bubble ${
+                            msg.sender_id === user?.id ? 'self' : 'other'
                           }`}
                         >
-                          <div className="text-sm">{msg.content}</div>
-                          <div className="text-xs opacity-70 mt-1">
+                          <div className="text-sm">
+                            {msg.content}
+                          </div>
+                          <div className="message-time">
                             {new Date(msg.created_at).toLocaleTimeString([], { 
                               hour: '2-digit', 
                               minute: '2-digit' 
@@ -354,14 +322,14 @@ export const BuyerMessages = () => {
                           className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                         >
                           <div
-                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                              msg.sender_id === user?.id 
-                                ? 'bg-primary text-primary-foreground' 
-                                : 'bg-muted'
+                            className={`message-bubble ${
+                              msg.sender_id === user?.id ? 'self' : 'other'
                             }`}
                           >
-                            <div className="text-sm">{msg.content}</div>
-                            <div className="text-xs opacity-70 mt-1">
+                            <div className="text-sm">
+                              {msg.content}
+                            </div>
+                            <div className="message-time">
                               {new Date(msg.created_at).toLocaleTimeString([], { 
                                 hour: '2-digit', 
                                 minute: '2-digit' 
@@ -392,8 +360,8 @@ export const BuyerMessages = () => {
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyDown={handleKeyPress}
-                      placeholder="Type a message..."
-                      className="flex-1"
+                      placeholder={hasLiveMessaging ? "Type a message..." : "Send a property inquiry..."}
+                      className="message-input flex-1"
                       rows={1}
                     />
                     <Button 

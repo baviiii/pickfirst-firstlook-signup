@@ -27,12 +27,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { toast } from 'sonner';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
+import { useSubscription } from '@/hooks/useSubscription';
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'date-saved' | 'price-low' | 'price-high' | 'title';
 
 const SavedPropertiesPageComponent = () => {
   const navigate = useNavigate();
+  const { getFavoritesLimit } = useSubscription();
   const [savedProperties, setSavedProperties] = useState<PropertyListing[]>([]);
   const [filteredProperties, setFilteredProperties] = useState<PropertyListing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -445,6 +447,11 @@ const SavedPropertiesPageComponent = () => {
                   </h1>
                   <p className="text-sm text-yellow-400/80">
                     {filteredProperties.length} of {savedProperties.length} properties
+                    {getFavoritesLimit() !== -1 && (
+                      <span className="ml-2 text-gray-400">
+                        (Limit: {getFavoritesLimit()})
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>

@@ -30,6 +30,7 @@ import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'price-low' | 'price-high' | 'newest' | 'oldest';
@@ -37,6 +38,7 @@ type SortOption = 'price-low' | 'price-high' | 'newest' | 'oldest';
 const BrowsePropertiesPageComponent = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { canUseFavorites, getFavoritesLimit } = useSubscription();
   
   // State
   const [listings, setListings] = useState<PropertyListing[]>([]);
@@ -177,6 +179,12 @@ const BrowsePropertiesPageComponent = () => {
       return;
     }
 
+    // Check if user can use favorites feature
+    if (!canUseFavorites()) {
+      toast.error('Favorites feature is not available on your plan');
+      return;
+    }
+
     try {
       const isFavorited = favorites.has(propertyId);
       
@@ -189,6 +197,13 @@ const BrowsePropertiesPageComponent = () => {
         });
         toast.success('Property removed from favorites');
       } else {
+        // Check favorites limit before adding
+        const favoritesLimit = getFavoritesLimit();
+        if (favoritesLimit !== -1 && favorites.size >= favoritesLimit) {
+          toast.error(`You've reached your limit of ${favoritesLimit} favorites. Upgrade to save more properties.`);
+          return;
+        }
+        
         await PropertyService.addToFavorites(propertyId);
         setFavorites(prev => new Set(prev).add(propertyId));
         toast.success('Property saved to favorites');

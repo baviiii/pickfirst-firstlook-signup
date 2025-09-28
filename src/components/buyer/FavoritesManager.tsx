@@ -16,14 +16,13 @@ interface FavoritesManagerProps {
 
 export const FavoritesManager: React.FC<FavoritesManagerProps> = ({ className }) => {
   const { user } = useAuth();
-  const { isFeatureEnabled } = useSubscription();
+  const { canUseFavorites, getFavoritesLimit } = useSubscription();
   const navigate = useNavigate();
   const [favorites, setFavorites] = useState<PropertyListing[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const FREE_TIER_LIMIT = 5;
-  const hasUnlimitedFavorites = isFeatureEnabled('unlimited_favorites');
-  const canAddMore = hasUnlimitedFavorites || favorites.length < FREE_TIER_LIMIT;
+  const favoritesLimit = getFavoritesLimit(); // 0, 10, or -1 (unlimited)
+  const canAddMore = favoritesLimit === -1 || favorites.length < favoritesLimit;
 
   useEffect(() => {
     if (user) {
@@ -92,11 +91,11 @@ export const FavoritesManager: React.FC<FavoritesManagerProps> = ({ className })
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="bg-primary/10 text-primary">
-                {favorites.length} {hasUnlimitedFavorites ? 'saved' : `of ${FREE_TIER_LIMIT}`}
+                {favorites.length} {favoritesLimit === -1 ? 'saved' : `of ${favoritesLimit}`}
               </Badge>
-              {!hasUnlimitedFavorites && (
+              {favoritesLimit !== -1 && (
                 <FeatureGate 
-                  feature="unlimited_favorites" 
+                  feature="favorites_unlimited" 
                   showUpgrade={false}
                 >
                   <Badge variant="outline" className="text-yellow-400 border-yellow-400">
@@ -110,17 +109,17 @@ export const FavoritesManager: React.FC<FavoritesManagerProps> = ({ className })
         </CardHeader>
         
         <CardContent>
-          {/* Free Tier Limit Warning */}
-          {!hasUnlimitedFavorites && favorites.length >= FREE_TIER_LIMIT - 1 && (
+          {/* Tier Limit Warning */}
+          {favoritesLimit !== -1 && favorites.length >= favoritesLimit - 1 && (
             <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
               <div className="flex items-center gap-2 text-yellow-400 mb-2">
                 <Lock className="h-4 w-4" />
                 <span className="font-medium">Favorites Limit</span>
               </div>
               <p className="text-sm text-muted-foreground mb-3">
-                {favorites.length >= FREE_TIER_LIMIT 
-                  ? "You've reached your limit of 5 favorite properties. Upgrade to save unlimited favorites."
-                  : `You can save ${FREE_TIER_LIMIT - favorites.length} more favorite${FREE_TIER_LIMIT - favorites.length !== 1 ? 's' : ''} on the free plan.`
+                {favorites.length >= favoritesLimit 
+                  ? `You've reached your limit of ${favoritesLimit} favorite properties. Upgrade to save unlimited favorites.`
+                  : `You can save ${favoritesLimit - favorites.length} more favorite${favoritesLimit - favorites.length !== 1 ? 's' : ''} on your current plan.`
                 }
               </p>
               <Button 

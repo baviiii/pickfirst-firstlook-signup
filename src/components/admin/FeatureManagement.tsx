@@ -38,21 +38,44 @@ export const FeatureManagement = () => {
 
   const getFeatureDescription = (featureKey: string): string => {
     const descriptions: { [key: string]: string } = {
+      // === NEW CLEAN FEATURE GATES ===
+      // Search & Discovery
       'basic_search': 'Standard property search functionality',
-      'limited_favorites': 'Save up to 10 favorite properties',
-      'standard_agent_contact': 'Basic agent contact functionality',
-      'property_inquiry_messaging': 'Send messages to agents about specific properties',
-      'unlimited_favorites': 'Save unlimited favorite properties',
       'advanced_search_filters': 'Advanced property filtering options',
-      'priority_agent_connections': 'Get priority response from agents',
-      'email_property_alerts': 'Receive email notifications for new properties',
       'market_insights': 'Access to market analytics and insights',
-      'direct_messaging': 'Basic contact form functionality for reaching agents',
-      'live_messaging': 'Real-time messaging with agents and property inquiries',
-      'message_history_access': 'Access to complete conversation history with agents',
-      'personalized_property_notifications': 'AI-powered property recommendations based on buyer preferences and search history',
-      'property_comparison': 'Compare multiple properties side by side',
-      'property_alerts': 'Customized alerts for new properties matching criteria'
+      
+      // Property Management
+      'favorites_basic': 'Save up to 10 favorite properties',
+      'favorites_unlimited': 'Save unlimited favorite properties',
+      'property_comparison_basic': 'Compare up to 2 properties side by side',
+      'property_comparison_unlimited': 'Compare unlimited properties side by side',
+      'property_alerts_basic': 'Up to 3 customized property alerts',
+      'property_alerts_unlimited': 'Unlimited customized property alerts',
+      
+      // Communication
+      'agent_messaging': 'Send messages to agents about properties',
+      'message_history_30days': 'Access to 30 days of message history',
+      'message_history_unlimited': 'Access to complete message history',
+      'priority_support': 'Get priority response from agents',
+      
+      // Notifications
+      'email_notifications': 'Receive email notifications',
+      'personalized_alerts': 'AI-powered property recommendations based on preferences',
+      'instant_notifications': 'Real-time push notifications',
+      
+      // === LEGACY FEATURE GATES (for backward compatibility) ===
+      'limited_favorites': '[LEGACY] Save up to 10 favorite properties',
+      'standard_agent_contact': '[LEGACY] Basic agent contact functionality',
+      'property_inquiry_messaging': '[LEGACY] Send messages to agents about specific properties',
+      'unlimited_favorites': '[LEGACY] Save unlimited favorite properties',
+      'priority_agent_connections': '[LEGACY] Get priority response from agents',
+      'email_property_alerts': '[LEGACY] Receive email notifications for new properties',
+      'direct_messaging': '[LEGACY] Basic contact form functionality for reaching agents',
+      'live_messaging': '[LEGACY] Real-time messaging with agents and property inquiries',
+      'message_history_access': '[LEGACY] Access to complete conversation history with agents',
+      'personalized_property_notifications': '[LEGACY] AI-powered property recommendations',
+      'property_comparison': '[LEGACY] Compare multiple properties side by side',
+      'property_alerts': '[LEGACY] Customized alerts for new properties matching criteria'
     };
     return descriptions[featureKey] || 'No description available';
   };

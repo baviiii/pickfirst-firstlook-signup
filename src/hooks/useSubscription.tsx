@@ -13,6 +13,14 @@ interface SubscriptionContextType {
   openCustomerPortal: () => Promise<void>;
   isFeatureEnabled: (feature: string) => boolean;
   refreshFeatures: () => Promise<void>;
+  // Helper functions for common feature checks
+  canUseFavorites: () => boolean;
+  getFavoritesLimit: () => number;
+  canUseAdvancedSearch: () => boolean;
+  canUseMarketInsights: () => boolean;
+  getPropertyComparisonLimit: () => number;
+  getPropertyAlertsLimit: () => number;
+  getMessageHistoryDays: () => number;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -157,21 +165,43 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
         console.error('Error fetching feature configurations:', error);
         // Fallback to default configs if fetch fails
         setFeatureConfigs({
+          // === SEARCH & DISCOVERY ===
           'basic_search': { free: true, premium: true },
+          'advanced_search_filters': { free: false, premium: true },
+          'market_insights': { free: false, premium: true },
+          
+          // === PROPERTY MANAGEMENT ===
+          'favorites_basic': { free: true, premium: true }, // Up to 10 favorites
+          'favorites_unlimited': { free: false, premium: true }, // Unlimited favorites
+          'property_comparison_basic': { free: true, premium: true }, // Compare 2 properties
+          'property_comparison_unlimited': { free: false, premium: true }, // Compare unlimited
+          'property_alerts_basic': { free: true, premium: true }, // 3 alerts max
+          'property_alerts_unlimited': { free: false, premium: true }, // Unlimited alerts
+          
+          // === COMMUNICATION ===
+          'agent_messaging': { free: true, premium: true },
+          'message_history_30days': { free: true, premium: true },
+          'message_history_unlimited': { free: false, premium: true },
+          'priority_support': { free: false, premium: true },
+          
+          // === NOTIFICATIONS ===
+          'email_notifications': { free: true, premium: true },
+          'personalized_alerts': { free: false, premium: true },
+          'instant_notifications': { free: false, premium: true },
+          
+          // === LEGACY SUPPORT (for backward compatibility) ===
           'limited_favorites': { free: true, premium: true },
           'standard_agent_contact': { free: true, premium: true },
           'property_inquiry_messaging': { free: true, premium: true },
           'unlimited_favorites': { free: false, premium: true },
-          'advanced_search_filters': { free: false, premium: true },
           'priority_agent_connections': { free: false, premium: true },
-          'email_property_alerts': { free: false, premium: true },
-          'market_insights': { free: false, premium: true },
-          'direct_messaging': { free: false, premium: true },
-          'live_messaging': { free: false, premium: true },
+          'email_property_alerts': { free: true, premium: true },
+          'direct_messaging': { free: true, premium: true },
+          'live_messaging': { free: true, premium: true },
           'message_history_access': { free: false, premium: true },
           'personalized_property_notifications': { free: false, premium: true },
-          'property_comparison': { free: false, premium: true },
-          'property_alerts': { free: false, premium: true }
+          'property_comparison': { free: true, premium: true },
+          'property_alerts': { free: true, premium: true }
         });
       }
     };
@@ -233,6 +263,43 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     }
   };
 
+  // Helper functions for common feature checks
+  const canUseFavorites = (): boolean => {
+    return isFeatureEnabled('favorites_basic') || isFeatureEnabled('favorites_unlimited');
+  };
+
+  const getFavoritesLimit = (): number => {
+    if (isFeatureEnabled('favorites_unlimited')) return -1; // Unlimited
+    if (isFeatureEnabled('favorites_basic')) return 10;
+    return 0; // No favorites allowed
+  };
+
+  const canUseAdvancedSearch = (): boolean => {
+    return isFeatureEnabled('advanced_search_filters');
+  };
+
+  const canUseMarketInsights = (): boolean => {
+    return isFeatureEnabled('market_insights');
+  };
+
+  const getPropertyComparisonLimit = (): number => {
+    if (isFeatureEnabled('property_comparison_unlimited')) return -1; // Unlimited
+    if (isFeatureEnabled('property_comparison_basic')) return 2;
+    return 0; // No comparison allowed
+  };
+
+  const getPropertyAlertsLimit = (): number => {
+    if (isFeatureEnabled('property_alerts_unlimited')) return -1; // Unlimited
+    if (isFeatureEnabled('property_alerts_basic')) return 3;
+    return 0; // No alerts allowed
+  };
+
+  const getMessageHistoryDays = (): number => {
+    if (isFeatureEnabled('message_history_unlimited')) return -1; // Unlimited
+    if (isFeatureEnabled('message_history_30days')) return 30;
+    return 0; // No message history
+  };
+
   // Set up auth state listener
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -291,6 +358,14 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
         openCustomerPortal,
         isFeatureEnabled,
         refreshFeatures,
+        // Helper functions
+        canUseFavorites,
+        getFavoritesLimit,
+        canUseAdvancedSearch,
+        canUseMarketInsights,
+        getPropertyComparisonLimit,
+        getPropertyAlertsLimit,
+        getMessageHistoryDays,
       }}
     >
       {children}

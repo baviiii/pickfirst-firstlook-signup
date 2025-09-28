@@ -13,7 +13,7 @@ import { FeatureGate } from '@/components/ui/FeatureGate';
 
 const EnhancedSearchFiltersPage = () => {
   const navigate = useNavigate();
-  const { isFeatureEnabled } = useSubscription();
+  const { canUseAdvancedSearch, canUseMarketInsights } = useSubscription();
   
   const [results, setResults] = useState<FilterResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -118,7 +118,7 @@ const EnhancedSearchFiltersPage = () => {
           
           {/* Production Filter System */}
           <FeatureGate 
-            feature="advanced_property_search"
+            feature="advanced_search_filters"
             title="Advanced Search"
             description="Upgrade to Premium to unlock advanced search filters and in-depth property insights."
           >
@@ -166,7 +166,7 @@ const EnhancedSearchFiltersPage = () => {
                           <PropertyCard property={property} />
                           {/* Property Insights for filtered results */}
                           <FeatureGate 
-                            feature="advanced_property_search"
+                            feature="market_insights"
                             fallback={
                               <Button variant="outline" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                                 <Lock className="w-4 h-4 mr-2" />
@@ -180,7 +180,7 @@ const EnhancedSearchFiltersPage = () => {
                             </Button>
                           </FeatureGate>
                           <FeatureGate 
-                            feature="advanced_property_search"
+                            feature="market_insights"
                             fallback={
                               <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
                                 <div className="flex">
