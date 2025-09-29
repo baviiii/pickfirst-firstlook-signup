@@ -385,11 +385,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .limit(5);
 
       if (!historyError && passwordHistory) {
-        const isReused = await Promise.any(
-          passwordHistory.map(async (record) => {
+        let isReused = false;
+        try {
+          const promises = passwordHistory.map(async (record) => {
             return await verifyPassword(password, record.password_hash);
-          })
-        );
+          });
+          const results = await Promise.allSettled(promises);
+          isReused = results.some(result => result.status === 'fulfilled' && result.value === true);
+        } catch (error) {
+          console.warn('Password history check failed:', error);
+        }
 
         if (isReused) {
           throw new Error('You cannot reuse a previous password');

@@ -1,456 +1,612 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+// Import Resend using dynamic import to avoid module resolution issues
+const { Resend } = await import("https://esm.sh/resend@4.0.0");
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 interface EmailRequest {
-  to: string
-  template: string
-  data: Record<string, any>
-  subject?: string
+  to: string;
+  template: string;
+  data: Record<string, any>;
+  subject?: string;
 }
 
-// Email templates
-const EMAIL_TEMPLATES = {
+const templates = {
+  // Authentication & Welcome
   welcome: (data: any) => ({
-    subject: `Welcome to ${data.platformName || 'PickFirst Real Estate'}, ${data.name}!`,
+    subject: `Welcome to ${data.platformName || 'PickFirst Real Estate'}!`,
     html: `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Welcome to PickFirst Real Estate</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
-          <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 40px; border-radius: 10px;">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <img src="https://baviiii.github.io/pickfirst-firstlook-signup/logo.jpg" alt="PickFirst Real Estate" style="max-width: 200px; height: auto; border-radius: 8px;">
-            </div>
-            <h1 style="color: #ffd700; margin-bottom: 20px; text-align: center;">Welcome to PickFirst Real Estate!</h1>
-            <p style="font-size: 18px; line-height: 1.6;">Hi ${data.name},</p>
-            <p style="line-height: 1.6;">Welcome to PickFirst Real Estate! We're excited to help you find your dream property.</p>
-            <div style="background: rgba(255, 215, 0, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #ffd700; margin-top: 0;">Your Profile Details:</h3>
-              <p><strong>Email:</strong> ${data.email}</p>
-              <p><strong>Location:</strong> ${data.location || 'Not specified'}</p>
-              <p><strong>Preferred Contact:</strong> ${data.contactPreference || 'Email'}</p>
-            </div>
-            <p>Start exploring properties and connect with top real estate agents in your area.</p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${data.platformUrl || 'https://baviiii.github.io/pickfirst-firstlook-signup'}" style="background: #ffd700; color: #000; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">Start Browsing Properties</a>
-            </div>
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
-              <p style="color: #ccc; font-size: 14px;">Questions? Contact us at <a href="mailto:info@pickfirst.com.au" style="color: #ffd700;">info@pickfirst.com.au</a></p>
-            </div>
-          </div>
-        </body>
-      </html>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb; text-align: center;">Welcome ${data.name}!</h1>
+        <p>Thank you for joining ${data.platformName}. We're excited to help you find your perfect property.</p>
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3>What's next?</h3>
+          <ul>
+            <li>Complete your profile</li>
+            <li>Set up property alerts</li>
+            <li>Browse our latest listings</li>
+          </ul>
+        </div>
+        <a href="${data.platformUrl}" style="display: block; background: #2563eb; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+          Get Started
+        </a>
+        <p style="color: #64748b; font-size: 14px;">If you have any questions, feel free to reach out to our support team.</p>
+      </div>
     `
   }),
 
-  profileUpdate: (data: any) => ({
-    subject: 'Profile Updated Successfully',
+  agentWelcome: (data: any) => ({
+    subject: 'Welcome to PickFirst Real Estate - Agent Portal',
     html: `
-      <!DOCTYPE html>
-      <html>
-        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 30px; border-radius: 10px;">
-            <div style="text-align: center; margin-bottom: 20px;">
-              <img src="https://baviiii.github.io/pickfirst-firstlook-signup/logo.jpg" alt="PickFirst Real Estate" style="max-width: 150px; height: auto; border-radius: 8px;">
-            </div>
-            <h2 style="color: #ffd700; text-align: center;">Profile Updated</h2>
-            <p>Hi ${data.name},</p>
-            <p>Your profile has been successfully updated. Here's what changed:</p>
-            <ul style="line-height: 1.8;">
-              ${data.changes?.map((change: string) => `<li>${change}</li>`).join('') || '<li>General profile information</li>'}
-            </ul>
-            <p style="margin-top: 20px;">If you didn't make these changes, please contact support immediately.</p>
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
-              <p style="color: #ccc; font-size: 14px;">Questions? Contact us at <a href="mailto:info@pickfirst.com.au" style="color: #ffd700;">info@pickfirst.com.au</a></p>
-            </div>
-          </div>
-        </body>
-      </html>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">Welcome Agent ${data.name}!</h1>
+        <p>Your agent account has been activated. Start managing your listings and connecting with clients.</p>
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3>Agent Features:</h3>
+          <ul>
+            <li>Manage property listings</li>
+            <li>Track client interactions</li>
+            <li>Schedule appointments</li>
+            <li>View analytics dashboard</li>
+          </ul>
+        </div>
+        <a href="${data.platformUrl}/agent/dashboard" style="display: block; background: #2563eb; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+          Access Agent Portal
+        </a>
+      </div>
     `
   }),
 
+  buyerWelcome: (data: any) => ({
+    subject: 'Welcome to PickFirst Real Estate - Find Your Dream Home',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">Welcome ${data.name}!</h1>
+        <p>Start your property search with PickFirst Real Estate's comprehensive platform.</p>
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3>Buyer Features:</h3>
+          <ul>
+            <li>Advanced property search</li>
+            <li>Save favorite properties</li>
+            <li>Set up property alerts</li>
+            <li>Connect with agents</li>
+          </ul>
+        </div>
+        <a href="${data.platformUrl}/browse" style="display: block; background: #2563eb; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+          Start Browsing Properties
+        </a>
+      </div>
+    `
+  }),
+
+  passwordReset: (data: any) => ({
+    subject: 'Reset Your Password - PickFirst Real Estate',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">Password Reset Request</h1>
+        <p>We received a request to reset your password for your PickFirst Real Estate account.</p>
+        <a href="${data.resetUrl}" style="display: block; background: #2563eb; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+          Reset Password
+        </a>
+        <p style="color: #64748b; font-size: 14px;">If you didn't request this reset, please ignore this email. This link will expire in 24 hours.</p>
+        <p style="color: #64748b; font-size: 14px;">For security, this link can only be used once.</p>
+      </div>
+    `
+  }),
+
+  // Property Alerts
   propertyAlert: (data: any) => ({
-    subject: `New Property Alert: ${data.propertyTitle}`,
+    subject: `New Property Match: ${data.propertyTitle}`,
     html: `
-      <!DOCTYPE html>
-      <html>
-        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 30px; border-radius: 10px;">
-            <div style="text-align: center; margin-bottom: 20px;">
-              <img src="https://baviiii.github.io/pickfirst-firstlook-signup/logo.jpg" alt="PickFirst Real Estate" style="max-width: 150px; height: auto; border-radius: 8px;">
-            </div>
-            <h2 style="color: #ffd700; text-align: center;">New Property Match!</h2>
-            <p>Hi ${data.name},</p>
-            <p>We found a property that matches your criteria:</p>
-            <div style="background: rgba(255, 215, 0, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #ffd700; margin-top: 0;">${data.propertyTitle}</h3>
-              <p><strong>Price:</strong> $${data.price?.toLocaleString()}</p>
-              <p><strong>Location:</strong> ${data.location}</p>
-              <p><strong>Type:</strong> ${data.propertyType}</p>
-              <p><strong>Bedrooms:</strong> ${data.bedrooms} | <strong>Bathrooms:</strong> ${data.bathrooms}</p>
-            </div>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${data.propertyUrl || 'https://baviiii.github.io/pickfirst-firstlook-signup'}" style="background: #ffd700; color: #000; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Property</a>
-            </div>
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
-              <p style="color: #ccc; font-size: 14px;">Questions? Contact us at <a href="mailto:info@pickfirst.com.au" style="color: #ffd700;">info@pickfirst.com.au</a></p>
-            </div>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">New Property Alert!</h1>
+        <p>Hi ${data.name}, we found a property that matches your search criteria:</p>
+        
+        <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <h2 style="margin: 0 0 10px 0; color: #1e293b;">${data.propertyTitle}</h2>
+          <p style="margin: 5px 0; font-size: 18px; font-weight: bold; color: #059669;">$${data.price?.toLocaleString()}</p>
+          <p style="margin: 5px 0; color: #64748b;">${data.location}</p>
+          <div style="display: flex; gap: 20px; margin: 10px 0;">
+            <span>${data.bedrooms} bed</span>
+            <span>${data.bathrooms} bath</span>
+            <span>${data.propertyType}</span>
           </div>
-        </body>
-      </html>
+        </div>
+        
+        ${data.propertyUrl ? `<a href="${data.propertyUrl}" style="display: block; background: #2563eb; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">View Property</a>` : ''}
+        
+        <p style="color: #64748b; font-size: 14px;">You're receiving this because you have property alerts enabled.</p>
+      </div>
     `
   }),
 
+  newMatchesDigest: (data: any) => ({
+    subject: `${data.matches?.length || 0} New Properties Match Your Preferences`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">Weekly Property Digest</h1>
+        <p>Hi ${data.name}, here are ${data.matches?.length || 0} new properties that match your preferences:</p>
+        
+        ${data.matches?.map((match: any) => `
+          <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin: 15px 0;">
+            <h3 style="margin: 0 0 10px 0;">${match.title}</h3>
+            <p style="font-size: 16px; font-weight: bold; color: #059669;">$${match.price?.toLocaleString()}</p>
+            <p style="color: #64748b;">${match.city}, ${match.state}</p>
+            <div style="display: flex; gap: 15px; margin: 10px 0;">
+              ${match.bedrooms ? `<span>${match.bedrooms} bed</span>` : ''}
+              ${match.bathrooms ? `<span>${match.bathrooms} bath</span>` : ''}
+            </div>
+            ${match.url ? `<a href="${match.url}" style="color: #2563eb; text-decoration: none;">View Details →</a>` : ''}
+          </div>
+        `).join('') || '<p>No new matches this week.</p>'}
+        
+        <a href="${data.platformUrl}/browse" style="display: block; background: #2563eb; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+          Browse All Properties
+        </a>
+      </div>
+    `
+  }),
+
+  // Appointments
   appointmentConfirmation: (data: any) => ({
-    subject: `Appointment Confirmed: ${data.propertyTitle}`,
+    subject: `Appointment Confirmed - ${data.propertyTitle}`,
     html: `
-      <!DOCTYPE html>
-      <html>
-        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 30px; border-radius: 10px;">
-            <div style="text-align: center; margin-bottom: 20px;">
-              <img src="https://baviiii.github.io/pickfirst-firstlook-signup/logo.jpg" alt="PickFirst Real Estate" style="max-width: 150px; height: auto; border-radius: 8px;">
-            </div>
-            <h2 style="color: #ffd700; text-align: center;">Appointment Confirmed</h2>
-            <p>Hi ${data.name},</p>
-            <p>Your property viewing has been confirmed!</p>
-            <div style="background: rgba(255, 215, 0, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #ffd700; margin-top: 0;">${data.propertyTitle}</h3>
-              <p><strong>Date:</strong> ${data.date}</p>
-              <p><strong>Time:</strong> ${data.time}</p>
-              <p><strong>Agent:</strong> ${data.agentName}</p>
-              <p><strong>Agent Phone:</strong> ${data.agentPhone}</p>
-            </div>
-            <p>Please arrive 5 minutes early. If you need to reschedule, contact your agent directly.</p>
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
-              <p style="color: #ccc; font-size: 14px;">Questions? Contact us at <a href="mailto:info@pickfirst.com.au" style="color: #ffd700;">info@pickfirst.com.au</a></p>
-            </div>
-          </div>
-        </body>
-      </html>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">Appointment Confirmed</h1>
+        <p>Hi ${data.name}, your property viewing has been confirmed:</p>
+        
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin: 0 0 15px 0;">${data.propertyTitle}</h3>
+          <p><strong>Date:</strong> ${data.date}</p>
+          <p><strong>Time:</strong> ${data.time}</p>
+          <p><strong>Agent:</strong> ${data.agentName}</p>
+          <p><strong>Contact:</strong> ${data.agentPhone}</p>
+        </div>
+        
+        <div style="background: #fef3c7; padding: 15px; border-radius: 6px; margin: 20px 0;">
+          <p style="margin: 0; color: #92400e;"><strong>Reminder:</strong> Please arrive 5 minutes early and bring valid ID.</p>
+        </div>
+        
+        <p style="color: #64748b; font-size: 14px;">If you need to reschedule, please contact your agent directly.</p>
+      </div>
     `
   }),
 
-  marketUpdate: (data: any) => ({
-    subject: `Market Update for ${data.area}`,
+  appointmentNotification: (data: any) => ({
+    subject: `New Appointment: ${data.clientName} - ${data.appointmentType}`,
     html: `
-      <!DOCTYPE html>
-      <html>
-        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 30px; border-radius: 10px;">
-            <div style="text-align: center; margin-bottom: 20px;">
-              <img src="https://baviiii.github.io/pickfirst-firstlook-signup/logo.jpg" alt="PickFirst Real Estate" style="max-width: 150px; height: auto; border-radius: 8px;">
-            </div>
-            <h2 style="color: #ffd700; text-align: center;">Market Update</h2>
-            <p>Hi ${data.name},</p>
-            <p>Here's your weekly market update for ${data.area}:</p>
-            <div style="background: rgba(255, 215, 0, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #ffd700; margin-top: 0;">Market Insights</h3>
-              <p><strong>Average Price:</strong> $${data.avgPrice?.toLocaleString()}</p>
-              <p><strong>New Listings:</strong> ${data.newListings}</p>
-              <p><strong>Market Trend:</strong> ${data.trend}</p>
-              <p><strong>Days on Market:</strong> ${data.daysOnMarket} days average</p>
-            </div>
-            <p>Based on your preferences, now might be ${data.recommendation || 'a good time to explore the market'}.</p>
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
-              <p style="color: #ccc; font-size: 14px;">Questions? Contact us at <a href="mailto:info@pickfirst.com.au" style="color: #ffd700;">info@pickfirst.com.au</a></p>
-            </div>
-          </div>
-        </body>
-      </html>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">New Appointment Scheduled</h1>
+        <p>Hi ${data.agentName}, you have a new appointment:</p>
+        
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin: 0 0 15px 0;">${data.appointmentType}</h3>
+          <p><strong>Client:</strong> ${data.clientName}</p>
+          <p><strong>Email:</strong> ${data.clientEmail}</p>
+          <p><strong>Phone:</strong> ${data.clientPhone}</p>
+          <p><strong>Date:</strong> ${data.date}</p>
+          <p><strong>Time:</strong> ${data.time}</p>
+          <p><strong>Duration:</strong> ${data.duration} minutes</p>
+          <p><strong>Location:</strong> ${data.location}</p>
+          ${data.notes ? `<p><strong>Notes:</strong> ${data.notes}</p>` : ''}
+        </div>
+        
+        <a href="${data.platformUrl}/appointments/${data.appointmentId}" style="display: block; background: #2563eb; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+          View Appointment Details
+        </a>
+      </div>
     `
   }),
 
   appointmentStatusUpdate: (data: any) => ({
-    subject: data.subject || `Appointment ${data.status} - ${data.appointmentType}`,
+    subject: `Appointment ${data.status.charAt(0).toUpperCase() + data.status.slice(1)} - ${data.appointmentType}`,
     html: `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Appointment Status Update</title>
-        </head>
-        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-          <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a1a; color: #ffffff;">
-            <div style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); padding: 20px; text-align: center;">
-              <img src="https://baviiii.github.io/pickfirst-firstlook-signup/logo.jpg" alt="PickFirst Real Estate" style="height: 60px; margin-bottom: 10px;">
-              <h1 style="color: #1a1a1a; margin: 0; font-size: 24px;">Appointment Status Update</h1>
-            </div>
-            <div style="padding: 30px;">
-              <h2 style="color: #ffd700; margin-bottom: 20px;">Hello ${data.name}!</h2>
-              <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">${data.statusMessage}</p>
-              
-              <div style="background-color: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="color: #ffd700; margin-top: 0;">Appointment Details:</h3>
-                <p><strong>Type:</strong> ${data.appointmentType}</p>
-                <p><strong>Date:</strong> ${data.date}</p>
-                <p><strong>Time:</strong> ${data.time}</p>
-                <p><strong>Location:</strong> ${data.location}</p>
-                <p><strong>Status:</strong> <span style="color: #ffd700; font-weight: bold;">${data.status.toUpperCase()}</span></p>
-                ${data.clientName ? `<p><strong>Client:</strong> ${data.clientName}</p>` : ''}
-                ${data.agentName ? `<p><strong>Agent:</strong> ${data.agentName}</p>` : ''}
-              </div>
-              
-              <div style="text-align: center; margin-top: 30px;">
-                <a href="${data.platformUrl}" style="background-color: #ffd700; color: #1a1a1a; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">View Platform</a>
-              </div>
-              
-              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
-                <p style="color: #ccc; font-size: 14px;">Questions? Contact us at <a href="mailto:info@pickfirst.com.au" style="color: #ffd700;">info@pickfirst.com.au</a></p>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">Appointment Update</h1>
+        <p>Hi ${data.name}, your appointment status has been updated:</p>
+        
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin: 0 0 15px 0;">${data.appointmentType}</h3>
+          <p><strong>Status:</strong> <span style="color: ${data.status === 'confirmed' ? '#059669' : data.status === 'cancelled' ? '#dc2626' : '#f59e0b'};">${data.status.toUpperCase()}</span></p>
+          <p><strong>Date:</strong> ${data.date}</p>
+          <p><strong>Time:</strong> ${data.time}</p>
+          <p><strong>Location:</strong> ${data.location}</p>
+          ${data.agentName ? `<p><strong>Agent:</strong> ${data.agentName}</p>` : ''}
+          ${data.statusMessage ? `<p><strong>Message:</strong> ${data.statusMessage}</p>` : ''}
+        </div>
+        
+        <a href="${data.platformUrl}/appointments" style="display: block; background: #2563eb; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+          View All Appointments
+        </a>
+      </div>
     `
   }),
 
-  'property-sold': (data: any) => ({
-    subject: `Property Sold: ${data.property?.title || 'Property Update'}`,
+  propertyViewing: (data: any) => ({
+    subject: `Property Viewing Reminder - ${data.propertyTitle}`,
     html: `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Property Sold Notification</title>
-        </head>
-        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-          <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a1a; color: #ffffff;">
-            <div style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); padding: 20px; text-align: center;">
-              <img src="https://baviiii.github.io/pickfirst-firstlook-signup/logo.jpg" alt="PickFirst Real Estate" style="height: 60px; margin-bottom: 10px;">
-              <h1 style="color: #1a1a1a; margin: 0; font-size: 24px;">Property Sold</h1>
-            </div>
-            <div style="padding: 30px;">
-              <h2 style="color: #ffd700; margin-bottom: 20px;">Hello ${data.name}!</h2>
-              <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-                We wanted to let you know that a property you inquired about has been sold.
-              </p>
-              
-              <div style="background-color: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="color: #ffd700; margin-top: 0;">${data.property?.title || 'Property'}</h3>
-                <p><strong>Address:</strong> ${data.property?.address || 'Address not available'}</p>
-                ${data.property?.sold_price ? `<p><strong>Sold Price:</strong> ${data.property.sold_price}</p>` : ''}
-                ${data.property?.agent_name ? `<p><strong>Agent:</strong> ${data.property.agent_name}</p>` : ''}
-              </div>
-              
-              <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-                Don't worry! We have many other great properties that might interest you. 
-                Browse our latest listings to find your perfect home.
-              </p>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${data.property?.property_url || 'https://baviiii.github.io/pickfirst-firstlook-signup'}" style="background-color: #ffd700; color: #1a1a1a; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; margin-right: 10px;">Browse Properties</a>
-                <a href="https://baviiii.github.io/pickfirst-firstlook-signup/saved-properties" style="background-color: transparent; color: #ffd700; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; border: 2px solid #ffd700;">View Saved Properties</a>
-              </div>
-              
-              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
-                <p style="color: #ccc; font-size: 14px;">Questions? Contact us at <a href="mailto:info@pickfirst.com.au" style="color: #ffd700;">info@pickfirst.com.au</a></p>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">Property Viewing Reminder</h1>
+        <p>Hi ${data.name}, this is a reminder of your upcoming property viewing:</p>
+        
+        <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin: 0 0 15px 0;">${data.propertyTitle}</h3>
+          <p><strong>Tomorrow at ${data.time}</strong></p>
+          <p><strong>Address:</strong> ${data.address}</p>
+          <p><strong>Agent:</strong> ${data.agentName} - ${data.agentPhone}</p>
+        </div>
+        
+        <div style="background: #f3f4f6; padding: 15px; border-radius: 6px; margin: 20px 0;">
+          <p style="margin: 0;"><strong>What to bring:</strong></p>
+          <ul style="margin: 10px 0;">
+            <li>Valid photo ID</li>
+            <li>List of questions</li>
+            <li>Pre-approval letter (if applicable)</li>
+          </ul>
+        </div>
+      </div>
     `
   }),
 
-  agentInquiryNotification: (data: any) => ({
-    subject: `🏠 New Property Inquiry: ${data.propertyTitle}`,
+  // User Preferences
+  preferencesUpdated: (data: any) => ({
+    subject: 'Your Preferences Have Been Updated',
     html: `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>New Property Inquiry</title>
-        </head>
-        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-          <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a1a; color: #ffffff;">
-            <div style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); padding: 20px; text-align: center;">
-              <img src="https://baviiii.github.io/pickfirst-firstlook-signup/logo.jpg" alt="PickFirst Real Estate" style="height: 60px; margin-bottom: 10px;">
-              <h1 style="color: #1a1a1a; margin: 0; font-size: 24px;">🎉 New Property Inquiry!</h1>
-            </div>
-            <div style="padding: 30px;">
-              <h2 style="color: #ffd700; margin-bottom: 20px;">Hello ${data.agentName}!</h2>
-              <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-                Great news! You have a new inquiry for one of your property listings.
-              </p>
-              
-              <div style="background-color: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="color: #ffd700; margin-top: 0;">📍 Property Details</h3>
-                <p><strong>Property:</strong> ${data.propertyTitle}</p>
-                <p><strong>Address:</strong> ${data.propertyAddress}</p>
-                <p><strong>Price:</strong> ${data.propertyPrice}</p>
-                ${data.propertyImage ? `
-                  <div style="text-align: center; margin: 15px 0;">
-                    <img src="${data.propertyImage}" alt="Property Image" style="max-width: 100%; height: auto; border-radius: 8px; max-height: 200px;">
-                  </div>
-                ` : ''}
-              </div>
-
-              <div style="background-color: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="color: #ffd700; margin-top: 0;">👤 Buyer Information</h3>
-                <p><strong>Name:</strong> ${data.buyerName}</p>
-                <p><strong>Email:</strong> <a href="mailto:${data.buyerEmail}" style="color: #ffd700;">${data.buyerEmail}</a></p>
-                <p><strong>Phone:</strong> ${data.buyerPhone !== 'Not provided' ? `<a href="tel:${data.buyerPhone}" style="color: #ffd700;">${data.buyerPhone}</a>` : 'Not provided'}</p>
-              </div>
-
-              <div style="background-color: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="color: #ffd700; margin-top: 0;">💬 Buyer's Message</h3>
-                <p style="font-style: italic; line-height: 1.6;">"${data.inquiryMessage}"</p>
-              </div>
-              
-              <div style="background-color: #ffd700; color: #1a1a1a; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <p style="margin: 0; font-weight: bold;">💡 Quick Actions:</p>
-                <p style="margin: 5px 0 0 0; font-size: 14px;">
-                  • Reply quickly to increase your conversion rate<br>
-                  • Check your dashboard for conversation history<br>
-                  • Consider scheduling a property viewing
-                </p>
-              </div>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${data.dashboardUrl}" style="background-color: #ffd700; color: #1a1a1a; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; margin-right: 10px;">📊 View Dashboard</a>
-                <a href="${data.propertyUrl}" style="background-color: transparent; color: #ffd700; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; border: 2px solid #ffd700;">🏠 View Property</a>
-              </div>
-
-              <div style="text-align: center; margin: 20px 0;">
-                <p style="font-size: 14px; color: #ccc; margin-bottom: 10px;">Quick Contact Options:</p>
-                <a href="mailto:${data.buyerEmail}?subject=RE: ${data.propertyTitle} Inquiry" style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-size: 14px; display: inline-block; margin: 0 5px;">📧 Email Buyer</a>
-                ${data.buyerPhone !== 'Not provided' ? `<a href="tel:${data.buyerPhone}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-size: 14px; display: inline-block; margin: 0 5px;">📞 Call Buyer</a>` : ''}
-              </div>
-              
-              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
-                <p style="color: #ccc; font-size: 14px;">
-                  Questions? Contact us at <a href="mailto:info@pickfirst.com.au" style="color: #ffd700;">info@pickfirst.com.au</a><br>
-                  <span style="font-size: 12px;">This inquiry was sent through ${data.platformName}</span>
-                </p>
-              </div>
-            </div>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">Preferences Updated</h1>
+        <p>Hi ${data.name}, your account preferences have been successfully updated.</p>
+        
+        ${data.changedFields?.length > 0 ? `
+          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3>Updated Fields:</h3>
+            <ul>
+              ${data.changedFields.map((field: string) => `<li>${field}</li>`).join('')}
+            </ul>
           </div>
-        </body>
-      </html>
+        ` : ''}
+        
+        <p style="color: #64748b; font-size: 14px;">If you didn't make these changes, please contact support immediately.</p>
+      </div>
+    `
+  }),
+
+  searchPreferencesSaved: (data: any) => ({
+    subject: 'Search Preferences Saved',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">Search Preferences Saved</h1>
+        <p>Hi ${data.name}, your search preferences have been saved and property alerts are now active.</p>
+        
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3>Your Search Criteria:</h3>
+          ${data.location ? `<p><strong>Location:</strong> ${data.location}</p>` : ''}
+          ${data.minPrice ? `<p><strong>Price Range:</strong> $${data.minPrice?.toLocaleString()} - $${data.maxPrice?.toLocaleString()}</p>` : ''}
+          ${data.propertyType ? `<p><strong>Property Type:</strong> ${data.propertyType}</p>` : ''}
+          ${data.bedrooms ? `<p><strong>Bedrooms:</strong> ${data.bedrooms}+</p>` : ''}
+          ${data.bathrooms ? `<p><strong>Bathrooms:</strong> ${data.bathrooms}+</p>` : ''}
+        </div>
+        
+        <p>We'll notify you when new properties matching your criteria become available.</p>
+      </div>
+    `
+  }),
+
+  // Market Updates
+  marketUpdate: (data: any) => ({
+    subject: `Market Update: ${data.area}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">Market Update: ${data.area}</h1>
+        <p>Hi ${data.name}, here's your latest market update for ${data.area}:</p>
+        
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          ${data.avgPrice ? `<p><strong>Average Price:</strong> $${data.avgPrice.toLocaleString()}</p>` : ''}
+          ${data.newListings ? `<p><strong>New Listings:</strong> ${data.newListings}</p>` : ''}
+          ${data.trend ? `<p><strong>Market Trend:</strong> ${data.trend}</p>` : ''}
+          ${data.daysOnMarket ? `<p><strong>Average Days on Market:</strong> ${data.daysOnMarket}</p>` : ''}
+        </div>
+        
+        ${data.recommendation ? `
+          <div style="background: #ecfdf5; padding: 15px; border-radius: 6px; margin: 20px 0;">
+            <p style="margin: 0; color: #065f46;"><strong>Our Recommendation:</strong> ${data.recommendation}</p>
+          </div>
+        ` : ''}
+      </div>
+    `
+  }),
+
+  // Security & Messaging
+  securityAlert: (data: any) => ({
+    subject: 'Security Alert - Unusual Account Activity',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: #fef2f2; padding: 20px; border-radius: 8px; border-left: 4px solid #dc2626;">
+          <h1 style="color: #dc2626; margin: 0 0 15px 0;">Security Alert</h1>
+          <p>Hi ${data.name}, we detected unusual activity on your account:</p>
+          
+          <div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0;">
+            <p><strong>Activity:</strong> ${data.activity}</p>
+            <p><strong>Time:</strong> ${data.timestamp}</p>
+            <p><strong>Location:</strong> ${data.location}</p>
+            <p><strong>Device:</strong> ${data.device}</p>
+          </div>
+          
+          <p><strong>Was this you?</strong></p>
+          <p>If this was you, no action is needed. If not, please secure your account immediately.</p>
+          
+          <a href="${data.platformUrl}/security" style="display: block; background: #dc2626; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+            Secure My Account
+          </a>
+        </div>
+      </div>
+    `
+  }),
+
+  messageNotification: (data: any) => ({
+    subject: `New Message from ${data.senderName}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">New Message</h1>
+        <p>Hi ${data.recipientName}, you have a new message from ${data.senderName}:</p>
+        
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2563eb;">
+          <p style="margin: 0; font-style: italic;">"${data.messagePreview}"</p>
+        </div>
+        
+        <a href="${data.platformUrl}/messages/${data.conversationId}" style="display: block; background: #2563eb; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+          View Message
+        </a>
+      </div>
+    `
+  }),
+
+  // Business Operations
+  leadAssignment: (data: any) => ({
+    subject: `New Lead Assigned: ${data.clientName}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">New Lead Assigned</h1>
+        <p>Hi ${data.agentName}, you have been assigned a new lead:</p>
+        
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin: 0 0 15px 0;">${data.clientName}</h3>
+          <p><strong>Email:</strong> ${data.clientEmail}</p>
+          <p><strong>Phone:</strong> ${data.clientPhone}</p>
+          <p><strong>Interest:</strong> ${data.propertyType} in ${data.location}</p>
+          <p><strong>Budget:</strong> $${data.budgetRange}</p>
+          ${data.notes ? `<p><strong>Notes:</strong> ${data.notes}</p>` : ''}
+        </div>
+        
+        <a href="${data.platformUrl}/leads/${data.leadId}" style="display: block; background: #2563eb; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+          View Lead Details
+        </a>
+      </div>
+    `
+  }),
+
+  followUp: (data: any) => ({
+    subject: `Follow-up: ${data.subject}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">Follow-up Reminder</h1>
+        <p>Hi ${data.name}, this is a follow-up regarding ${data.subject}:</p>
+        
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p>${data.message}</p>
+          ${data.nextSteps ? `
+            <h4>Next Steps:</h4>
+            <ul>
+              ${data.nextSteps.map((step: string) => `<li>${step}</li>`).join('')}
+            </ul>
+          ` : ''}
+        </div>
+        
+        <a href="${data.platformUrl}/contact" style="display: block; background: #2563eb; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+          Contact Us
+        </a>
+      </div>
+    `
+  }),
+
+  // Subscription & Billing
+  subscriptionUpgrade: (data: any) => ({
+    subject: 'Subscription Upgraded Successfully',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #059669;">Subscription Upgraded!</h1>
+        <p>Hi ${data.name}, your subscription has been successfully upgraded to ${data.planName}.</p>
+        
+        <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3>Your New Benefits:</h3>
+          <ul>
+            ${data.features?.map((feature: string) => `<li>${feature}</li>`).join('') || ''}
+          </ul>
+        </div>
+        
+        <p><strong>Billing:</strong> $${data.amount} per ${data.interval}</p>
+        <p><strong>Next billing date:</strong> ${data.nextBillingDate}</p>
+        
+        <a href="${data.platformUrl}/dashboard" style="display: block; background: #059669; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+          Access Premium Features
+        </a>
+      </div>
+    `
+  }),
+
+  subscriptionExpiry: (data: any) => ({
+    subject: 'Your Subscription Expires Soon',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: #fef3c7; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+          <h1 style="color: #92400e; margin: 0 0 15px 0;">Subscription Expiring</h1>
+          <p>Hi ${data.name}, your ${data.planName} subscription expires in ${data.daysLeft} days.</p>
+          
+          <p><strong>Expiry Date:</strong> ${data.expiryDate}</p>
+          
+          <p>Renew now to continue enjoying premium features without interruption.</p>
+          
+          <a href="${data.platformUrl}/billing" style="display: block; background: #f59e0b; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+            Renew Subscription
+          </a>
+        </div>
+      </div>
+    `
+  }),
+
+  paymentSuccess: (data: any) => ({
+    subject: 'Payment Received - Thank You!',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #059669;">Payment Successful</h1>
+        <p>Hi ${data.name}, thank you for your payment!</p>
+        
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3>Payment Details:</h3>
+          <p><strong>Amount:</strong> $${data.amount}</p>
+          <p><strong>Plan:</strong> ${data.planName}</p>
+          <p><strong>Period:</strong> ${data.billingPeriod}</p>
+          <p><strong>Transaction ID:</strong> ${data.transactionId}</p>
+          <p><strong>Date:</strong> ${data.paymentDate}</p>
+        </div>
+        
+        <p>Your subscription is now active until ${data.nextBillingDate}.</p>
+        
+        <a href="${data.platformUrl}/billing" style="display: block; background: #2563eb; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+          View Billing History
+        </a>
+      </div>
+    `
+  }),
+
+  paymentFailed: (data: any) => ({
+    subject: 'Payment Failed - Action Required',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: #fef2f2; padding: 20px; border-radius: 8px; border-left: 4px solid #dc2626;">
+          <h1 style="color: #dc2626; margin: 0 0 15px 0;">Payment Failed</h1>
+          <p>Hi ${data.name}, we couldn't process your payment for ${data.planName}.</p>
+          
+          <div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0;">
+            <p><strong>Amount:</strong> $${data.amount}</p>
+            <p><strong>Reason:</strong> ${data.failureReason}</p>
+            <p><strong>Date:</strong> ${data.attemptDate}</p>
+          </div>
+          
+          <p>Please update your payment method to avoid service interruption.</p>
+          
+          <a href="${data.platformUrl}/billing/payment-methods" style="display: block; background: #dc2626; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+            Update Payment Method
+          </a>
+        </div>
+      </div>
+    `
+  }),
+
+  accountSuspension: (data: any) => ({
+    subject: 'Account Suspension Notice',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: #fef2f2; padding: 20px; border-radius: 8px; border-left: 4px solid #dc2626;">
+          <h1 style="color: #dc2626; margin: 0 0 15px 0;">Account Suspended</h1>
+          <p>Hi ${data.name}, your account has been temporarily suspended.</p>
+          
+          <div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0;">
+            <p><strong>Reason:</strong> ${data.reason}</p>
+            <p><strong>Suspension Date:</strong> ${data.suspensionDate}</p>
+            ${data.duration ? `<p><strong>Duration:</strong> ${data.duration}</p>` : ''}
+          </div>
+          
+          <p>To appeal this decision or resolve the issue, please contact our support team.</p>
+          
+          <a href="${data.platformUrl}/support" style="display: block; background: #dc2626; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+            Contact Support
+          </a>
+        </div>
+      </div>
+    `
+  }),
+
+  bulkCampaign: (data: any) => ({
+    subject: data.subject || 'Important Update from PickFirst Real Estate',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">${data.title}</h1>
+        <p>Hi ${data.name},</p>
+        
+        <div style="margin: 20px 0;">
+          ${data.content}
+        </div>
+        
+        ${data.callToAction ? `
+          <a href="${data.callToActionUrl}" style="display: block; background: #2563eb; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; margin: 20px 0;">
+            ${data.callToAction}
+          </a>
+        ` : ''}
+        
+        <div style="background: #f8fafc; padding: 15px; border-radius: 6px; margin: 20px 0;">
+          <p style="margin: 0; color: #64748b; font-size: 12px;">
+            You're receiving this email because you're a valued member of PickFirst Real Estate. 
+            ${data.unsubscribeUrl ? `<a href="${data.unsubscribeUrl}" style="color: #64748b;">Unsubscribe</a>` : ''}
+          </p>
+        </div>
+      </div>
     `
   })
-}
+};
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+const handler = async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const { to, template, data, subject }: EmailRequest = await req.json();
 
-    const { to, template, data, subject }: EmailRequest = await req.json()
+    console.log(`Sending email template "${template}" to ${to}`);
 
-    if (!to || !template) {
-      return new Response(
-        JSON.stringify({ error: 'Email address and template are required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+    if (!templates[template as keyof typeof templates]) {
+      throw new Error(`Template "${template}" not found`);
     }
 
-    // Get template
-    const templateFunction = EMAIL_TEMPLATES[template as keyof typeof EMAIL_TEMPLATES]
-    if (!templateFunction) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid template' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+    const templateFunction = templates[template as keyof typeof templates];
+    const emailContent = templateFunction(data);
+
+    const { error } = await resend.emails.send({
+      from: "PickFirst Real Estate <onboarding@resend.dev>",
+      to: [to],
+      subject: subject || emailContent.subject,
+      html: emailContent.html,
+    });
+
+    if (error) {
+      console.error("Email sending error:", error);
+      throw error;
     }
 
-    const emailContent = templateFunction(data)
-    const finalSubject = subject || emailContent.subject
-
-    // Send email using Resend
-    const resendApiKey = Deno.env.get('RESEND_API_KEY')
-    if (!resendApiKey) {
-      throw new Error('RESEND_API_KEY environment variable is required')
-    }
-
-    const resendResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'PickFirst Real Estate <info@pickfirst.com.au>',
-        to: [to],
-        subject: finalSubject,
-        html: emailContent.html,
-      }),
-    })
-
-    if (!resendResponse.ok) {
-      const errorData = await resendResponse.text()
-      throw new Error(`Resend API error: ${resendResponse.status} - ${errorData}`)
-    }
-
-    const resendData = await resendResponse.json()
-    console.log('📧 Email sent via Resend:', resendData)
-
-    // Log email activity to database for production tracking
-    try {
-      await supabaseClient
-        .from('audit_logs')
-        .insert({
-          user_id: data.userId || 'system',
-          table_name: 'email_notifications',
-          action: 'send_email',
-          new_values: {
-            to,
-            template,
-            subject: finalSubject,
-            status: 'sent'
-          }
-        })
-    } catch (logError) {
-      console.warn('Failed to log email activity:', logError)
-    }
+    console.log(`Email "${template}" sent successfully to ${to}`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Email sent successfully via Resend',
-        emailId: resendData.id,
-        template,
-        to,
-        subject: finalSubject
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      JSON.stringify({ success: true }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       }
-    )
-
-  } catch (error) {
-    console.error('Email service error:', error)
+    );
+  } catch (error: any) {
+    console.error("Error in send-email function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       }
-    )
+    );
   }
-})
+};
+
+serve(handler);

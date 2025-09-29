@@ -464,52 +464,52 @@ export type Database = {
       }
       login_history: {
         Row: {
-          id: string
-          user_id: string | null
-          email: string
-          ip_address: string
-          user_agent: string | null
+          created_at: string | null
           device_info: Json | null
+          email: string
+          failure_reason: string | null
+          id: string
+          ip_address: string
           location_info: Json | null
           login_type: string
-          success: boolean
-          failure_reason: string | null
-          session_id: string | null
-          referer: string | null
           origin: string | null
-          created_at: string
+          referer: string | null
+          session_id: string | null
+          success: boolean
+          user_agent: string | null
+          user_id: string | null
         }
         Insert: {
-          id?: string
-          user_id?: string | null
-          email: string
-          ip_address: string
-          user_agent?: string | null
+          created_at?: string | null
           device_info?: Json | null
+          email: string
+          failure_reason?: string | null
+          id?: string
+          ip_address: string
           location_info?: Json | null
           login_type?: string
-          success?: boolean
-          failure_reason?: string | null
-          session_id?: string | null
-          referer?: string | null
           origin?: string | null
-          created_at?: string
+          referer?: string | null
+          session_id?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
         }
         Update: {
-          id?: string
-          user_id?: string | null
-          email?: string
-          ip_address?: string
-          user_agent?: string | null
+          created_at?: string | null
           device_info?: Json | null
+          email?: string
+          failure_reason?: string | null
+          id?: string
+          ip_address?: string
           location_info?: Json | null
           login_type?: string
-          success?: boolean
-          failure_reason?: string | null
-          session_id?: string | null
-          referer?: string | null
           origin?: string | null
-          created_at?: string
+          referer?: string | null
+          session_id?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -920,6 +920,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "property_listings_sold_to_client_id_fkey"
+            columns: ["sold_to_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
         ]
       }
       saved_filters: {
@@ -1062,84 +1069,105 @@ export type Database = {
         }
         Relationships: []
       }
-      user_preferences: {
+      user_password_history: {
         Row: {
+          changed_at: string
           id: string
+          password_hash: string
           user_id: string
-          email_notifications: boolean
-          push_notifications: boolean
-          marketing_emails: boolean
-          property_alerts: boolean
-          agent_messages: boolean
-          appointment_reminders: boolean
-          new_listings: boolean
-          price_changes: boolean
-          market_updates: boolean
-          personalized_property_notifications: boolean
-          profile_visibility: string
-          show_email: boolean
-          show_phone: boolean
-          show_location: boolean
-          show_activity_status: boolean
-          allow_marketing: boolean
-          preferred_contact_method: string
-          budget_range: string | null
-          preferred_areas: string[] | null
-          property_type_preferences: string[] | null
-          created_at: string
-          updated_at: string
         }
         Insert: {
+          changed_at?: string
           id?: string
+          password_hash: string
           user_id: string
-          email_notifications?: boolean
-          push_notifications?: boolean
-          marketing_emails?: boolean
-          property_alerts?: boolean
-          agent_messages?: boolean
-          appointment_reminders?: boolean
-          new_listings?: boolean
-          price_changes?: boolean
-          market_updates?: boolean
-          personalized_property_notifications?: boolean
-          profile_visibility?: string
-          show_email?: boolean
-          show_phone?: boolean
-          show_location?: boolean
-          show_activity_status?: boolean
-          allow_marketing?: boolean
-          preferred_contact_method?: string
-          budget_range?: string | null
-          preferred_areas?: string[] | null
-          property_type_preferences?: string[] | null
-          created_at?: string
-          updated_at?: string
         }
         Update: {
+          changed_at?: string
           id?: string
+          password_hash?: string
           user_id?: string
-          email_notifications?: boolean
-          push_notifications?: boolean
-          marketing_emails?: boolean
-          property_alerts?: boolean
-          agent_messages?: boolean
-          appointment_reminders?: boolean
-          new_listings?: boolean
-          price_changes?: boolean
-          market_updates?: boolean
-          personalized_property_notifications?: boolean
-          profile_visibility?: string
-          show_email?: boolean
-          show_phone?: boolean
-          show_location?: boolean
-          show_activity_status?: boolean
-          allow_marketing?: boolean
-          preferred_contact_method?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          agent_messages: boolean | null
+          allow_marketing: boolean | null
+          appointment_reminders: boolean | null
+          budget_range: string | null
+          created_at: string | null
+          email_notifications: boolean | null
+          id: string
+          market_updates: boolean | null
+          marketing_emails: boolean | null
+          new_listings: boolean | null
+          personalized_property_notifications: boolean | null
+          preferred_areas: string[] | null
+          preferred_contact_method: string | null
+          price_changes: boolean | null
+          profile_visibility: string | null
+          property_alerts: boolean | null
+          property_type_preferences: string[] | null
+          push_notifications: boolean | null
+          show_activity_status: boolean | null
+          show_email: boolean | null
+          show_location: boolean | null
+          show_phone: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          agent_messages?: boolean | null
+          allow_marketing?: boolean | null
+          appointment_reminders?: boolean | null
           budget_range?: string | null
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          market_updates?: boolean | null
+          marketing_emails?: boolean | null
+          new_listings?: boolean | null
+          personalized_property_notifications?: boolean | null
           preferred_areas?: string[] | null
+          preferred_contact_method?: string | null
+          price_changes?: boolean | null
+          profile_visibility?: string | null
+          property_alerts?: boolean | null
           property_type_preferences?: string[] | null
-          created_at?: string
-          updated_at?: string
+          push_notifications?: boolean | null
+          show_activity_status?: boolean | null
+          show_email?: boolean | null
+          show_location?: boolean | null
+          show_phone?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          agent_messages?: boolean | null
+          allow_marketing?: boolean | null
+          appointment_reminders?: boolean | null
+          budget_range?: string | null
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          market_updates?: boolean | null
+          marketing_emails?: boolean | null
+          new_listings?: boolean | null
+          personalized_property_notifications?: boolean | null
+          preferred_areas?: string[] | null
+          preferred_contact_method?: string | null
+          price_changes?: boolean | null
+          profile_visibility?: string | null
+          property_alerts?: boolean | null
+          property_type_preferences?: string[] | null
+          push_notifications?: boolean | null
+          show_activity_status?: boolean | null
+          show_email?: boolean | null
+          show_location?: boolean | null
+          show_phone?: boolean | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -1151,63 +1179,88 @@ export type Database = {
           },
         ]
       }
-      user_password_history: {
+    }
+    Views: {
+      agent_analytics: {
         Row: {
-          id: string
-          user_id: string
-          password_hash: string
-          changed_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          password_hash: string
-          changed_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          password_hash?: string
-          changed_at?: string
+          active_listings: number | null
+          agent_id: string | null
+          avg_sale_price: number | null
+          monthly_appointments: number | null
+          monthly_inquiries: number | null
+          monthly_revenue: number | null
+          monthly_sales: number | null
+          total_appointments: number | null
+          total_clients: number | null
+          total_inquiries: number | null
+          total_sales: number | null
+          weekly_sales: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "user_password_history_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "property_listings_agent_id_fkey"
+            columns: ["agent_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
-    }
-    Views: {
+      agent_client_sources: {
+        Row: {
+          agent_id: string | null
+          count: number | null
+          source: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_monthly_performance: {
+        Row: {
+          agent_id: string | null
+          listings: number | null
+          month: string | null
+          revenue: number | null
+          sales: number | null
+          showings: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_listings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suspicious_logins: {
         Row: {
-          id: string
-          user_id: string | null
-          email: string
-          ip_address: string
-          user_agent: string | null
+          attempts_last_hour: number | null
+          created_at: string | null
           device_info: Json | null
-          location_info: Json | null
-          login_type: string
-          success: boolean
+          email: string | null
+          email_attempts_last_hour: number | null
           failure_reason: string | null
-          session_id: string | null
-          referer: string | null
-          origin: string | null
-          created_at: string
           full_name: string | null
+          id: string | null
+          ip_address: string | null
+          location_info: Json | null
+          login_type: string | null
+          origin: string | null
+          referer: string | null
           role: string | null
-          attempts_last_hour: number
-          email_attempts_last_hour: number
-        }
-        Insert: {
-          [_ in never]: never
-        }
-        Update: {
-          [_ in never]: never
+          session_id: string | null
+          success: boolean | null
+          user_agent: string | null
+          user_id: string | null
         }
         Relationships: [
           {
@@ -1219,122 +1272,16 @@ export type Database = {
           },
         ]
       }
-      agent_analytics: {
-        Row: {
-          agent_id: string | null
-          active_listings: number | null
-          total_sales: number | null
-          monthly_sales: number | null
-          weekly_sales: number | null
-          monthly_revenue: number | null
-          avg_sale_price: number | null
-          total_clients: number | null
-          total_appointments: number | null
-          monthly_appointments: number | null
-          total_inquiries: number | null
-          monthly_inquiries: number | null
-        }
-        Insert: {
-          agent_id?: never
-          active_listings?: never
-          total_sales?: never
-          monthly_sales?: never
-          weekly_sales?: never
-          monthly_revenue?: never
-          avg_sale_price?: never
-          total_clients?: never
-          total_appointments?: never
-          monthly_appointments?: never
-          total_inquiries?: never
-          monthly_inquiries?: never
-        }
-        Update: {
-          agent_id?: never
-          active_listings?: never
-          total_sales?: never
-          monthly_sales?: never
-          weekly_sales?: never
-          monthly_revenue?: never
-          avg_sale_price?: never
-          total_clients?: never
-          total_appointments?: never
-          monthly_appointments?: never
-          total_inquiries?: never
-          monthly_inquiries?: never
-        }
-        Relationships: [
-          {
-            foreignKeyName: "agent_analytics_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      agent_monthly_performance: {
-        Row: {
-          agent_id: string | null
-          month: string | null
-          listings: number | null
-          showings: number | null
-          sales: number | null
-          revenue: number | null
-        }
-        Insert: {
-          agent_id?: never
-          month?: never
-          listings?: never
-          showings?: never
-          sales?: never
-          revenue?: never
-        }
-        Update: {
-          agent_id?: never
-          month?: never
-          listings?: never
-          showings?: never
-          sales?: never
-          revenue?: never
-        }
-        Relationships: [
-          {
-            foreignKeyName: "agent_monthly_performance_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      agent_client_sources: {
-        Row: {
-          agent_id: string | null
-          source: string | null
-          count: number | null
-        }
-        Insert: {
-          agent_id?: never
-          source?: never
-          count?: never
-        }
-        Update: {
-          agent_id?: never
-          source?: never
-          count?: never
-        }
-        Relationships: [
-          {
-            foreignKeyName: "agent_client_sources_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
     }
     Functions: {
+      check_property_alerts_access: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
+      cleanup_old_login_history: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       create_system_alert: {
         Args: {
           alert_category: string

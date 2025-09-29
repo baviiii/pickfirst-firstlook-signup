@@ -16,51 +16,28 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   }
 });
 
-// Utility function to clear corrupted tokens
+// Helper function to clear auth tokens
 export const clearAuthTokens = () => {
   try {
-    // Clear Supabase auth tokens
-    localStorage.removeItem('sb-rkwvgqozbpqgmpbvujgz-auth-token');
     localStorage.removeItem('supabase.auth.token');
-    
-    // Clear any other potential auth-related items
-    const keys = Object.keys(localStorage);
-    keys.forEach(key => {
-      if (key.includes('supabase') || key.includes('auth')) {
-        localStorage.removeItem(key);
-      }
-    });
-    
-    console.log('Auth tokens cleared successfully');
+    localStorage.removeItem('sb-' + SUPABASE_URL.split('//')[1].split('.')[0] + '-auth-token');
   } catch (error) {
     console.error('Error clearing auth tokens:', error);
   }
 };
 
-// Enhanced error handling for auth errors
+// Helper function to handle auth errors
 export const handleAuthError = async (error: any) => {
-  // Only redirect on actual token/session errors, not authentication failures
+  console.error('Auth error:', error);
+  
   if (error?.message?.includes('Invalid Refresh Token') || 
       error?.message?.includes('Refresh Token Not Found') ||
-      error?.message?.includes('JWT expired') ||
-      error?.message?.includes('Invalid JWT')) {
-    
-    console.log('Detected auth token error, clearing tokens...');
+      error?.status === 400 || 
+      error?.status === 404) {
     clearAuthTokens();
-    
-    // Redirect to login page
-    if (typeof window !== 'undefined') {
-      window.location.href = '/auth';
-    }
-  }
-  
-  // Don't redirect on authentication failures like wrong password
-  // These should be handled by the calling function
-  if (error?.message?.includes('Invalid login credentials') ||
-      error?.message?.includes('Email not confirmed') ||
-      error?.message?.includes('Invalid email or password')) {
-    console.log('Authentication failed:', error.message);
-    // Don't redirect, let the calling function handle the error
-    return;
+    // Force a page reload to clear any cached auth state
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
   }
 };
