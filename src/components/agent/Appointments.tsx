@@ -12,6 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { AppointmentForm } from './AppointmentForm';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { appointmentService } from '@/services/appointmentService';
+
 
 interface Appointment {
   id: string;
@@ -214,7 +216,6 @@ export const Appointments = () => {
       currentNotes: appointment.notes
     });
   };
-
   const handleStatusChange = async (appointmentId: string, newStatus: string, notes?: string) => {
     setUpdatingStatus(appointmentId);
     try {
@@ -222,14 +223,12 @@ export const Appointments = () => {
       if (notes !== undefined) {
         updateData.notes = notes;
       }
-
-      const { error } = await supabase
-        .from('appointments')
-        .update(updateData)
-        .eq('id', appointmentId);
-
+  
+      // Use appointmentService instead of direct Supabase call
+      const { error } = await appointmentService.updateAppointment(appointmentId, updateData);
+  
       if (error) throw error;
-
+  
       // Update local state immediately for better UX
       setAppointments(prevAppointments => 
         prevAppointments.map(apt => 
@@ -238,8 +237,8 @@ export const Appointments = () => {
             : apt
         )
       );
-
-      toast.success(`Appointment ${newStatus.replace('_', ' ')}`);
+  
+      toast.success(`Appointment ${newStatus.replace('_', ' ')} - Email sent!`);
       
       // Close dialog
       setStatusChangeDialog({
