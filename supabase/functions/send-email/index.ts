@@ -577,7 +577,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailContent = templateFunction(data);
 
     const { error } = await resend.emails.send({
-      from: "PickFirst Real Estate <onboarding@resend.dev>",
+      from:  "PickFirst Real Estate <noreply@pickfirst.com.au>",
       to: [to],
       subject: subject || emailContent.subject,
       html: emailContent.html,
