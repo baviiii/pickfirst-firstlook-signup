@@ -522,7 +522,8 @@ class AppointmentService {
   private async sendStatusChangeNotifications(
     appointment: Appointment,
     oldStatus: string,
-    newStatus: string
+    newStatus: string,
+    userRole?: string
   ): Promise<void> {
     try {
       // Get agent information
@@ -536,25 +537,45 @@ class AppointmentService {
         console.error('Agent profile not found for status change notifications');
         return;
       }
-
+      // Determine who should receive the notification based on who made the change
+      const isAgentMakingChange = userRole === 'agent';
+      const isBuyerMakingChange = userRole === 'buyer';
       // Send appropriate email based on status change
       switch (newStatus) {
         case 'confirmed':
-          // Notify agent that buyer confirmed
-          await EmailService.sendAppointmentStatusUpdate(
-            agentProfile.email,
-            agentProfile.full_name,
-            {
-              clientName: appointment.client_name,
-              clientEmail: appointment.client_email,
-              appointmentType: appointment.appointment_type.replace('_', ' ').toUpperCase(),
-              date: appointment.date,
-              time: appointment.time,
-              location: appointment.property_address,
-              status: 'confirmed',
-              statusMessage: 'Your client has confirmed the appointment'
-            }
-          );
+          if (isBuyerMakingChange) {
+            // Buyer confirmed - notify agent
+            await EmailService.sendAppointmentStatusUpdate(
+              agentProfile.email,
+              agentProfile.full_name,
+              {
+                clientName: appointment.client_name,
+                clientEmail: appointment.client_email,
+                appointmentType: appointment.appointment_type.replace('_', ' ').toUpperCase(),
+                date: appointment.date,
+                time: appointment.time,
+                location: appointment.property_address,
+                status: 'confirmed',
+                statusMessage: 'Your client has confirmed the appointment'
+              }
+            );
+          } else if (isAgentMakingChange) {
+            // Agent confirmed - notify client
+            await EmailService.sendAppointmentStatusUpdate(
+              appointment.client_email,
+              appointment.client_name,
+              {
+                clientName: appointment.client_name,
+                agentName: agentProfile.full_name,
+                appointmentType: appointment.appointment_type.replace('_', ' ').toUpperCase(),
+                date: appointment.date,
+                time: appointment.time,
+                location: appointment.property_address,
+                status: 'confirmed',
+                statusMessage: 'Your appointment has been confirmed'
+              }
+            );
+          }
           break;
 
         case 'declined':
