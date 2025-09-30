@@ -263,7 +263,7 @@ class AppointmentService {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        return { data: null, error: { message: 'User not authenticated' } };
+        throw new Error('User not authenticated');
       }
 
       // Get the current appointment to check permissions and send notifications
@@ -274,7 +274,7 @@ class AppointmentService {
         .single();
 
       if (fetchError || !currentAppointment) {
-        return { data: null, error: { message: 'Appointment not found' } };
+        throw new Error('Appointment not found');
       }
 
       // Check permissions - agents can update their appointments, buyers can only confirm/decline
@@ -296,18 +296,18 @@ class AppointmentService {
           // Buyers can only confirm or decline scheduled appointments
           if (!['confirmed', 'declined'].includes(updates.status) || 
               currentAppointment.status !== 'scheduled') {
-            return { data: null, error: { message: 'Invalid status change for buyer' } };
+            throw new Error('Invalid status change for buyer');
           }
         } else if (isAgent && isAppointmentOwner) {
           // Agents can manage all statuses except buyer-specific actions
           if (!['scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'].includes(updates.status)) {
-            return { data: null, error: { message: 'Invalid status for agent' } };
+            throw new Error('Invalid status for agent');
           }
         } else {
-          return { data: null, error: { message: 'Unauthorized to update this appointment' } };
+          throw new Error('Unauthorized to update this appointment');
         }
       } else if (!isAgent || !isAppointmentOwner) {
-        return { data: null, error: { message: 'Unauthorized to update this appointment' } };
+        throw new Error('Unauthorized to update this appointment');
       }
 
       const { data, error } = await supabase
@@ -317,7 +317,11 @@ class AppointmentService {
         .select()
         .single();
 
-      if (!error && data) {
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
         await auditService.log(user.id, 'UPDATE', 'appointments', {
           recordId: id,
           newValues: updates,
@@ -326,7 +330,7 @@ class AppointmentService {
 
         // Send email notifications for status changes
         if (updates.status && updates.status !== currentAppointment.status) {
-          await this.sendStatusChangeNotifications(data, currentAppointment.status, updates.status);
+          await this.sendStatusChangeNotifications(data, currentAppointment.status, updates.status as string, profile?.role as string);
         }
       }
 
@@ -592,6 +596,40 @@ class AppointmentService {
               location: appointment.property_address,
               status: 'declined',
               statusMessage: 'Your client has declined the appointment'
+            }
+          );
+          break;
+
+        case 'scheduled':
+          // Rescheduled: notify both client and agent
+          // Notify client
+          await EmailService.sendAppointmentStatusUpdate(
+            appointment.client_email,
+            appointment.client_name,
+            {
+              clientName: appointment.client_name,
+              agentName: agentProfile.full_name,
+              appointmentType: appointment.appointment_type.replace('_', ' ').toUpperCase(),
+              date: appointment.date,
+              time: appointment.time,
+              location: appointment.property_address,
+              status: 'rescheduled',
+              statusMessage: 'Your appointment has been rescheduled'
+            }
+          );
+          // Notify agent
+          await EmailService.sendAppointmentStatusUpdate(
+            agentProfile.email,
+            agentProfile.full_name,
+            {
+              clientName: appointment.client_name,
+              clientEmail: appointment.client_email,
+              appointmentType: appointment.appointment_type.replace('_', ' ').toUpperCase(),
+              date: appointment.date,
+              time: appointment.time,
+              location: appointment.property_address,
+              status: 'rescheduled',
+              statusMessage: isBuyerMakingChange ? 'Client rescheduled the appointment' : 'You rescheduled the appointment'
             }
           );
           break;

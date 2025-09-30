@@ -6,13 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar, Clock, MapPin, User, Phone, Plus, Search, Filter, ChevronRight, Edit3, MessageSquare, Undo2, Check, X } from 'lucide-react';
+import { Calendar, Clock, MapPin, User, Phone, Plus, Search, Filter, ChevronRight, Edit3, MessageSquare, Undo2, Check, X, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { AppointmentForm } from './AppointmentForm';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { appointmentService } from '@/services/appointmentService';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 
 interface Appointment {
@@ -47,6 +51,15 @@ interface EditNotesDialog {
   currentNotes: string;
 }
 
+interface RescheduleDialog {
+  isOpen: boolean;
+  appointmentId: string;
+  currentDate: string;
+  currentTime: string;
+  newDate: Date | undefined;
+  newTime: string;
+}
+
 export const Appointments = () => {
   const { user } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -62,6 +75,14 @@ export const Appointments = () => {
     isOpen: false,
     appointmentId: '',
     currentNotes: ''
+  });
+  const [rescheduleDialog, setRescheduleDialog] = useState<RescheduleDialog>({
+    isOpen: false,
+    appointmentId: '',
+    currentDate: '',
+    currentTime: '',
+    newDate: undefined,
+    newTime: ''
   });
   const [updatingStatus, setUpdatingStatus] = useState<string>('');
 
@@ -216,6 +237,20 @@ export const Appointments = () => {
       currentNotes: appointment.notes
     });
   };
+
+  const openRescheduleDialog = (appointmentId: string) => {
+    const appointment = appointments.find(apt => apt.id === appointmentId);
+    if (!appointment) return;
+
+    setRescheduleDialog({
+      isOpen: true,
+      appointmentId,
+      currentDate: appointment.date,
+      currentTime: appointment.time,
+      newDate: new Date(appointment.date),
+      newTime: appointment.time
+    });
+  };
   const handleStatusChange = async (appointmentId: string, newStatus: string, notes?: string) => {
     setUpdatingStatus(appointmentId);
     try {
@@ -284,6 +319,49 @@ export const Appointments = () => {
     } catch (error) {
       console.error('Error updating notes:', error);
       toast.error('Failed to update notes');
+    }
+  };
+
+  const handleReschedule = async (appointmentId: string, newDate: Date, newTime: string) => {
+    setUpdatingStatus(appointmentId);
+    try {
+      const formattedDate = format(newDate, 'yyyy-MM-dd');
+      
+      const updateData = {
+        date: formattedDate,
+        time: newTime,
+        status: 'scheduled'
+      };
+
+      const { error } = await appointmentService.updateAppointment(appointmentId, updateData);
+
+      if (error) throw error;
+
+      // Update local state immediately
+      setAppointments(prevAppointments => 
+        prevAppointments.map(apt => 
+          apt.id === appointmentId 
+            ? { ...apt, date: formattedDate, time: newTime, status: 'scheduled' as any }
+            : apt
+        )
+      );
+
+      toast.success('Appointment rescheduled successfully - Email sent!');
+      
+      // Close dialog
+      setRescheduleDialog({
+        isOpen: false,
+        appointmentId: '',
+        currentDate: '',
+        currentTime: '',
+        newDate: undefined,
+        newTime: ''
+      });
+    } catch (error) {
+      console.error('Error rescheduling appointment:', error);
+      toast.error('Failed to reschedule appointment');
+    } finally {
+      setUpdatingStatus('');
     }
   };
 
@@ -557,11 +635,23 @@ export const Appointments = () => {
                         {appointment.status === 'cancelled' && (
                           <Button
                             size="sm"
-                            onClick={() => openStatusChangeDialog(appointment.id, 'scheduled')}
+                            onClick={() => openRescheduleDialog(appointment.id)}
                             className="bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 text-xs"
                             disabled={updatingStatus === appointment.id}
                           >
                             <Undo2 className="h-3 w-3 mr-1" />
+                            Reschedule
+                          </Button>
+                        )}
+
+                        {['scheduled', 'confirmed'].includes(appointment.status) && !isPast && (
+                          <Button
+                            size="sm"
+                            onClick={() => openRescheduleDialog(appointment.id)}
+                            className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 hover:bg-yellow-500/20 text-xs"
+                            disabled={updatingStatus === appointment.id}
+                          >
+                            <CalendarIcon className="h-3 w-3 mr-1" />
                             Reschedule
                           </Button>
                         )}
@@ -714,6 +804,99 @@ export const Appointments = () => {
                 className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber"
               >
                 Save Notes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reschedule Dialog */}
+        <Dialog open={rescheduleDialog.isOpen} onOpenChange={(open) =>
+          !open && setRescheduleDialog({ 
+            isOpen: false, 
+            appointmentId: '', 
+            currentDate: '', 
+            currentTime: '', 
+            newDate: undefined, 
+            newTime: '' 
+          })
+        }>
+          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border border-pickfirst-yellow/20 text-white max-w-md">
+            <DialogHeader>
+              <DialogTitle>Reschedule Appointment</DialogTitle>
+              <DialogDescription className="text-gray-400">
+                Select a new date and time for this appointment.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  New Date
+                </label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal bg-white/5 border-white/20 text-white hover:bg-white/10",
+                        !rescheduleDialog.newDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {rescheduleDialog.newDate ? format(rescheduleDialog.newDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-gray-900 border-gray-700" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={rescheduleDialog.newDate}
+                      onSelect={(date) => setRescheduleDialog(prev => ({ ...prev, newDate: date }))}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  New Time
+                </label>
+                <Input
+                  type="time"
+                  value={rescheduleDialog.newTime}
+                  onChange={(e) => setRescheduleDialog(prev => ({ ...prev, newTime: e.target.value }))}
+                  className="bg-white/5 border-white/20 text-white"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setRescheduleDialog({ 
+                  isOpen: false, 
+                  appointmentId: '', 
+                  currentDate: '', 
+                  currentTime: '', 
+                  newDate: undefined, 
+                  newTime: '' 
+                })}
+                className="border-white/20 text-gray-300 hover:bg-white/5"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (rescheduleDialog.newDate && rescheduleDialog.newTime) {
+                    handleReschedule(rescheduleDialog.appointmentId, rescheduleDialog.newDate, rescheduleDialog.newTime);
+                  }
+                }}
+                className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber"
+                disabled={!rescheduleDialog.newDate || !rescheduleDialog.newTime || updatingStatus === rescheduleDialog.appointmentId}
+              >
+                {updatingStatus === rescheduleDialog.appointmentId ? 'Rescheduling...' : 'Reschedule Appointment'}
               </Button>
             </DialogFooter>
           </DialogContent>

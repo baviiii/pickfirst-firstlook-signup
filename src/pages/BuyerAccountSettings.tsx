@@ -468,7 +468,15 @@ const BuyerAccountSettingsPage = () => {
   const handleDeclineAppointment = async (id: string) => {
     setIsLoading(true);
     try {
-      await appointmentService.updateAppointment(id, { status: 'declined' } as any);
+      const result = await appointmentService.updateAppointment(id, { status: 'declined' } as any);
+      
+      // Check if the service returned an error
+      if (result.error) {
+        console.error('Error declining appointment:', result.error);
+        toast.error('Failed to decline appointment');
+        return;
+      }
+      
       await refreshAppointments();
       toast.success('Appointment declined');
     } catch (e) {
