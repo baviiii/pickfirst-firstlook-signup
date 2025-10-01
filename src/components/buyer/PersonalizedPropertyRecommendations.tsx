@@ -267,26 +267,26 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
 
   return (
     <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Target className="h-6 w-6 text-primary" />
-            <div>
-              <CardTitle className="text-foreground">Recommended for You</CardTitle>
-              <CardDescription className="text-muted-foreground">
+      <CardHeader className="space-y-3 sm:space-y-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Target className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+            <div className="min-w-0">
+              <CardTitle className="text-sm sm:text-base lg:text-lg text-foreground">Recommended for You</CardTitle>
+              <CardDescription className="text-xs sm:text-sm text-muted-foreground">
                 Properties matching your preferences
               </CardDescription>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-primary/10 text-primary">
+          <div className="flex items-center gap-2 ml-7 sm:ml-0">
+            <Badge variant="secondary" className="bg-primary/10 text-primary text-xs whitespace-nowrap">
               {recommendations.length} matches
             </Badge>
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => navigate('/browse-properties')}
-              className="hover:bg-accent"
+              className="hover:bg-accent text-xs sm:text-sm h-8 sm:h-9 whitespace-nowrap"
             >
               View All
             </Button>
