@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
@@ -67,6 +68,7 @@ export const AgentInquiriesComponent = () => {
   const [isResponseDialogOpen, setIsResponseDialogOpen] = useState(false);
   const [isConversionDialogOpen, setIsConversionDialogOpen] = useState(false);
   const [selectedInquiryForConversion, setSelectedInquiryForConversion] = useState<ExtendedPropertyInquiry | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchInquiries();
@@ -112,6 +114,17 @@ export const AgentInquiriesComponent = () => {
 
             if (appointment) {
               inquiryWithData.appointment = appointment;
+            }
+
+            // Fetch conversation data
+            const { data: conversation } = await supabase
+              .from('conversations')
+              .select('id, subject')
+              .eq('inquiry_id', inquiry.id)
+              .maybeSingle();
+
+            if (conversation) {
+              inquiryWithData.conversation = conversation;
             }
 
             // Fetch client data if buyer exists as a client
@@ -175,40 +188,44 @@ export const AgentInquiriesComponent = () => {
       setSubmittingResponse(false);
     }
   };
+const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
+  if (!profile || !inquiry.buyer_id) return;
 
-  const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
-    if (!profile || !inquiry.buyer_id) return;
+  // If a conversation already exists, navigate to it
+  if (inquiry.conversation?.id) {
+    navigate(`/messages/${inquiry.conversation.id}`);
+    return;
+  }
 
-    try {
-      // If there's already a conversation, navigate to it
-      if (inquiry.conversation?.id) {
-        toast.success('Opening existing conversation...');
-        // Navigate to the conversation - you can implement this based on your routing
-        // For now, we'll just show a success message
-        return;
+  // If no conversation exists, create a new one
+  try {
+    const { data: conversation, error } = await supabase.functions.invoke('messaging', {
+      body: { 
+        action: 'createConversation',
+        agentId: profile.id,
+        clientId: inquiry.buyer_id,
+        subject: `Property Inquiry: ${inquiry.property?.title}`,
+        inquiryId: inquiry.id,
+        propertyId: inquiry.property_id
       }
+    });
 
-      // Create new conversation if none exists
-      const { data: conversation, error } = await supabase.functions.invoke('messaging', {
-        body: { 
-          action: 'createConversation',
-          agentId: profile.id,
-          clientId: inquiry.buyer_id,
-          subject: `Property Inquiry: ${inquiry.property?.title}`
-        }
-      });
-
-      if (conversation && !error) {
-        toast.success('Conversation started! You can now message this buyer.');
-        // Refresh inquiries to get the updated conversation data
-        fetchInquiries();
+    if (conversation?.id && !error) {
+      toast.success('Conversation started! Redirecting to messages...');
+      navigate(`/messages/${conversation.id}`);
+    } else {
+      // Check for existing conversation in case of a race condition
+      const existing = error?.details?.existing;
+      if (existing) {
+        navigate(`/messages/${existing.id}`);
       } else {
-        toast.error('Failed to start conversation');
+        toast.error(error?.details?.message || 'Failed to start conversation');
       }
-    } catch (error) {
-      toast.error('Failed to start conversation');
     }
-  };
+  } catch (error) {
+    toast.error('An unexpected error occurred.');
+  }
+};
 
   const handleConvertLead = (inquiry: ExtendedPropertyInquiry) => {
     setSelectedInquiryForConversion(inquiry);

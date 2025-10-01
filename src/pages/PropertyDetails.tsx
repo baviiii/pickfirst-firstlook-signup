@@ -215,7 +215,7 @@ const PropertyDetailsComponent = () => {
       <div className="min-h-screen flex items-center justify-center p-4 relative z-10">
         <div className="text-white text-center">
           <h2 className="text-xl mb-4">Property not found</h2>
-          <Button onClick={() => navigate('/browse-properties')} variant="outline">
+          <Button onClick={() => navigate(-1)}>
             Browse Properties
           </Button>
         </div>

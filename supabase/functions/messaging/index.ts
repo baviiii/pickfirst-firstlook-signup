@@ -261,7 +261,6 @@ serve(async (req) => {
           )
         }
       }
-
       case 'sendMessage': {
         const { conversationId, content } = params
         
@@ -273,10 +272,17 @@ serve(async (req) => {
         }
 
         try {
-          // Verify sender is part of the conversation
-          const { data: conversation, error: convError } = await supabaseClient
+          // Fetch conversation with participant details for email notification
+          // Use supabaseAdmin to bypass RLS and get recipient email
+        
+        
+          const { data: conversation, error: convError } = await supabaseAdmin
             .from('conversations')
-            .select('agent_id, client_id')
+            .select(`
+              agent_id, 
+              client_id,
+              subject
+            `)
             .eq('id', conversationId)
             .single()
 
@@ -287,6 +293,26 @@ serve(async (req) => {
             )
           }
 
+          // Fetch agent and client profiles separately
+          const { data: agentProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', conversation.agent_id)
+            .single()
+
+          const { data: clientProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', conversation.client_id)
+            .single()
+
+          // Add profiles to conversation object
+          conversation.agent = agentProfile
+          conversation.client = clientProfile
+
+          
+
+          // Authorization check: ensure the sender is part of the conversation
           if (conversation.agent_id !== user.id && conversation.client_id !== user.id) {
             return new Response(
               JSON.stringify({ error: 'Unauthorized to send message in this conversation' }),
@@ -294,11 +320,12 @@ serve(async (req) => {
             )
           }
 
+          // Insert the message into the database
           const { data, error } = await supabaseClient
             .from('messages')
             .insert({
               conversation_id: conversationId,
-              sender_id: user.id, // Use authenticated user ID
+              sender_id: user.id,
               content: content.trim()
             })
             .select(`
@@ -308,6 +335,40 @@ serve(async (req) => {
             .single()
 
           if (error) throw error
+
+          // Send email notification to the recipient
+          try {
+            const isAgentSending = conversation.agent_id === user.id
+            const recipient = isAgentSending ? conversation.client : conversation.agent
+            const senderName = data.sender_profile?.full_name || 'Someone'
+
+            if (recipient?.email) {
+              // Asynchronously call the send-email function
+              fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  to: recipient.email,
+                  subject: `New message from ${senderName}`,
+                  template: 'messageNotification', // This is the template you confirmed exists
+                  data: {
+                    recipientName: recipient.full_name || 'there',
+                    senderName: senderName,
+                    messageContent: content.trim().substring(0, 200), // Truncate for preview
+                    conversationSubject: conversation.subject || 'Property Inquiry',
+                    platformName: 'PickFirst Real Estate'
+                  }
+                })
+              })
+              console.log('Email notification queued for:', recipient.email)
+            }
+          } catch (emailError) {
+            console.error('Failed to queue email notification:', emailError)
+            // Do not block message sending if email fails
+          }
 
           return new Response(
             JSON.stringify(data),

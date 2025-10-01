@@ -13,7 +13,7 @@ import {
   MessageSquare, 
   Heart,
   Bed,
-  Bath,
+  Bath, 
   Square,
   MapPin,
   Camera,
@@ -754,17 +754,17 @@ const BrowsePropertiesPageComponent = () => {
               )}
             </div>
 
-            {/* Expanded Filters */}
-            {showFilters && (
+           {/* Expanded Filters */}
+           <div className={`transition-all duration-300 ease-in-out overflow-hidden ${showFilters ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
               <Card className="bg-gray-900/50 border-yellow-400/20 backdrop-blur-xl">
                 <CardContent className="p-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
-                      <Label className="text-white mb-2 block">Property Type</Label>
+                      <Label className="text-white mb-2 block text-sm">Property Type</Label>
                       <select
                         value={propertyType}
                         onChange={(e) => setPropertyType(e.target.value)}
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white"
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:ring-2 focus:ring-yellow-400/50 focus:border-transparent"
                       >
                         <option value="all">All Types</option>
                         <option value="sale">For Sale</option>
@@ -775,11 +775,11 @@ const BrowsePropertiesPageComponent = () => {
                     </div>
                     
                     <div>
-                      <Label className="text-white mb-2 block">Bedrooms</Label>
+                      <Label className="text-white mb-2 block text-sm">Bedrooms</Label>
                       <select
                         value={bedrooms}
                         onChange={(e) => setBedrooms(e.target.value)}
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white"
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:ring-2 focus:ring-yellow-400/50 focus:border-transparent"
                       >
                         <option value="all">Any</option>
                         <option value="1">1 Bedroom</option>
@@ -790,11 +790,11 @@ const BrowsePropertiesPageComponent = () => {
                     </div>
                     
                     <div>
-                      <Label className="text-white mb-2 block">Bathrooms</Label>
+                      <Label className="text-white mb-2 block text-sm">Bathrooms</Label>
                       <select
                         value={bathrooms}
                         onChange={(e) => setBathrooms(e.target.value)}
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white"
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:ring-2 focus:ring-yellow-400/50 focus:border-transparent"
                       >
                         <option value="all">Any</option>
                         <option value="1">1 Bathroom</option>
@@ -804,8 +804,8 @@ const BrowsePropertiesPageComponent = () => {
                     </div>
                     
                     <div>
-                      <Label className="text-white mb-2 block">
-                        Price Range: ${priceRange[0].toLocaleString()} - ${priceRange[1].toLocaleString()}
+                      <Label className="text-white mb-2 block text-sm">
+                        Price Range
                       </Label>
                       <div className="space-y-2">
                         <Input
@@ -813,21 +813,24 @@ const BrowsePropertiesPageComponent = () => {
                           placeholder="Min price"
                           value={priceRange[0]}
                           onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
-                          className="bg-gray-800 border-gray-700 text-white"
+                          className="bg-gray-800 border-gray-700 text-white text-sm focus:ring-2 focus:ring-yellow-400/50"
                         />
                         <Input
                           type="number"
                           placeholder="Max price"
                           value={priceRange[1]}
                           onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 1000000])}
-                          className="bg-gray-800 border-gray-700 text-white"
+                          className="bg-gray-800 border-gray-700 text-white text-sm focus:ring-2 focus:ring-yellow-400/50"
                         />
                       </div>
+                      <p className="text-xs text-gray-400 mt-1">
+                        ${priceRange[0].toLocaleString()} - ${priceRange[1].toLocaleString()}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            )}
+            </div>
           </div>
 
           {/* Properties Grid/List */}
