@@ -471,7 +471,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="w-full sm:w-auto text-xs sm:text-sm"
+                          className="w-full sm:flex-1 text-xs sm:text-sm h-8 sm:h-9"
                           onClick={(e) => {
                             e.stopPropagation();
                             handlePropertyClick(property.id);
@@ -481,13 +481,13 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                         </Button>
                         <Button 
                           size="sm" 
-                          className="w-full sm:w-auto text-xs sm:text-sm"
+                          className="w-full sm:flex-1 text-xs sm:text-sm h-8 sm:h-9 bg-primary hover:bg-primary/90"
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Handle contact agent
-                            // You might want to implement this functionality
+                            navigate(`/property/${property.id}?action=contact`);
                           }}
                         >
+                          <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                           Contact Agent
                         </Button>
                       </div>

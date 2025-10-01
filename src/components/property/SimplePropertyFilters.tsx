@@ -50,6 +50,7 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
   });
 
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     onFiltersChange?.(filters);
@@ -89,17 +90,17 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
   return (
     <Card className={`bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-yellow-400/20 ${className}`}>
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-white flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <CardTitle className="text-white flex items-center gap-2 flex-wrap">
             <Filter className="h-5 w-5 text-yellow-400" />
             Property Search
             {getActiveFilterCount() > 0 && (
-              <Badge className="bg-yellow-400 text-black ml-2">
+              <Badge className="bg-yellow-400 text-black">
                 {getActiveFilterCount()} active
               </Badge>
             )}
           </CardTitle>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {getActiveFilterCount() > 0 && (
               <Button
                 variant="ghost"
@@ -107,25 +108,36 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
                 onClick={clearFilters}
                 className="text-gray-300 hover:text-yellow-400"
               >
-                <X className="h-4 w-4 mr-1" />
-                Clear
+                <X className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Clear</span>
+              </Button>
+            )}
+            {!isCollapsed && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="text-gray-300 hover:text-yellow-400"
+              >
+                {showAdvanced ? 'Simple' : 'Advanced'}
               </Button>
             )}
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowAdvanced(!showAdvanced)}
+              onClick={() => setIsCollapsed(!isCollapsed)}
               className="text-gray-300 hover:text-yellow-400"
             >
-              {showAdvanced ? 'Simple' : 'Advanced'}
+              {isCollapsed ? 'Expand' : 'Collapse'}
             </Button>
           </div>
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-6">
-        {/* Basic Search */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {!isCollapsed && (
+        <CardContent className="space-y-4 sm:space-y-6">
+          {/* Basic Search */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
             <Label className="text-gray-300 mb-2 block text-sm">Search Properties</Label>
             <div className="relative">
@@ -151,10 +163,10 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
               />
             </div>
           </div>
-        </div>
+          </div>
 
-        {/* Price Range */}
-        <div>
+          {/* Price Range */}
+          <div>
           <Label className="text-gray-300 mb-4 block text-sm">
             Price Range: ${(filters.priceMin || 0).toLocaleString()} - ${(filters.priceMax || 1000000).toLocaleString()}
           </Label>
@@ -167,9 +179,9 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
             max={1000000}
             min={0}
             step={10000}
-            className="w-full mb-4"
+            className="w-full mb-3 sm:mb-4"
           />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <div>
               <Label className="text-gray-300 mb-1 block text-xs">Min Price</Label>
               <Input
@@ -191,10 +203,10 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
               />
             </div>
           </div>
-        </div>
+          </div>
 
-        {/* Property Basics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Property Basics */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <div>
             <Label className="text-gray-300 mb-2 block text-sm">Property Type</Label>
             <Select
@@ -256,11 +268,11 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
               </SelectContent>
             </Select>
           </div>
-        </div>
+          </div>
 
-        {/* Advanced Filters (Collapsible) */}
-        {showAdvanced && (
-          <div className="space-y-4 pt-4 border-t border-gray-700">
+          {/* Advanced Filters (Collapsible) */}
+          {showAdvanced && (
+            <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t border-gray-700">
             <div>
               <Label className="text-gray-300 mb-2 block text-sm flex items-center gap-1">
                 <Square className="h-4 w-4" />
@@ -283,18 +295,19 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
                 />
               </div>
             </div>
-          </div>
-        )}
+            </div>
+          )}
 
-        {/* Search Button */}
-        <Button
-          onClick={onSearch}
-          className="w-full bg-yellow-400 hover:bg-amber-500 text-black font-medium py-3"
-        >
-          <Search className="h-4 w-4 mr-2" />
-          Search Properties
-        </Button>
-      </CardContent>
+          {/* Search Button */}
+          <Button
+            onClick={onSearch}
+            className="w-full bg-yellow-400 hover:bg-amber-500 text-black font-medium py-2.5 sm:py-3"
+          >
+            <Search className="h-4 w-4 mr-2" />
+            Search Properties
+          </Button>
+        </CardContent>
+      )}
     </Card>
   );
 };

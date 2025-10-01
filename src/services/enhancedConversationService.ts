@@ -269,59 +269,100 @@ class EnhancedConversationService {
   private async enhanceSingleConversation(conversation: Tables<'conversations'>): Promise<EnhancedConversation> {
     const enhanced: EnhancedConversation = { ...conversation };
 
-    // Get profiles
-    const [agentProfile, clientProfile] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select('id, full_name, email, phone, company, avatar_url')
-        .eq('id', conversation.agent_id)
-        .single()
-        .then(({ data }) => data || null),
-      supabase
-        .from('profiles')
-        .select('full_name, email, phone, avatar_url')
-        .eq('id', conversation.client_id)
-        .single()
-        .then(({ data }) => data || null)
-    ]);
-
-    // Set agent profile with required fields
-    if (agentProfile && agentProfile.id) {
-      enhanced.agent_profile = {
-        id: agentProfile.id,
-        full_name: agentProfile.full_name || 'Unknown Agent',
-        email: agentProfile.email || '',
-        phone: agentProfile.phone,
-        company: agentProfile.company,
-        avatar_url: agentProfile.avatar_url
-      };
-    } else {
-      // Fallback for missing agent profile
-      enhanced.agent_profile = {
-        id: conversation.agent_id || 'unknown',
-        full_name: 'Unknown Agent',
-        email: '',
-        phone: '',
-        company: '',
-        avatar_url: ''
+    // Validate conversation has required IDs
+    if (!conversation.agent_id || !conversation.client_id) {
+      console.error('Conversation missing required IDs:', conversation.id);
+      return {
+        ...enhanced,
+        agent_profile: {
+          id: conversation.agent_id || 'unknown',
+          full_name: 'Unknown Agent',
+          email: '',
+          phone: '',
+          company: '',
+          avatar_url: ''
+        },
+        client_profile: {
+          full_name: 'Unknown Client',
+          email: '',
+          phone: '',
+          avatar_url: ''
+        }
       };
     }
 
-    // Set client profile
-    if (clientProfile) {
-      enhanced.client_profile = {
-        full_name: clientProfile.full_name || 'Unknown Client',
-        email: clientProfile.email || '',
-        phone: clientProfile.phone,
-        avatar_url: clientProfile.avatar_url
-      };
-    } else {
-      // Fallback for missing client profile
-      enhanced.client_profile = {
-        full_name: 'Unknown Client',
+    try {
+      // Get profiles with error handling for each
+      const [agentResult, clientResult] = await Promise.allSettled([
+        supabase
+          .from('profiles')
+          .select('id, full_name, email, phone, company, avatar_url')
+          .eq('id', conversation.agent_id)
+          .maybeSingle(),
+        supabase
+          .from('profiles')
+          .select('full_name, email, phone, avatar_url')
+          .eq('id', conversation.client_id)
+          .maybeSingle()
+      ]);
+
+      // Handle agent profile with fallback
+      if (agentResult.status === 'fulfilled' && agentResult.value.data) {
+        const agentProfile = agentResult.value.data;
+        enhanced.agent_profile = {
+          id: agentProfile.id,
+          full_name: agentProfile.full_name || 'Unknown Agent',
+          email: agentProfile.email || '',
+          phone: agentProfile.phone || undefined,
+          company: agentProfile.company || undefined,
+          avatar_url: agentProfile.avatar_url || undefined
+        };
+      } else {
+        console.warn('Agent profile not found for conversation:', conversation.id, 'agent_id:', conversation.agent_id);
+        enhanced.agent_profile = {
+          id: conversation.agent_id,
+          full_name: 'Agent (Profile Missing)',
+          email: '',
+          phone: undefined,
+          company: undefined,
+          avatar_url: undefined
+        };
+      }
+
+      // Handle client profile with fallback
+      if (clientResult.status === 'fulfilled' && clientResult.value.data) {
+        const clientProfile = clientResult.value.data;
+        enhanced.client_profile = {
+          full_name: clientProfile.full_name || 'Unknown Client',
+          email: clientProfile.email || '',
+          phone: clientProfile.phone || undefined,
+          avatar_url: clientProfile.avatar_url || undefined
+        };
+      } else {
+        console.warn('Client profile not found for conversation:', conversation.id, 'client_id:', conversation.client_id);
+        enhanced.client_profile = {
+          full_name: 'Client (Profile Missing)',
+          email: '',
+          phone: undefined,
+          avatar_url: undefined
+        };
+      }
+    } catch (error) {
+      console.error('Error fetching profiles for conversation:', conversation.id, error);
+      // Return with fallback profiles
+      enhanced.agent_profile = {
+        id: conversation.agent_id,
+        full_name: 'Agent (Error Loading)',
         email: '',
-        phone: '',
-        avatar_url: ''
+        phone: undefined,
+        company: undefined,
+        avatar_url: undefined
+      };
+      enhanced.client_profile = {
+        full_name: 'Client (Error Loading)',
+        email: '',
+        phone: undefined,
+        avatar_url: undefined
       };
     }
 
