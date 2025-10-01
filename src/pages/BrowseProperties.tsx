@@ -4,11 +4,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { 
   ArrowLeft, 
-  Search,
-  Filter,
   SortAsc, 
   MessageSquare, 
   Heart,
@@ -20,20 +17,16 @@ import {
   Grid,
   List,
   Home,
-  Eye,
-  X,
-  ChevronDown
+  Eye
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import SimplePropertyFilters from '@/components/property/SimplePropertyFilters';
-// Note: DOMPurify would need to be installed with: npm install dompurify @types/dompurify
-// For now, using basic sanitization
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'price-low' | 'price-high' | 'newest' | 'oldest';
@@ -55,15 +48,9 @@ const BrowsePropertiesPageComponent = () => {
   const [inquiredProperties, setInquiredProperties] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
-  const [showFilters, setShowFilters] = useState(false);
 
   // Simple filter states
   const [currentFilters, setCurrentFilters] = useState<any>({});
-  const [searchTerm, setSearchTerm] = useState('');
-  const [propertyType, setPropertyType] = useState('all');
-  const [bedrooms, setBedrooms] = useState('all');
-  const [bathrooms, setBathrooms] = useState('all');
-  const [priceRange, setPriceRange] = useState([0, 1000000]);
   
   // Rate limiting state
   const [lastInquiryTime, setLastInquiryTime] = useState<number>(0);
@@ -79,7 +66,7 @@ const BrowsePropertiesPageComponent = () => {
 
   useEffect(() => {
     applyFiltersAndSort();
-  }, [listings, currentFilters, sortBy, searchTerm, propertyType, bedrooms, bathrooms, priceRange]);
+  }, [listings, currentFilters, sortBy]);
 
   const fetchListings = async () => {
     setLoading(true);
@@ -116,9 +103,9 @@ const BrowsePropertiesPageComponent = () => {
   const applyFiltersAndSort = () => {
     let filtered = [...listings];
 
-    // Apply search filter
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    // Apply search term filter
+    if (currentFilters.searchTerm) {
+      const term = currentFilters.searchTerm.toLowerCase();
       filtered = filtered.filter(listing =>
         listing.title.toLowerCase().includes(term) ||
         listing.address.toLowerCase().includes(term) ||
@@ -129,40 +116,7 @@ const BrowsePropertiesPageComponent = () => {
       );
     }
 
-    // Apply property type filter
-    if (propertyType && propertyType !== 'all') {
-      filtered = filtered.filter(listing => listing.property_type === propertyType);
-    }
-
-    // Apply bedroom filter
-    if (bedrooms && bedrooms !== 'all') {
-      const bedroomCount = bedrooms === '4+' ? 4 : parseInt(bedrooms);
-      if (bedrooms === '4+') {
-        filtered = filtered.filter(listing => (listing.bedrooms || 0) >= 4);
-      } else {
-        filtered = filtered.filter(listing => (listing.bedrooms || 0) >= bedroomCount);
-      }
-    }
-
-    // Apply bathroom filter
-    if (bathrooms && bathrooms !== 'all') {
-      const bathroomCount = bathrooms === '3+' ? 3 : parseInt(bathrooms);
-      if (bathrooms === '3+') {
-        filtered = filtered.filter(listing => (listing.bathrooms || 0) >= 3);
-      } else {
-        filtered = filtered.filter(listing => (listing.bathrooms || 0) >= bathroomCount);
-      }
-    }
-
-    // Apply price range filter
-    if (priceRange && (priceRange[0] > 0 || priceRange[1] < 1000000)) {
-      filtered = filtered.filter(listing => {
-        const price = listing.price || 0;
-        return price >= priceRange[0] && price <= priceRange[1];
-      });
-    }
-
-    // Apply currentFilters for any additional filters from SimplePropertyFilters
+    // Apply location filter
     if (currentFilters.location) {
       const location = currentFilters.location.toLowerCase();
       filtered = filtered.filter(listing =>
@@ -172,12 +126,37 @@ const BrowsePropertiesPageComponent = () => {
       );
     }
 
-    // Apply square footage filter from currentFilters
+    // Apply property type filter
+    if (currentFilters.propertyType) {
+      filtered = filtered.filter(listing => listing.property_type === currentFilters.propertyType);
+    }
+
+    // Apply bedroom filter
+    if (currentFilters.bedrooms) {
+      filtered = filtered.filter(listing => (listing.bedrooms || 0) >= currentFilters.bedrooms);
+    }
+
+    // Apply bathroom filter
+    if (currentFilters.bathrooms) {
+      filtered = filtered.filter(listing => (listing.bathrooms || 0) >= currentFilters.bathrooms);
+    }
+
+    // Apply price range filter
+    if (currentFilters.priceMin !== undefined || currentFilters.priceMax !== undefined) {
+      filtered = filtered.filter(listing => {
+        const price = listing.price || 0;
+        const minPrice = currentFilters.priceMin || 0;
+        const maxPrice = currentFilters.priceMax || 1000000;
+        return price >= minPrice && price <= maxPrice;
+      });
+    }
+
+    // Apply square footage filter
     if (currentFilters.minSquareFootage !== undefined || currentFilters.maxSquareFootage !== undefined) {
       filtered = filtered.filter(listing => {
-        const sqft = listing.square_feet || 0; // Note: using square_feet not square_footage
+        const sqft = listing.square_feet || 0;
         const minSqft = currentFilters.minSquareFootage || 0;
-        const maxSqft = currentFilters.maxSquareFootage || Infinity;
+        const maxSqft = currentFilters.maxSquareFootage || 5000;
         return sqft >= minSqft && sqft <= maxSqft;
       });
     }
@@ -323,16 +302,6 @@ const BrowsePropertiesPageComponent = () => {
     } finally {
       setSubmittingInquiry(false);
     }
-  };
-
-  // Clear filters function
-  const clearFilters = () => {
-    setSearchTerm('');
-    setPropertyType('all');
-    setBedrooms('all');
-    setBathrooms('all');
-    setPriceRange([0, 1000000]);
-    setCurrentFilters({});
   };
 
   // Property card component
@@ -696,140 +665,48 @@ const BrowsePropertiesPageComponent = () => {
         </div>
 
         <div className="max-w-7xl mx-auto p-4 space-y-6">
-          {/* Search and Controls */}
-          <div className="space-y-4">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <Input
-                type="text"
-                placeholder="Search by location, property type, or keywords..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 pr-4 py-4 bg-gray-900/50 border border-yellow-400/20 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-400/50 focus:border-transparent text-lg backdrop-blur-xl"
-              />
-              {searchTerm && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+          {/* Simple Property Filters */}
+          <SimplePropertyFilters 
+            onFiltersChange={setCurrentFilters}
+            onSearch={() => applyFiltersAndSort()}
+            className="sticky top-[73px] z-40"
+          />
 
-            {/* Filter and Sort Controls */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowFilters(!showFilters)}
-                className="text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
-                <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-              </Button>
-              
+          {/* Sort and View Controls */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-gradient-to-br from-gray-900/50 to-black/50 backdrop-blur-xl border border-yellow-400/20 rounded-lg p-4">
+            <div className="flex items-center gap-4">
+              <SortAsc className="h-5 w-5 text-yellow-400" />
+              <Label className="text-white text-sm">Sort By:</Label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="px-4 py-2 bg-gray-900/50 border border-yellow-400/20 rounded-lg text-white focus:ring-2 focus:ring-yellow-400/50"
+                className="px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-yellow-400/50 text-sm"
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
               </select>
-              
-              {(searchTerm || propertyType !== 'all' || bedrooms !== 'all' || bathrooms !== 'all') && (
-                <Button 
-                  variant="ghost"
-                  onClick={clearFilters}
-                  className="text-gray-400 hover:text-white"
-                >
-                  Clear Filters
-                </Button>
-              )}
             </div>
-
-           {/* Expanded Filters */}
-           <div className={`transition-all duration-300 ease-in-out overflow-hidden ${showFilters ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-              <Card className="bg-gray-900/50 border-yellow-400/20 backdrop-blur-xl">
-                <CardContent className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                      <Label className="text-white mb-2 block text-sm">Property Type</Label>
-                      <select
-                        value={propertyType}
-                        onChange={(e) => setPropertyType(e.target.value)}
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:ring-2 focus:ring-yellow-400/50 focus:border-transparent"
-                      >
-                        <option value="all">All Types</option>
-                        <option value="sale">For Sale</option>
-                        <option value="rent">For Rent</option>
-                        <option value="weekly">Weekly Rental</option>
-                        <option value="monthly">Monthly Rental</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <Label className="text-white mb-2 block text-sm">Bedrooms</Label>
-                      <select
-                        value={bedrooms}
-                        onChange={(e) => setBedrooms(e.target.value)}
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:ring-2 focus:ring-yellow-400/50 focus:border-transparent"
-                      >
-                        <option value="all">Any</option>
-                        <option value="1">1 Bedroom</option>
-                        <option value="2">2 Bedrooms</option>
-                        <option value="3">3 Bedrooms</option>
-                        <option value="4+">4+ Bedrooms</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <Label className="text-white mb-2 block text-sm">Bathrooms</Label>
-                      <select
-                        value={bathrooms}
-                        onChange={(e) => setBathrooms(e.target.value)}
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:ring-2 focus:ring-yellow-400/50 focus:border-transparent"
-                      >
-                        <option value="all">Any</option>
-                        <option value="1">1 Bathroom</option>
-                        <option value="2">2 Bathrooms</option>
-                        <option value="3+">3+ Bathrooms</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <Label className="text-white mb-2 block text-sm">
-                        Price Range
-                      </Label>
-                      <div className="space-y-2">
-                        <Input
-                          type="number"
-                          placeholder="Min price"
-                          value={priceRange[0]}
-                          onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
-                          className="bg-gray-800 border-gray-700 text-white text-sm focus:ring-2 focus:ring-yellow-400/50"
-                        />
-                        <Input
-                          type="number"
-                          placeholder="Max price"
-                          value={priceRange[1]}
-                          onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 1000000])}
-                          className="bg-gray-800 border-gray-700 text-white text-sm focus:ring-2 focus:ring-yellow-400/50"
-                        />
-                      </div>
-                      <p className="text-xs text-gray-400 mt-1">
-                        ${priceRange[0].toLocaleString()} - ${priceRange[1].toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            
+            {/* View Mode Toggle (mobile visible) */}
+            <div className="flex sm:hidden items-center gap-2 bg-gray-800/50 rounded-lg p-1">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                className={viewMode === 'grid' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
+              >
+                <Grid className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className={viewMode === 'list' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
+              >
+                <List className="w-4 h-4" />
+              </Button>
             </div>
           </div>
 
@@ -847,9 +724,6 @@ const BrowsePropertiesPageComponent = () => {
                 <Home className="w-16 h-16 text-gray-500 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-2">No properties found</h3>
                 <p className="text-gray-400 mb-4">Try adjusting your search or filters</p>
-                <Button onClick={clearFilters} variant="outline" className="text-yellow-400 border-yellow-400/40">
-                  Clear All Filters
-                </Button>
               </div>
             ) : (
               <div className={
