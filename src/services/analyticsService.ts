@@ -150,7 +150,7 @@ class AnalyticsService {
       })) || [];
 
       // Calculate revenue (mock for now, replace with real billing data)
-      const monthlyRevenue = Math.floor(Math.random() * 50000) + 25000;
+      const monthlyRevenue = 0;
       const quarterlyRevenue = monthlyRevenue * 3;
 
       const metrics: DashboardMetrics = {
@@ -239,7 +239,7 @@ class AnalyticsService {
         totalClients: clientsCount || 0,
         totalAppointments: appointments?.length || 0,
         totalInquiries: inquiriesCount || 0,
-        monthlyRevenue: Math.floor(Math.random() * 15000) + 5000,
+        monthlyRevenue: 0,
         activeListings: listings?.filter(l => l.status === 'approved').length || 0,
         pendingListings: listings?.filter(l => l.status === 'pending').length || 0,
         approvedListings: listings?.filter(l => l.status === 'approved').length || 0,
@@ -310,7 +310,7 @@ class AnalyticsService {
         totalConversations: conversationsCount || 0,
         recentActivity: formattedActivity,
         recommendedProperties: recommendedProperties || [],
-        savedSearches: Math.floor(Math.random() * 5) + 1 // Mock data
+        savedSearches: 0
       };
 
       return { data: metrics, error: null };
@@ -429,6 +429,17 @@ class AnalyticsService {
   }
 
   static async getWeeklyActivity(agentId: string): Promise<{ data: WeeklyActivity[]; error: any }> {
+    
+    const weeklyData: WeeklyActivity[] = [
+      { day: 'Mon', calls: 0, emails: 0, showings: 0 },
+      { day: 'Tue', calls: 0, emails: 0, showings: 0 },
+      { day: 'Wed', calls: 0, emails: 0, showings: 0 },
+      { day: 'Thu', calls: 0, emails: 0, showings: 0 },
+      { day: 'Fri', calls: 0, emails: 0, showings: 0 },
+      { day: 'Sat', calls: 0, emails: 0, showings: 0 },
+      { day: 'Sun', calls: 0, emails: 0, showings: 0 },
+    ];
+
     try {
       // Get appointments (showings) by day of week
       const { data: appointmentData, error: appointmentError } = await supabase
@@ -447,15 +458,7 @@ class AnalyticsService {
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
 
       // Initialize weekly data
-      const weeklyData: WeeklyActivity[] = [
-        { day: 'Mon', calls: 0, emails: 0, showings: 0 },
-        { day: 'Tue', calls: 0, emails: 0, showings: 0 },
-        { day: 'Wed', calls: 0, emails: 0, showings: 0 },
-        { day: 'Thu', calls: 0, emails: 0, showings: 0 },
-        { day: 'Fri', calls: 0, emails: 0, showings: 0 },
-        { day: 'Sat', calls: 0, emails: 0, showings: 0 },
-        { day: 'Sun', calls: 0, emails: 0, showings: 0 },
-      ];
+     
 
       // Process appointments (showings)
       (appointmentData || []).forEach(appointment => {
@@ -480,16 +483,7 @@ class AnalyticsService {
     } catch (error) {
       console.error('Error fetching weekly activity:', error);
       // Return mock data if no interactions table exists
-      const mockData: WeeklyActivity[] = [
-        { day: 'Mon', calls: 12, emails: 8, showings: 3 },
-        { day: 'Tue', calls: 15, emails: 12, showings: 4 },
-        { day: 'Wed', calls: 18, emails: 15, showings: 5 },
-        { day: 'Thu', calls: 22, emails: 18, showings: 6 },
-        { day: 'Fri', calls: 25, emails: 20, showings: 7 },
-        { day: 'Sat', calls: 14, emails: 6, showings: 8 },
-        { day: 'Sun', calls: 8, emails: 4, showings: 3 },
-      ];
-      return { data: mockData, error: null };
+      return { data: weeklyData, error: null };
     }
   }
 }

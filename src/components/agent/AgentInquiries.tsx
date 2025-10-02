@@ -193,7 +193,7 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
 
   // If a conversation already exists, navigate to it
   if (inquiry.conversation?.id) {
-    navigate(`/messages/${inquiry.conversation.id}`);
+    navigate(`/agent-messages/`);
     return;
   }
 
@@ -212,12 +212,12 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
 
     if (conversation?.id && !error) {
       toast.success('Conversation started! Redirecting to messages...');
-      navigate(`/messages/${conversation.id}`);
+      navigate(`/agent-messages/`);
     } else {
       // Check for existing conversation in case of a race condition
       const existing = error?.details?.existing;
       if (existing) {
-        navigate(`/messages/${existing.id}`);
+        navigate(`/agent-messages/`);
       } else {
         toast.error(error?.details?.message || 'Failed to start conversation');
       }
@@ -485,7 +485,7 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 pt-2">
+              <div className="flex flex-wrap gap-2 pt-2">
                 {!inquiry.agent_response && !inquiry.appointment && (
                   <Button
                     size="sm"

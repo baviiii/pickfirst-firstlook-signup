@@ -674,7 +674,7 @@ const BrowsePropertiesPageComponent = () => {
 
           {/* Sort and View Controls */}
           <div className="bg-gradient-to-br from-gray-900/50 to-black/50 backdrop-blur-xl border border-yellow-400/20 rounded-lg p-3 sm:p-4">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               {/* Sort Controls */}
               <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
                 <SortAsc className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 flex-shrink-0" />
@@ -697,7 +697,7 @@ const BrowsePropertiesPageComponent = () => {
                   variant={viewMode === 'grid' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('grid')}
-                  className={`flex-1 sm:flex-initial ${viewMode === 'grid' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}`}
+                  className={`sm:flex-initial ${viewMode === 'grid' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}`}
                 >
                   <Grid className="w-4 h-4 sm:mr-2" />
                   <span className="text-xs sm:text-sm">Grid</span>
@@ -706,7 +706,7 @@ const BrowsePropertiesPageComponent = () => {
                   variant={viewMode === 'list' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('list')}
-                  className={`flex-1 sm:flex-initial ${viewMode === 'list' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}`}
+                  className={`sm:flex-initial ${viewMode === 'list' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}`}
                 >
                   <List className="w-4 h-4 sm:mr-2" />
                   <span className="text-xs sm:text-sm">List</span>

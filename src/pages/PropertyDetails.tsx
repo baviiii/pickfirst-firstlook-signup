@@ -66,7 +66,7 @@ const PropertyDetailsComponent = () => {
       setProperty(data);
     } catch (error) {
       toast.error('Failed to load property details');
-      navigate('/browse-properties');
+      navigate('/');
     } finally {
       setLoading(false);
     }
@@ -237,7 +237,13 @@ const PropertyDetailsComponent = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/browse-properties')}
+                onClick={() => {
+                  if (window.history.state && window.history.state.idx > 0) {
+                    navigate(-1); // Go back to previous page if there is history
+                  } else {
+                    navigate('/'); // Fallback to home if no history
+                  }
+                }}
                 className="text-gray-300 hover:text-yellow-400 hover:bg-yellow-400/10"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
