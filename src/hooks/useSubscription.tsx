@@ -76,7 +76,24 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
       setProductId(data?.product_id || null);
       
       // Refresh feature configs when subscription status changes
-      await refreshFeatures();
+      try {
+        const { data: featureData, error: featureError } = await supabase
+          .from('feature_configurations')
+          .select('feature_key, free_tier_enabled, premium_tier_enabled');
+        
+        if (!featureError && featureData) {
+          const configs: {[key: string]: {free: boolean, premium: boolean}} = {};
+          featureData.forEach(config => {
+            configs[config.feature_key] = {
+              free: config.free_tier_enabled,
+              premium: config.premium_tier_enabled
+            };
+          });
+          setFeatureConfigs(configs);
+        }
+      } catch (featureError) {
+        console.error('Error refreshing feature configs:', featureError);
+      }
     } catch (error) {
       console.error('Error checking subscription:', error);
       toast.error('Failed to check subscription status');
@@ -88,7 +105,7 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     } finally {
       setLoading(false);
     }
-  }, [refreshFeatures]);
+  }, []);
 
   const createCheckout = async (priceId: string) => {
     const { data: { session: currentSession } } = await supabase.auth.getSession();
