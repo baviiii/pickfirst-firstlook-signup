@@ -386,6 +386,7 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
               <Switch
                 checked={preferences.property_alerts || false}
                 onCheckedChange={(checked) => handlePreferenceChange('property_alerts', checked)}
+                className="data-[state=checked]:bg-pickfirst-yellow data-[state=checked]:border-pickfirst-yellow"
               />
             </div>
 
