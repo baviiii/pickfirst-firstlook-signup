@@ -61,6 +61,16 @@ serve(async (req) => {
       logStep("New customer created", { customerId });
     }
 
+    // Determine base URL safely (supports custom base path and env override)
+    const envBaseUrl = Deno.env.get("APP_BASE_URL");
+    const originHeader = req.headers.get("origin") || "http://localhost:5173";
+    const basePath = Deno.env.get("APP_BASE_PATH") || ""; // e.g. "/pickfirst-firstlook-signup"
+    const normalizedBasePath = basePath ? (basePath.startsWith('/') ? basePath : `/${basePath}`) : '';
+    const computedFromOrigin = `${originHeader}${normalizedBasePath}`;
+    const fallbackGhPages = "https://baviiii.github.io/pickfirst-firstlook-signup";
+    const baseUrl = envBaseUrl || (normalizedBasePath ? computedFromOrigin : originHeader) || fallbackGhPages;
+    const finalBaseUrl = baseUrl || fallbackGhPages;
+
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -71,8 +81,8 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/pricing?success=true`,
-      cancel_url: `${req.headers.get("origin")}/pricing?canceled=true`,
+      success_url: `${finalBaseUrl}/pricing?success=true`,
+      cancel_url: `${finalBaseUrl}/pricing?canceled=true`,
       metadata: {
         supabase_user_id: user.id,
       },

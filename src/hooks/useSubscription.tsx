@@ -74,6 +74,9 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
       setSubscriptionTier(data?.subscription_tier || 'free');
       setSubscriptionEnd(data?.subscription_end || null);
       setProductId(data?.product_id || null);
+      
+      // Refresh feature configs when subscription status changes
+      await refreshFeatures();
     } catch (error) {
       console.error('Error checking subscription:', error);
       toast.error('Failed to check subscription status');
@@ -85,7 +88,7 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshFeatures]);
 
   const createCheckout = async (priceId: string) => {
     const { data: { session: currentSession } } = await supabase.auth.getSession();

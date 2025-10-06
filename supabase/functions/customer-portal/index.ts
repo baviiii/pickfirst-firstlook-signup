@@ -48,10 +48,18 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    // Determine base URL safely (supports custom base path and env override)
+    const envBaseUrl = Deno.env.get("APP_BASE_URL");
+    const originHeader = req.headers.get("origin") || "http://localhost:5173";
+    const basePath = Deno.env.get("APP_BASE_PATH") || ""; // e.g. "/pickfirst-firstlook-signup"
+    const normalizedBasePath = basePath ? (basePath.startsWith('/') ? basePath : `/${basePath}`) : '';
+    const computedFromOrigin = `${originHeader}${normalizedBasePath}`;
+    const fallbackGhPages = "https://baviiii.github.io/pickfirst-firstlook-signup";
+    const baseUrl = envBaseUrl || (normalizedBasePath ? computedFromOrigin : originHeader) || fallbackGhPages;
+    const finalBaseUrl = baseUrl || fallbackGhPages;
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${origin}/pricing`,
+      return_url: `${finalBaseUrl}/pricing`,
     });
     logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
 

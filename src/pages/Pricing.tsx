@@ -2,10 +2,34 @@
 import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Home } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useAuth } from '@/hooks/useAuth';
 
 const Pricing = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { checkSubscription } = useSubscription();
+  const { refetchProfile } = useAuth();
+
+  // After returning from Stripe, refresh subscription and profile
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const success = params.get('success');
+    const canceled = params.get('canceled');
+    if (success === 'true') {
+      (async () => {
+        await checkSubscription();
+        await refetchProfile();
+        // Optional: redirect users to dashboard after successful activation
+        // navigate('/dashboard');
+      })();
+    }
+    if (canceled === 'true') {
+      // No-op: user canceled checkout
+    }
+  }, [location.search, checkSubscription, refetchProfile]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black relative overflow-hidden">
