@@ -12,7 +12,7 @@ const Pricing = () => {
   const location = useLocation();
   const { checkSubscription } = useSubscription();
   const { refetchProfile } = useAuth();
-
+//rrr
   // After returning from Stripe, refresh subscription and profile
   useEffect(() => {
     const params = new URLSearchParams(location.search);
