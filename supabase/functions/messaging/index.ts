@@ -199,8 +199,9 @@ serve(async (req) => {
           )
         } catch (error) {
           console.error('getConversations error:', error)
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
           return new Response(
-            JSON.stringify({ error: 'Failed to fetch conversations', details: error.message }),
+            JSON.stringify({ error: 'Failed to fetch conversations', details: errorMessage }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
           )
         }
@@ -255,8 +256,9 @@ serve(async (req) => {
           )
         } catch (error) {
           console.error('getMessages error:', error)
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
           return new Response(
-            JSON.stringify({ error: 'Failed to fetch messages', details: error.message }),
+            JSON.stringify({ error: 'Failed to fetch messages', details: errorMessage }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
           )
         }
@@ -306,9 +308,10 @@ serve(async (req) => {
             .eq('id', conversation.client_id)
             .single()
 
-          // Add profiles to conversation object
-          conversation.agent = agentProfile
-          conversation.client = clientProfile
+          // Add profiles to conversation object (using type assertion for dynamic properties)
+          const conversationWithProfiles = conversation as any
+          conversationWithProfiles.agent = agentProfile
+          conversationWithProfiles.client = clientProfile
 
           
 
@@ -339,7 +342,8 @@ serve(async (req) => {
           // Send email notification to the recipient
           try {
             const isAgentSending = conversation.agent_id === user.id
-            const recipient = isAgentSending ? conversation.client : conversation.agent
+            const conversationWithProfiles = conversation as any
+            const recipient = isAgentSending ? conversationWithProfiles.client : conversationWithProfiles.agent
             const senderName = data.sender_profile?.full_name || 'Someone'
 
             if (recipient?.email) {
@@ -376,8 +380,9 @@ serve(async (req) => {
           )
         } catch (error) {
           console.error('sendMessage error:', error)
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
           return new Response(
-            JSON.stringify({ error: 'Failed to send message', details: error.message }),
+            JSON.stringify({ error: 'Failed to send message', details: errorMessage }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
           )
         }
@@ -454,7 +459,7 @@ serve(async (req) => {
 
           // For inquiry-specific conversations
           if (inquiryId && existingConversations) {
-            const inquiryConversation = existingConversations.find(conv => 
+            const inquiryConversation = existingConversations.find((conv: any) => 
               conv.inquiry_id === inquiryId
             );
             
@@ -506,8 +511,9 @@ serve(async (req) => {
           )
         } catch (error) {
           console.error('createConversation error:', error)
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
           return new Response(
-            JSON.stringify({ error: 'Failed to create conversation', details: error.message }),
+            JSON.stringify({ error: 'Failed to create conversation', details: errorMessage }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
           )
         }
@@ -560,8 +566,9 @@ serve(async (req) => {
           )
         } catch (error) {
           console.error('markMessagesAsRead error:', error)
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
           return new Response(
-            JSON.stringify({ error: 'Failed to mark messages as read', details: error.message }),
+            JSON.stringify({ error: 'Failed to mark messages as read', details: errorMessage }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
           )
         }
@@ -575,10 +582,11 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error('Messaging function error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error',
-        details: error.message
+        details: errorMessage
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )

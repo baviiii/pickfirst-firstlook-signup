@@ -51,20 +51,15 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
 
   const handleToggleAlerts = async (enabled: boolean) => {
     if (!profile?.id) {
-      console.error('No profile ID available');
       toast.error('User profile not found');
       return;
     }
-    
-    console.log('Toggling property alerts:', { enabled, profileId: profile.id, currentPreferences: preferences });
     
     setUpdating(true);
     try {
       const result = await BuyerProfileService.updateBuyerPreferences(profile.id, {
         property_alerts: enabled
       });
-      
-      console.log('Update result:', result);
       
       if (result.success) {
         // Update preferences state, creating default preferences if they don't exist
@@ -171,16 +166,8 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
   const hasBasicAlerts = isFeatureEnabled('property_alerts_basic');
   const hasUnlimitedAlerts = isFeatureEnabled('property_alerts_unlimited');
 
-  console.log('PropertyAlerts debug:', {
-    alertsLimit,
-    hasBasicAlerts,
-    hasUnlimitedAlerts,
-    profile: profile?.id,
-    preferences: preferences?.property_alerts
-  });
-
   return (
-    <FeatureGate feature="property_alerts_basic">
+    <FeatureGate feature="property_alerts_unlimited">
       <div className={`space-y-6 ${className}`}>
         {/* Alert Settings */}
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
@@ -191,11 +178,9 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
             </CardTitle>
             <CardDescription className="text-gray-300">
               Get notified when new properties match your preferences
-              {alertsLimit !== -1 && (
-                <span className="ml-2 text-yellow-400">
-                  (Limit: {alertsLimit} alerts)
-                </span>
-              )}
+              <span className="ml-2 text-yellow-400">
+                (Premium Feature - Unlimited Alerts)
+              </span>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

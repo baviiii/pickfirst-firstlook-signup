@@ -1,0 +1,50 @@
+name: Property Alerts Processing
+
+on:
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  process-property-alerts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Process Property Alerts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          echo "🚀 Starting property alerts processing..."
+          
+          # Call the Edge Function to process property alerts
+          curl -X POST \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            "$SUPABASE_URL/functions/v1/process-property-alerts" \
+            -d '{}' \
+            --max-time 300 \
+            --retry 3 \
+            --retry-delay 10
+          
+          echo "✅ Property alerts processing completed"
+
+      - name: Log processing results
+        if: always()
+        run: |
+          echo "📊 Property alerts cron job completed at $(date)"
+          echo "🕐 Next run scheduled for every 15 minutes"

@@ -3,10 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
-import { Home, Users, MessageSquare, Settings, PlusCircle, BarChart3, Calendar, Phone, Trash2 } from 'lucide-react';
+import { Home, Users, MessageSquare, Settings, PlusCircle, BarChart3, Calendar, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PropertyListingModal } from '@/components/property/PropertyListingModal';
 import { analyticsService, AgentMetrics } from '@/services/analyticsService';
+import { AgentSpecialtyManager } from '@/components/agent/AgentSpecialtyManager';
 
 export const AgentDashboard = () => {
   const { profile } = useAuth();
@@ -27,7 +28,7 @@ export const AgentDashboard = () => {
 
   const getSubscriptionBadge = () => {
     const tier = profile?.subscription_tier || 'free';
-    const colors = {
+    const colors: { [key: string]: string } = {
       free: 'bg-gray-500',
       basic: 'bg-pickfirst-yellow',
       premium: 'bg-pickfirst-amber',
@@ -35,7 +36,7 @@ export const AgentDashboard = () => {
     };
     
     return (
-      <Badge className={`${colors[tier as keyof typeof colors]} text-black`}>
+      <Badge className={`${colors[tier]} text-black`}>
         {tier.charAt(0).toUpperCase() + tier.slice(1)}
       </Badge>
     );
@@ -45,7 +46,6 @@ export const AgentDashboard = () => {
     setShowModal(false);
   };
 
-  // Agent action cards with navigation
   const agentActions = [
     { icon: PlusCircle, label: 'Add New Listing', description: 'Create a new property listing', color: 'bg-green-500/10 text-green-500', onClick: () => setShowModal(true) },
     { icon: Home, label: 'My Listings', description: 'Manage your properties', color: 'bg-blue-500/10 text-blue-500', onClick: () => navigate('/my-listings') },
@@ -84,14 +84,10 @@ export const AgentDashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {agentActions.map((action, index) => {
           const Icon = action.icon;
-          const isClickable = action.onClick;
-          const isAddListing = action.label === 'Add New Listing';
           return (
             <Card
               key={index}
-              className={`hover:shadow-md transition-all bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105 ${
-                isClickable ? 'cursor-pointer' : 'cursor-default'
-              } ${isAddListing ? 'ring-2 ring-pickfirst-yellow/40' : ''}`}
+              className={`hover:shadow-md transition-all bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105 cursor-pointer`}
               onClick={action.onClick}
             >
               <CardHeader className="pb-3">
@@ -119,134 +115,137 @@ export const AgentDashboard = () => {
         onSuccess={handleListingCreated} 
       />
 
-          {/* Performance Metrics */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
-              <CardHeader>
-                <CardTitle className="text-white">This Month's Performance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 rounded-lg bg-green-500/10">
-                    <div className="text-2xl font-bold text-green-500">
-                      {loadingMetrics ? '...' : metrics?.activeListings || 0}
-                    </div>
-                    <div className="text-sm text-gray-300">Active Listings</div>
-                  </div>
-                  <div className="text-center p-4 rounded-lg bg-blue-500/10">
-                    <div className="text-2xl font-bold text-blue-500">
-                      {loadingMetrics ? '...' : metrics?.totalListings || 0}
-                    </div>
-                    <div className="text-sm text-gray-300">Total Listings</div>
-                  </div>
-                  <div className="text-center p-4 rounded-lg bg-purple-500/10">
-                    <div className="text-2xl font-bold text-purple-500">
-                      {loadingMetrics ? '...' : metrics?.totalClients || 0}
-                    </div>
-                    <div className="text-sm text-gray-300">Total Clients</div>
-                  </div>
-                  <div className="text-center p-4 rounded-lg bg-orange-500/10">
-                    <div className="text-2xl font-bold text-orange-500">
-                      {loadingMetrics ? '...' : metrics?.totalAppointments || 0}
-                    </div>
-                    <div className="text-sm text-gray-300">Appointments</div>
-                  </div>
+      {/* Performance Metrics */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
+          <CardHeader>
+            <CardTitle className="text-white">This Month's Performance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 rounded-lg bg-green-500/10">
+                <div className="text-2xl font-bold text-green-500">
+                  {loadingMetrics ? '...' : metrics?.activeListings || 0}
                 </div>
-              </CardContent>
-            </Card>
+                <div className="text-sm text-gray-300">Active Listings</div>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-blue-500/10">
+                <div className="text-2xl font-bold text-blue-500">
+                  {loadingMetrics ? '...' : metrics?.totalListings || 0}
+                </div>
+                <div className="text-sm text-gray-300">Total Listings</div>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-purple-500/10">
+                <div className="text-2xl font-bold text-purple-500">
+                  {loadingMetrics ? '...' : metrics?.totalClients || 0}
+                </div>
+                <div className="text-sm text-gray-300">Total Clients</div>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-orange-500/10">
+                <div className="text-2xl font-bold text-orange-500">
+                  {loadingMetrics ? '...' : metrics?.totalAppointments || 0}
+                </div>
+                <div className="text-sm text-gray-300">Appointments</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
-              <CardHeader>
-                <CardTitle className="text-white">Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {loadingMetrics ? (
-                    <div className="text-gray-300">Loading activity...</div>
-                  ) : metrics?.recentActivity && metrics.recentActivity.length > 0 ? (
-                    metrics.recentActivity.map((activity, index) => (
-                      <div key={activity.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-                        <div className={`h-2 w-2 rounded-full ${
-                          activity.action === 'INSERT' ? 'bg-green-500' :
-                          activity.action === 'UPDATE' ? 'bg-blue-500' :
-                          activity.action === 'DELETE' ? 'bg-red-500' : 'bg-purple-500'
-                        }`}></div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-white">
-                            {activity.action.toLowerCase()} on {activity.table_name}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {new Date(activity.timestamp).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-gray-400 text-sm">No recent activity</div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
+          <CardHeader>
+            <CardTitle className="text-white">Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {loadingMetrics ? (
+                <div className="text-gray-300">Loading activity...</div>
+              ) : metrics?.recentActivity && metrics.recentActivity.length > 0 ? (
+                metrics.recentActivity.map((activity) => (
+                  <div key={activity.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                    <div className={`h-2 w-2 rounded-full ${
+                      activity.action === 'INSERT' ? 'bg-green-500' :
+                      activity.action === 'UPDATE' ? 'bg-blue-500' :
+                      activity.action === 'DELETE' ? 'bg-red-500' : 'bg-purple-500'
+                    }`}></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-white">
+                        {activity.action.toLowerCase()} on {activity.table_name}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(activity.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-400 text-sm">No recent activity</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-            <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
-              <CardHeader>
-                <CardTitle className="text-white">Revenue Overview</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="text-center p-4 rounded-lg bg-pickfirst-yellow/10">
-                    <div className="text-2xl font-bold text-pickfirst-yellow">
-                      {loadingMetrics ? '...' : `$${(metrics?.monthlyRevenue || 0).toLocaleString()}`}
-                    </div>
-                    <div className="text-sm text-gray-300">This Month</div>
-                  </div>
-                  <div className="text-center p-4 rounded-lg bg-pickfirst-amber/10">
-                    <div className="text-xl font-bold text-pickfirst-amber">
-                      {loadingMetrics ? '...' : `$${((metrics?.monthlyRevenue || 0) * 3).toLocaleString()}`}
-                    </div>
-                    <div className="text-sm text-gray-300">This Quarter (Est.)</div>
-                  </div>
+        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
+          <CardHeader>
+            <CardTitle className="text-white">Revenue Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="text-center p-4 rounded-lg bg-pickfirst-yellow/10">
+                <div className="text-2xl font-bold text-pickfirst-yellow">
+                  {loadingMetrics ? '...' : `$${(metrics?.monthlyRevenue || 0).toLocaleString()}`}
                 </div>
-              </CardContent>
-            </Card>
+                <div className="text-sm text-gray-300">This Month</div>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-pickfirst-amber/10">
+                <div className="text-xl font-bold text-pickfirst-amber">
+                  {loadingMetrics ? '...' : `$${((metrics?.monthlyRevenue || 0) * 3).toLocaleString()}`}
+                </div>
+                <div className="text-sm text-gray-300">This Quarter (Est.)</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Upcoming Appointments */}
+      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-white">Upcoming Appointments</CardTitle>
+            <Button variant="outline" size="sm" className="text-gray-300 hover:text-pickfirst-yellow">
+              View Calendar
+            </Button>
           </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {loadingMetrics ? (
+              <div className="text-gray-300">Loading appointments...</div>
+            ) : metrics?.upcomingAppointments && metrics.upcomingAppointments.length > 0 ? (
+              metrics.upcomingAppointments.map((appointment, index) => (
+                <div key={index} className="flex items-center gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                  <div className="text-center min-w-[80px]">
+                    <div className="text-sm font-bold text-pickfirst-yellow">{appointment.time}</div>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-white">{appointment.client_name}</h4>
+                    <p className="text-sm text-gray-400">{appointment.appointment_type} - {appointment.property_address}</p>
+                    <p className="text-xs text-gray-500">{new Date(appointment.date).toLocaleDateString()}</p>
+                  </div>
+                  <Button variant="outline" size="sm" className="text-gray-300 hover:text-pickfirst-yellow">
+                    View Details
+                  </Button>
+                </div>
+              ))
+            ) : (
+              <div className="text-gray-400 text-sm">No upcoming appointments</div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-          {/* Upcoming Appointments */}
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-white">Upcoming Appointments</CardTitle>
-                <Button variant="outline" size="sm" className="text-gray-300 hover:text-pickfirst-yellow">
-                  View Calendar
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {loadingMetrics ? (
-                  <div className="text-gray-300">Loading appointments...</div>
-                ) : metrics?.upcomingAppointments && metrics.upcomingAppointments.length > 0 ? (
-                  metrics.upcomingAppointments.map((appointment, index) => (
-                    <div key={index} className="flex items-center gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                      <div className="text-center min-w-[80px]">
-                        <div className="text-sm font-bold text-pickfirst-yellow">{appointment.time}</div>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-white">{appointment.client_name}</h4>
-                        <p className="text-sm text-gray-400">{appointment.appointment_type} - {appointment.property_address}</p>
-                        <p className="text-xs text-gray-500">{new Date(appointment.date).toLocaleDateString()}</p>
-                      </div>
-                      <Button variant="outline" size="sm" className="text-gray-300 hover:text-pickfirst-yellow">
-                        View Details
-                      </Button>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-gray-400 text-sm">No upcoming appointments</div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+      {/* Agent Specialties */}
+      <AgentSpecialtyManager />
     </div>
   );
 };

@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import SimplePropertyFilters from '@/components/property/SimplePropertyFilters';
+import { PageWrapper } from '@/components/ui/page-wrapper';
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'price-low' | 'price-high' | 'newest' | 'oldest';
@@ -609,139 +610,89 @@ const BrowsePropertiesPageComponent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">
-      {/* Enhanced Animated Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-gradient-to-r from-yellow-400/20 to-amber-500/20 opacity-20 blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-32 left-16 w-80 h-80 rounded-full bg-gradient-to-r from-yellow-400/15 to-amber-500/15 opacity-15 blur-2xl animate-pulse" style={{animationDelay: '1s'}}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-yellow-400/10 opacity-10 blur-xl animate-bounce" style={{animationDuration: '4s'}}></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.05)_1px,transparent_0)] bg-[length:20px_20px]"></div>
-      </div>
+    <PageWrapper title="Browse Properties" showBackButton={true} backTo="/dashboard" backText="Back to Dashboard">
+      <div className="space-y-6">
+        {/* Header Info */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <p className="text-gray-300">{filteredListings.length} properties available</p>
+          </div>
+          
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-2 bg-gray-800/50 rounded-lg p-1">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className={viewMode === 'grid' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
+            >
+              <Grid className="w-4 h-4" />
+              <span className="hidden sm:inline ml-2">Grid</span>
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className={viewMode === 'list' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
+            >
+              <List className="w-4 h-4" />
+              <span className="hidden sm:inline ml-2">List</span>
+            </Button>
+          </div>
+        </div>
+        {/* Simple Property Filters */}
+        <SimplePropertyFilters 
+          onFiltersChange={setCurrentFilters}
+          onSearch={() => applyFiltersAndSort()}
+        />
 
-      {/* Content */}
-      <div className="relative z-10">
-        {/* Header */}
-        <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-yellow-400/20">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate('/dashboard')}
-                  className="text-gray-300 hover:text-yellow-400 hover:bg-yellow-400/10"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Back to Dashboard</span>
-                  <span className="sm:hidden">Back</span>
-                </Button>
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-white">Browse Properties</h1>
-                  <p className="text-sm text-yellow-400/80">{filteredListings.length} properties available</p>
-                </div>
-              </div>
-              
-              {/* View Mode Toggle */}
-              <div className="hidden sm:flex items-center gap-2 bg-gray-800/50 rounded-lg p-1">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  className={viewMode === 'grid' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
-                >
-                  <Grid className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className={viewMode === 'list' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
-                >
-                  <List className="w-4 h-4" />
-                </Button>
-              </div>
+        {/* Sort Controls */}
+        <div className="bg-gradient-to-br from-gray-900/50 to-black/50 backdrop-blur-xl border border-yellow-400/20 rounded-lg p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Sort Controls */}
+            <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
+              <SortAsc className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 flex-shrink-0" />
+              <Label className="text-white text-xs sm:text-sm whitespace-nowrap">Sort:</Label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="flex-1 sm:flex-initial px-2 sm:px-4 py-1.5 sm:py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-yellow-400/50 text-xs sm:text-sm"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+              </select>
             </div>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto p-4 space-y-6">
-          {/* Simple Property Filters */}
-          <SimplePropertyFilters 
-            onFiltersChange={setCurrentFilters}
-            onSearch={() => applyFiltersAndSort()}
-            className="sticky top-[73px] z-40"
-          />
-
-          {/* Sort and View Controls */}
-          <div className="bg-gradient-to-br from-gray-900/50 to-black/50 backdrop-blur-xl border border-yellow-400/20 rounded-lg p-3 sm:p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              {/* Sort Controls */}
-              <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
-                <SortAsc className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 flex-shrink-0" />
-                <Label className="text-white text-xs sm:text-sm whitespace-nowrap">Sort:</Label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  className="flex-1 sm:flex-initial px-2 sm:px-4 py-1.5 sm:py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-yellow-400/50 text-xs sm:text-sm"
-                >
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                </select>
-              </div>
-              
-              {/* View Mode Toggle */}
-              <div className="flex items-center gap-2 bg-gray-800/50 rounded-lg p-1">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  className={`sm:flex-initial ${viewMode === 'grid' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}`}
-                >
-                  <Grid className="w-4 h-4 sm:mr-2" />
-                  <span className="text-xs sm:text-sm">Grid</span>
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className={`sm:flex-initial ${viewMode === 'list' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}`}
-                >
-                  <List className="w-4 h-4 sm:mr-2" />
-                  <span className="text-xs sm:text-sm">List</span>
-                </Button>
+        {/* Properties Grid/List */}
+        <div className="space-y-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+                <p className="text-white">Loading properties...</p>
               </div>
             </div>
-          </div>
-
-          {/* Properties Grid/List */}
-          <div className="space-y-6">
-            {loading ? (
-              <div className="flex items-center justify-center py-20">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-                  <p className="text-white">Loading properties...</p>
-                </div>
-              </div>
-            ) : filteredListings.length === 0 ? (
-              <div className="text-center py-20">
-                <Home className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">No properties found</h3>
-                <p className="text-gray-400 mb-4">Try adjusting your search or filters</p>
-              </div>
-            ) : (
-              <div className={
-                viewMode === 'grid' 
-                  ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' 
-                  : 'space-y-6'
-              }>
-                {filteredListings.map(listing => (
-                  <PropertyCard key={listing.id} listing={listing} />
-                ))}
-              </div>
-            )}
-          </div>
+          ) : filteredListings.length === 0 ? (
+            <div className="text-center py-20">
+              <Home className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">No properties found</h3>
+              <p className="text-gray-400 mb-4">Try adjusting your search or filters</p>
+            </div>
+          ) : (
+            <div className={
+              viewMode === 'grid' 
+                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' 
+                : 'space-y-6'
+            }>
+              {filteredListings.map(listing => (
+                <PropertyCard key={listing.id} listing={listing} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -792,7 +743,7 @@ const BrowsePropertiesPageComponent = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageWrapper>
   );
 };
 

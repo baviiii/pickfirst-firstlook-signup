@@ -775,11 +775,11 @@ const handler = async (req: Request) => {
     
     console.log(`Sending email template "${template}" to ${to}`);
     
-    if (!templates[template]) {
+    if (!templates[template as keyof typeof templates]) {
       throw new Error(`Template "${template}" not found. Available templates: ${Object.keys(templates).join(', ')}`);
     }
 
-    const templateFunction = templates[template];
+    const templateFunction = templates[template as keyof typeof templates];
     const emailContent = templateFunction(data);
 
     const { error } = await resend.emails.send({
@@ -805,8 +805,9 @@ const handler = async (req: Request) => {
     );
   } catch (error) {
     console.error("Error in send-email function:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders }

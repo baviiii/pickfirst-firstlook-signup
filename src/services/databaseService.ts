@@ -148,34 +148,44 @@ class DatabaseService {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('User not authenticated');
 
-      // Simulate maintenance operations
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      const startTime = Date.now();
+
+      // Run actual database maintenance using the database function
+      const { data: result, error: maintenanceError } = await supabase.rpc('run_database_maintenance');
+      
+      if (maintenanceError) throw maintenanceError;
+
+      const duration = Date.now() - startTime;
 
       // Log the maintenance operation
       await auditService.log(user.user.id, 'CREATE', 'database_maintenance', {
         newValues: { 
           operation: 'database_maintenance',
           timestamp: new Date().toISOString(),
-          duration: '3000ms'
+          duration: `${duration}ms`,
+          tables_processed: result?.tables_processed || [],
+          total_tables: result?.total_tables || 0
         }
       });
 
       // Create a system alert for successful maintenance
       await systemAlertsService.createAlert({
         title: 'Database Maintenance Completed',
-        description: 'Scheduled database maintenance completed successfully. All tables optimized.',
+        description: `VACUUM ANALYZE completed on ${result?.total_tables || 0} tables. All table statistics updated.`,
         severity: 'info',
         category: 'database',
         source: 'Database Manager',
         metadata: { 
-          maintenanceType: 'routine',
-          duration: '3000ms',
+          maintenanceType: 'vacuum_analyze',
+          duration: `${duration}ms`,
+          tables_processed: result?.tables_processed || [],
           performedBy: user.user.id
         }
       });
 
       return { error: null };
     } catch (error) {
+      console.error('Database maintenance error:', error);
       return { error };
     }
   }
@@ -275,7 +285,14 @@ class DatabaseService {
 
   async getPerformanceMetrics(): Promise<{ data: any; error: any }> {
     try {
-      // Get performance data from audit logs and system activity
+      // Get real database performance data using the database function
+      const { data: perfData, error: perfError } = await supabase.rpc('get_database_performance');
+      
+      if (perfError) {
+        console.error('Error getting performance data:', perfError);
+      }
+
+      // Get recent activity for additional metrics
       const { data: auditLogs } = await supabase.from('audit_logs')
         .select('created_at, action, table_name')
         .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
@@ -286,39 +303,40 @@ class DatabaseService {
         .select('severity, created_at')
         .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString());
 
-      // Calculate activity metrics
       const totalActivity = auditLogs?.length || 0;
       const errorAlerts = systemAlerts?.filter(alert => 
         alert.severity === 'critical' || alert.severity === 'warning'
       ).length || 0;
 
-      // Get table sizes for storage calculation
-      const { data: tableStats } = await supabase.rpc('get_database_statistics');
-      let totalSizeBytes = 0;
-      tableStats?.forEach((table: any) => {
-        const sizeStr = table.table_size;
-        const sizeNum = parseFloat(sizeStr.replace(/[^\d.]/g, ''));
-        if (sizeStr.includes('GB')) {
-          totalSizeBytes += sizeNum * 1024 * 1024 * 1024;
-        } else if (sizeStr.includes('MB')) {
-          totalSizeBytes += sizeNum * 1024 * 1024;
-        }
-      });
+      const totalSizeBytes = perfData?.database_size_bytes || 0;
+      const activeConnections = perfData?.active_connections || 0;
+      const cacheHitRatio = perfData?.cache_hit_ratio || 0;
+
+      // Calculate connection pool availability (assume 100 max connections)
+      const maxConnections = 100;
+      const availablePercent = Math.max(0, ((maxConnections - activeConnections) / maxConnections) * 100);
+
+      // Calculate average response time based on cache hit ratio
+      // Higher cache hit ratio = faster response times
+      const avgResponseTime = cacheHitRatio > 90 ? 45 : cacheHitRatio > 75 ? 85 : 150;
 
       const metrics = {
         connectionPool: {
-          available: Math.max(60, 100 - Math.floor(totalActivity / 10)),
-          total: 100,
-          active: Math.min(50, totalActivity)
+          available: Math.round(availablePercent),
+          total: maxConnections,
+          active: activeConnections
         },
         queryPerformance: {
-          avgResponseTime: errorAlerts > 3 ? 180 : 65,
+          avgResponseTime,
           slowQueries: errorAlerts,
-          totalQueries: totalActivity
+          totalQueries: totalActivity,
+          cacheHitRatio: Math.round(cacheHitRatio)
         },
         storageUsage: {
-          used: Math.min(95, Math.floor((totalSizeBytes / (1024 * 1024 * 1024)) * 10)),
+          used: Math.min(95, Math.round((totalSizeBytes / (50 * 1024 * 1024 * 1024)) * 100)),
           total: '50 GB',
+          totalBytes: totalSizeBytes,
+          totalMB: Math.round(totalSizeBytes / (1024 * 1024)),
           growth: totalSizeBytes > 100 * 1024 * 1024 ? '+5.2% this week' : '+1.8% this week'
         },
         uptime: errorAlerts > 5 ? '99.7%' : '99.9%',
@@ -328,14 +346,34 @@ class DatabaseService {
       };
 
       // Check for performance issues and create alerts
-      if (metrics.connectionPool.available < 85) {
+      if (metrics.connectionPool.available < 20) {
+        await systemAlertsService.createAlert({
+          title: 'Connection Pool Critical',
+          description: `Only ${metrics.connectionPool.available}% of connections available. ${activeConnections}/${maxConnections} connections in use.`,
+          severity: 'critical',
+          category: 'performance',
+          source: 'Performance Monitor',
+          metadata: metrics.connectionPool
+        });
+      } else if (metrics.connectionPool.available < 40) {
         await systemAlertsService.createAlert({
           title: 'Connection Pool Usage High',
-          description: `Connection pool usage is at ${100 - metrics.connectionPool.available}%. Consider optimizing connections.`,
+          description: `Connection pool at ${100 - metrics.connectionPool.available}% capacity. ${activeConnections}/${maxConnections} connections in use.`,
           severity: 'warning',
           category: 'performance',
           source: 'Performance Monitor',
           metadata: metrics.connectionPool
+        });
+      }
+
+      if (cacheHitRatio < 80) {
+        await systemAlertsService.createAlert({
+          title: 'Low Cache Hit Ratio',
+          description: `Database cache hit ratio is ${cacheHitRatio.toFixed(1)}%, below optimal 90%. Consider increasing shared_buffers.`,
+          severity: 'warning',
+          category: 'performance',
+          source: 'Cache Monitor',
+          metadata: { cacheHitRatio, avgResponseTime }
         });
       }
 
@@ -352,6 +390,7 @@ class DatabaseService {
 
       return { data: metrics, error: null };
     } catch (error) {
+      console.error('Error getting performance metrics:', error);
       return { data: null, error };
     }
   }
@@ -361,27 +400,37 @@ class DatabaseService {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('User not authenticated');
 
-      // Simulate optimization process
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      const startTime = Date.now();
+
+      // Run actual database optimization using the database function
+      const { data: result, error: optimizationError } = await supabase.rpc('optimize_database');
+      
+      if (optimizationError) throw optimizationError;
+
+      const duration = Date.now() - startTime;
 
       // Log the optimization
       await auditService.log(user.user.id, 'CREATE', 'database_optimization', {
         newValues: { 
           operation: 'database_optimization',
           timestamp: new Date().toISOString(),
-          duration: '5000ms'
+          duration: `${duration}ms`,
+          indexes_rebuilt: result?.indexes_rebuilt || [],
+          total_indexes: result?.total_indexes || 0
         }
       });
 
       // Create success alert
       await systemAlertsService.createAlert({
         title: 'Database Optimization Completed',
-        description: 'Database optimization completed successfully. Indexes rebuilt and statistics updated.',
+        description: `REINDEX completed on ${result?.total_indexes || 0} indexes. All database statistics updated.`,
         severity: 'info',
         category: 'database',
         source: 'Database Optimizer',
         metadata: {
-          operation: 'optimization',
+          operation: 'reindex',
+          duration: `${duration}ms`,
+          indexes_rebuilt: result?.indexes_rebuilt || [],
           performedBy: user.user.id,
           timestamp: new Date().toISOString()
         }
@@ -389,6 +438,7 @@ class DatabaseService {
 
       return { error: null };
     } catch (error) {
+      console.error('Database optimization error:', error);
       return { error };
     }
   }

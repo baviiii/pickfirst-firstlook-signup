@@ -68,7 +68,7 @@ export const BuyerProfileView = ({ buyerId, isOpen, onClose, onStartConversation
         .from('user_preferences')
         .select('*')
         .eq('user_id', buyerId)
-        .single();
+        .maybeSingle();
 
       // Get statistics
       const { count: inquiriesCount } = await supabase

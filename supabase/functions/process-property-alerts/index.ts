@@ -61,18 +61,7 @@ interface AlertMatch {
  */
 async function checkPropertyAlertsAccess(supabaseClient: any, userId: string): Promise<boolean> {
   try {
-    const { data: featureConfig, error } = await supabaseClient
-      .from('feature_configurations')
-      .select('free_tier_enabled, premium_tier_enabled')
-      .eq('feature_key', 'property_alerts')
-      .single();
-
-    if (error || !featureConfig) {
-      console.error('Error checking property alerts feature config:', error);
-      return false;
-    }
-
-    // Get user's subscription status
+    // Get user's subscription status first
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('subscription_tier')
@@ -86,18 +75,33 @@ async function checkPropertyAlertsAccess(supabaseClient: any, userId: string): P
 
     const subscriptionTier = profile.subscription_tier || 'free';
     
-    // Check feature access based on subscription tier
-    if (subscriptionTier === 'free' && !featureConfig.free_tier_enabled) {
+    // Only premium users get property alerts
+    if (subscriptionTier !== 'premium') {
       return false;
     }
     
+    // Check for unlimited property alerts for premium users
+    const { data: featureConfig, error } = await supabaseClient
+      .from('feature_configurations')
+      .select('free_tier_enabled, premium_tier_enabled')
+      .eq('feature_key', 'property_alerts_unlimited')
+      .single();
+
+    if (error || !featureConfig) {
+      console.error('Error checking property alerts feature config:', error);
+      // Fallback: allow alerts for premium users if config is missing
+      return subscriptionTier === 'premium';
+    }
+    
+    // Check if premium tier is enabled for property alerts
     if (subscriptionTier === 'premium' && !featureConfig.premium_tier_enabled) {
       return false;
     }
 
-    return true;
+    return subscriptionTier === 'premium';
   } catch (error) {
     console.error('Error in checkPropertyAlertsAccess:', error);
+    // Fallback: only allow premium users
     return false;
   }
 }
@@ -245,8 +249,9 @@ serve(async (req) => {
         // Check each buyer's preferences against the property
         for (const buyerPref of buyersWithAlerts) {
           const buyerId = buyerPref.user_id
-          const buyerEmail = buyerPref.profiles.email
-          const buyerName = buyerPref.profiles.full_name || 'User'
+          const profiles = buyerPref.profiles as any
+          const buyerEmail = profiles.email
+          const buyerName = profiles.full_name || 'User'
 
           // SECURITY: Check if buyer has access to property alerts feature
           const hasAccess = await checkPropertyAlertsAccess(supabaseClient, buyerId);
@@ -307,10 +312,11 @@ serve(async (req) => {
 
       } catch (error) {
         console.error(`Error processing job ${job.id}:`, error)
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
         await supabaseClient
           .rpc('mark_alert_job_completed', { 
             job_id: job.id, 
-            error_msg: error.message 
+            error_msg: errorMessage 
           })
       }
     }
@@ -331,8 +337,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Property alert processing error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

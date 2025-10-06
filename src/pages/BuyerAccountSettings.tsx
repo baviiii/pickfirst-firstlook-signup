@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import BuyerProfileService, { BuyerPreferences, PropertySearchCriteria } from '@/services/buyerProfileService';
-import { appointmentService } from '@/services/appointmentService';
+import { appointmentService, AppointmentWithDetails } from '@/services/appointmentService';
 import ProfileService from '@/services/profileService';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,6 +20,7 @@ import { googleMapsService } from '@/services/googleMapsService';
 import { ipDetectionService } from '@/services/ipDetectionService';
 import { useSubscription } from '@/hooks/useSubscription';
 import { FeatureGate } from '@/components/ui/FeatureGate';
+import { PageWrapper } from '@/components/ui/page-wrapper';
 
 const BuyerAccountSettingsPage = () => {
   const navigate = useNavigate();
@@ -78,7 +79,7 @@ const BuyerAccountSettingsPage = () => {
   const [favoriteProperties, setFavoriteProperties] = useState<any[]>([]);
   const [matchingProperties, setMatchingProperties] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
-  const [appointments, setAppointments] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
   const [currentPreferredArea, setCurrentPreferredArea] = useState('');
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
@@ -488,8 +489,8 @@ const BuyerAccountSettingsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-        <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
+    <PageWrapper title="Account Settings">
+        <div className="max-w-6xl mx-auto space-y-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <Button
               variant="outline"
@@ -569,9 +570,32 @@ const BuyerAccountSettingsPage = () => {
                                   {appt.date} @ {appt.time}
                                 </span>
                               </div>
-                              <div className="text-gray-300 text-sm">
-                                {appt.property_address || 'Virtual/Office Meeting'}
-                              </div>
+                              {(() => {
+                                const type = appt.appointment_type;
+                                const address = appt.property_address;
+                                const genericAddresses = ['Virtual/Office Meeting', 'Online', 'Address Not Specified'];
+
+                                if (type === 'property_showing') {
+                                  let detail = 'Property Address Not Available';
+                                  if (appt.property?.title) {
+                                    detail = appt.property.title;
+                                  } else if (address && !genericAddresses.includes(address)) {
+                                    detail = address;
+                                  }
+                                  return <div className="text-gray-300 text-sm">{detail}</div>;
+                                }
+
+                                if (address && !genericAddresses.includes(address)) {
+                                  return <div className="text-gray-300 text-sm">{address}</div>;
+                                }
+
+                                return null;
+                              })()}
+                              {appt.agent && (
+                                <div className="text-gray-400 text-xs">
+                                  With: {appt.agent.full_name}
+                                </div>
+                              )}
                               <div className="text-gray-400 text-xs">
                                 Duration: {appt.duration || 60} min
                               </div>
@@ -1229,7 +1253,7 @@ const BuyerAccountSettingsPage = () => {
             </TabsContent>
           </Tabs>
         </div>
-    </div>
+    </PageWrapper>
   );
 };
 

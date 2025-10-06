@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Phone, Mail, MapPin, Building, MessageSquare, Calendar, Award, TrendingUp, Home, Globe } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { analyticsService } from '@/services/analyticsService';
 
 interface AgentProfile {
   id: string;
@@ -80,14 +81,34 @@ export const AgentProfileView = ({ agentId, isOpen, onClose, onStartConversation
         .select('property_listings!inner(*)', { count: 'exact', head: true })
         .eq('property_listings.agent_id', agentId);
 
+      // Get specialties
+      const { data: specialtiesData, error: specialtiesError } = await supabase
+        .from('agent_specialties')
+        .select('specialty')
+        .eq('user_id', agentId);
+
+
+      // Calculate response time
+      const { averageMinutes } = await analyticsService.calculateAverageResponseTime(agentId);
+
+      const formatResponseTime = (minutes: number | null) => {
+        if (minutes === null) return 'N/A';
+        if (minutes < 1) return '< 1 min';
+        if (minutes < 60) return `≈ ${Math.round(minutes)} min`;
+        const hours = minutes / 60;
+        if (hours < 24) return `≈ ${Math.round(hours)} hours`;
+        const days = hours / 24;
+        return `> ${Math.floor(days)} days`;
+      };
+
       // Create enhanced agent profile
       const agentProfile: AgentProfile = {
         ...profile,
         total_listings: totalListings || 0,
         active_listings: activeListings || 0,
         total_inquiries: totalInquiries || 0,
-        response_time: '< 2 hours', // This would be calculated from message response times
-        specialties: ['Residential', 'First-time Buyers', 'Investment Properties'], // This would come from agent settings
+        response_time: formatResponseTime(averageMinutes),
+        specialties: specialtiesData?.map(s => s.specialty) || [],
         joined_date: profile.created_at,
       };
 

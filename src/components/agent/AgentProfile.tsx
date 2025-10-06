@@ -20,11 +20,13 @@ import {
   Star,
   Award,
   TrendingUp,
-  Calendar
+  Calendar,
+  Briefcase
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { AgentSpecialtyManager } from './AgentSpecialtyManager';
 
 export const AgentProfile = () => {
   const { profile, updateProfile, user } = useAuth();
@@ -201,6 +203,10 @@ export const AgentProfile = () => {
           <TabsTrigger value="performance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <TrendingUp className="h-4 w-4 mr-2" />
             Performance
+          </TabsTrigger>
+          <TabsTrigger value="specialties" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Briefcase className="h-4 w-4 mr-2" />
+            Specialties
           </TabsTrigger>
           <TabsTrigger value="notifications" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Bell className="h-4 w-4 mr-2" />
@@ -412,6 +418,11 @@ export const AgentProfile = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Specialties Tab */}
+        <TabsContent value="specialties" className="space-y-6">
+          <AgentSpecialtyManager />
         </TabsContent>
 
         {/* Notifications Tab */}

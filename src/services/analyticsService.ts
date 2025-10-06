@@ -486,6 +486,69 @@ class AnalyticsService {
       return { data: weeklyData, error: null };
     }
   }
+
+  async calculateAverageResponseTime(agentId: string): Promise<{ averageMinutes: number | null; error: any }> {
+    try {
+      // Get conversations where the agent is a participant
+      const { data: conversations, error: convosError } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('agent_id', agentId)
+        .limit(50); // Limit to recent 50 conversations for performance
+
+      if (convosError) throw convosError;
+      if (!conversations || conversations.length === 0) {
+        return { averageMinutes: null, error: null };
+      }
+
+      const conversationIds = conversations.map(c => c.id);
+      let totalResponseMinutes = 0;
+      let validResponseCount = 0;
+
+      // For each conversation, get messages and calculate response time
+      for (const convoId of conversationIds) {
+        const { data: messages, error: messagesError } = await supabase
+          .from('messages')
+          .select('id, created_at, sender_id')
+          .eq('conversation_id', convoId)
+          .order('created_at', { ascending: true });
+
+        if (messagesError || !messages || messages.length < 2) {
+          continue; // Not enough messages to calculate a response
+        }
+
+        // Find the first message from a non-agent sender
+        const firstClientMessage = messages.find(m => m.sender_id !== agentId);
+        if (!firstClientMessage) continue;
+
+        // Find the first agent reply after the client's message
+        const firstAgentReply = messages.find(m => 
+          m.sender_id === agentId && 
+          new Date(m.created_at) > new Date(firstClientMessage.created_at)
+        );
+
+        if (firstAgentReply) {
+          const clientTime = new Date(firstClientMessage.created_at).getTime();
+          const agentTime = new Date(firstAgentReply.created_at).getTime();
+          const responseMinutes = (agentTime - clientTime) / (1000 * 60);
+          
+          totalResponseMinutes += responseMinutes;
+          validResponseCount++;
+        }
+      }
+
+      if (validResponseCount === 0) {
+        return { averageMinutes: null, error: null };
+      }
+
+      const averageMinutes = totalResponseMinutes / validResponseCount;
+      return { averageMinutes, error: null };
+
+    } catch (error) {
+      console.error('Error calculating average response time:', error);
+      return { averageMinutes: null, error };
+    }
+  }
 }
 
 export { AnalyticsService };

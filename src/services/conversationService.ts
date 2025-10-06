@@ -69,7 +69,7 @@ class ConversationService {
           messages(*)
         `)
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       return { data, error };
     } catch (error) {

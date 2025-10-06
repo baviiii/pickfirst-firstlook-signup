@@ -1,0 +1,50 @@
+name: Weekly Digest
+
+on:
+  schedule:
+    # Run every Monday at 9:00 AM UTC (adjust timezone as needed)
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  generate-weekly-digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Weekly Digest
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          echo "📧 Starting weekly digest generation..."
+          
+          # Call the Edge Function to generate weekly digest
+          curl -X POST \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            "$SUPABASE_URL/functions/v1/weekly-digest" \
+            -d '{"digest_type": "weekly", "send_to_all_users": true}' \
+            --max-time 900 \
+            --retry 3 \
+            --retry-delay 30
+          
+          echo "✅ Weekly digest generation completed"
+
+      - name: Log digest results
+        if: always()
+        run: |
+          echo "📊 Weekly digest cron job completed at $(date)"
+          echo "📅 Next run scheduled for next Monday at 9:00 AM UTC"

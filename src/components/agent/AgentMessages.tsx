@@ -506,18 +506,11 @@ export const AgentMessages = () => {
       
       {/* Buyer Profile Dialog */}
       {selectedConversation?.client_profile && (
-        <Dialog open={showBuyerProfile} onOpenChange={setShowBuyerProfile}>
-          <DialogContent className="max-w-md w-[calc(100%-2rem)] sm:max-w-lg bg-gray-800 border-gray-700 text-white">
-            <DialogHeader>
-              <DialogTitle className="text-white">Buyer Profile</DialogTitle>
-            </DialogHeader>
-            <BuyerProfileView
-              buyerId={selectedConversation.client_id}
-              isOpen={showBuyerProfile}
-              onClose={() => setShowBuyerProfile(false)}
-            />
-          </DialogContent>
-        </Dialog>
+        <BuyerProfileView
+          buyerId={selectedConversation.client_id}
+          isOpen={showBuyerProfile}
+          onClose={() => setShowBuyerProfile(false)}
+        />
       )}
     </div>
   );

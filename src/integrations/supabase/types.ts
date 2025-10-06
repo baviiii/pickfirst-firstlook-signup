@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_specialties: {
+        Row: {
+          created_at: string
+          id: string
+          specialty: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          specialty: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          specialty?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_specialties_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           agent_id: string
@@ -1293,6 +1322,10 @@ export type Database = {
         }
         Returns: string
       }
+      get_database_performance: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_database_statistics: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1316,6 +1349,14 @@ export type Database = {
       mark_alert_job_processing: {
         Args: { job_id: string }
         Returns: boolean
+      }
+      optimize_database: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      run_database_maintenance: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
     }
     Enums: {

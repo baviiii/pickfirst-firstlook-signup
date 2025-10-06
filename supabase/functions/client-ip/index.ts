@@ -225,10 +225,11 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('Client IP detection error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return new Response(
       JSON.stringify({ 
         error: 'Failed to get client information',
-        message: error.message,
+        message: errorMessage,
         ip: 'error-occurred',
         timestamp: new Date().toISOString()
       }),

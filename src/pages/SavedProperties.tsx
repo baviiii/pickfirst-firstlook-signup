@@ -28,6 +28,7 @@ import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { toast } from 'sonner';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { useSubscription } from '@/hooks/useSubscription';
+import { PageWrapper } from '@/components/ui/page-wrapper';
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'date-saved' | 'price-low' | 'price-high' | 'title';
@@ -414,74 +415,43 @@ const SavedPropertiesPageComponent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">
-      {/* Enhanced Animated Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-gradient-to-r from-yellow-400/20 to-amber-500/20 opacity-20 blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-32 left-16 w-80 h-80 rounded-full bg-gradient-to-r from-yellow-400/15 to-amber-500/15 opacity-15 blur-2xl animate-pulse" style={{animationDelay: '1s'}}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-yellow-400/10 opacity-10 blur-xl animate-bounce" style={{animationDuration: '4s'}}></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.05)_1px,transparent_0)] bg-[length:20px_20px]"></div>
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10">
-        {/* Header */}
-        <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-yellow-400/20">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+    <PageWrapper title="Saved Properties" showBackButton={true} backTo="/" backText="Back to Home">
+        <div className="space-y-6">
+          {/* Header Subtitle */}
+          <p className="text-gray-300">
+            {filteredProperties.length} of {savedProperties.length} properties
+            {getFavoritesLimit() !== -1 && (
+              <span className="ml-2 text-gray-400">
+                (Limit: {getFavoritesLimit()})
+              </span>
+            )}
+          </p>
+          
+          {/* View Mode Toggle - Hidden if no properties */}
+          {savedProperties.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-2 bg-gray-800/50 rounded-lg p-1">
                 <Button
-                  variant="ghost"
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
                   size="sm"
-                  onClick={() => navigate('/dashboard')}
-                  className="text-gray-300 hover:text-yellow-400 hover:bg-yellow-400/10"
+                  onClick={() => setViewMode('grid')}
+                  className={viewMode === 'grid' ? 'bg-pickfirst-yellow text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Back to Dashboard</span>
-                  <span className="sm:hidden">Back</span>
+                  <Grid className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">Grid</span>
                 </Button>
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-3">
-                    <Heart className="h-6 w-6 text-red-500 fill-current" />
-                    Saved Properties
-                  </h1>
-                  <p className="text-sm text-yellow-400/80">
-                    {filteredProperties.length} of {savedProperties.length} properties
-                    {getFavoritesLimit() !== -1 && (
-                      <span className="ml-2 text-gray-400">
-                        (Limit: {getFavoritesLimit()})
-                      </span>
-                    )}
-                  </p>
-                </div>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className={viewMode === 'list' ? 'bg-pickfirst-yellow text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
+                >
+                  <List className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">List</span>
+                </Button>
               </div>
-              
-              {/* View Mode Toggle - Hidden if no properties */}
-              {savedProperties.length > 0 && (
-                <div className="hidden sm:flex items-center gap-2 bg-gray-800/50 rounded-lg p-1">
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    className={viewMode === 'grid' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
-                  >
-                    <Grid className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    className={viewMode === 'list' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
-                  >
-                    <List className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
             </div>
-          </div>
-        </div>
-
-        <div className="max-w-7xl mx-auto p-4 space-y-6">
+          )}
           {/* Search and Controls - Only show if there are saved properties */}
           {savedProperties.length > 0 && (
             <div className="space-y-4">
@@ -590,7 +560,6 @@ const SavedPropertiesPageComponent = () => {
             )}
           </div>
         </div>
-      </div>
 
       {/* Remove Confirmation Dialog */}
       <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
@@ -630,7 +599,7 @@ const SavedPropertiesPageComponent = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageWrapper>
   );
 };
 

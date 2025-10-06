@@ -6,6 +6,7 @@ import { PersonalizedPropertyRecommendations } from '@/components/buyer/Personal
 import { PropertyComparisonTool } from '@/components/property/PropertyComparisonTool';
 import PropertyAlerts from '@/components/buyer/PropertyAlerts';
 import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
+import { BuyerSubscriptionStatus } from '@/components/buyer/BuyerSubscriptionStatus';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { 
@@ -55,6 +56,15 @@ interface Appointment {
   property_address?: string;
   duration?: number;
   notes?: string;
+  property?: {
+    id: string;
+    title: string;
+    address: string;
+  } | null;
+  agent?: {
+    id: string;
+    full_name: string;
+  } | null;
 }
 
 const BuyerDashboardComponent = () => {
@@ -69,13 +79,12 @@ const BuyerDashboardComponent = () => {
   const [loadingMetrics, setLoadingMetrics] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(true);
-  const [buyerPreferences, setBuyerPreferences] = useState<BuyerPreferences | null>(null);
 
   // Fetch all data on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [listingsResult, metricsResult, appointmentsResult, preferences] = await Promise.all([
+        const [listingsResult, metricsResult, appointmentsResult] = await Promise.all([
           PropertyService.getApprovedListings(),
           analyticsService.getBuyerMetrics(),
           appointmentService.getMyAppointments().then(result => ({
@@ -84,14 +93,12 @@ const BuyerDashboardComponent = () => {
               ...appt,
               status: isValidAppointmentStatus(appt.status) ? appt.status : 'scheduled'
             }))
-          })),
-          profile ? BuyerProfileService.getBuyerPreferences(profile.id) : Promise.resolve(null)
+          }))
         ]);
         
         setListings(listingsResult.data || []);
         setMetrics(metricsResult.data);
         setAppointments(appointmentsResult.data || []);
-        setBuyerPreferences(preferences);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         toast.error('Failed to load dashboard data');
@@ -176,40 +183,6 @@ const BuyerDashboardComponent = () => {
     }
   };
 
-  // Get recommended properties based on preferences
-  const getRecommendedProperties = (allListings: PropertyListing[]): PropertyListing[] => {
-    if (!buyerPreferences || allListings.length === 0) {
-      return allListings.slice(0, 3);
-    }
-    
-    const filteredListings = allListings.filter(listing => {
-      // Price range matching
-      if (buyerPreferences.min_budget && listing.price < buyerPreferences.min_budget) return false;
-      if (buyerPreferences.max_budget && listing.price > buyerPreferences.max_budget) return false;
-      
-      // Bedrooms matching
-      if (buyerPreferences.preferred_bedrooms && listing.bedrooms && 
-          listing.bedrooms < buyerPreferences.preferred_bedrooms) return false;
-      
-      // Bathrooms matching
-      if (buyerPreferences.preferred_bathrooms && listing.bathrooms && 
-          listing.bathrooms < buyerPreferences.preferred_bathrooms) return false;
-      
-      // Location matching
-      if (buyerPreferences.preferred_areas && buyerPreferences.preferred_areas.length > 0) {
-        const propertyLocation = `${listing.city}, ${listing.state}`.toLowerCase();
-        const hasLocationMatch = buyerPreferences.preferred_areas.some(area => 
-          propertyLocation.includes(area.toLowerCase()) || 
-          listing.city.toLowerCase().includes(area.toLowerCase())
-        );
-        if (!hasLocationMatch) return false;
-      }
-      
-      return true;
-    });
-    
-    return filteredListings.length > 0 ? filteredListings.slice(0, 3) : allListings.slice(0, 3);
-  };
 
   // Buyer action items configuration
   const buyerActions = [
@@ -374,26 +347,11 @@ const BuyerDashboardComponent = () => {
           })}
         </div>
 
+        {/* Subscription Status */}
+        <BuyerSubscriptionStatus />
+
         {/* Personalized Property Recommendations */}
         <PersonalizedPropertyRecommendations />
-
-        {/* Subscription Plans Section - Show only for free users */}
-        {subscriptionTier === 'free' && (
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Crown className="h-5 w-5 text-pickfirst-yellow" />
-                Upgrade Your Experience
-              </CardTitle>
-              <CardDescription className="text-gray-300">
-                Unlock premium features and get the most out of your property search
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SubscriptionPlans />
-            </CardContent>
-          </Card>
-        )}
 
         {/* All Available Properties */}
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
@@ -557,9 +515,32 @@ const BuyerDashboardComponent = () => {
                               {appt.date} @ {appt.time}
                             </span>
                           </div>
-                          <div className="text-gray-300 text-sm">
-                            {appt.property_address || 'Virtual/Office Meeting'}
-                          </div>
+                          {(() => {
+                            const type = appt.appointment_type;
+                            const address = appt.property_address;
+                            const genericAddresses = ['Virtual/Office Meeting', 'Online', 'Address Not Specified'];
+
+                            if (type === 'property_showing') {
+                              let detail = 'Property Address Not Available';
+                              if (appt.property?.title) {
+                                detail = appt.property.title;
+                              } else if (address && !genericAddresses.includes(address)) {
+                                detail = address;
+                              }
+                              return <div className="text-gray-300 text-sm">{detail}</div>;
+                            }
+
+                            if (address && !genericAddresses.includes(address)) {
+                              return <div className="text-gray-300 text-sm">{address}</div>;
+                            }
+
+                            return null;
+                          })()}
+                          {appt.agent && (
+                            <div className="text-gray-400 text-xs">
+                              With: {appt.agent.full_name}
+                            </div>
+                          )}
                           <div className="text-gray-400 text-xs">
                             Duration: {appt.duration || 60} min
                           </div>
@@ -652,10 +633,8 @@ const BuyerDashboardComponent = () => {
           </Card>
         </div>
 
-        {/* Recent Activity and Recommended Properties */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Activity */}
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
+        {/* Recent Activity */}
+        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <AlertCircle className="h-5 w-5" />
@@ -695,90 +674,7 @@ const BuyerDashboardComponent = () => {
                 )}
               </div>
             </CardContent>
-          </Card>
-
-          {/* Recommended Properties */}
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-white">Recommended Properties</CardTitle>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-gray-300 hover:text-pickfirst-yellow"
-                  onClick={() => navigate('/browse-properties?recommended=true')}
-                >
-                  View All
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {loadingListings ? (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pickfirst-yellow"></div>
-                    <span className="ml-3 text-gray-300">Loading recommendations...</span>
-                  </div>
-                ) : getRecommendedProperties(listings).length > 0 ? (
-                  getRecommendedProperties(listings).map((listing) => (
-                    <div 
-                      key={listing.id} 
-                      className="p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer border border-transparent hover:border-pickfirst-yellow/30"
-                      onClick={() => navigate(`/property/${listing.id}`)}
-                    >
-                      <div className="flex gap-4">
-                        <div className="w-20 h-20 bg-gray-700 rounded-md overflow-hidden flex-shrink-0">
-                          {listing.images && listing.images.length > 0 ? (
-                            <img
-                              src={listing.images[0]}
-                              alt={listing.title}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                                if (fallback) fallback.classList.remove('hidden');
-                              }}
-                            />
-                          ) : null}
-                          <div className={`w-full h-full bg-gray-700 flex items-center justify-center ${listing.images && listing.images.length > 0 ? 'hidden' : ''}`}>
-                            <Home className="h-6 w-6 text-gray-500" />
-                          </div>
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-white mb-1 truncate">{listing.title}</h3>
-                          <p className="text-sm text-gray-400 mb-1">
-                            {listing.city}, {listing.state}
-                          </p>
-                          <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                            {listing.bedrooms && <span>{listing.bedrooms} bed</span>}
-                            {listing.bathrooms && <span>• {listing.bathrooms} bath</span>}
-                            {listing.square_feet && <span>• {listing.square_feet.toLocaleString()} sq ft</span>}
-                          </div>
-                          <p className="text-lg font-bold text-pickfirst-yellow">${listing.price.toLocaleString()}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-6">
-                    <Home className="h-8 w-8 text-gray-500 mx-auto mb-2" />
-                    <div className="text-gray-400 text-sm">No recommendations available</div>
-                    <div className="text-gray-500 text-xs mt-1">Update your preferences to get personalized recommendations</div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-3 text-gray-300 hover:text-pickfirst-yellow"
-                      onClick={() => navigate('/search-filters')}
-                    >
-                      Set Preferences
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        </Card>
 
         {/* Property Comparison Tool */}
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">

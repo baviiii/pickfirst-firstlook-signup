@@ -368,15 +368,14 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
                 <div className="flex items-center gap-2">
                   <Bell className="h-4 w-4 text-primary" />
                   <span className="font-medium">Property Alerts</span>
-                  {getPropertyAlertsLimit() !== -1 && (
-                    <Badge variant="outline" className="text-xs">
-                      {getPropertyAlertsLimit() === 3 ? 'Free: 3 alerts' : `Limit: ${getPropertyAlertsLimit()}`}
-                    </Badge>
-                  )}
-                  {getPropertyAlertsLimit() === -1 && (
+                  {getPropertyAlertsLimit() === -1 ? (
                     <Badge className="bg-primary text-primary-foreground text-xs">
                       <Crown className="h-3 w-3 mr-1" />
-                      Unlimited
+                      Premium - Unlimited
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs text-gray-400">
+                      Free - No Alerts
                     </Badge>
                   )}
                 </div>

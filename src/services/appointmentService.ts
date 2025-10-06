@@ -16,9 +16,14 @@ export interface AppointmentWithDetails extends Appointment {
     phone?: string;
   };
   property?: {
+    id: string;
     title: string;
     address: string;
-  };
+  } | null;
+  agent?: {
+    id: string;
+    full_name: string;
+  } | null;
 }
 
 const validateEmail = (email: string): boolean => {
@@ -67,7 +72,7 @@ class AppointmentService {
   /**
    * Get appointments visible to the current user (buyer sees their own, agent sees all)
    */
-  async getMyAppointments(): Promise<{ data: Appointment[]; error: any }> {
+  async getMyAppointments(): Promise<{ data: AppointmentWithDetails[]; error: any }> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -92,14 +97,19 @@ class AppointmentService {
       }
 
       // Buyers: show only appointments for this client (by user id or email)
-      let data: Appointment[] | null = null;
+      const selectQuery = `
+        *,
+        property:property_listings (id, title, address),
+        agent:profiles (id, full_name)
+      `;
+      let data: AppointmentWithDetails[] | null = null;
       let error: any = null;
 
       if (profile?.email) {
         const orExpr = `client_id.eq.${user.id},client_email.eq.${profile.email}`;
         const res = await supabase
           .from('appointments')
-          .select('*')
+          .select(selectQuery)
           .or(orExpr)
           .order('date', { ascending: true })
           .order('time', { ascending: true });
@@ -108,7 +118,7 @@ class AppointmentService {
       } else {
         const res = await supabase
           .from('appointments')
-          .select('*')
+          .select(selectQuery)
           .eq('client_id', user.id)
           .order('date', { ascending: true })
           .order('time', { ascending: true });
@@ -120,7 +130,7 @@ class AppointmentService {
       if ((!data || data.length === 0) && profile?.email) {
         const res2 = await supabase
           .from('appointments')
-          .select('*')
+          .select(selectQuery)
           .ilike('client_email', profile.email)
           .order('date', { ascending: true })
           .order('time', { ascending: true });
@@ -171,7 +181,10 @@ class AppointmentService {
         client_name: sanitizeInput(appointmentData.client_name),
         client_email: appointmentData.client_email.trim().toLowerCase(),
         client_phone: appointmentData.client_phone ? sanitizeInput(appointmentData.client_phone) : null,
-        property_address: appointmentData.property_address ? sanitizeInput(appointmentData.property_address) : 'Virtual/Office Meeting',
+        property_id: appointmentData.property_id || null,
+        property_address: appointmentData.property_address 
+          ? sanitizeInput(appointmentData.property_address) 
+          : (appointmentData.appointment_type === 'property_showing' ? 'Address Not Specified' : 'Virtual/Office Meeting'),
         notes: appointmentData.notes ? sanitizeInput(appointmentData.notes) : null,
       };
 
