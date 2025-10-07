@@ -1,3 +1,25 @@
+-- Create feature_configurations table if it doesn't exist
+CREATE TABLE IF NOT EXISTS public.feature_configurations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  feature_key TEXT NOT NULL UNIQUE,
+  feature_name TEXT NOT NULL,
+  description TEXT,
+  free_tier_enabled BOOLEAN DEFAULT false,
+  premium_tier_enabled BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.feature_configurations ENABLE ROW LEVEL SECURITY;
+
+-- Create policies
+CREATE POLICY "Anyone can view feature configurations" ON public.feature_configurations
+  FOR SELECT USING (true);
+
+CREATE POLICY "Service role can manage feature configurations" ON public.feature_configurations
+  FOR ALL USING (true);
+
 -- Add new feature configurations for messaging and notifications
 INSERT INTO public.feature_configurations (feature_key, feature_name, description, free_tier_enabled, premium_tier_enabled) VALUES
 ('live_messaging', 'Live Messaging', 'Real-time messaging with agents and property inquiries', false, true),

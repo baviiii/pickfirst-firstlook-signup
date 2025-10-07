@@ -29,14 +29,11 @@ interface BuyerPreferences {
   user_id: string;
   property_alerts: boolean;
   email_notifications: boolean;
-  min_budget?: number;
-  max_budget?: number;
+  budget_range?: string;
   preferred_bedrooms?: number;
   preferred_bathrooms?: number;
   preferred_areas?: string[];
   property_type_preferences?: string[];
-  preferred_square_feet_min?: number;
-  preferred_square_feet_max?: number;
 }
 
 interface BuyerProfile {
@@ -215,14 +212,11 @@ serve(async (req) => {
             user_id,
             property_alerts,
             email_notifications,
-            min_budget,
-            max_budget,
+            budget_range,
             preferred_bedrooms,
             preferred_bathrooms,
             preferred_areas,
             property_type_preferences,
-            preferred_square_feet_min,
-            preferred_square_feet_max,
             profiles!inner (
               id,
               email,
@@ -357,18 +351,30 @@ function checkPropertyMatch(
   let totalCriteria = 0
 
   // Price range matching
-  if (preferences.min_budget || preferences.max_budget) {
+  if (preferences.budget_range) {
     totalCriteria++
     const price = parseFloat(property.price.toString())
     
-    if (preferences.min_budget && price >= preferences.min_budget) {
-      matchedCriteria.push('price_min')
-      score += 0.3
-    }
-    
-    if (preferences.max_budget && price <= preferences.max_budget) {
-      matchedCriteria.push('price_max')
-      score += 0.3
+    // Parse budget range (assuming format like "300000-600000" or "500000+")
+    const budgetMatch = preferences.budget_range.match(/(\d+)-(\d+)/)
+    if (budgetMatch) {
+      const minBudget = parseFloat(budgetMatch[1])
+      const maxBudget = parseFloat(budgetMatch[2])
+      
+      if (price >= minBudget && price <= maxBudget) {
+        matchedCriteria.push('price_range')
+        score += 0.6
+      }
+    } else {
+      // Handle formats like "500000+" or "500000"
+      const minBudgetMatch = preferences.budget_range.match(/(\d+)\+?/)
+      if (minBudgetMatch) {
+        const minBudget = parseFloat(minBudgetMatch[1])
+        if (price >= minBudget) {
+          matchedCriteria.push('price_min')
+          score += 0.3
+        }
+      }
     }
   }
 
@@ -411,23 +417,6 @@ function checkPropertyMatch(
     if (preferences.property_type_preferences.includes(property.property_type)) {
       matchedCriteria.push('property_type')
       score += 0.2
-    }
-  }
-
-  // Square footage matching
-  if (preferences.preferred_square_feet_min && property.square_feet) {
-    totalCriteria++
-    if (property.square_feet >= preferences.preferred_square_feet_min) {
-      matchedCriteria.push('square_feet_min')
-      score += 0.1
-    }
-  }
-
-  if (preferences.preferred_square_feet_max && property.square_feet) {
-    totalCriteria++
-    if (property.square_feet <= preferences.preferred_square_feet_max) {
-      matchedCriteria.push('square_feet_max')
-      score += 0.1
     }
   }
 
