@@ -431,8 +431,9 @@ function checkPropertyMatch(
     }
   }
 
-  // Consider it a match if it meets at least 60% of the criteria or has a high score
-  const isMatch = totalCriteria === 0 || score >= 0.6 || (matchedCriteria.length >= 2 && score >= 0.4)
+  // Consider it a match if it meets at least 40% of the criteria or has a high score
+  // Made more flexible to match recommendation system
+  const isMatch = totalCriteria === 0 || score >= 0.4 || (matchedCriteria.length >= 1 && score >= 0.3)
 
   return {
     isMatch,
