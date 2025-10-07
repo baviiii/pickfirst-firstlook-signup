@@ -47,7 +47,7 @@ serve(async (req) => {
       logStep("No customer found, updating free tier status");
       
       // Update user profile to free tier
-      await supabaseClient
+      const { error: noCustomerUpdateError } = await supabaseClient
         .from('profiles')
         .update({ 
           subscription_tier: 'free',
@@ -57,6 +57,13 @@ serve(async (req) => {
           subscription_product_id: null
         })
         .eq('id', user.id);
+        
+      if (noCustomerUpdateError) {
+        logStep("Error updating profile for user without customer", { error: noCustomerUpdateError.message });
+        // Don't throw here, just log the error and continue
+      } else {
+        logStep("Profile updated for user without customer");
+      }
 
       return new Response(JSON.stringify({ 
         subscribed: false, 
@@ -79,9 +86,9 @@ serve(async (req) => {
     });
 
     const hasActiveSub = subscriptions.data.length > 0;
-    let productId = null;
-    let subscriptionEnd = null;
-    let subscriptionId = null;
+    let productId: string | null = null;
+    let subscriptionEnd: string | null = null;
+    let subscriptionId: string | null = null;
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
@@ -89,14 +96,35 @@ serve(async (req) => {
 
       // Safely compute subscription end date
       const rawPeriodEnd: unknown = (subscription as any)?.current_period_end;
-      const periodEndUnix = typeof rawPeriodEnd === 'number' ? rawPeriodEnd : Number(rawPeriodEnd ?? 0);
-      if (Number.isFinite(periodEndUnix) && periodEndUnix > 0) {
+      logStep("Raw period end value", { rawPeriodEnd, type: typeof rawPeriodEnd });
+      
+      if (rawPeriodEnd && typeof rawPeriodEnd === 'number' && rawPeriodEnd > 0) {
         try {
-          subscriptionEnd = new Date(periodEndUnix * 1000).toISOString();
-        } catch (_e) {
-          subscriptionEnd = null; // Fallback safely if date parsing fails
+          // Ensure the timestamp is reasonable (not too far in the past or future)
+          const now = Date.now() / 1000; // Current time in seconds
+          const maxFuture = now + (10 * 365 * 24 * 60 * 60); // 10 years from now
+          const minPast = now - (10 * 365 * 24 * 60 * 60); // 10 years ago
+          
+          if (rawPeriodEnd >= minPast && rawPeriodEnd <= maxFuture) {
+            const date = new Date(rawPeriodEnd * 1000);
+            // Validate the date is valid
+            if (!isNaN(date.getTime())) {
+              subscriptionEnd = date.toISOString();
+              logStep("Subscription end date computed", { subscriptionEnd });
+            } else {
+              logStep("Invalid date created from timestamp", { rawPeriodEnd, date });
+              subscriptionEnd = null;
+            }
+          } else {
+            logStep("Timestamp out of reasonable range", { rawPeriodEnd, now, minPast, maxFuture });
+            subscriptionEnd = null;
+          }
+        } catch (error) {
+          logStep("Error parsing subscription end date", { error: error.message, rawPeriodEnd });
+          subscriptionEnd = null;
         }
       } else {
+        logStep("Invalid or missing period end", { rawPeriodEnd });
         subscriptionEnd = null;
       }
 
@@ -108,22 +136,35 @@ serve(async (req) => {
       logStep("Active subscription found", { subscriptionId, productId, endDate: subscriptionEnd });
 
       // Update user profile with subscription info
-      await supabaseClient
+      const updateData: any = { 
+        subscription_tier: 'premium',
+        subscription_status: 'active',
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscriptionId,
+        subscription_product_id: productId
+      };
+      
+      // Only include subscription_expires_at if we have a valid date
+      if (subscriptionEnd) {
+        updateData.subscription_expires_at = subscriptionEnd;
+      }
+      
+      const { error: updateError } = await supabaseClient
         .from('profiles')
-        .update({ 
-          subscription_tier: 'premium',
-          subscription_status: 'active',
-          subscription_expires_at: subscriptionEnd,
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscriptionId,
-          subscription_product_id: productId
-        })
+        .update(updateData)
         .eq('id', user.id);
+        
+      if (updateError) {
+        logStep("Error updating profile with subscription info", { error: updateError.message });
+        // Don't throw here, just log the error and continue
+      } else {
+        logStep("Profile updated with subscription info", { updateData });
+      }
     } else {
       logStep("No active subscription found, updating to free tier");
       
       // Update user profile to free tier
-      await supabaseClient
+      const { error: freeUpdateError } = await supabaseClient
         .from('profiles')
         .update({ 
           subscription_tier: 'free',
@@ -133,6 +174,13 @@ serve(async (req) => {
           subscription_product_id: null
         })
         .eq('id', user.id);
+        
+      if (freeUpdateError) {
+        logStep("Error updating profile to free tier", { error: freeUpdateError.message });
+        // Don't throw here, just log the error and continue
+      } else {
+        logStep("Profile updated to free tier");
+      }
     }
 
     return new Response(JSON.stringify({

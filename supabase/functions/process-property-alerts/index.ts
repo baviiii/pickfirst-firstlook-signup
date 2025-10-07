@@ -30,8 +30,6 @@ interface BuyerPreferences {
   property_alerts: boolean;
   email_notifications: boolean;
   budget_range?: string;
-  preferred_bedrooms?: number;
-  preferred_bathrooms?: number;
   preferred_areas?: string[];
   property_type_preferences?: string[];
 }
@@ -205,7 +203,7 @@ serve(async (req) => {
           continue
         }
 
-        // Find buyers with property alerts enabled - include subscription_tier
+        // Find buyers with property alerts enabled - FIXED QUERY
         const { data: buyersWithAlerts, error: buyersError } = await supabaseClient
           .from('user_preferences')
           .select(`
@@ -213,8 +211,6 @@ serve(async (req) => {
             property_alerts,
             email_notifications,
             budget_range,
-            preferred_bedrooms,
-            preferred_bathrooms,
             preferred_areas,
             property_type_preferences,
             profiles!inner (
@@ -227,7 +223,7 @@ serve(async (req) => {
           `)
           .eq('property_alerts', true)
           .eq('email_notifications', true)
-          .eq('profiles.role', 'buyer')
+          .filter('profiles.role', 'eq', 'buyer');
 
         if (buyersError || !buyersWithAlerts) {
           await supabaseClient
@@ -347,86 +343,101 @@ function checkPropertyMatch(
   preferences: BuyerPreferences
 ): { isMatch: boolean; score: number; matchedCriteria: string[] } {
   const matchedCriteria: string[] = []
-  let score = 0
+  let matches = 0
   let totalCriteria = 0
 
-  // Price range matching
+  // Skip properties with invalid prices (negative or zero)
+  const price = parseFloat(property.price.toString())
+  if (price <= 0) {
+    return { isMatch: false, score: 0, matchedCriteria: [] }
+  }
+
+  // Convert budget_range to min_budget and max_budget (same as BuyerProfileService)
+  let minBudget = 0
+  let maxBudget = 10000000
+  
   if (preferences.budget_range) {
-    totalCriteria++
-    const price = parseFloat(property.price.toString())
+    const [minStr, maxStr] = preferences.budget_range.split('-')
+    minBudget = parseInt(minStr) || 0
+    maxBudget = parseInt(maxStr) || 1000000
+  }
+
+  // Extract bedrooms and bathrooms from preferred_areas (same as BuyerProfileService)
+  let preferredBedrooms = 2
+  let preferredBathrooms = 2
+  let locationAreas: string[] = []
+  
+  if (preferences.preferred_areas) {
+    const bedroomPref = preferences.preferred_areas.find(area => area.startsWith('bedrooms:'))
+    const bathroomPref = preferences.preferred_areas.find(area => area.startsWith('bathrooms:'))
     
-    // Parse budget range (assuming format like "300000-600000" or "500000+")
-    const budgetMatch = preferences.budget_range.match(/(\d+)-(\d+)/)
-    if (budgetMatch) {
-      const minBudget = parseFloat(budgetMatch[1])
-      const maxBudget = parseFloat(budgetMatch[2])
-      
-      if (price >= minBudget && price <= maxBudget) {
-        matchedCriteria.push('price_range')
-        score += 0.6
-      }
-    } else {
-      // Handle formats like "500000+" or "500000"
-      const minBudgetMatch = preferences.budget_range.match(/(\d+)\+?/)
-      if (minBudgetMatch) {
-        const minBudget = parseFloat(minBudgetMatch[1])
-        if (price >= minBudget) {
-          matchedCriteria.push('price_min')
-          score += 0.3
-        }
-      }
-    }
+    preferredBedrooms = bedroomPref ? parseInt(bedroomPref.split(':')[1]) : 2
+    preferredBathrooms = bathroomPref ? parseInt(bathroomPref.split(':')[1]) : 2
+    
+    // Filter out bedroom/bathroom preferences from areas
+    locationAreas = preferences.preferred_areas.filter(area => 
+      !area.startsWith('bedrooms:') && !area.startsWith('bathrooms:')
+    )
   }
 
-  // Bedrooms matching
-  if (preferences.preferred_bedrooms && property.bedrooms) {
+  // Price matching (EXACT same logic as buyer dashboard)
+  totalCriteria++
+  if (price >= minBudget && price <= maxBudget) {
+    matchedCriteria.push('Price Range')
+    matches++
+  }
+
+  // Bedrooms matching (EXACT same logic as buyer dashboard)
+  if (preferredBedrooms) {
     totalCriteria++
-    if (property.bedrooms >= preferences.preferred_bedrooms) {
-      matchedCriteria.push('bedrooms')
-      score += 0.2
+    if (property.bedrooms && property.bedrooms >= preferredBedrooms) {
+      matchedCriteria.push('Bedrooms')
+      matches++
     }
   }
 
-  // Bathrooms matching
-  if (preferences.preferred_bathrooms && property.bathrooms) {
+  // Bathrooms matching (EXACT same logic as buyer dashboard)
+  if (preferredBathrooms) {
     totalCriteria++
-    if (property.bathrooms >= preferences.preferred_bathrooms) {
-      matchedCriteria.push('bathrooms')
-      score += 0.2
+    if (property.bathrooms && property.bathrooms >= preferredBathrooms) {
+      matchedCriteria.push('Bathrooms')
+      matches++
     }
   }
 
-  // Location matching
-  if (preferences.preferred_areas && preferences.preferred_areas.length > 0) {
+  // Location matching (EXACT same logic as buyer dashboard)
+  if (locationAreas && locationAreas.length > 0) {
     totalCriteria++
     const propertyLocation = `${property.city}, ${property.state}`.toLowerCase()
-    const isLocationMatch = preferences.preferred_areas.some(area => 
+    const hasLocationMatch = locationAreas.some((area: string) => 
       propertyLocation.includes(area.toLowerCase()) || 
       property.city.toLowerCase().includes(area.toLowerCase())
     )
     
-    if (isLocationMatch) {
-      matchedCriteria.push('location')
-      score += 0.3
+    if (hasLocationMatch) {
+      matchedCriteria.push('Preferred Area')
+      matches++
     }
   }
 
-  // Property type matching
+  // Property type matching (EXACT same logic as buyer dashboard)
   if (preferences.property_type_preferences && preferences.property_type_preferences.length > 0) {
     totalCriteria++
     if (preferences.property_type_preferences.includes(property.property_type)) {
-      matchedCriteria.push('property_type')
-      score += 0.2
+      matchedCriteria.push('Property Type')
+      matches++
     }
   }
 
-  // Consider it a match if it meets at least 40% of the criteria or has a high score
-  // Made more flexible to match recommendation system
-  const isMatch = totalCriteria === 0 || score >= 0.4 || (matchedCriteria.length >= 1 && score >= 0.3)
+  // Calculate score (EXACT same logic as buyer dashboard)
+  const score = totalCriteria > 0 ? matches / totalCriteria : 0
+  
+  // Use same threshold as buyer dashboard (typically 40%+ match)
+  const isMatch = score >= 0.4
 
   return {
     isMatch,
-    score: totalCriteria > 0 ? score / totalCriteria : 0,
+    score,
     matchedCriteria
   }
 }

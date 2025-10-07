@@ -9,75 +9,241 @@ const corsHeaders = {
 
 // Brand colors
 const BRAND_COLORS = {
-  primary: '#FFD700',      // Yellow
+  primary: '#FFD700',      // Gold
   secondary: '#000000',    // Black
-  accent: '#FFC700',       // Darker yellow
+  accent: '#FFC700',       // Darker gold
   text: '#1a1a1a',         // Dark text
   textLight: '#666666',    // Light text
   background: '#ffffff',   // White
-  lightBg: '#FFFEF0'       // Light yellow background
+  lightBg: '#FFFEF0',      // Light gold background
+  success: '#10B981',      // Green
+  warning: '#F59E0B',      // Orange
+  error: '#EF4444',        // Red
+  info: '#3B82F6'          // Blue
 };
 
-// Common email header with logo
+// Enhanced email styles
+const commonStyles = `
+  <style>
+    @media only screen and (max-width: 600px) {
+      .mobile-padding { padding: 20px 15px !important; }
+      .mobile-text { font-size: 14px !important; }
+      .mobile-heading { font-size: 22px !important; }
+      .property-card { padding: 15px !important; }
+    }
+  </style>
+`;
+
+// Enhanced email header with gradient
 const getEmailHeader = () => `
-  <div style="background: ${BRAND_COLORS.secondary}; padding: 30px 20px; text-align: center;">
-    <img src="https://pickfirst.com.au/logo.png" alt="PickFirst Real Estate" style="max-width: 200px; height: auto;" />
+  <div style="background: linear-gradient(135deg, ${BRAND_COLORS.secondary} 0%, #2a2a2a 100%); padding: 40px 20px; text-align: center; border-bottom: 4px solid ${BRAND_COLORS.primary};">
+    <img src="https://pickfirst.com.au/logo.png" alt="PickFirst Real Estate" style="max-width: 200px; height: auto; margin-bottom: 10px;" />
+    <p style="color: ${BRAND_COLORS.primary}; margin: 10px 0 0 0; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;">Your Trusted Property Partner</p>
   </div>
 `;
 
-// Common email footer
+// Enhanced email footer
 const getEmailFooter = () => `
-  <div style="background: ${BRAND_COLORS.lightBg}; padding: 20px; margin-top: 30px; border-top: 3px solid ${BRAND_COLORS.primary};">
-    <p style="margin: 0 0 10px 0; color: ${BRAND_COLORS.textLight}; font-size: 14px; text-align: center;">
-      <strong>PickFirst Real Estate</strong><br>
-      Your trusted partner in finding the perfect property
-    </p>
-    <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 13px; text-align: center;">
-      📧 <a href="mailto:info@pickfirst.com.au" style="color: ${BRAND_COLORS.textLight};">info@pickfirst.com.au</a><br>
-      🌐 <a href="https://pickfirst.com.au" style="color: ${BRAND_COLORS.textLight};">www.pickfirst.com.au</a>
-    </p>
+  <div style="background: ${BRAND_COLORS.lightBg}; padding: 30px 20px; margin-top: 40px; border-top: 3px solid ${BRAND_COLORS.primary};">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
+      <tr>
+        <td style="text-align: center; padding-bottom: 20px;">
+          <img src="https://pickfirst.com.au/logo.png" alt="PickFirst" style="max-width: 120px; height: auto; opacity: 0.8;" />
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: center;">
+          <p style="margin: 0 0 15px 0; color: ${BRAND_COLORS.text}; font-size: 16px; font-weight: bold;">
+            PickFirst Real Estate
+          </p>
+          <p style="margin: 0 0 20px 0; color: ${BRAND_COLORS.textLight}; font-size: 14px; line-height: 1.6;">
+            Your trusted partner in finding the perfect property
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: center;">
+          <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+            <tr>
+              <td style="padding: 0 10px;">
+                <a href="mailto:info@pickfirst.com.au" style="color: ${BRAND_COLORS.textLight}; text-decoration: none; font-size: 14px;">
+                  📧 Email Us
+                </a>
+              </td>
+              <td style="padding: 0 10px; color: ${BRAND_COLORS.textLight};">|</td>
+              <td style="padding: 0 10px;">
+                <a href="https://pickfirst.com.au" style="color: ${BRAND_COLORS.textLight}; text-decoration: none; font-size: 14px;">
+                  🌐 Visit Website
+                </a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: center; padding-top: 20px;">
+          <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
+            © 2024 PickFirst Real Estate. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
   </div>
 `;
 
-// Button style
-const getButton = (url: string, text: string) => `
-  <a href="${url}" style="display: inline-block; background: ${BRAND_COLORS.primary}; color: ${BRAND_COLORS.secondary}; font-weight: bold; text-align: center; padding: 14px 32px; border-radius: 4px; text-decoration: none; margin: 20px 0; font-size: 16px;">
-    ${text}
+// Enhanced button style with hover effect
+const getButton = (url: string, text: string, isPrimary = true) => `
+  <a href="${url}" style="display: inline-block; background: ${isPrimary ? BRAND_COLORS.primary : BRAND_COLORS.secondary}; color: ${isPrimary ? BRAND_COLORS.secondary : BRAND_COLORS.primary}; font-weight: bold; text-align: center; padding: 16px 40px; border-radius: 8px; text-decoration: none; margin: 20px 0; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.3s ease;">
+    ${text} →
   </a>
 `;
 
-const templates = {
-  // Authentication & Welcome
-  welcome: (data: any) => ({
-    subject: `Welcome to ${data.platformName || 'PickFirst Real Estate'}!`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
-        ${getEmailHeader()}
-        <div style="padding: 40px 20px;">
-          <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Welcome ${data.name}!</h1>
-          <p style="color: ${BRAND_COLORS.text}; font-size: 16px; line-height: 1.6;">
-            Thank you for joining ${data.platformName || 'PickFirst Real Estate'}. We're excited to help you find your perfect property.
-          </p>
-          
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 8px; margin: 30px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
-            <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0;">What's next?</h3>
-            <ul style="color: ${BRAND_COLORS.text}; line-height: 1.8;">
-              <li>Complete your profile</li>
-              <li>Set up property alerts</li>
-              <li>Browse our latest listings</li>
-            </ul>
-          </div>
-          
-          <div style="text-align: center;">
-            ${getButton(data.platformUrl || 'https://pickfirst.com.au', 'Get Started')}
-          </div>
-          
-          <p style="color: ${BRAND_COLORS.textLight}; font-size: 14px;">
-            If you have any questions, feel free to reach out to our support team.
-          </p>
+// Property card component with image
+const getPropertyCard = (property: any) => `
+  <div class="property-card" style="border: 2px solid ${BRAND_COLORS.primary}; border-radius: 12px; overflow: hidden; margin: 25px 0; background: ${BRAND_COLORS.background}; box-shadow: 0 6px 20px rgba(0,0,0,0.1);">
+    ${property.image ? `
+      <div style="position: relative; width: 100%; height: 0; padding-bottom: 60%; overflow: hidden; background: #f0f0f0;">
+        <img src="${property.image}" alt="${property.title}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" />
+        <div style="position: absolute; top: 15px; right: 15px; background: ${BRAND_COLORS.primary}; color: ${BRAND_COLORS.secondary}; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+          ${property.badge || 'NEW'}
         </div>
-        ${getEmailFooter()}
       </div>
+    ` : ''}
+    <div style="padding: 25px;">
+      <h2 style="margin: 0 0 12px 0; color: ${BRAND_COLORS.secondary}; font-size: 22px; font-weight: bold;">
+        ${property.title}
+      </h2>
+      <p style="margin: 0 0 15px 0; font-size: 28px; font-weight: bold; color: ${BRAND_COLORS.secondary};">
+        ${property.price ? `$${property.price.toLocaleString()}` : property.priceText || 'Contact for price'}
+      </p>
+      <p style="margin: 0 0 15px 0; color: ${BRAND_COLORS.text}; font-size: 15px; display: flex; align-items: center;">
+        📍 ${property.location}
+      </p>
+      ${property.description ? `
+        <p style="margin: 0 0 15px 0; color: ${BRAND_COLORS.textLight}; font-size: 14px; line-height: 1.6;">
+          ${property.description}
+        </p>
+      ` : ''}
+      <div style="display: flex; gap: 20px; margin: 15px 0; padding: 15px; background: ${BRAND_COLORS.lightBg}; border-radius: 8px;">
+        ${property.bedrooms ? `
+          <div style="text-align: center; flex: 1;">
+            <div style="font-size: 24px; margin-bottom: 5px;">🛏️</div>
+            <div style="color: ${BRAND_COLORS.text}; font-weight: bold;">${property.bedrooms}</div>
+            <div style="color: ${BRAND_COLORS.textLight}; font-size: 12px;">Bedrooms</div>
+          </div>
+        ` : ''}
+        ${property.bathrooms ? `
+          <div style="text-align: center; flex: 1;">
+            <div style="font-size: 24px; margin-bottom: 5px;">🚿</div>
+            <div style="color: ${BRAND_COLORS.text}; font-weight: bold;">${property.bathrooms}</div>
+            <div style="color: ${BRAND_COLORS.textLight}; font-size: 12px;">Bathrooms</div>
+          </div>
+        ` : ''}
+        ${property.parking ? `
+          <div style="text-align: center; flex: 1;">
+            <div style="font-size: 24px; margin-bottom: 5px;">🚗</div>
+            <div style="color: ${BRAND_COLORS.text}; font-weight: bold;">${property.parking}</div>
+            <div style="color: ${BRAND_COLORS.textLight}; font-size: 12px;">Parking</div>
+          </div>
+        ` : ''}
+        ${property.landSize ? `
+          <div style="text-align: center; flex: 1;">
+            <div style="font-size: 24px; margin-bottom: 5px;">📏</div>
+            <div style="color: ${BRAND_COLORS.text}; font-weight: bold;">${property.landSize}</div>
+            <div style="color: ${BRAND_COLORS.textLight}; font-size: 12px;">Land Size</div>
+          </div>
+        ` : ''}
+      </div>
+      ${property.features?.length > 0 ? `
+        <div style="margin: 15px 0;">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            ${property.features.map((feature: string) => `
+              <span style="background: ${BRAND_COLORS.lightBg}; color: ${BRAND_COLORS.text}; padding: 6px 12px; border-radius: 20px; font-size: 12px; border: 1px solid ${BRAND_COLORS.primary};">
+                ✓ ${feature}
+              </span>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+      ${property.url ? `
+        <div style="margin-top: 20px; text-align: center;">
+          ${getButton(property.url, 'View Full Details')}
+        </div>
+      ` : ''}
+    </div>
+  </div>
+`;
+
+const templates = {
+  // Enhanced Welcome Email
+  welcome: (data: any) => ({
+    subject: `Account Created - ${data.platformName || 'PickFirst Real Estate'}`,
+    text: `Welcome to PickFirst Real Estate!
+
+Hi ${data.name},
+
+Thank you for joining PickFirst Real Estate. We're excited to help you find your perfect property.
+
+What's Next?
+- Set up your property preferences
+- Browse our curated property listings
+- Get instant alerts for new matches
+- Connect with our expert agents
+
+Get started: ${data.platformUrl || 'https://pickfirst.com.au'}
+
+Need help? Contact our support team at support@pickfirst.com.au
+
+Best regards,
+PickFirst Real Estate Team`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        ${commonStyles}
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+          ${getEmailHeader()}
+          <div class="mobile-padding" style="padding: 40px 30px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <div style="font-size: 64px; margin-bottom: 20px;">🎉</div>
+              <h1 class="mobile-heading" style="color: ${BRAND_COLORS.secondary}; margin: 0;">
+                Welcome to PickFirst Real Estate!
+              </h1>
+            </div>
+            
+            <p style="color: ${BRAND_COLORS.text}; font-size: 16px; margin-bottom: 25px;">
+              Hi ${data.name}, welcome to the future of property searching!
+            </p>
+            
+            <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
+              <h2 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 20px;">What's Next?</h2>
+              <ul style="margin: 0; padding-left: 20px; color: ${BRAND_COLORS.text};">
+                <li style="margin-bottom: 10px;">Set up your property preferences</li>
+                <li style="margin-bottom: 10px;">Browse our curated property listings</li>
+                <li style="margin-bottom: 10px;">Get instant alerts for new matches</li>
+                <li style="margin-bottom: 10px;">Connect with our expert agents</li>
+              </ul>
+            </div>
+            
+            <div style="text-align: center; margin: 40px 0;">
+              ${getButton(data.platformUrl || 'https://pickfirst.com.au', 'Get Started')}
+            </div>
+            
+            <div style="background: ${BRAND_COLORS.lightBg}; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid ${BRAND_COLORS.primary};">
+              <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
+                Need help getting started? Contact our support team at 
+                <a href="mailto:support@pickfirst.com.au" style="color: ${BRAND_COLORS.textLight}; text-decoration: underline;">support@pickfirst.com.au</a>
+              </p>
+            </div>
+          </div>
+          ${getEmailFooter()}
+        </div>
+      </body>
+      </html>
     `
   }),
 
@@ -142,7 +308,22 @@ const templates = {
   }),
 
   passwordReset: (data: any) => ({
-    subject: 'Reset Your Password - PickFirst Real Estate',
+    subject: 'Password Reset Request - PickFirst Real Estate',
+    text: `Password Reset Request
+
+Hi ${data.name},
+
+We received a request to reset your password for your PickFirst Real Estate account.
+
+To reset your password, click the link below:
+${data.resetUrl}
+
+This link will expire in 1 hour for security reasons.
+
+If you didn't request this reset, please ignore this email. Your account remains secure.
+
+Best regards,
+PickFirst Real Estate Team`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
         ${getEmailHeader()}
@@ -168,75 +349,172 @@ const templates = {
   }),
 
   // Property Alerts
+  // Enhanced Property Alert with Image
   propertyAlert: (data: any) => ({
-    subject: `New Property Match: ${data.propertyTitle}`,
+    subject: `Property Alert: ${data.propertyTitle} - ${data.location || 'New Match Found'}`,
+    text: `New Property Match Found
+
+Hi ${data.name},
+
+We found a property that matches your search criteria:
+
+Property: ${data.propertyTitle}
+Price: ${data.price ? `$${data.price.toLocaleString()}` : 'Contact for price'}
+Location: ${data.location}
+Bedrooms: ${data.bedrooms || 'N/A'}
+Bathrooms: ${data.bathrooms || 'N/A'}
+
+View full details: ${data.propertyUrl || 'https://pickfirst.com.au'}
+
+This alert was sent based on your saved search preferences.
+To update your preferences, visit: ${data.unsubscribeUrl || 'https://pickfirst.com.au/preferences'}
+
+Best regards,
+PickFirst Real Estate Team`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
-        ${getEmailHeader()}
-        <div style="padding: 40px 20px;">
-          <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">New Property Alert!</h1>
-          <p style="color: ${BRAND_COLORS.text}; font-size: 16px;">
-            Hi ${data.name}, we found a property that matches your search criteria:
-          </p>
-          
-          <div style="border: 2px solid ${BRAND_COLORS.primary}; border-radius: 8px; padding: 25px; margin: 25px 0; background: ${BRAND_COLORS.lightBg};">
-            <h2 style="margin: 0 0 10px 0; color: ${BRAND_COLORS.secondary};">${data.propertyTitle}</h2>
-            <p style="margin: 5px 0; font-size: 24px; font-weight: bold; color: ${BRAND_COLORS.secondary};">$${data.price?.toLocaleString()}</p>
-            <p style="margin: 5px 0; color: ${BRAND_COLORS.text};">${data.location}</p>
-            <div style="margin: 10px 0; color: ${BRAND_COLORS.text};">
-              <span style="margin-right: 20px;">${data.bedrooms} bed</span>
-              <span style="margin-right: 20px;">${data.bathrooms} bath</span>
-              <span>${data.propertyType}</span>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        ${commonStyles}
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+          ${getEmailHeader()}
+          <div class="mobile-padding" style="padding: 40px 30px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <div style="display: inline-block; background: ${BRAND_COLORS.lightBg}; padding: 10px 20px; border-radius: 25px; border: 2px solid ${BRAND_COLORS.primary};">
+                <span style="font-size: 24px; margin-right: 8px;">🏠</span>
+                <span style="color: ${BRAND_COLORS.secondary}; font-weight: bold;">Property Alert</span>
+              </div>
+            </div>
+            
+            <h1 class="mobile-heading" style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 28px; text-align: center;">
+              New Property Match
+            </h1>
+            <p style="color: ${BRAND_COLORS.text}; font-size: 16px; text-align: center; margin-bottom: 30px;">
+              Hi ${data.name}, a property matching your search criteria has been found
+            </p>
+            
+            ${getPropertyCard({
+              title: data.propertyTitle,
+              price: data.price,
+              location: data.location,
+              bedrooms: data.bedrooms,
+              bathrooms: data.bathrooms,
+              propertyType: data.propertyType,
+              image: data.image || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&h=400&fit=crop&crop=center',
+              description: data.description || 'A beautiful property that matches your search criteria perfectly.',
+              features: data.features || ['Modern Design', 'Prime Location', 'Great Investment'],
+              url: data.propertyUrl,
+              badge: 'NEW MATCH'
+            })}
+            
+            <div style="text-align: center; margin: 40px 0;">
+              ${getButton(data.propertyUrl || '#', 'View Full Details')}
+            </div>
+            
+            <div style="background: ${BRAND_COLORS.lightBg}; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid ${BRAND_COLORS.primary};">
+              <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
+                This property was found based on your saved search preferences. 
+                <a href="${data.unsubscribeUrl || '#'}" style="color: ${BRAND_COLORS.textLight}; text-decoration: underline;">Update preferences</a>
+              </p>
             </div>
           </div>
-          
-          ${data.propertyUrl ? `<div style="text-align: center;">${getButton(data.propertyUrl, 'View Property')}</div>` : ''}
-          
-          <p style="color: ${BRAND_COLORS.textLight}; font-size: 14px;">
-            You're receiving this because you have property alerts enabled.
-          </p>
+          ${getEmailFooter()}
         </div>
-        ${getEmailFooter()}
-      </div>
+      </body>
+      </html>
     `
   }),
 
+  // Enhanced Weekly Property Digest
   newMatchesDigest: (data: any) => ({
-    subject: `${data.matches?.length || 0} New Properties Match Your Preferences`,
+    subject: `Weekly Property Update: ${data.matches?.length || 0} New Properties Found`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
-        ${getEmailHeader()}
-        <div style="padding: 40px 20px;">
-          <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Weekly Property Digest</h1>
-          <p style="color: ${BRAND_COLORS.text}; font-size: 16px;">
-            Hi ${data.name}, here are ${data.matches?.length || 0} new properties that match your preferences:
-          </p>
-          
-          ${data.matches?.map((match: any) => `
-            <div style="border: 1px solid ${BRAND_COLORS.primary}; border-radius: 8px; padding: 20px; margin: 20px 0; background: ${BRAND_COLORS.lightBg};">
-              <h3 style="margin: 0 0 10px 0; color: ${BRAND_COLORS.secondary};">${match.title}</h3>
-              <p style="font-size: 18px; font-weight: bold; color: ${BRAND_COLORS.secondary}; margin: 5px 0;">$${match.price?.toLocaleString()}</p>
-              <p style="color: ${BRAND_COLORS.text}; margin: 5px 0;">${match.city}, ${match.state}</p>
-              <div style="margin: 10px 0; color: ${BRAND_COLORS.text};">
-                ${match.bedrooms ? `<span style="margin-right: 15px;">${match.bedrooms} bed</span>` : ''}
-                ${match.bathrooms ? `<span style="margin-right: 15px;">${match.bathrooms} bath</span>` : ''}
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        ${commonStyles}
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+          ${getEmailHeader()}
+          <div class="mobile-padding" style="padding: 40px 30px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <div style="display: inline-block; background: ${BRAND_COLORS.lightBg}; padding: 10px 20px; border-radius: 25px; border: 2px solid ${BRAND_COLORS.primary};">
+                <span style="font-size: 24px; margin-right: 8px;">📊</span>
+                <span style="color: ${BRAND_COLORS.secondary}; font-weight: bold;">Weekly Update</span>
               </div>
-              ${match.url ? `<a href="${match.url}" style="color: ${BRAND_COLORS.secondary}; font-weight: bold; text-decoration: none;">View Details →</a>` : ''}
             </div>
-          `).join('') || '<p>No new matches this week.</p>'}
-          
-          <div style="text-align: center;">
-            ${getButton((data.platformUrl || 'https://pickfirst.com.au') + '/browse', 'Browse All Properties')}
+            
+            <h1 class="mobile-heading" style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 28px; text-align: center;">
+              Property Search Update
+            </h1>
+            <p style="color: ${BRAND_COLORS.text}; font-size: 16px; text-align: center; margin-bottom: 30px;">
+              Hi ${data.name}, ${data.matches?.length || 0} new properties matching your criteria have been found
+            </p>
+            
+            ${data.matches?.map((match: any) => getPropertyCard({
+              title: match.title,
+              price: match.price,
+              location: `${match.city}, ${match.state}`,
+              bedrooms: match.bedrooms,
+              bathrooms: match.bathrooms,
+              propertyType: match.propertyType,
+              image: match.image || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&h=400&fit=crop&crop=center',
+              description: match.description || 'A beautiful property that matches your search criteria.',
+              features: match.features || ['Great Location', 'Modern Features'],
+              url: match.url,
+              badge: 'NEW'
+            })).join('') || `
+              <div style="text-align: center; padding: 40px; background: ${BRAND_COLORS.lightBg}; border-radius: 12px; border: 2px solid ${BRAND_COLORS.primary};">
+                <div style="font-size: 48px; margin-bottom: 20px;">🔍</div>
+                <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 10px 0;">No New Matches This Week</h3>
+                <p style="color: ${BRAND_COLORS.textLight}; margin: 0;">We'll keep searching for properties that match your criteria.</p>
+              </div>
+            `}
+            
+            <div style="text-align: center; margin: 40px 0;">
+              ${getButton((data.platformUrl || 'https://pickfirst.com.au') + '/browse', 'Browse All Properties')}
+            </div>
+            
+            <div style="background: ${BRAND_COLORS.lightBg}; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid ${BRAND_COLORS.primary};">
+              <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
+                These properties were found based on your saved search preferences. 
+                <a href="${data.unsubscribeUrl || '#'}" style="color: ${BRAND_COLORS.textLight}; text-decoration: underline;">Update preferences</a>
+              </p>
+            </div>
           </div>
+          ${getEmailFooter()}
         </div>
-        ${getEmailFooter()}
-      </div>
+      </body>
+      </html>
     `
   }),
 
   // Appointments
   appointmentConfirmation: (data: any) => ({
-    subject: `Appointment Confirmed - ${data.propertyTitle}`,
+    subject: `Appointment Confirmation - ${data.propertyTitle}`,
+    text: `Appointment Confirmation
+
+Hi ${data.name},
+
+Your property viewing appointment has been confirmed:
+
+Property: ${data.propertyTitle}
+Date: ${data.date}
+Time: ${data.time}
+Agent: ${data.agentName}
+Location: ${data.propertyAddress}
+
+If you need to reschedule or cancel, please contact us at info@pickfirst.com.au
+
+Best regards,
+PickFirst Real Estate Team`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
         ${getEmailHeader()}
@@ -633,7 +911,24 @@ const templates = {
   }),
 
   paymentSuccess: (data: any) => ({
-    subject: 'Payment Received - Thank You!',
+    subject: 'Payment Confirmation - PickFirst Real Estate',
+    text: `Payment Confirmation
+
+Hi ${data.name},
+
+Your payment has been successfully processed.
+
+Amount: ${data.amount}
+Plan: ${data.planName}
+Date: ${data.paymentDate}
+Transaction ID: ${data.transactionId}
+
+Access your dashboard: ${data.dashboardUrl || 'https://pickfirst.com.au/dashboard'}
+
+Questions? Contact billing@pickfirst.com.au
+
+Best regards,
+PickFirst Real Estate Team`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
         ${getEmailHeader()}
@@ -782,12 +1077,72 @@ const handler = async (req: Request) => {
     const templateFunction = templates[template as keyof typeof templates];
     const emailContent = templateFunction(data);
 
-    const { error } = await resend.emails.send({
+    // Create a simple text version for better deliverability
+    const textContent = (emailContent as any).text || emailContent.subject;
+    
+    // Define which templates should be treated as transactional vs promotional
+    const transactionalTemplates = [
+      'welcome', 'agentWelcome', 'buyerWelcome', 'passwordReset', 
+      'appointmentConfirmation', 'appointmentNotification', 'appointmentStatusUpdate',
+      'paymentSuccess', 'paymentFailed', 'accountSuspension', 'securityAlert',
+      'messageNotification', 'leadAssignment', 'propertyViewing', 'followUp',
+      'subscriptionUpgrade', 'subscriptionExpiry', 'profileUpdate'
+    ];
+    
+    const isTransactional = transactionalTemplates.includes(template);
+    
+    // Configure email settings based on template type
+    const emailConfig = {
       from: "PickFirst Real Estate <info@pickfirst.com.au>",
       to: [to],
       subject: subject || emailContent.subject,
-      html: emailContent.html
-    });
+      html: emailContent.html,
+      text: textContent,
+      ...(isTransactional ? {
+        // Transactional email configuration
+        headers: {
+          'X-Priority': '1',
+          'X-MSMail-Priority': 'High',
+          'Importance': 'high',
+          'X-Mailer': 'PickFirst Real Estate System',
+          'X-Category': 'transactional',
+          'X-Entity-Ref-ID': `pf-tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          'X-Transaction-Type': template,
+          'Precedence': 'bulk'
+        },
+        tags: [
+          {
+            name: 'category',
+            value: 'transactional'
+          },
+          {
+            name: 'type',
+            value: template
+          }
+        ]
+      } : {
+        // Promotional email configuration
+        headers: {
+          'X-Mailer': 'PickFirst Real Estate System',
+          'X-Category': 'marketing',
+          'X-Entity-Ref-ID': `pf-promo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          'List-Unsubscribe': '<mailto:unsubscribe@pickfirst.com.au?subject=unsubscribe>',
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+        },
+        tags: [
+          {
+            name: 'category',
+            value: 'marketing'
+          },
+          {
+            name: 'type',
+            value: template
+          }
+        ]
+      })
+    };
+    
+    const { error } = await resend.emails.send(emailConfig);
 
     if (error) {
       console.error("Email sending error:", error);
