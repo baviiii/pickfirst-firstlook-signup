@@ -22,7 +22,8 @@ import {
   Check,
   Bell,
   Mail,
-  Crown
+  Crown,
+  Car
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
@@ -45,8 +46,10 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
     max_budget: 1000000,
     preferred_bedrooms: 2,
     preferred_bathrooms: 2,
+    preferred_garages: 0,
     preferred_areas: [],
     property_type_preferences: [],
+    preferred_features: [],
     move_in_timeline: 'flexible',
     financing_pre_approved: false,
     first_time_buyer: false,
@@ -209,8 +212,8 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
           </div>
         </div>
 
-        {/* Bedrooms & Bathrooms */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Bedrooms, Bathrooms & Garages */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label className="text-foreground font-medium flex items-center gap-2">
               <Bed className="h-4 w-4" />
@@ -251,6 +254,28 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
                 <SelectItem value="2">2+ bathrooms</SelectItem>
                 <SelectItem value="3">3+ bathrooms</SelectItem>
                 <SelectItem value="4">4+ bathrooms</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label className="text-foreground font-medium flex items-center gap-2">
+              <Car className="h-4 w-4" />
+              Minimum Garages
+            </Label>
+            <Select
+              value={preferences.preferred_garages?.toString() || '0'}
+              onValueChange={(value) => handlePreferenceChange('preferred_garages', parseInt(value))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Any" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">No preference</SelectItem>
+                <SelectItem value="1">1+ garage</SelectItem>
+                <SelectItem value="2">2+ garages</SelectItem>
+                <SelectItem value="3">3+ garages</SelectItem>
+                <SelectItem value="4">4+ garages</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -328,6 +353,42 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
                 >
                   {isSelected && <Check className="h-3 w-3 mr-1" />}
                   {type}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Property Features */}
+        <div className="space-y-4">
+          <Label className="text-foreground font-medium flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Property Features
+          </Label>
+          <p className="text-sm text-muted-foreground">
+            Select features you'd like in your ideal property (used for recommendations and alerts)
+          </p>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            {['Pool', 'Air Conditioning', 'Dishwasher', 'Garden', 'Balcony', 'Study', 'Fireplace', 'Solar Panels', 'Security System', 'Outdoor Entertainment', 'Ensuite', 'Walk-in Closet'].map((feature) => {
+              const isSelected = preferences.preferred_features?.includes(feature);
+              return (
+                <Button
+                  key={feature}
+                  type="button"
+                  variant={isSelected ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    const currentFeatures = preferences.preferred_features || [];
+                    const newFeatures = isSelected 
+                      ? currentFeatures.filter((f: string) => f !== feature)
+                      : [...currentFeatures, feature];
+                    handlePreferenceChange('preferred_features', newFeatures);
+                  }}
+                  className="text-xs h-8"
+                >
+                  {isSelected && <Check className="h-3 w-3 mr-1" />}
+                  {feature}
                 </Button>
               );
             })}

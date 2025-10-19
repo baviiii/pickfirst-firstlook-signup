@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { PropertyService, CreatePropertyListingData } from '@/services/propertyService';
 import { googleMapsService } from '@/services/googleMapsService';
 import { toast } from 'sonner';
-import { Loader2, Home, MapPin, DollarSign, Bed, Bath, Ruler, Calendar, Phone, Mail, Upload, X, ImageIcon, CheckCircle, AlertCircle, Search } from 'lucide-react';
+import { Loader2, Home, MapPin, DollarSign, Bed, Bath, Ruler, Calendar, Phone, Mail, Upload, X, ImageIcon, CheckCircle, AlertCircle, Search, Clock, FileText, Handshake, Lightbulb } from 'lucide-react';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 
 interface PropertyListingFormProps {
@@ -37,7 +37,14 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
   const addressInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   
-  const [formData, setFormData] = useState<CreatePropertyListingData>({
+  const [listingType, setListingType] = useState<'on-market' | 'off-market'>('on-market');
+  
+  const [formData, setFormData] = useState<CreatePropertyListingData & {
+    vendor_ownership_duration?: number;
+    vendor_special_conditions?: string;
+    vendor_favorable_contracts?: string;
+    vendor_motivation?: string;
+  }>({
     title: '',
     description: '',
     property_type: 'house',
@@ -55,7 +62,11 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
     contact_email: '',
     showing_instructions: '',
     features: [],
-    images: []
+    images: [],
+    vendor_ownership_duration: 0,
+    vendor_special_conditions: '',
+    vendor_favorable_contracts: '',
+    vendor_motivation: ''
   });
 
   const propertyTypes = [
@@ -69,10 +80,10 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
   ];
 
   const commonFeatures = [
-    'pool', 'garage', 'fireplace', 'basement', 'attic', 'deck', 'patio',
-    'garden', 'central_air', 'heating', 'dishwasher', 'washer_dryer',
-    'hardwood_floors', 'carpet', 'tile_floors', 'granite_countertops',
-    'stainless_steel_appliances', 'walk_in_closet', 'master_suite'
+    'Pool', 'Air Conditioning', 'Dishwasher', 'Fireplace', 'Basement', 'Attic', 'Deck', 'Patio',
+    'Garden', 'Central Air', 'Heating', 'Washer/Dryer', 'Hardwood Floors', 'Carpet', 'Tile Floors', 
+    'Granite Countertops', 'Stainless Steel Appliances', 'Walk-in Closet', 'Master Suite', 
+    'Balcony', 'Study', 'Solar Panels', 'Security System', 'Outdoor Entertainment', 'Ensuite'
   ];
 
   // Australian states and territories
@@ -302,11 +313,16 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
     setLoading(true);
 
     try {
-      // Add coordinates to the form data
+      // Add coordinates and listing source to the form data
       const listingDataWithCoordinates = {
         ...formData,
         latitude: coordinates.lat,
-        longitude: coordinates.lng
+        longitude: coordinates.lng,
+        listing_source: listingType === 'off-market' ? 'agent_posted' : 'external_feed',
+        vendor_ownership_duration: formData.vendor_ownership_duration || null,
+        vendor_special_conditions: formData.vendor_special_conditions || null,
+        vendor_favorable_contracts: formData.vendor_favorable_contracts || null,
+        vendor_motivation: formData.vendor_motivation || null
       };
       
       let result;
@@ -350,6 +366,60 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
       
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Listing Type Selection */}
+          <div className="p-4 bg-gradient-to-br from-blue-900/20 to-purple-900/20 border border-blue-400/30 rounded-lg">
+            <Label className="text-white font-semibold mb-3 block">Listing Type *</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setListingType('on-market')}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  listingType === 'on-market'
+                    ? 'border-pickfirst-yellow bg-pickfirst-yellow/10'
+                    : 'border-white/20 bg-white/5 hover:border-white/40'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    listingType === 'on-market' ? 'border-pickfirst-yellow' : 'border-white/40'
+                  }`}>
+                    {listingType === 'on-market' && (
+                      <div className="w-3 h-3 rounded-full bg-pickfirst-yellow"></div>
+                    )}
+                  </div>
+                  <div className="text-left">
+                    <div className="text-white font-semibold">On-Market Listing</div>
+                    <div className="text-gray-400 text-sm">Publicly visible to all buyers</div>
+                  </div>
+                </div>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setListingType('off-market')}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  listingType === 'off-market'
+                    ? 'border-pickfirst-yellow bg-pickfirst-yellow/10'
+                    : 'border-white/20 bg-white/5 hover:border-white/40'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    listingType === 'off-market' ? 'border-pickfirst-yellow' : 'border-white/40'
+                  }`}>
+                    {listingType === 'off-market' && (
+                      <div className="w-3 h-3 rounded-full bg-pickfirst-yellow"></div>
+                    )}
+                  </div>
+                  <div className="text-left">
+                    <div className="text-white font-semibold">Off-Market Listing</div>
+                    <div className="text-gray-400 text-sm">Exclusive to premium subscribers</div>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -394,7 +464,87 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
             />
           </div>
 
-          {/* Price and Details */}
+          {/* Price */}
+          <div className="space-y-2">
+            <Label htmlFor="price" className="text-white font-semibold flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Price *
+            </Label>
+            <Input
+              id="price"
+              type="number"
+              value={formData.price || ''}
+              onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
+              placeholder="e.g., 750000"
+              className="bg-white/5 border border-white/20 text-white"
+              required
+            />
+          </div>
+
+          {/* Property Details */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="bedrooms" className="text-white font-semibold flex items-center gap-2">
+                <Bed className="h-4 w-4" />
+                Bedrooms
+              </Label>
+              <Input
+                id="bedrooms"
+                type="number"
+                value={formData.bedrooms || ''}
+                onChange={(e) => handleInputChange('bedrooms', parseInt(e.target.value) || 0)}
+                placeholder="0"
+                className="bg-white/5 border border-white/20 text-white"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="bathrooms" className="text-white font-semibold flex items-center gap-2">
+                <Bath className="h-4 w-4" />
+                Bathrooms
+              </Label>
+              <Input
+                id="bathrooms"
+                type="number"
+                step="0.5"
+                value={formData.bathrooms || ''}
+                onChange={(e) => handleInputChange('bathrooms', parseFloat(e.target.value) || 0)}
+                placeholder="0"
+                className="bg-white/5 border border-white/20 text-white"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="garages" className="text-white font-semibold flex items-center gap-2">
+                🚗 Garages
+              </Label>
+              <Input
+                id="garages"
+                type="number"
+                value={(formData as any).garages || ''}
+                onChange={(e) => handleInputChange('garages' as any, parseInt(e.target.value) || 0)}
+                placeholder="0"
+                className="bg-white/5 border border-white/20 text-white"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="square_feet" className="text-white font-semibold flex items-center gap-2">
+                <Ruler className="h-4 w-4" />
+                Sq Ft
+              </Label>
+              <Input
+                id="square_feet"
+                type="number"
+                value={formData.square_feet || ''}
+                onChange={(e) => handleInputChange('square_feet', parseInt(e.target.value) || 0)}
+                placeholder="0"
+                className="bg-white/5 border border-white/20 text-white"
+              />
+            </div>
+          </div>
+
+          {/* Additional Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="space-y-2">
               <Label htmlFor="price" className="text-white font-semibold flex items-center gap-2">
@@ -721,6 +871,81 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
               className="bg-white/5 border border-white/20 text-white"
               rows={3}
             />
+          </div>
+
+          {/* Vendor Details - Optional */}
+          <div className="space-y-4 p-4 bg-gradient-to-br from-yellow-900/20 to-amber-900/20 border border-yellow-400/30 rounded-lg">
+            <div className="flex items-center gap-2 mb-4">
+              <Lightbulb className="w-5 h-5 text-yellow-400" />
+              <Label className="text-yellow-400 font-semibold text-lg">Vendor Details (Optional)</Label>
+            </div>
+            <p className="text-yellow-200/80 text-sm mb-4">
+              {listingType === 'off-market' 
+                ? 'These details will be visible to Premium subscribers only and help them make informed decisions.'
+                : 'Adding vendor details can help attract serious buyers. Premium subscribers will have priority access to this information.'
+              }
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="vendor_ownership_duration" className="text-white font-semibold flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-yellow-400" />
+                  Ownership Duration (months)
+                </Label>
+                <Input
+                  id="vendor_ownership_duration"
+                  type="number"
+                  value={formData.vendor_ownership_duration === 0 ? '' : formData.vendor_ownership_duration}
+                  onChange={(e) => handleInputChange('vendor_ownership_duration', parseInt(e.target.value) || 0)}
+                  placeholder="How long has the vendor owned this property? (e.g., 24)"
+                  className="bg-white/5 border border-white/20 text-white"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="vendor_motivation" className="text-white font-semibold flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-yellow-400" />
+                  Vendor Motivation
+                </Label>
+                <Input
+                  id="vendor_motivation"
+                  value={formData.vendor_motivation}
+                  onChange={(e) => handleInputChange('vendor_motivation', e.target.value)}
+                  placeholder="Why is the vendor selling? (e.g., relocating, downsizing)"
+                  className="bg-white/5 border border-white/20 text-white"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="vendor_special_conditions" className="text-white font-semibold flex items-center gap-2">
+                <FileText className="w-4 h-4 text-yellow-400" />
+                Special Conditions
+              </Label>
+              <Textarea
+                id="vendor_special_conditions"
+                value={formData.vendor_special_conditions}
+                onChange={(e) => handleInputChange('vendor_special_conditions', e.target.value)}
+                placeholder="Any special conditions or requirements from the vendor (e.g., settlement period, inspection requirements)"
+                className="bg-white/5 border border-white/20 text-white"
+                rows={3}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="vendor_favorable_contracts" className="text-white font-semibold flex items-center gap-2">
+                <Handshake className="w-4 h-4 text-yellow-400" />
+                Favorable Contract Terms
+              </Label>
+              <Textarea
+                id="vendor_favorable_contracts"
+                value={formData.vendor_favorable_contracts}
+                onChange={(e) => handleInputChange('vendor_favorable_contracts', e.target.value)}
+                placeholder="Any favorable contract terms the vendor is offering (e.g., flexible settlement, included items, price negotiations)"
+                className="bg-white/5 border border-white/20 text-white"
+                rows={3}
+              />
+            </div>
           </div>
 
           {/* Form Actions */}

@@ -29,6 +29,10 @@ export interface CreatePropertyListingData {
   contact_phone?: string;
   contact_email?: string;
   showing_instructions?: string;
+  vendor_ownership_duration?: number | null;
+  vendor_special_conditions?: string | null;
+  vendor_favorable_contracts?: string | null;
+  vendor_motivation?: string | null;
 }
 
 export interface UpdatePropertyListingData extends Partial<CreatePropertyListingData> {

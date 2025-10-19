@@ -9,6 +9,8 @@ export interface BuyerPreferences extends UserPreferences {
   min_budget?: number;
   preferred_bedrooms?: number;
   preferred_bathrooms?: number;
+  preferred_garages?: number;
+  preferred_features?: string[];
   preferred_square_feet_min?: number;
   preferred_square_feet_max?: number;
   move_in_timeline?: 'immediate' | '1-3_months' | '3-6_months' | '6-12_months' | 'flexible';
@@ -23,6 +25,8 @@ export interface PropertySearchCriteria {
   propertyType?: string;
   bedrooms?: number;
   bathrooms?: number;
+  garages?: number;
+  features?: string[];
   minSquareFeet?: number;
   maxSquareFeet?: number;
 }
@@ -48,21 +52,24 @@ export class BuyerProfileService extends ProfileService {
         buyerPreferences.max_budget = 1000000;
       }
 
-      // Extract bedrooms and bathrooms from preferred_areas array
+      // Extract bedrooms, bathrooms, and garages from preferred_areas array
       if (preferences.preferred_areas) {
         const bedroomPref = preferences.preferred_areas.find(area => area.startsWith('bedrooms:'));
         const bathroomPref = preferences.preferred_areas.find(area => area.startsWith('bathrooms:'));
+        const garagePref = preferences.preferred_areas.find(area => area.startsWith('garages:'));
         
         buyerPreferences.preferred_bedrooms = bedroomPref ? parseInt(bedroomPref.split(':')[1]) : 2;
         buyerPreferences.preferred_bathrooms = bathroomPref ? parseInt(bathroomPref.split(':')[1]) : 2;
+        buyerPreferences.preferred_garages = garagePref ? parseInt(garagePref.split(':')[1]) : 0;
         
-        // Filter out bedroom/bathroom preferences from areas
+        // Filter out bedroom/bathroom/garage preferences from areas
         buyerPreferences.preferred_areas = preferences.preferred_areas.filter(area => 
-          !area.startsWith('bedrooms:') && !area.startsWith('bathrooms:')
+          !area.startsWith('bedrooms:') && !area.startsWith('bathrooms:') && !area.startsWith('garages:')
         );
       } else {
         buyerPreferences.preferred_bedrooms = 2;
         buyerPreferences.preferred_bathrooms = 2;
+        buyerPreferences.preferred_garages = 0;
       }
 
       // Set default values for fields that don't exist in the database
@@ -99,17 +106,21 @@ export class BuyerProfileService extends ProfileService {
         delete dbPreferences.max_budget;
       }
 
-      // Store bedrooms and bathrooms in preferred_areas array for now (temporary solution)
-      if (preferences.preferred_bedrooms || preferences.preferred_bathrooms) {
+      // Store bedrooms, bathrooms, and garages in preferred_areas array for now (temporary solution)
+      if (preferences.preferred_bedrooms || preferences.preferred_bathrooms || preferences.preferred_garages !== undefined) {
         const existingAreas = dbPreferences.preferred_areas || [];
         const bedroomPref = preferences.preferred_bedrooms ? `bedrooms:${preferences.preferred_bedrooms}` : null;
         const bathroomPref = preferences.preferred_bathrooms ? `bathrooms:${preferences.preferred_bathrooms}` : null;
+        const garagePref = preferences.preferred_garages !== undefined ? `garages:${preferences.preferred_garages}` : null;
         
-        // Remove existing bedroom/bathroom preferences and add new ones
-        const filteredAreas = existingAreas.filter(area => !area.startsWith('bedrooms:') && !area.startsWith('bathrooms:'));
+        // Remove existing bedroom/bathroom/garage preferences and add new ones
+        const filteredAreas = existingAreas.filter(area => 
+          !area.startsWith('bedrooms:') && !area.startsWith('bathrooms:') && !area.startsWith('garages:')
+        );
         const newAreas = [...filteredAreas];
         if (bedroomPref) newAreas.push(bedroomPref);
         if (bathroomPref) newAreas.push(bathroomPref);
+        if (garagePref) newAreas.push(garagePref);
         
         dbPreferences.preferred_areas = newAreas;
       }
@@ -117,6 +128,7 @@ export class BuyerProfileService extends ProfileService {
       // Remove other fields that don't exist in the database schema
       delete dbPreferences.preferred_bedrooms;
       delete dbPreferences.preferred_bathrooms;
+      delete dbPreferences.preferred_garages;
       delete dbPreferences.preferred_square_feet_min;
       delete dbPreferences.preferred_square_feet_max;
       delete dbPreferences.move_in_timeline;
@@ -173,10 +185,12 @@ export class BuyerProfileService extends ProfileService {
         max_budget: criteria.maxPrice,
         preferred_bedrooms: criteria.bedrooms,
         preferred_bathrooms: criteria.bathrooms,
+        preferred_garages: criteria.garages,
         preferred_square_feet_min: criteria.minSquareFeet,
         preferred_square_feet_max: criteria.maxSquareFeet,
         preferred_areas: criteria.location ? [criteria.location] : undefined,
-        property_type_preferences: criteria.propertyType ? [criteria.propertyType] : undefined
+        property_type_preferences: criteria.propertyType ? [criteria.propertyType] : undefined,
+        preferred_features: criteria.features
       };
 
       const result = await this.updateBuyerPreferences(userId, preferences);
@@ -233,8 +247,8 @@ export class BuyerProfileService extends ProfileService {
       if (preferences.preferred_bedrooms) {
         query = query.gte('bedrooms', preferences.preferred_bedrooms);
       }
-      if (preferences.preferred_bathrooms) {
-        query = query.gte('bathrooms', preferences.preferred_bathrooms);
+      if (preferences.preferred_garages !== undefined) {
+        query = query.gte('garages', preferences.preferred_garages);
       }
       if (preferences.preferred_areas && preferences.preferred_areas.length > 0) {
         query = query.in('city', preferences.preferred_areas);

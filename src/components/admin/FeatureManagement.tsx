@@ -18,6 +18,7 @@ interface FeatureConfig {
   feature_name: string;
   description: string;
   free_tier_enabled: boolean;
+  basic_tier_enabled: boolean;
   premium_tier_enabled: boolean;
   created_at: string;
   updated_at: string;
@@ -33,6 +34,7 @@ export const FeatureManagement = () => {
     feature_name: '',
     description: '',
     free_tier_enabled: false,
+    basic_tier_enabled: false,
     premium_tier_enabled: true
   });
 
@@ -40,7 +42,12 @@ export const FeatureManagement = () => {
     const descriptions: { [key: string]: string } = {
       // === NEW CLEAN FEATURE GATES ===
       // Search & Discovery
+      'browse_listings': 'View all public property listings',
       'basic_search': 'Standard property search functionality',
+      'save_searches': 'Save search criteria and get alerts',
+      'early_access_listings': '24-hour early access to new listings',
+      'property_insights': 'Detailed property analytics and market data',
+      'investor_filters': 'Advanced filters for investment properties',
       'advanced_search_filters': 'Advanced property filtering options',
       'market_insights': 'Access to market analytics and insights',
       
@@ -57,6 +64,12 @@ export const FeatureManagement = () => {
       'message_history_30days': 'Access to 30 days of message history',
       'message_history_unlimited': 'Access to complete message history',
       'priority_support': 'Get priority response from agents',
+      
+      // Premium Features
+      'exclusive_offmarket': 'Access to agent-posted off-market properties',
+      'vendor_details': 'View ownership duration and special conditions',
+      'schedule_appointments': 'Book appointments directly with agents',
+      'direct_chat_agents': 'In-app messaging with agents',
       
       // Notifications
       'email_notifications': 'Receive email notifications',
@@ -92,7 +105,12 @@ export const FeatureManagement = () => {
         .order('feature_name');
 
       if (error) throw error;
-      setFeatures(data || []);
+      // Ensure basic_tier_enabled is included (default to false if not present)
+      const featuresWithBasic = (data || []).map(feature => ({
+        ...feature,
+        basic_tier_enabled: feature.basic_tier_enabled || false
+      }));
+      setFeatures(featuresWithBasic);
     } catch (error) {
       console.error('Error fetching features:', error);
       toast.error('Failed to fetch feature configurations');
@@ -115,6 +133,7 @@ export const FeatureManagement = () => {
             feature_name: formData.feature_name,
             description: formData.description,
             free_tier_enabled: formData.free_tier_enabled,
+            basic_tier_enabled: formData.basic_tier_enabled,
             premium_tier_enabled: formData.premium_tier_enabled
           })
           .eq('id', editingFeature.id);
@@ -137,6 +156,7 @@ export const FeatureManagement = () => {
         feature_name: '',
         description: '',
         free_tier_enabled: false,
+        basic_tier_enabled: false,
         premium_tier_enabled: true
       });
       fetchFeatures();
@@ -153,6 +173,7 @@ export const FeatureManagement = () => {
       feature_name: feature.feature_name,
       description: feature.description || '',
       free_tier_enabled: feature.free_tier_enabled,
+      basic_tier_enabled: feature.basic_tier_enabled || false,
       premium_tier_enabled: feature.premium_tier_enabled
     });
     setDialogOpen(true);
@@ -176,10 +197,12 @@ export const FeatureManagement = () => {
     }
   };
 
-  const toggleFeatureAccess = async (featureId: string, tier: 'free' | 'premium', enabled: boolean) => {
+  const toggleFeatureAccess = async (featureId: string, tier: 'free' | 'basic' | 'premium', enabled: boolean) => {
     try {
       const updateData = tier === 'free' 
         ? { free_tier_enabled: enabled }
+        : tier === 'basic'
+        ? { basic_tier_enabled: enabled }
         : { premium_tier_enabled: enabled };
 
       const { error } = await supabase
@@ -219,6 +242,7 @@ export const FeatureManagement = () => {
                   feature_name: '',
                   description: '',
                   free_tier_enabled: false,
+                  basic_tier_enabled: false,
                   premium_tier_enabled: true
                 });
               }}>
@@ -274,6 +298,14 @@ export const FeatureManagement = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Switch
+                    id="basic_tier"
+                    checked={formData.basic_tier_enabled}
+                    onCheckedChange={(checked) => setFormData({ ...formData, basic_tier_enabled: checked })}
+                  />
+                  <Label htmlFor="basic_tier">Enable for Basic Tier</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
                     id="premium_tier"
                     checked={formData.premium_tier_enabled}
                     onCheckedChange={(checked) => setFormData({ ...formData, premium_tier_enabled: checked })}
@@ -297,6 +329,7 @@ export const FeatureManagement = () => {
               <TableHead>Feature</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Free Tier</TableHead>
+              <TableHead>Basic Tier</TableHead>
               <TableHead>Premium Tier</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -304,11 +337,11 @@ export const FeatureManagement = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">Loading...</TableCell>
+                <TableCell colSpan={6} className="text-center">Loading...</TableCell>
               </TableRow>
             ) : features.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">No features configured</TableCell>
+                <TableCell colSpan={6} className="text-center">No features configured</TableCell>
               </TableRow>
             ) : (
               features.map((feature) => (
@@ -336,6 +369,19 @@ export const FeatureManagement = () => {
                       />
                       <Badge variant={feature.free_tier_enabled ? 'default' : 'secondary'}>
                         {feature.free_tier_enabled ? 'Enabled' : 'Disabled'}
+                      </Badge>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={feature.basic_tier_enabled || false}
+                        onCheckedChange={(checked) => 
+                          toggleFeatureAccess(feature.id, 'basic', checked)
+                        }
+                      />
+                      <Badge variant={feature.basic_tier_enabled ? 'default' : 'secondary'}>
+                        {feature.basic_tier_enabled ? 'Enabled' : 'Disabled'}
                       </Badge>
                     </div>
                   </TableCell>

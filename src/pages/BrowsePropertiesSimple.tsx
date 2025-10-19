@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import SimplePropertyFilters from '@/components/property/SimplePropertyFilters';
+import { EarlyAccessBadge } from '@/components/property/EarlyAccessBadge';
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'price-low' | 'price-high' | 'newest' | 'oldest';
@@ -298,6 +299,7 @@ const BrowsePropertiesSimple = () => {
                 SOLD
               </Badge>
             )}
+            <EarlyAccessBadge earlyAccessUntil={listing.early_access_until} />
             {hasImages && (
               <Badge className="bg-black/50 text-white flex items-center gap-1">
                 <Camera className="h-3 w-3" />

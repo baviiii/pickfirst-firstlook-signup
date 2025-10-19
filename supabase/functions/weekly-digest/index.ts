@@ -220,7 +220,8 @@ async function getFeaturedProperties(supabaseClient: any): Promise<Array<any>> {
         property_type,
         bedrooms,
         bathrooms,
-        square_feet
+        square_feet,
+        images
       `)
       .eq('status', 'approved')
       .order('created_at', { ascending: false })
@@ -409,13 +410,21 @@ async function sendWeeklyDigestEmail(supabaseClient: any, digest: WeeklyDigest, 
             </div>
             
             <div class="featured-properties">
-              <h3>⭐ Featured Properties</h3>
+              <h3>⭐ Featured Properties This Week</h3>
               ${digest.featured_properties.map(property => `
-                <div class="property-card">
-                  <div class="property-title">${property.title}</div>
-                  <div class="property-details">
-                    ${property.city}, ${property.state} • $${property.price.toLocaleString()} • 
-                    ${property.bedrooms} bed, ${property.bathrooms} bath • ${property.square_feet} sq ft
+                <div class="property-card" style="background: white; padding: 0; margin: 15px 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                  ${property.images?.[0] ? `
+                    <div style="position: relative; width: 100%; height: 0; padding-bottom: 60%; overflow: hidden; background: #f0f0f0;">
+                      <img src="${property.images[0]}" alt="${property.title}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" />
+                    </div>
+                  ` : ''}
+                  <div style="padding: 20px;">
+                    <div class="property-title" style="font-weight: bold; color: #1f2937; margin-bottom: 10px; font-size: 18px;">${property.title}</div>
+                    <div class="property-details" style="color: #6b7280; font-size: 0.9em; line-height: 1.6;">
+                      📍 ${property.city}, ${property.state}<br/>
+                      💰 $${property.price.toLocaleString()}<br/>
+                      🏠 ${property.bedrooms} bed • ${property.bathrooms} bath • ${property.square_feet} sq ft
+                    </div>
                   </div>
                 </div>
               `).join('')}

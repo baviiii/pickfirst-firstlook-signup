@@ -73,7 +73,12 @@ const BrowsePropertiesPageComponent = () => {
     setLoading(true);
     try {
       const { data } = await PropertyService.getApprovedListings();
-      setListings(data || []);
+      // Filter out agent-posted (off-market) listings - those require premium
+      // Only show external_feed listings on browse page
+      const publicListings = data?.filter(listing => 
+        (listing as any).listing_source !== 'agent_posted'
+      ) || [];
+      setListings(publicListings);
     } catch (error) {
       toast.error('Failed to load properties');
       setListings([]);

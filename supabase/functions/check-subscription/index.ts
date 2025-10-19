@@ -120,7 +120,10 @@ serve(async (req) => {
             subscriptionEnd = null;
           }
         } catch (error) {
-          logStep("Error parsing subscription end date", { error: error.message, rawPeriodEnd });
+          logStep("Error parsing subscription end date", { 
+            error: error instanceof Error ? error.message : String(error), 
+            rawPeriodEnd 
+          });
           subscriptionEnd = null;
         }
       } else {

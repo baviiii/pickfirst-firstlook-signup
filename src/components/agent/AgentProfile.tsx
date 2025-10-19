@@ -15,7 +15,6 @@ import {
   Save, 
   Bell, 
   Shield, 
-  CreditCard, 
   Settings,
   Star,
   Award,
@@ -147,21 +146,6 @@ export const AgentProfile = () => {
     fileInputRef.current?.click();
   };
 
-  const getSubscriptionBadge = () => {
-    const tier = profile?.subscription_tier || 'free';
-    const colors = {
-      free: 'bg-gray-500/10 text-gray-500',
-      basic: 'bg-blue-500/10 text-blue-500',
-      premium: 'bg-purple-500/10 text-purple-500',
-      pro: 'bg-amber-500/10 text-amber-500'
-    };
-    
-    return (
-      <Badge className={colors[tier as keyof typeof colors]}>
-        {tier.charAt(0).toUpperCase() + tier.slice(1)}
-      </Badge>
-    );
-  };
 
   const getAchievementIcon = (type: string) => {
     switch (type) {
@@ -212,10 +196,6 @@ export const AgentProfile = () => {
             <Bell className="h-4 w-4 mr-2" />
             Notifications
           </TabsTrigger>
-          <TabsTrigger value="subscription" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <CreditCard className="h-4 w-4 mr-2" />
-            Subscription
-          </TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -252,7 +232,6 @@ export const AgentProfile = () => {
                 </div>
                 <CardTitle className="mt-4">{profile?.full_name || 'Agent Name'}</CardTitle>
                 <CardDescription>Real Estate Agent</CardDescription>
-                {getSubscriptionBadge()}
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 text-sm">
@@ -476,36 +455,6 @@ export const AgentProfile = () => {
                   checked={notifications.system_updates}
                   onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, system_updates: checked }))}
                 />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Subscription Tab */}
-        <TabsContent value="subscription" className="space-y-6">
-          <Card className="bg-gradient-to-br from-background/90 to-muted/90 border border-primary/20">
-            <CardHeader>
-              <CardTitle>Current Subscription</CardTitle>
-              <CardDescription>Manage your PickFirst subscription</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                <div>
-                  <h3 className="font-semibold">
-                    {(profile?.subscription_tier || 'free').charAt(0).toUpperCase() + (profile?.subscription_tier || 'free').slice(1)} Plan
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {profile?.subscription_tier === 'free' ? 'Basic features included' : 'All premium features included'}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="text-lg font-bold">
-                    {profile?.subscription_tier === 'free' ? '$0' : '$49'}/month
-                  </div>
-                  <Button size="sm" className="mt-2">
-                    {profile?.subscription_tier === 'free' ? 'Upgrade Plan' : 'Manage Subscription'}
-                  </Button>
-                </div>
               </div>
             </CardContent>
           </Card>

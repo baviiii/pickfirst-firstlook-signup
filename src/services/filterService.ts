@@ -211,7 +211,7 @@ export class FilterService {
       }
 
       if (filters.garageSpaces !== undefined) {
-        query = query.gte('garage_spaces', filters.garageSpaces);
+        query = query.gte('garages', filters.garageSpaces);
       }
 
       // Features filtering (array contains)

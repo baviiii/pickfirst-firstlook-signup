@@ -23,7 +23,9 @@ import {
   TrendingUp,
   Clock,
   AlertCircle,
-  Crown
+  Crown,
+  Lock,
+  Star
 } from 'lucide-react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { useNavigate } from 'react-router-dom';
@@ -118,8 +120,7 @@ const BuyerDashboardComponent = () => {
     const badgeConfig = {
       free: { color: 'bg-gray-500', label: 'Free', icon: null },
       basic: { color: 'bg-pickfirst-yellow', label: 'Basic', icon: Crown },
-      premium: { color: 'bg-pickfirst-amber', label: 'Premium', icon: Crown },
-      pro: { color: 'bg-pickfirst-yellow', label: 'Pro', icon: Crown }
+      premium: { color: 'bg-pickfirst-amber', label: 'Premium', icon: Crown }
     };
     
     const config = badgeConfig[tier as keyof typeof badgeConfig] || badgeConfig.free;
@@ -192,6 +193,14 @@ const BuyerDashboardComponent = () => {
       description: 'Find your perfect home', 
       color: 'bg-blue-500/10 text-blue-500', 
       onClick: () => navigate('/browse-properties') 
+    },
+    { 
+      icon: Star, 
+      label: 'Off-Market Properties', 
+      description: subscriptionTier === 'premium' ? 'Exclusive agent listings' : 'Premium feature - upgrade to access', 
+      color: 'bg-pickfirst-yellow/10 text-pickfirst-yellow', 
+      onClick: () => subscriptionTier === 'premium' ? navigate('/off-market') : navigate('/pricing'),
+      premium: subscriptionTier !== 'premium'
     },
     { 
       icon: Heart, 

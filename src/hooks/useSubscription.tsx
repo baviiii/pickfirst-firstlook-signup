@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 
 interface SubscriptionContextType {
   subscribed: boolean;
-  subscriptionTier: 'free' | 'premium';
+  subscriptionTier: 'free' | 'basic' | 'premium';
   subscriptionEnd: string | null;
   productId: string | null;
   loading: boolean;
@@ -21,6 +21,13 @@ interface SubscriptionContextType {
   getPropertyComparisonLimit: () => number;
   getPropertyAlertsLimit: () => number;
   getMessageHistoryDays: () => number;
+  canAccessOffMarketListings: () => boolean;
+  canChatWithAgents: () => boolean;
+  canScheduleAppointments: () => boolean;
+  canViewVendorDetails: () => boolean;
+  hasEarlyAccess: () => boolean;
+  canUsePropertyInsights: () => boolean;
+  canUseInvestorFilters: () => boolean;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -41,7 +48,7 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
   const [user, setUser] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
   const [subscribed, setSubscribed] = useState(false);
-  const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'premium'>('free');
+  const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'basic' | 'premium'>('free');
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [productId, setProductId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,23 +86,23 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
       try {
         const { data: featureData, error: featureError } = await supabase
           .from('feature_configurations')
-          .select('feature_key, free_tier_enabled, premium_tier_enabled');
+          .select('feature_key, free_tier_enabled, basic_tier_enabled, premium_tier_enabled');
         
         if (!featureError && featureData) {
-          const configs: {[key: string]: {free: boolean, premium: boolean}} = {};
+          const configs: {[key: string]: {free: boolean, basic: boolean, premium: boolean}} = {};
           featureData.forEach(config => {
             configs[config.feature_key] = {
               free: config.free_tier_enabled,
+              basic: config.basic_tier_enabled || false,
               premium: config.premium_tier_enabled
             };
           });
           setFeatureConfigs(configs);
         }
       } catch (featureError) {
-        console.error('Error refreshing feature configs:', featureError);
+        // Feature config refresh failed silently
       }
     } catch (error) {
-      console.error('Error checking subscription:', error);
       toast.error('Failed to check subscription status');
       // Default to free tier on error
       setSubscribed(false);
@@ -129,7 +136,6 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
         window.open(data.url, '_blank');
       }
     } catch (error) {
-      console.error('Error creating checkout:', error);
       toast.error('Failed to create checkout session');
     }
   };
@@ -149,19 +155,29 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Customer portal error:', error);
+        if (error.message?.includes('No configuration')) {
+          toast.error('Subscription management is being set up. Please contact support or try again later.');
+        } else {
+          toast.error('Failed to open subscription management');
+        }
+        return;
+      }
 
       if (data?.url) {
         window.open(data.url, '_blank');
+      } else {
+        toast.error('Unable to open subscription portal. Please try again.');
       }
     } catch (error) {
-      console.error('Error opening customer portal:', error);
-      toast.error('Failed to open subscription management');
+      console.error('Subscription portal error:', error);
+      toast.error('Failed to open subscription management. Please contact support.');
     }
   };
 
   // Dynamic feature gating logic
-  const [featureConfigs, setFeatureConfigs] = useState<{[key: string]: {free: boolean, premium: boolean}}>({});
+  const [featureConfigs, setFeatureConfigs] = useState<{[key: string]: {free: boolean, basic: boolean, premium: boolean}}>({});
   
   // Fetch feature configurations
   useEffect(() => {
@@ -169,59 +185,68 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
       try {
         const { data, error } = await supabase
           .from('feature_configurations')
-          .select('feature_key, free_tier_enabled, premium_tier_enabled');
+          .select('feature_key, free_tier_enabled, basic_tier_enabled, premium_tier_enabled');
         
         if (error) throw error;
         
-        const configs: {[key: string]: {free: boolean, premium: boolean}} = {};
+        const configs: {[key: string]: {free: boolean, basic: boolean, premium: boolean}} = {};
         data?.forEach(config => {
           configs[config.feature_key] = {
             free: config.free_tier_enabled,
+            basic: config.basic_tier_enabled || false,
             premium: config.premium_tier_enabled
           };
         });
         setFeatureConfigs(configs);
       } catch (error) {
-        console.error('Error fetching feature configurations:', error);
         // Fallback to default configs if fetch fails
         setFeatureConfigs({
           // === SEARCH & DISCOVERY ===
-          'basic_search': { free: true, premium: true },
-          'advanced_search_filters': { free: false, premium: true },
-          'market_insights': { free: false, premium: true },
+          'browse_listings': { free: true, basic: true, premium: true },
+          'basic_search': { free: true, basic: true, premium: true },
+          'save_searches': { free: true, basic: true, premium: true },
+          'early_access_listings': { free: false, basic: true, premium: true },
+          'property_insights': { free: false, basic: true, premium: true },
+          'investor_filters': { free: false, basic: true, premium: true },
           
           // === PROPERTY MANAGEMENT ===
-          'favorites_basic': { free: true, premium: true }, // Up to 10 favorites
-          'favorites_unlimited': { free: false, premium: true }, // Unlimited favorites
-          'property_comparison_basic': { free: true, premium: true }, // Compare 2 properties
-          'property_comparison_unlimited': { free: false, premium: true }, // Compare unlimited
-          'property_alerts_basic': { free: true, premium: true }, // 3 alerts max
-          'property_alerts_unlimited': { free: false, premium: true }, // Unlimited alerts
+          'favorites_basic': { free: true, basic: true, premium: true }, // Up to 10 favorites
+          'favorites_unlimited': { free: false, basic: false, premium: true }, // Unlimited favorites
+          'property_comparison_basic': { free: true, basic: true, premium: true }, // Compare 2 properties
+          'property_comparison_unlimited': { free: false, basic: false, premium: true }, // Compare unlimited
+          'property_alerts_basic': { free: true, basic: true, premium: true }, // 3 alerts max
+          'property_alerts_unlimited': { free: false, basic: false, premium: true }, // Unlimited alerts
           
           // === COMMUNICATION ===
-          'agent_messaging': { free: true, premium: true },
-          'message_history_30days': { free: true, premium: true },
-          'message_history_unlimited': { free: false, premium: true },
-          'priority_support': { free: false, premium: true },
+          'agent_messaging': { free: true, basic: true, premium: true },
+          'message_history_30days': { free: true, basic: true, premium: true },
+          'message_history_unlimited': { free: false, basic: false, premium: true },
+          'priority_support': { free: false, basic: false, premium: true },
+          
+          // === PREMIUM FEATURES ===
+          'exclusive_offmarket': { free: false, basic: false, premium: true },
+          'vendor_details': { free: false, basic: false, premium: true },
+          'schedule_appointments': { free: false, basic: false, premium: true },
+          'direct_chat_agents': { free: false, basic: false, premium: true },
           
           // === NOTIFICATIONS ===
-          'email_notifications': { free: true, premium: true },
-          'personalized_alerts': { free: false, premium: true },
-          'instant_notifications': { free: false, premium: true },
+          'email_notifications': { free: true, basic: true, premium: true },
+          'personalized_alerts': { free: false, basic: true, premium: true },
+          'instant_notifications': { free: false, basic: false, premium: true },
           
           // === LEGACY SUPPORT (for backward compatibility) ===
-          'limited_favorites': { free: true, premium: true },
-          'standard_agent_contact': { free: true, premium: true },
-          'property_inquiry_messaging': { free: true, premium: true },
-          'unlimited_favorites': { free: false, premium: true },
-          'priority_agent_connections': { free: false, premium: true },
-          'email_property_alerts': { free: true, premium: true },
-          'direct_messaging': { free: true, premium: true },
-          'live_messaging': { free: true, premium: true },
-          'message_history_access': { free: false, premium: true },
-          'personalized_property_notifications': { free: false, premium: true },
-          'property_comparison': { free: true, premium: true },
-          'property_alerts': { free: true, premium: true }
+          'limited_favorites': { free: true, basic: true, premium: true },
+          'standard_agent_contact': { free: true, basic: true, premium: true },
+          'property_inquiry_messaging': { free: true, basic: true, premium: true },
+          'unlimited_favorites': { free: false, basic: false, premium: true },
+          'priority_agent_connections': { free: false, basic: false, premium: true },
+          'email_property_alerts': { free: true, basic: true, premium: true },
+          'direct_messaging': { free: true, basic: true, premium: true },
+          'live_messaging': { free: true, basic: true, premium: true },
+          'message_history_access': { free: false, basic: false, premium: true },
+          'personalized_property_notifications': { free: false, basic: false, premium: true },
+          'property_comparison': { free: true, basic: true, premium: true },
+          'property_alerts': { free: true, basic: true, premium: true }
         });
       }
     };
@@ -239,7 +264,6 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
           table: 'feature_configurations'
         },
         (payload) => {
-          console.log('Feature configuration changed:', payload);
           // Refetch feature configurations when changes occur
           fetchFeatureConfigs();
         }
@@ -255,20 +279,21 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     try {
       const { data, error } = await supabase
         .from('feature_configurations')
-        .select('feature_key, free_tier_enabled, premium_tier_enabled');
+        .select('feature_key, free_tier_enabled, basic_tier_enabled, premium_tier_enabled');
       
       if (error) throw error;
       
-      const configs: {[key: string]: {free: boolean, premium: boolean}} = {};
+      const configs: {[key: string]: {free: boolean, basic: boolean, premium: boolean}} = {};
       data?.forEach(config => {
         configs[config.feature_key] = {
           free: config.free_tier_enabled,
+          basic: config.basic_tier_enabled || false,
           premium: config.premium_tier_enabled
         };
       });
       setFeatureConfigs(configs);
     } catch (error) {
-      console.error('Error refreshing feature configurations:', error);
+      // Feature refresh failed silently
     }
   }, []);
 
@@ -278,6 +303,8 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     
     if (subscriptionTier === 'premium' && subscribed) {
       return config.premium;
+    } else if (subscriptionTier === 'basic' && subscribed) {
+      return config.basic;
     } else {
       return config.free;
     }
@@ -318,6 +345,35 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     if (isFeatureEnabled('message_history_unlimited')) return -1; // Unlimited
     if (isFeatureEnabled('message_history_30days')) return 30;
     return 0; // No message history
+  };
+
+  // New helper functions for new subscription features
+  const canAccessOffMarketListings = (): boolean => {
+    return isFeatureEnabled('exclusive_offmarket');
+  };
+
+  const canChatWithAgents = (): boolean => {
+    return isFeatureEnabled('agent_messaging') || subscriptionTier === 'premium';
+  };
+
+  const canScheduleAppointments = (): boolean => {
+    return subscriptionTier === 'premium'; // Only premium users
+  };
+
+  const canViewVendorDetails = (): boolean => {
+    return isFeatureEnabled('vendor_details');
+  };
+
+  const hasEarlyAccess = (): boolean => {
+    return isFeatureEnabled('early_access_listings');
+  };
+
+  const canUsePropertyInsights = (): boolean => {
+    return isFeatureEnabled('property_insights');
+  };
+
+  const canUseInvestorFilters = (): boolean => {
+    return isFeatureEnabled('investor_filters');
   };
 
   // Set up auth state listener
@@ -386,6 +442,13 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
         getPropertyComparisonLimit,
         getPropertyAlertsLimit,
         getMessageHistoryDays,
+        canAccessOffMarketListings,
+        canChatWithAgents,
+        canScheduleAppointments,
+        canViewVendorDetails,
+        hasEarlyAccess,
+        canUsePropertyInsights,
+        canUseInvestorFilters,
       }}
     >
       {children}

@@ -445,6 +445,15 @@ function checkPropertyMatch(
 async function sendPropertyAlert(supabaseClient: any, match: AlertMatch): Promise<void> {
   const propertyUrl = `https://baviiii.github.io/pickfirst-firstlook-signup/property/${match.property.id}`
   
+  // Get property images
+  const { data: propertyWithImages } = await supabaseClient
+    .from('property_listings')
+    .select('images')
+    .eq('id', match.property.id)
+    .single();
+  
+  const firstImage = propertyWithImages?.images?.[0] || null;
+  
   await supabaseClient.functions.invoke('send-email', {
     body: {
       to: match.buyerEmail,
@@ -457,6 +466,7 @@ async function sendPropertyAlert(supabaseClient: any, match: AlertMatch): Promis
         propertyType: match.property.property_type,
         bedrooms: match.property.bedrooms || 0,
         bathrooms: match.property.bathrooms || 0,
+        image: firstImage,
         propertyUrl
       }
     }

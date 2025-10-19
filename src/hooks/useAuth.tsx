@@ -80,7 +80,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
           setLoading(false);
         } catch (error) {
-          console.error('Auth state change error:', error);
           await handleAuthError(error);
           setLoading(false);
         }
@@ -91,7 +90,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       try {
         if (error) {
-          console.error('Session retrieval error:', error);
           await handleAuthError(error);
         }
         
@@ -102,7 +100,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         setLoading(false);
       } catch (error) {
-        console.error('Session setup error:', error);
         await handleAuthError(error);
         setLoading(false);
       }
@@ -162,8 +159,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
     
     // Send welcome email for new users (async, don't wait for it)
-    if (!error && data.user && !data.user.email_confirmed_at) {
-      // Use setTimeout to send email without blocking the signup process
+    // Note: Supabase sends its own verification email with the link
+    // This is just a supplementary welcome email
+    if (!error && data.user) {
       setTimeout(async () => {
         try {
           const { EmailService } = await import('@/services/emailService');
@@ -173,9 +171,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             fullNameValidation.sanitizedValue
           );
         } catch (emailError) {
-          console.error('Failed to send welcome email:', emailError);
+          console.error('Welcome email failed:', emailError);
         }
-      }, 2000); // Send after 2 seconds to ensure profile is created
+      }, 2000);
     }
     
     setError(prev => ({ ...prev, signUp: error }));
@@ -225,7 +223,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setError(prev => ({ ...prev, signIn: error }));
       return { error };
     } catch (error) {
-      console.error('Sign in error:', error);
       // Log failed signin attempt
       await ipTrackingService.logLoginActivity({
         email: emailValidation.sanitizedValue!,
@@ -255,7 +252,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         success: true
       });
     } catch (error) {
-      console.error('Sign out error:', error);
       clearAuthTokens(); // Clear tokens even if signout fails
       
       // Log failed signout attempt
@@ -331,7 +327,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const { EmailService } = await import('@/services/emailService');
             await EmailService.sendPasswordResetEmail(emailValidation.sanitizedValue!);
           } catch (emailError) {
-            console.error('Failed to send password reset email:', emailError);
+            // Email sending failed silently
           }
         }, 1000);
       }
@@ -339,7 +335,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setError(prev => ({ ...prev, forgotPassword: error }));
       return { error };
     } catch (error) {
-      console.error('Forgot password error:', error);
       // Log forgot password attempt
       await ipTrackingService.logLoginActivity({
         email: emailValidation.sanitizedValue!,
@@ -393,7 +388,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const results = await Promise.allSettled(promises);
           isReused = results.some(result => result.status === 'fulfilled' && result.value === true);
         } catch (error) {
-          console.warn('Password history check failed:', error);
+          // Password history check failed, proceed anyway
         }
 
         if (isReused) {
@@ -444,8 +439,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { error: null };
 
     } catch (error) {
-      console.error('Password reset error:', error);
-      
       // Log failed attempt
       if (user?.id) {
         await auditService.log(user.id, 'PASSWORD_UPDATE_FAILED', 'authentication', {
@@ -487,7 +480,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await response.json();
       return data.ip || 'unknown';
     } catch (error) {
-      console.error('Error getting client IP:', error);
       return 'unknown';
     }
   }

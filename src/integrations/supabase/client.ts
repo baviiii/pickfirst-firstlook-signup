@@ -2,8 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://rkwvgqozbpqgmpbvujgz.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrd3ZncW96YnBxZ21wYnZ1amd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzMDYyNDMsImV4cCI6MjA2Nzg4MjI0M30.fSLOGnAo3OU7B726VAAAboPtWJZkBoVuSlttuHzpVJU";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
@@ -16,28 +16,40 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   }
 });
 
-// Helper function to clear auth tokens
-export const clearAuthTokens = () => {
+export const clearAuthTokens = async (): Promise<void> => {
   try {
-    localStorage.removeItem('supabase.auth.token');
-    localStorage.removeItem('sb-' + SUPABASE_URL.split('//')[1].split('.')[0] + '-auth-token');
+    await supabase.auth.signOut();
+    // Clear any additional auth-related data from localStorage if needed
+    ['sb-access-token', 'sb-refresh-token'].forEach(key => {
+      localStorage.removeItem(key);
+    });
   } catch (error) {
     console.error('Error clearing auth tokens:', error);
+    throw error;
   }
 };
 
-// Helper function to handle auth errors
-export const handleAuthError = async (error: any) => {
-  console.error('Auth error:', error);
-  
-  if (error?.message?.includes('Invalid Refresh Token') || 
-      error?.message?.includes('Refresh Token Not Found') ||
-      error?.status === 400 || 
-      error?.status === 404) {
-    clearAuthTokens();
-    // Force a page reload to clear any cached auth state
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
+export const handleAuthError = async (error: any): Promise<void> => {
+  // Check if the error is related to authentication/session issues
+  const isAuthError = 
+    error?.message?.includes('Invalid Refresh Token') ||
+    error?.message?.includes('Refresh Token Not Found') ||
+    error?.message?.includes('JWT expired') ||
+    error?.message?.includes('session_not_found') ||
+    error?.status === 401 ||
+    error?.status === 403;
+
+  if (isAuthError) {
+    console.warn('Authentication error detected, clearing tokens:', error.message);
+    try {
+      await clearAuthTokens();
+      // Optionally redirect to login page
+      // window.location.href = '/login';
+    } catch (clearError) {
+      console.error('Error clearing tokens after auth error:', clearError);
+    }
+  } else {
+    // Log non-auth errors for debugging
+    console.error('Non-auth error:', error);
   }
 };

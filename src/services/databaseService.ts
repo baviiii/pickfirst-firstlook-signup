@@ -163,22 +163,22 @@ class DatabaseService {
           operation: 'database_maintenance',
           timestamp: new Date().toISOString(),
           duration: `${duration}ms`,
-          tables_processed: result?.tables_processed || [],
-          total_tables: result?.total_tables || 0
+          tables_processed: (result as any)?.tables_processed || [],
+          total_tables: (result as any)?.total_tables || 0
         }
       });
 
       // Create a system alert for successful maintenance
       await systemAlertsService.createAlert({
         title: 'Database Maintenance Completed',
-        description: `VACUUM ANALYZE completed on ${result?.total_tables || 0} tables. All table statistics updated.`,
+        description: `VACUUM ANALYZE completed on ${(result as any)?.total_tables || 0} tables. All table statistics updated.`,
         severity: 'info',
         category: 'database',
         source: 'Database Manager',
         metadata: { 
           maintenanceType: 'vacuum_analyze',
           duration: `${duration}ms`,
-          tables_processed: result?.tables_processed || [],
+          tables_processed: (result as any)?.tables_processed || [],
           performedBy: user.user.id
         }
       });
@@ -308,9 +308,9 @@ class DatabaseService {
         alert.severity === 'critical' || alert.severity === 'warning'
       ).length || 0;
 
-      const totalSizeBytes = perfData?.database_size_bytes || 0;
-      const activeConnections = perfData?.active_connections || 0;
-      const cacheHitRatio = perfData?.cache_hit_ratio || 0;
+      const totalSizeBytes = (perfData as any)?.database_size_bytes || 0;
+      const activeConnections = (perfData as any)?.active_connections || 0;
+      const cacheHitRatio = (perfData as any)?.cache_hit_ratio || 0;
 
       // Calculate connection pool availability (assume 100 max connections)
       const maxConnections = 100;
@@ -415,22 +415,22 @@ class DatabaseService {
           operation: 'database_optimization',
           timestamp: new Date().toISOString(),
           duration: `${duration}ms`,
-          indexes_rebuilt: result?.indexes_rebuilt || [],
-          total_indexes: result?.total_indexes || 0
+          indexes_rebuilt: (result as any)?.indexes_rebuilt || [],
+          total_indexes: (result as any)?.total_indexes || 0
         }
       });
 
       // Create success alert
       await systemAlertsService.createAlert({
         title: 'Database Optimization Completed',
-        description: `REINDEX completed on ${result?.total_indexes || 0} indexes. All database statistics updated.`,
+        description: `REINDEX completed on ${(result as any)?.total_indexes || 0} indexes. All database statistics updated.`,
         severity: 'info',
         category: 'database',
         source: 'Database Optimizer',
         metadata: {
           operation: 'reindex',
           duration: `${duration}ms`,
-          indexes_rebuilt: result?.indexes_rebuilt || [],
+          indexes_rebuilt: (result as any)?.indexes_rebuilt || [],
           performedBy: user.user.id,
           timestamp: new Date().toISOString()
         }

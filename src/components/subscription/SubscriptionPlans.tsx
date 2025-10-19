@@ -132,7 +132,7 @@ export const SubscriptionPlans = () => {
           </span>
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {plans.slice(0, 3).map((plan) => (
           <Card 
             key={plan.id} 
@@ -155,9 +155,8 @@ export const SubscriptionPlans = () => {
               </div>
               <CardDescription className="min-h-[2.5rem] text-gray-300">
                 {plan.name === 'Free' && 'Perfect for getting started'}
-                {plan.name === 'Basic' && 'Great for individual agents'}
-                {plan.name === 'Premium' && 'Best for growing teams'}
-                {plan.name === 'Pro' && 'Enterprise-level features'}
+                {plan.name === 'Basic' && 'Early access and insights'}
+                {plan.name === 'Premium' && 'Full access with exclusive features'}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">

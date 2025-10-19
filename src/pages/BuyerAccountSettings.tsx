@@ -73,7 +73,9 @@ const BuyerAccountSettingsPage = () => {
     maxPrice: 1000000,
     propertyType: '',
     bedrooms: 2,
-    bathrooms: 2
+    bathrooms: 2,
+    garages: 0,
+    features: []
   });
 
   const [favoriteProperties, setFavoriteProperties] = useState<any[]>([]);
@@ -141,7 +143,9 @@ const BuyerAccountSettingsPage = () => {
             maxPrice: preferences.max_budget || 1000000,
             propertyType: preferences.property_type_preferences?.[0] || '',
             bedrooms: preferences.preferred_bedrooms || 2,
-            bathrooms: preferences.preferred_bathrooms || 2
+            bathrooms: preferences.preferred_bathrooms || 2,
+            garages: preferences.preferred_garages || 0,
+            features: preferences.preferred_features || []
           });
         }
 
@@ -972,7 +976,76 @@ const BuyerAccountSettingsPage = () => {
                     </div>
                   </div>
 
-                  <Button 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                    <div>
+                      <Label htmlFor="garages" className="text-card-foreground">Garages</Label>
+                      <Select
+                        value={searchCriteria.garages?.toString() || '0'}
+                        onValueChange={(value) => setSearchCriteria(prev => ({ ...prev, garages: parseInt(value) }))}
+                      >
+                        <SelectTrigger className="bg-input border border-border text-foreground">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">Any</SelectItem>
+                          <SelectItem value="1">1+</SelectItem>
+                          <SelectItem value="2">2+</SelectItem>
+                          <SelectItem value="3">3+</SelectItem>
+                          <SelectItem value="4">4+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="features" className="text-card-foreground">Property Features</Label>
+                      <Select
+                        value={searchCriteria.features?.[0] || ''}
+                        onValueChange={(value) => {
+                          const currentFeatures = searchCriteria.features || [];
+                          if (value && !currentFeatures.includes(value)) {
+                            setSearchCriteria(prev => ({ 
+                              ...prev, 
+                              features: [...currentFeatures, value] 
+                            }));
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="bg-input border border-border text-foreground">
+                          <SelectValue placeholder="Select features" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pool">Pool</SelectItem>
+                          <SelectItem value="gym">Gym</SelectItem>
+                          <SelectItem value="garden">Garden</SelectItem>
+                          <SelectItem value="balcony">Balcony</SelectItem>
+                          <SelectItem value="air_conditioning">Air Conditioning</SelectItem>
+                          <SelectItem value="fireplace">Fireplace</SelectItem>
+                          <SelectItem value="security_system">Security System</SelectItem>
+                          <SelectItem value="solar_panels">Solar Panels</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {searchCriteria.features && searchCriteria.features.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {searchCriteria.features.map((feature, idx) => (
+                            <Badge 
+                              key={idx} 
+                              variant="secondary" 
+                              className="text-xs cursor-pointer"
+                              onClick={() => {
+                                setSearchCriteria(prev => ({
+                                  ...prev,
+                                  features: prev.features?.filter(f => f !== feature)
+                                }));
+                              }}
+                            >
+                              {feature} ×
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <Button
                     onClick={handleSaveSearchCriteria}
                     disabled={isLoading}
                     className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"

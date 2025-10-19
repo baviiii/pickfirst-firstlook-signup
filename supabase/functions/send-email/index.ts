@@ -175,16 +175,110 @@ const getPropertyCard = (property: any) => `
 `;
 
 const templates = {
-  // Enhanced Welcome Email
-  welcome: (data: any) => ({
-    subject: `Account Created - ${data.platformName || 'PickFirst Real Estate'}`,
+  // Enhanced Welcome Email with Email Verification
+  signupVerification: (data: any) => ({
+    subject: `Verify Your Email - Welcome to ${data.platformName || 'PickFirst Real Estate'}`,
     text: `Welcome to PickFirst Real Estate!
 
-Hi ${data.name},
+Hi ${data.name || 'there'},
 
-Thank you for joining PickFirst Real Estate. We're excited to help you find your perfect property.
+Thank you for joining PickFirst Real Estate! We're excited to help you find your perfect property.
 
-What's Next?
+To get started, please verify your email address by clicking the link below:
+${data.verificationUrl}
+
+This link will expire in 24 hours for security reasons.
+
+What's Next After Verification:
+- Set up your property preferences
+- Browse our curated property listings
+- Get instant alerts for new matches
+- Connect with our expert agents
+
+Need help? Contact our support team at support@pickfirst.com.au
+
+Best regards,
+PickFirst Real Estate Team`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        ${commonStyles}
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+          ${getEmailHeader()}
+          <div class="mobile-padding" style="padding: 40px 30px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <div style="font-size: 64px; margin-bottom: 20px;">🎉</div>
+              <h1 class="mobile-heading" style="color: ${BRAND_COLORS.secondary}; margin: 0;">
+                Welcome to PickFirst Real Estate!
+              </h1>
+            </div>
+            
+            <p style="color: ${BRAND_COLORS.text}; font-size: 16px; margin-bottom: 25px; text-align: center;">
+              Hi ${data.name || 'there'}, welcome to the future of property searching!
+            </p>
+            
+            <div style="background: linear-gradient(135deg, ${BRAND_COLORS.info}, #60A5FA); padding: 30px; border-radius: 12px; margin: 25px 0; text-align: center; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+              <div style="font-size: 48px; margin-bottom: 15px;">✉️</div>
+              <h2 style="color: white; margin: 0 0 15px 0; font-size: 20px;">Verify Your Email Address</h2>
+              <p style="color: white; font-size: 14px; margin: 0 0 25px 0; opacity: 0.95;">
+                Click the button below to verify your email and activate your account
+              </p>
+              <a href="${data.verificationUrl}" style="display: inline-block; background: white; color: ${BRAND_COLORS.info}; font-weight: bold; text-align: center; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                Verify Email Address →
+              </a>
+              <p style="color: white; font-size: 12px; margin: 20px 0 0 0; opacity: 0.85;">
+                This link expires in 24 hours
+              </p>
+            </div>
+            
+            <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
+              <h2 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 20px;">What's Next After Verification?</h2>
+              <ul style="margin: 0; padding-left: 20px; color: ${BRAND_COLORS.text};">
+                <li style="margin-bottom: 10px;">✓ Set up your property preferences</li>
+                <li style="margin-bottom: 10px;">✓ Browse our curated property listings</li>
+                <li style="margin-bottom: 10px;">✓ Get instant alerts for new matches</li>
+                <li style="margin-bottom: 10px;">✓ Connect with our expert agents</li>
+              </ul>
+            </div>
+            
+            <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 30px 0; border-left: 4px solid ${BRAND_COLORS.warning};">
+              <p style="margin: 0; color: ${BRAND_COLORS.text}; font-size: 14px;">
+                <strong>💡 Tip:</strong> If the button doesn't work, copy and paste this link into your browser:<br/>
+                <a href="${data.verificationUrl}" style="color: ${BRAND_COLORS.info}; word-break: break-all; font-size: 12px;">${data.verificationUrl}</a>
+              </p>
+            </div>
+            
+            <div style="background: ${BRAND_COLORS.lightBg}; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid ${BRAND_COLORS.primary};">
+              <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
+                Need help getting started? Contact our support team at 
+                <a href="mailto:support@pickfirst.com.au" style="color: ${BRAND_COLORS.textLight}; text-decoration: underline;">support@pickfirst.com.au</a>
+              </p>
+            </div>
+          </div>
+          ${getEmailFooter()}
+        </div>
+      </body>
+      </html>
+    `
+  }),
+
+  // Regular Welcome Email with Email Verification Link
+  welcome: (data: any) => ({
+    subject: `Verify Your Email - Welcome to ${data.platformName || 'PickFirst Real Estate'}`,
+    text: `Welcome to PickFirst Real Estate!
+
+Hi ${data.name || 'there'},
+
+Thank you for joining PickFirst Real Estate! We're excited to help you find your perfect property.
+
+${data.verificationUrl ? `To get started, please verify your email address by clicking the link below:\n${data.verificationUrl}\n\nThis link will expire in 24 hours for security reasons.\n` : ''}
+
+What's Next${data.verificationUrl ? ' After Verification' : ''}:
 - Set up your property preferences
 - Browse our curated property listings
 - Get instant alerts for new matches
@@ -215,17 +309,40 @@ PickFirst Real Estate Team`,
               </h1>
             </div>
             
-            <p style="color: ${BRAND_COLORS.text}; font-size: 16px; margin-bottom: 25px;">
-              Hi ${data.name}, welcome to the future of property searching!
+            <p style="color: ${BRAND_COLORS.text}; font-size: 16px; margin-bottom: 25px; text-align: center;">
+              Hi ${data.name || 'there'}, welcome to the future of property searching!
             </p>
             
+            ${data.verificationUrl ? `
+            <div style="background: linear-gradient(135deg, ${BRAND_COLORS.info}, #60A5FA); padding: 30px; border-radius: 12px; margin: 25px 0; text-align: center; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+              <div style="font-size: 48px; margin-bottom: 15px;">✉️</div>
+              <h2 style="color: white; margin: 0 0 15px 0; font-size: 20px;">Verify Your Email Address</h2>
+              <p style="color: white; font-size: 14px; margin: 0 0 25px 0; opacity: 0.95;">
+                Click the button below to verify your email and activate your account
+              </p>
+              <a href="${data.verificationUrl}" style="display: inline-block; background: white; color: ${BRAND_COLORS.info}; font-weight: bold; text-align: center; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                Verify Email Address →
+              </a>
+              <p style="color: white; font-size: 12px; margin: 20px 0 0 0; opacity: 0.85;">
+                This link expires in 24 hours
+              </p>
+            </div>
+            
+            <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 30px 0; border-left: 4px solid ${BRAND_COLORS.warning};">
+              <p style="margin: 0; color: ${BRAND_COLORS.text}; font-size: 14px;">
+                <strong>💡 Tip:</strong> If the button doesn't work, copy and paste this link into your browser:<br/>
+                <a href="${data.verificationUrl}" style="color: ${BRAND_COLORS.info}; word-break: break-all; font-size: 12px;">${data.verificationUrl}</a>
+              </p>
+            </div>
+            ` : ''}
+            
             <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
-              <h2 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 20px;">What's Next?</h2>
+              <h2 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 20px;">What's Next${data.verificationUrl ? ' After Verification' : ''}?</h2>
               <ul style="margin: 0; padding-left: 20px; color: ${BRAND_COLORS.text};">
-                <li style="margin-bottom: 10px;">Set up your property preferences</li>
-                <li style="margin-bottom: 10px;">Browse our curated property listings</li>
-                <li style="margin-bottom: 10px;">Get instant alerts for new matches</li>
-                <li style="margin-bottom: 10px;">Connect with our expert agents</li>
+                <li style="margin-bottom: 10px;">✓ Set up your property preferences</li>
+                <li style="margin-bottom: 10px;">✓ Browse our curated property listings</li>
+                <li style="margin-bottom: 10px;">✓ Get instant alerts for new matches</li>
+                <li style="margin-bottom: 10px;">✓ Connect with our expert agents</li>
               </ul>
             </div>
             

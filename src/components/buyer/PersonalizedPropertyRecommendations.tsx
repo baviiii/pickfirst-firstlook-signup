@@ -19,7 +19,8 @@ import {
   Target,
   TrendingUp,
   CheckCircle,
-  Settings
+  Settings,
+  Car
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -27,6 +28,8 @@ interface MatchCriteria {
   priceMatch: boolean;
   bedroomsMatch: boolean;
   bathroomsMatch: boolean;
+  garagesMatch: boolean;
+  featuresMatch: boolean;
   locationMatch: boolean;
   propertyTypeMatch: boolean;
   score: number;
@@ -67,6 +70,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
           priceMax: preferences.max_budget || 10000000,
           bedrooms: preferences.preferred_bedrooms,
           bathrooms: preferences.preferred_bathrooms,
+          garageSpaces: preferences.preferred_garages,
           propertyType: preferences.property_type_preferences?.[0],
           sortBy: 'price',
           sortOrder: 'asc',
@@ -98,6 +102,8 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                 priceMatch: property.price >= (preferences.min_budget || 0) && property.price <= (preferences.max_budget || 10000000),
                 bedroomsMatch: !preferences.preferred_bedrooms || (property.bedrooms && property.bedrooms >= preferences.preferred_bedrooms),
                 bathroomsMatch: !preferences.preferred_bathrooms || (property.bathrooms && property.bathrooms >= preferences.preferred_bathrooms),
+                garagesMatch: !preferences.preferred_garages || ((property as any).garages && (property as any).garages >= preferences.preferred_garages),
+                featuresMatch: !preferences.preferred_features || preferences.preferred_features.length === 0,
                 locationMatch: true, // Fuzzy match already found location similarity
                 propertyTypeMatch: !preferences.property_type_preferences || preferences.property_type_preferences.includes(property.property_type),
                 score: property.similarityScore,
@@ -151,6 +157,8 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
       priceMatch: false,
       bedroomsMatch: false,
       bathroomsMatch: false,
+      garagesMatch: false,
+      featuresMatch: false,
       locationMatch: false,
       propertyTypeMatch: false,
       score: 0,
@@ -185,6 +193,34 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
       if (property.bathrooms && property.bathrooms >= preferences.preferred_bathrooms) {
         criteria.bathroomsMatch = true;
         criteria.matchedCriteria.push('Bathrooms');
+        matches++;
+      }
+    }
+
+    // Garages matching
+    if (preferences.preferred_garages) {
+      totalCriteria++;
+      if ((property as any).garages && (property as any).garages >= preferences.preferred_garages) {
+        criteria.garagesMatch = true;
+        criteria.matchedCriteria.push('Garages');
+        matches++;
+      }
+    }
+
+    // Property features matching
+    if (preferences.preferred_features && preferences.preferred_features.length > 0) {
+      totalCriteria++;
+      const propertyFeatures = (property as any).features || [];
+      const matchedFeatures = preferences.preferred_features.filter((feature: string) => 
+        propertyFeatures.some((propFeature: string) => 
+          propFeature.toLowerCase().includes(feature.toLowerCase()) ||
+          feature.toLowerCase().includes(propFeature.toLowerCase())
+        )
+      );
+      
+      if (matchedFeatures.length > 0) {
+        criteria.featuresMatch = true;
+        criteria.matchedCriteria.push(`${matchedFeatures.length} Features`);
         matches++;
       }
     }
@@ -343,6 +379,12 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                     {buyerPreferences.preferred_bathrooms}+ baths
                   </Badge>
                 )}
+                {buyerPreferences.preferred_garages && (
+                  <Badge variant="outline" className="text-xs">
+                    <Car className="h-3 w-3 mr-1" />
+                    {buyerPreferences.preferred_garages}+ garages
+                  </Badge>
+                )}
                 {buyerPreferences.preferred_areas && buyerPreferences.preferred_areas.length > 0 && (
                   <Badge variant="outline" className="text-xs">
                     <MapPin className="h-3 w-3 mr-1" />
@@ -434,6 +476,12 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                           <div className="flex items-center text-[10px] sm:text-xs bg-green-500/10 text-green-300 px-1.5 sm:px-2 py-0.5 rounded">
                             <Square className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" />
                             {Math.round(property.square_feet / 100) / 10}k sqft
+                          </div>
+                        )}
+                        {(property as any).garages !== null && (property as any).garages !== undefined && (
+                          <div className="flex items-center text-[10px] sm:text-xs bg-orange-500/10 text-orange-300 px-1.5 sm:px-2 py-0.5 rounded">
+                            <Car className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" />
+                            {(property as any).garages} gr
                           </div>
                         )}
                       </div>

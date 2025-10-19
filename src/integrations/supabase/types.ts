@@ -460,6 +460,7 @@ export type Database = {
       }
       feature_configurations: {
         Row: {
+          basic_tier_enabled: boolean | null
           created_at: string
           description: string | null
           feature_key: string
@@ -470,6 +471,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          basic_tier_enabled?: boolean | null
           created_at?: string
           description?: string | null
           feature_key: string
@@ -480,6 +482,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          basic_tier_enabled?: boolean | null
           created_at?: string
           description?: string | null
           feature_key?: string
@@ -847,10 +850,13 @@ export type Database = {
           contact_phone: string | null
           created_at: string | null
           description: string | null
+          early_access_until: string | null
           features: string[] | null
+          garages: number | null
           id: string
           images: string[] | null
           latitude: number | null
+          listing_source: string | null
           longitude: number | null
           lot_size: number | null
           price: number
@@ -865,6 +871,10 @@ export type Database = {
           status: string
           title: string
           updated_at: string | null
+          vendor_favorable_contracts: string | null
+          vendor_motivation: string | null
+          vendor_ownership_duration: number | null
+          vendor_special_conditions: string | null
           year_built: number | null
           zip_code: string
         }
@@ -880,10 +890,13 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string | null
           description?: string | null
+          early_access_until?: string | null
           features?: string[] | null
+          garages?: number | null
           id?: string
           images?: string[] | null
           latitude?: number | null
+          listing_source?: string | null
           longitude?: number | null
           lot_size?: number | null
           price: number
@@ -898,6 +911,10 @@ export type Database = {
           status?: string
           title: string
           updated_at?: string | null
+          vendor_favorable_contracts?: string | null
+          vendor_motivation?: string | null
+          vendor_ownership_duration?: number | null
+          vendor_special_conditions?: string | null
           year_built?: number | null
           zip_code: string
         }
@@ -913,10 +930,13 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string | null
           description?: string | null
+          early_access_until?: string | null
           features?: string[] | null
+          garages?: number | null
           id?: string
           images?: string[] | null
           latitude?: number | null
+          listing_source?: string | null
           longitude?: number | null
           lot_size?: number | null
           price?: number
@@ -931,6 +951,10 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string | null
+          vendor_favorable_contracts?: string | null
+          vendor_motivation?: string | null
+          vendor_ownership_duration?: number | null
+          vendor_special_conditions?: string | null
           year_built?: number | null
           zip_code?: string
         }
@@ -1134,6 +1158,7 @@ export type Database = {
           personalized_property_notifications: boolean | null
           preferred_areas: string[] | null
           preferred_contact_method: string | null
+          preferred_features: string[] | null
           price_changes: boolean | null
           profile_visibility: string | null
           property_alerts: boolean | null
@@ -1160,6 +1185,7 @@ export type Database = {
           personalized_property_notifications?: boolean | null
           preferred_areas?: string[] | null
           preferred_contact_method?: string | null
+          preferred_features?: string[] | null
           price_changes?: boolean | null
           profile_visibility?: string | null
           property_alerts?: boolean | null
@@ -1186,6 +1212,7 @@ export type Database = {
           personalized_property_notifications?: boolean | null
           preferred_areas?: string[] | null
           preferred_contact_method?: string | null
+          preferred_features?: string[] | null
           price_changes?: boolean | null
           profile_visibility?: string | null
           property_alerts?: boolean | null
@@ -1303,6 +1330,14 @@ export type Database = {
       }
     }
     Functions: {
+      can_view_offmarket_listing: {
+        Args: { listing_id: string; user_subscription_tier: string }
+        Returns: boolean
+      }
+      can_view_vendor_details: {
+        Args: { user_subscription_tier: string }
+        Returns: boolean
+      }
       check_property_alerts_access: {
         Args: { user_id: string }
         Returns: boolean
@@ -1341,6 +1376,10 @@ export type Database = {
           id: string
           property_id: string
         }[]
+      }
+      has_early_access_to_listing: {
+        Args: { listing_id: string; user_subscription_tier: string }
+        Returns: boolean
       }
       mark_alert_job_completed: {
         Args: { error_msg?: string; job_id: string }

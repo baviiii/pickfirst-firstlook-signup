@@ -41,6 +41,7 @@ import SubscriptionManagementPage from './pages/SubscriptionManagement';
 import PropertyDetails from './pages/PropertyDetails';
 import SystemTestingPage from './pages/SystemTesting';
 import LoginHistoryManagementPage from './pages/LoginHistoryManagement';
+import OffMarketListings from './pages/OffMarketListings';
 
 const queryClient = new QueryClient();
 
@@ -96,6 +97,7 @@ const App = () => (
               <Route path="/saved-properties" element={<ProtectedRoute requiredRole="buyer"><SavedPropertiesPage /></ProtectedRoute>} />
               <Route path="/search-filters" element={<ProtectedRoute requiredRole="buyer"><SearchFiltersPage /></ProtectedRoute>} />
               <Route path="/buyer-account-settings" element={<ProtectedRoute requiredRole="buyer"><BuyerAccountSettingsPage /></ProtectedRoute>} />
+              <Route path="/off-market" element={<ProtectedRoute requiredRole="buyer"><OffMarketListings /></ProtectedRoute>} />
               
               {/* 404 Route */}
               <Route path="*" element={<NotFound />} />

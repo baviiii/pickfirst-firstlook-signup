@@ -30,11 +30,14 @@ import { toast } from 'sonner';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { InquiryStatus } from '@/components/buyer/InquiryStatus';
 import { PageWrapper } from '@/components/ui/page-wrapper';
+import { VendorDetails } from '@/components/property/VendorDetails';
+import { useSubscription } from '@/hooks/useSubscription';
 
 const PropertyDetailsComponent = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { canViewVendorDetails } = useSubscription();
   
   const [property, setProperty] = useState<PropertyListing | null>(null);
   const [loading, setLoading] = useState(true);
@@ -436,6 +439,17 @@ const PropertyDetailsComponent = () => {
                   </div>
                 </CardContent>
               </Card>
+            )}
+
+            {/* Vendor Details - Premium Feature */}
+            {canViewVendorDetails() && (
+              <VendorDetails
+                propertyId={property.id}
+                ownershipDuration={(property as any).vendor_ownership_duration}
+                specialConditions={(property as any).vendor_special_conditions}
+                favorableContracts={(property as any).vendor_favorable_contracts}
+                motivation={(property as any).vendor_motivation}
+              />
             )}
           </div>
 

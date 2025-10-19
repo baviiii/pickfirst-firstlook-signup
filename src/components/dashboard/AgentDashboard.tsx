@@ -26,22 +26,6 @@ export const AgentDashboard = () => {
     fetchMetrics();
   }, []);
 
-  const getSubscriptionBadge = () => {
-    const tier = profile?.subscription_tier || 'free';
-    const colors: { [key: string]: string } = {
-      free: 'bg-gray-500',
-      basic: 'bg-pickfirst-yellow',
-      premium: 'bg-pickfirst-amber',
-      pro: 'bg-pickfirst-yellow'
-    };
-    
-    return (
-      <Badge className={`${colors[tier]} text-black`}>
-        {tier.charAt(0).toUpperCase() + tier.slice(1)}
-      </Badge>
-    );
-  };
-
   const handleListingCreated = () => {
     setShowModal(false);
   };
@@ -69,14 +53,6 @@ export const AgentDashboard = () => {
         </div>
         <div className="flex items-center gap-2">
           <Badge className="bg-pickfirst-amber text-black">Real Estate Agent</Badge>
-          {getSubscriptionBadge()}
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-all duration-300 border border-white/20 hover:border-pickfirst-yellow/30"
-          >
-            Upgrade Tools
-          </Button>
         </div>
       </div>
 
