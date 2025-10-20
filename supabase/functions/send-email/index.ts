@@ -1174,6 +1174,109 @@ PickFirst Real Estate Team`,
         ${getEmailFooter()}
       </div>
     `
+  }),
+
+  subscriptionWelcome: (data: any) => ({
+    subject: 'Welcome to Your New Subscription! 🎉',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+        ${getEmailHeader()}
+        <div style="padding: 40px 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <div style="font-size: 64px; margin-bottom: 20px;">🎉</div>
+            <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 10px 0;">Welcome, ${data.name}!</h1>
+          </div>
+          
+          <p style="color: ${BRAND_COLORS.text}; font-size: 16px; margin-bottom: 20px;">
+            Thank you for subscribing to PickFirst ${data.plan} plan!
+          </p>
+          
+          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
+            <p style="color: ${BRAND_COLORS.text}; margin: 0 0 15px 0;">
+              Your subscription is now <strong>active</strong> and you have access to all ${data.plan} features.
+            </p>
+            <p style="color: ${BRAND_COLORS.textLight}; margin: 0;"><strong>Start Date:</strong> ${data.startDate}</p>
+          </div>
+          
+          <div style="background: linear-gradient(135deg, ${BRAND_COLORS.primary}, ${BRAND_COLORS.accent}); padding: 30px; border-radius: 12px; margin: 25px 0;">
+            <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0;">What's Next?</h3>
+            <ul style="margin: 0; padding-left: 20px; color: ${BRAND_COLORS.secondary};">
+              <li style="margin-bottom: 10px;">Explore premium property listings</li>
+              <li style="margin-bottom: 10px;">Set up property alerts</li>
+              <li style="margin-bottom: 10px;">Connect with top agents</li>
+            </ul>
+          </div>
+          
+          <p style="color: ${BRAND_COLORS.text}; text-align: center;">
+            If you have any questions, feel free to reach out to our support team.
+          </p>
+        </div>
+        ${getEmailFooter()}
+      </div>
+    `
+  }),
+
+  subscriptionChanged: (data: any) => ({
+    subject: 'Your Subscription Has Been Updated',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+        ${getEmailHeader()}
+        <div style="padding: 40px 20px;">
+          <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Subscription Updated</h1>
+          <p style="color: ${BRAND_COLORS.text}; font-size: 16px;">Hi ${data.name},</p>
+          
+          <p style="color: ${BRAND_COLORS.text}; margin-bottom: 25px;">
+            Your subscription has been successfully updated.
+          </p>
+          
+          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Previous Plan:</strong> ${data.oldPlan}</p>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>New Plan:</strong> ${data.newPlan}</p>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Change Date:</strong> ${data.changeDate}</p>
+          </div>
+          
+          <p style="color: ${BRAND_COLORS.text}; text-align: center;">
+            Your new plan features are now active and ready to use!
+          </p>
+        </div>
+        ${getEmailFooter()}
+      </div>
+    `
+  }),
+
+  subscriptionCancelled: (data: any) => ({
+    subject: 'Your Subscription Has Been Cancelled',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+        ${getEmailHeader()}
+        <div style="padding: 40px 20px;">
+          <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Subscription Cancelled</h1>
+          <p style="color: ${BRAND_COLORS.text}; font-size: 16px;">Hi ${data.name},</p>
+          
+          <p style="color: ${BRAND_COLORS.text}; margin-bottom: 25px;">
+            We're sorry to see you go. Your subscription has been cancelled.
+          </p>
+          
+          <div style="background: #FEF3C7; padding: 25px; border-radius: 12px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.warning};">
+            <p style="color: ${BRAND_COLORS.text}; margin: 0 0 10px 0;">
+              <strong>Your access will continue until:</strong> ${data.endDate}
+            </p>
+            <p style="color: ${BRAND_COLORS.textLight}; margin: 0; font-size: 14px;">
+              After this date, your account will revert to the free plan.
+            </p>
+          </div>
+          
+          <p style="color: ${BRAND_COLORS.text};">
+            We'd love to hear your feedback. If there's anything we could have done better, please let us know.
+          </p>
+          
+          <p style="color: ${BRAND_COLORS.text}; text-align: center; font-weight: bold;">
+            You're always welcome back!
+          </p>
+        </div>
+        ${getEmailFooter()}
+      </div>
+    `
   })
 };
 
@@ -1203,7 +1306,8 @@ const handler = async (req: Request) => {
       'appointmentConfirmation', 'appointmentNotification', 'appointmentStatusUpdate',
       'paymentSuccess', 'paymentFailed', 'accountSuspension', 'securityAlert',
       'messageNotification', 'leadAssignment', 'propertyViewing', 'followUp',
-      'subscriptionUpgrade', 'subscriptionExpiry', 'profileUpdate'
+      'subscriptionUpgrade', 'subscriptionExpiry', 'profileUpdate',
+      'subscriptionWelcome', 'subscriptionChanged', 'subscriptionCancelled'
     ];
     
     const isTransactional = transactionalTemplates.includes(template);

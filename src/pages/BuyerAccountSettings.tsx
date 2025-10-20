@@ -493,24 +493,8 @@ const BuyerAccountSettingsPage = () => {
   };
 
   return (
-    <PageWrapper title="Account Settings">
+    <PageWrapper title="Account Settings" showBackButton={true} backTo="/dashboard" backText="Back to Dashboard">
         <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/dashboard')}
-              className="hover:bg-accent"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Account Settings</h1>
-              <p className="text-muted-foreground mt-1">Manage your profile and preferences</p>
-            </div>
-          </div>
-
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="overflow-x-auto -mx-2 px-2">
               <TabsList className="bg-card border border-border flex sm:grid sm:grid-cols-6 w-full p-1 gap-1 whitespace-nowrap">

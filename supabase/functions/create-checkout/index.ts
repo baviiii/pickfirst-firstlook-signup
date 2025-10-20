@@ -81,7 +81,6 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      allow_promotion_codes: true, // Enable promo code input in checkout
       success_url: `${finalBaseUrl}/pricing?success=true`,
       cancel_url: `${finalBaseUrl}/pricing?canceled=true`,
       metadata: {
