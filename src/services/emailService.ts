@@ -190,7 +190,7 @@ export class EmailService {
   static async sendPreferencesUpdated(
     userEmail: string,
     userName?: string,
-    changedFields: string[] = []
+    preferences: Record<string, any> = {}
   ): Promise<void> {
     try {
       await supabase.functions.invoke('send-email', {
@@ -199,9 +199,10 @@ export class EmailService {
           template: 'preferencesUpdated',
           data: {
             name: userName || 'User',
-            changedFields
+            preferences, // Pass the full preferences object with values
+            dashboardUrl: 'https://pickfirst.com.au/dashboard'
           },
-          subject: 'Your preferences were updated'
+          subject: 'Your Property Preferences Have Been Updated'
         }
       });
     } catch (error) {

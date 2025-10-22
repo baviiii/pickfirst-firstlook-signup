@@ -757,34 +757,92 @@ PickFirst Real Estate Team`,
   }),
 
   // User Preferences
-  preferencesUpdated: (data: any) => ({
-    subject: 'Your Preferences Have Been Updated',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
-        ${getEmailHeader()}
-        <div style="padding: 40px 20px;">
-          <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Preferences Updated</h1>
-          <p style="color: ${BRAND_COLORS.text}; font-size: 16px;">
-            Hi ${data.name}, your account preferences have been successfully updated.
-          </p>
-          
-          ${data.changedFields?.length > 0 ? `
-            <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
-              <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0;">Updated Fields:</h3>
-              <ul style="color: ${BRAND_COLORS.text};">
-                ${data.changedFields.map((field: string) => `<li>${field}</li>`).join('')}
-              </ul>
+  preferencesUpdated: (data: any) => {
+    // Helper function to format preference values for display
+    const formatPreference = (key: string, value: any): { label: string; displayValue: string } | null => {
+      if (value === null || value === undefined) return null;
+      
+      const formatters: Record<string, { label: string; format: (v: any) => string }> = {
+        'min_budget': { label: 'Minimum Budget', format: (v) => `$${Number(v).toLocaleString()}` },
+        'max_budget': { label: 'Maximum Budget', format: (v) => `$${Number(v).toLocaleString()}` },
+        'preferred_bedrooms': { label: 'Bedrooms', format: (v) => `${v}+` },
+        'preferred_bathrooms': { label: 'Bathrooms', format: (v) => `${v}+` },
+        'preferred_garages': { label: 'Garages', format: (v) => `${v}+` },
+        'preferred_square_feet_min': { label: 'Min Square Feet', format: (v) => `${Number(v).toLocaleString()} sq ft` },
+        'preferred_square_feet_max': { label: 'Max Square Feet', format: (v) => `${Number(v).toLocaleString()} sq ft` },
+        'preferred_areas': { label: 'Preferred Areas', format: (v) => Array.isArray(v) ? v.join(', ') : v },
+        'property_type_preferences': { label: 'Property Types', format: (v) => Array.isArray(v) ? v.join(', ') : v },
+        'preferred_features': { label: 'Features', format: (v) => Array.isArray(v) ? v.join(', ') : v },
+        'email_notifications': { label: 'Email Notifications', format: (v) => v ? 'Enabled' : 'Disabled' },
+        'sms_notifications': { label: 'SMS Notifications', format: (v) => v ? 'Enabled' : 'Disabled' }
+      };
+      
+      const formatter = formatters[key];
+      if (!formatter) return null;
+      
+      return {
+        label: formatter.label,
+        displayValue: formatter.format(value)
+      };
+    };
+
+    // Get formatted preferences
+    const preferences = data.preferences || {};
+    const formattedPrefs = Object.entries(preferences)
+      .map(([key, value]) => formatPreference(key, value))
+      .filter(Boolean);
+
+    return {
+      subject: 'Property Search Preferences Updated',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+          ${getEmailHeader()}
+          <div style="padding: 40px 20px;">
+            <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0; font-size: 24px;">Property Search Preferences Updated</h1>
+            
+            <p style="color: ${BRAND_COLORS.text}; font-size: 16px; margin-bottom: 25px;">
+              Hi ${data.name},
+            </p>
+            
+            <p style="color: ${BRAND_COLORS.text}; font-size: 16px; margin-bottom: 25px;">
+              Your property search preferences have been successfully updated. Here's what you're now looking for:
+            </p>
+            
+            ${formattedPrefs.length > 0 ? `
+              <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                <h2 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 18px;">Your Search Criteria</h2>
+                <table style="width: 100%; border-collapse: collapse;">
+                  ${formattedPrefs.map((pref: any) => `
+                    <tr style="border-bottom: 1px solid #f3f4f6;">
+                      <td style="padding: 12px 0; color: ${BRAND_COLORS.textLight}; font-size: 14px; width: 45%;">${pref.label}:</td>
+                      <td style="padding: 12px 0; color: ${BRAND_COLORS.text}; font-size: 14px; font-weight: 500;">${pref.displayValue}</td>
+                    </tr>
+                  `).join('')}
+                </table>
+              </div>
+            ` : ''}
+            
+            <div style="background: #f0fdf4; border-left: 4px solid ${BRAND_COLORS.primary}; padding: 20px; border-radius: 4px; margin: 25px 0;">
+              <p style="color: ${BRAND_COLORS.text}; font-size: 14px; margin: 0;">
+                <strong>What happens next:</strong> We'll automatically notify you when new properties matching these criteria become available.
+              </p>
             </div>
-          ` : ''}
-          
-          <p style="color: ${BRAND_COLORS.textLight}; font-size: 14px;">
-            If you didn't make these changes, please contact support immediately.
-          </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${data.dashboardUrl || 'https://pickfirst.com.au/dashboard'}" style="display: inline-block; background: ${BRAND_COLORS.primary}; color: white; font-weight: 600; text-align: center; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-size: 16px;">
+                View Matching Properties
+              </a>
+            </div>
+            
+            <p style="color: ${BRAND_COLORS.textLight}; font-size: 13px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              If you didn't make these changes, please <a href="mailto:support@pickfirst.com.au" style="color: ${BRAND_COLORS.primary}; text-decoration: none;">contact support</a> immediately.
+            </p>
+          </div>
+          ${getEmailFooter()}
         </div>
-        ${getEmailFooter()}
-      </div>
-    `
-  }),
+      `
+    };
+  },
 
   searchPreferencesSaved: (data: any) => ({
     subject: 'Search Preferences Saved',
