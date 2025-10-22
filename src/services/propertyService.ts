@@ -102,7 +102,7 @@ export class PropertyService {
         // Generate unique filename
         const fileExt = file.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}-${i}.${fileExt}`;
-        const filePath = `property-images/${fileName}`;
+        const filePath = fileName; // Path within the bucket (no bucket prefix needed)
 
         // Upload to Supabase Storage
         const { data: uploadData, error: uploadError } = await supabase.storage

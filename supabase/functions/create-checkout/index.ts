@@ -106,7 +106,7 @@ serve(async (req)=>{
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in create-checkout", {
-      message: errorMessage
+      message: errorMessage 
     });
     return new Response(JSON.stringify({
       error: errorMessage
