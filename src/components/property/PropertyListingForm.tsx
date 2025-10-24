@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { PropertyService, CreatePropertyListingData } from '@/services/propertyService';
 import { googleMapsService } from '@/services/googleMapsService';
 import { toast } from 'sonner';
-import { Loader2, Home, MapPin, DollarSign, Bed, Bath, Ruler, Calendar, Phone, Mail, Upload, X, ImageIcon, CheckCircle, AlertCircle, Search, Clock, FileText, Handshake, Lightbulb } from 'lucide-react';
+import { Loader2, Home, MapPin, DollarSign, Bed, Bath, Ruler, Calendar, Phone, Mail, Upload, X, ImageIcon, CheckCircle, AlertCircle, Search, Clock, FileText, Handshake, Lightbulb, Sparkles } from 'lucide-react';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 
 interface PropertyListingFormProps {
@@ -34,6 +34,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
   const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchingAddress, setSearchingAddress] = useState(false);
+  const [analyzingDescription, setAnalyzingDescription] = useState(false);
   const addressInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   
@@ -295,6 +296,133 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
     setImagePreviews(newPreviews);
   };
 
+  // Auto-detect property features from description using keyword matching
+  const handleAutoDetectFeatures = () => {
+    if (!formData.description || formData.description.trim().length === 0) {
+      toast.error('Please enter a description first');
+      return;
+    }
+
+    setAnalyzingDescription(true);
+    
+    try {
+      const description = formData.description.toLowerCase();
+      const updates: any = {};
+      const detectedItems: string[] = [];
+
+      // Extract bedrooms
+      const bedroomPatterns = [
+        /(\d+)\s*(?:bed(?:room)?s?|br)/i,
+        /(\d+)\s*x\s*(?:bed(?:room)?s?)/i
+      ];
+      for (const pattern of bedroomPatterns) {
+        const match = description.match(pattern);
+        if (match && parseInt(match[1]) > 0 && !formData.bedrooms) {
+          updates.bedrooms = parseInt(match[1]);
+          detectedItems.push('bedrooms');
+          break;
+        }
+      }
+
+      // Extract bathrooms
+      const bathroomPatterns = [
+        /(\d+(?:\.\d+)?)\s*(?:bath(?:room)?s?)/i,
+        /(\d+)\s*x\s*(?:bath(?:room)?s?)/i
+      ];
+      for (const pattern of bathroomPatterns) {
+        const match = description.match(pattern);
+        if (match && parseFloat(match[1]) > 0 && !formData.bathrooms) {
+          updates.bathrooms = parseFloat(match[1]);
+          detectedItems.push('bathrooms');
+          break;
+        }
+      }
+
+      // Extract parking/garages
+      const parkingPatterns = [
+        /(\d+)\s*(?:car\s*)?(?:garage|carport|parking)/i,
+        /(?:garage|carport|parking)\s*(?:for\s*)?(\d+)/i,
+        /(\d+)\s*car\s*(?:space|park)/i
+      ];
+      for (const pattern of parkingPatterns) {
+        const match = description.match(pattern);
+        if (match && parseInt(match[1]) > 0 && !(formData as any).garages) {
+          updates.garages = parseInt(match[1]);
+          detectedItems.push('parking');
+          break;
+        }
+      }
+
+      // Extract square feet
+      const sqftPatterns = [
+        /(\d+(?:,\d+)?)\s*(?:sq\s*ft|sqft|square\s*feet)/i,
+        /(\d+(?:,\d+)?)\s*m2/i
+      ];
+      for (const pattern of sqftPatterns) {
+        const match = description.match(pattern);
+        if (match && !formData.square_feet) {
+          const value = parseInt(match[1].replace(/,/g, ''));
+          if (value > 0) {
+            updates.square_feet = value;
+            detectedItems.push('square feet');
+            break;
+          }
+        }
+      }
+
+      // Detect features using keywords
+      const featureKeywords: { [key: string]: string[] } = {
+        'Pool': ['pool', 'swimming pool', 'lap pool', 'heated pool'],
+        'Garden': ['garden', 'landscaped', 'backyard', 'yard'],
+        'Balcony': ['balcony', 'terrace', 'patio'],
+        'Fireplace': ['fireplace', 'wood fire', 'log fire'],
+        'Security System': ['security system', 'alarm', 'cctv', 'security cameras'],
+        'Solar Panels': ['solar', 'solar panels', 'solar power'],
+        'Study': ['study', 'home office', 'office'],
+        'Air Conditioning': ['air con', 'a/c', 'air conditioning', 'ducted cooling', 'split system'],
+        'Heating': ['heating', 'ducted heating', 'central heating', 'hydronic'],
+        'Dishwasher': ['dishwasher'],
+        'Deck': ['deck', 'outdoor deck', 'timber deck'],
+        'Patio': ['patio', 'outdoor entertaining'],
+        'Hardwood Floors': ['hardwood', 'timber floors', 'polished floors'],
+        'Granite Countertops': ['granite', 'stone bench', 'marble'],
+        'Stainless Steel Appliances': ['stainless steel', 's/s appliances'],
+        'Walk-in Closet': ['walk-in', 'walk in robe', 'wir'],
+        'Ensuite': ['ensuite', 'en-suite', 'master ensuite'],
+        'Garage': ['garage', 'lock-up garage', 'double garage', 'single garage']
+      };
+
+      const detectedFeatures: string[] = [];
+      for (const [feature, keywords] of Object.entries(featureKeywords)) {
+        if (!formData.features?.includes(feature)) {
+          for (const keyword of keywords) {
+            if (description.includes(keyword)) {
+              detectedFeatures.push(feature);
+              break;
+            }
+          }
+        }
+      }
+
+      if (detectedFeatures.length > 0) {
+        updates.features = [...new Set([...(formData.features || []), ...detectedFeatures])];
+        detectedItems.push(`${detectedFeatures.length} features`);
+      }
+
+      if (Object.keys(updates).length > 0) {
+        setFormData(prev => ({ ...prev, ...updates }));
+        toast.success(`Auto-detected: ${detectedItems.join(', ')}`);
+      } else {
+        toast.info('No additional features detected in description');
+      }
+    } catch (error) {
+      console.error('Error analyzing description:', error);
+      toast.error('Failed to analyze description. Please try again.');
+    } finally {
+      setAnalyzingDescription(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -453,15 +581,40 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-white font-semibold">Description</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="description" className="text-white font-semibold">Description</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAutoDetectFeatures}
+                disabled={analyzingDescription || !formData.description}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0 hover:from-purple-700 hover:to-blue-700"
+              >
+                {analyzingDescription ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Auto-Detect Features
+                  </>
+                )}
+              </Button>
+            </div>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Describe the property, its features, and what makes it special..."
+              placeholder="Describe the property, its features, and what makes it special... (AI will auto-detect features)"
               className="bg-white/5 border border-white/20 text-white min-h-[100px]"
               rows={4}
             />
+            <p className="text-xs text-gray-400">
+              💡 Tip: Mention features like pool, garage, bedrooms, bathrooms, etc., and click Auto-Detect to fill them automatically
+            </p>
           </div>
 
           {/* Price */}
