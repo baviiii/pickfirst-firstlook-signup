@@ -4,6 +4,7 @@ import { rateLimitService } from './rateLimitService';
 import { auditService } from './auditService';
 import { CalendarService } from './calendarService';
 import { EmailService } from './emailService';
+import { notificationService } from './notificationService';
 
 export type Appointment = Tables<'appointments'>;
 export type AppointmentInsert = TablesInsert<'appointments'>;
@@ -206,6 +207,18 @@ class AppointmentService {
           }
         });
 
+        // Create notification for the buyer/client
+        if (data.client_id) {
+          await notificationService.createNotification(
+            data.client_id,
+            'appointment_scheduled',
+            'New Appointment Scheduled',
+            `Appointment scheduled for ${data.date} at ${data.time}`,
+            '/buyer-account-settings?tab=appointments',
+            { appointment_id: data.id, property_id: data.property_id }
+          ).catch(err => console.error('Failed to create notification:', err));
+        }
+
         // Send email notifications and sync to calendar
         await this.sendAppointmentNotifications(data);
       }
@@ -341,8 +354,30 @@ class AppointmentService {
           oldValues: { status: currentAppointment.status }
         });
 
-        // Send email notifications for status changes
+        // Create notifications for status changes
         if (updates.status && updates.status !== currentAppointment.status) {
+          // Notify buyer/client about status changes
+          if (data.client_id && updates.status === 'confirmed') {
+            await notificationService.createNotification(
+              data.client_id,
+              'appointment_confirmed',
+              'Appointment Confirmed',
+              `Your appointment on ${data.date} at ${data.time} has been confirmed`,
+              '/buyer-account-settings?tab=appointments',
+              { appointment_id: data.id }
+            ).catch(err => console.error('Failed to create notification:', err));
+          } else if (data.client_id && updates.status === 'cancelled') {
+            await notificationService.createNotification(
+              data.client_id,
+              'appointment_cancelled',
+              'Appointment Cancelled',
+              `Your appointment on ${data.date} at ${data.time} has been cancelled`,
+              '/buyer-account-settings?tab=appointments',
+              { appointment_id: data.id }
+            ).catch(err => console.error('Failed to create notification:', err));
+          }
+
+          // Send email notifications for status changes
           await this.sendStatusChangeNotifications(data, currentAppointment.status, updates.status as string, profile?.role as string);
         }
       }

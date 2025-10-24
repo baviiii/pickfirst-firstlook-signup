@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import BuyerProfileService, { BuyerPreferences } from './buyerProfileService';
 import EmailService from './emailService';
+import { notificationService } from './notificationService';
 import { Database } from '@/integrations/supabase/types';
 
 type PropertyListing = Database['public']['Tables']['property_listings']['Row'];
@@ -204,6 +205,21 @@ export class PropertyAlertService {
 
           await this.sendPropertyAlert(match);
           await this.logAlertSent(alert.buyerId, propertyId);
+          
+          // Create notification for the buyer
+          await notificationService.createNotification(
+            alert.buyerId,
+            'property_alert',
+            'Property Alert Match',
+            `New property matches your criteria: ${alert.property.title}`,
+            `/property/${propertyId}`,
+            { 
+              property_id: propertyId,
+              match_score: match.matchScore,
+              matched_criteria: match.matchedCriteria
+            }
+          ).catch(err => console.error('Failed to create notification:', err));
+          
           alertsSent++;
         } catch (error) {
           console.error(`Failed to send alert to buyer ${alert.buyerId}:`, error);

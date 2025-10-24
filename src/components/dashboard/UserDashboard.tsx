@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { BuyerDashboard } from './BuyerDashboard';
+import { BuyerDashboardNew } from './BuyerDashboardNew';
 import { AgentDashboard } from './AgentDashboard';
 import { SuperAdminDashboard } from './SuperAdminDashboard';
 
@@ -16,12 +16,12 @@ export const UserDashboard = () => {
   // Route to the appropriate dashboard based on user role
   switch (profile?.role) {
     case 'buyer':
-      return <BuyerDashboard />;
+      return <BuyerDashboardNew />;
     case 'agent':
       return <AgentDashboard />;
     case 'super_admin':
       return <SuperAdminDashboard />;
     default:
-      return <BuyerDashboard />; // Default to buyer dashboard
+      return <BuyerDashboardNew />; // Default to buyer dashboard
   }
 };
