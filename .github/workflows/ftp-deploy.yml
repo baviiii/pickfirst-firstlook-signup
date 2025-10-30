@@ -35,6 +35,8 @@ jobs:
       
           local-dir: ./dist/
           server-dir: /public_html/
+          # Force complete re-upload (removes sync state)
+          dangerous-clean-slate: true
           # Ensure hidden files like .htaccess are uploaded
           exclude: |
             **/.git*
