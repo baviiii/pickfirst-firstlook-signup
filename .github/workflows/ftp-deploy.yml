@@ -34,4 +34,9 @@ jobs:
           protocol: ftps
       
           local-dir: ./dist/
-          server-dir: /public_html/ 
+          server-dir: /public_html/
+          # Ensure hidden files like .htaccess are uploaded
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/** 
