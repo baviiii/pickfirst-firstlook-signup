@@ -1,15 +1,16 @@
+import { BuyerLayout } from '@/components/layouts/BuyerLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Search, Zap, TrendingUp, Lock } from 'lucide-react';
+import { ArrowLeft, Search, Zap, TrendingUp, Lock, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { PropertyService, PropertyListing } from '@/services/propertyService';
-import { toast } from 'sonner';
+import { useState } from 'react';
+import { PropertyListing } from '@/services/propertyService';
 import ProductionFilterSystem from '@/components/property/ProductionFilterSystem';
-import { AdvancedPropertyFilters, FilterResult } from '@/services/filterService';
+import { FilterResult } from '@/services/filterService';
 import PropertyInsights from '@/components/property/PropertyInsights';
 import { useSubscription } from '@/hooks/useSubscription';
 import { FeatureGate } from '@/components/ui/FeatureGate';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const EnhancedSearchFiltersPage = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const EnhancedSearchFiltersPage = () => {
   const [results, setResults] = useState<FilterResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [expandedPropertyId, setExpandedPropertyId] = useState<string | null>(null);
 
   const handleResultsChange = (newResults: FilterResult) => {
     setResults(newResults);
@@ -28,56 +30,88 @@ const EnhancedSearchFiltersPage = () => {
     setLoading(isLoading);
   };
 
-  const PropertyCard = ({ property }: { property: PropertyListing }) => (
-    <Card 
-      className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl hover:shadow-yellow-400/20 transition-all duration-300 hover:scale-[1.02] cursor-pointer"
-      onClick={() => navigate(`/property/${property.id}`)}
-    >
-      <div className="relative aspect-video overflow-hidden rounded-t-lg">
-        {property.images && property.images.length > 0 ? (
-          <img
-            src={property.images[0]}
-            alt={property.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-            <span className="text-gray-500">No Image</span>
-          </div>
-        )}
-      </div>
-      
-      <CardContent className="p-4">
-        <div className="space-y-2">
-          <h3 className="text-lg font-bold text-white line-clamp-1">{property.title}</h3>
-          <p className="text-yellow-400/80 text-sm">{property.address}, {property.city}</p>
-          <div className="flex items-center justify-between">
-            <div className="text-xl font-bold text-yellow-400">
-              ${property.price.toLocaleString()}
+  const PropertyCard = ({ property, showInsights }: { property: PropertyListing; showInsights?: boolean }) => {
+    const isExpanded = expandedPropertyId === property.id;
+    
+    return (
+      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 hover:border-yellow-400/40 transition-all duration-300">
+        <div 
+          className="relative aspect-video overflow-hidden rounded-t-lg cursor-pointer group"
+          onClick={() => navigate(`/property/${property.id}`)}
+        >
+          {property.images && property.images.length > 0 ? (
+            <img
+              src={property.images[0]}
+              alt={property.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+              <span className="text-gray-500">No Image</span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              {property.bedrooms && <span>{property.bedrooms} bed</span>}
-              {property.bathrooms && <span>{property.bathrooms} bath</span>}
-              {property.square_feet && <span>{property.square_feet.toLocaleString()} sqft</span>}
-            </div>
-          </div>
+          )}
         </div>
-      </CardContent>
-    </Card>
-  );
+        
+        <CardContent className="p-4 space-y-3">
+          <div className="space-y-2">
+            <h3 
+              className="text-lg font-bold text-white line-clamp-1 cursor-pointer hover:text-yellow-400 transition-colors"
+              onClick={() => navigate(`/property/${property.id}`)}
+            >
+              {property.title}
+            </h3>
+            <p className="text-yellow-400/80 text-sm line-clamp-1">{property.address}, {property.city}</p>
+            <div className="flex items-center justify-between pt-2">
+              <div className="text-xl font-bold text-yellow-400">
+                ${property.price.toLocaleString()}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-300">
+                {property.bedrooms && <span>{property.bedrooms} bed</span>}
+                {property.bathrooms && <span>{property.bathrooms} bath</span>}
+                {property.square_feet && <span>{property.square_feet.toLocaleString()} sqft</span>}
+              </div>
+            </div>
+          </div>
+
+          {showInsights && canUseMarketInsights && (
+            <Collapsible open={isExpanded} onOpenChange={() => setExpandedPropertyId(isExpanded ? null : property.id)}>
+              <CollapsibleTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="w-full mt-3 text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10"
+                >
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  {isExpanded ? 'Hide' : 'Show'} Neighborhood Insights
+                  {isExpanded ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-4 animate-accordion-down">
+                <PropertyInsights
+                  address={property.address}
+                  latitude={property.latitude}
+                  longitude={property.longitude}
+                  propertyId={property.id}
+                />
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">
-      {/* Enhanced Animated Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-gradient-to-r from-yellow-400/20 to-amber-500/20 opacity-20 blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-32 left-16 w-80 h-80 rounded-full bg-gradient-to-r from-yellow-400/15 to-amber-500/15 opacity-15 blur-2xl animate-pulse" style={{animationDelay: '1s'}}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-yellow-400/10 opacity-10 blur-xl animate-bounce" style={{animationDuration: '4s'}}></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.05)_1px,transparent_0)] bg-[length:20px_20px]"></div>
+    <BuyerLayout>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+      {/* Subtle Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-30">
+        <div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-gradient-to-r from-yellow-400/10 to-amber-500/10 blur-3xl"></div>
+        <div className="absolute bottom-32 left-16 w-80 h-80 rounded-full bg-gradient-to-r from-yellow-400/5 to-amber-500/5 blur-2xl"></div>
       </div>
 
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-gradient-to-r from-gray-900 to-black border-b border-yellow-400/20 backdrop-blur-lg">
+      <div className="sticky top-0 z-40 bg-gray-900/95 border-b border-yellow-400/20 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -114,7 +148,7 @@ const EnhancedSearchFiltersPage = () => {
 
       {/* Content */}
       <div className="relative z-10">
-        <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 pt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
           
           {/* Production Filter System */}
           <FeatureGate 
@@ -155,67 +189,46 @@ const EnhancedSearchFiltersPage = () => {
                   </div>
                 ) : results && results.properties.length > 0 ? (
                   <>
-                    <div className="mb-6">
-                      <p className="text-gray-300">
-                        Found <span className="text-yellow-400 font-semibold">{results.filterStats.matchingProperties}</span> of <span className="text-yellow-400 font-semibold">{results.filterStats.totalProperties}</span> properties matching your criteria
+                    <div className="mb-6 p-4 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
+                      <p className="text-gray-300 text-center">
+                        Found <span className="text-yellow-400 font-bold text-lg">{results.filterStats.matchingProperties}</span> of <span className="text-yellow-400 font-semibold">{results.filterStats.totalProperties}</span> properties
                       </p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                       {results.properties.map(property => (
-                        <div key={property.id} className="space-y-4">
-                          <PropertyCard property={property} />
-                          {/* Property Insights for filtered results */}
-                          <FeatureGate 
-                            feature="market_insights"
-                            fallback={
-                              <Button variant="outline" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                                <Lock className="w-4 h-4 mr-2" />
-                                Show Basic Results
-                              </Button>
-                            }
-                          >
-                            <Button variant="outline" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                              <TrendingUp className="w-4 h-4 mr-2" />
-                              View Advanced Insights
-                            </Button>
-                          </FeatureGate>
-                          <FeatureGate 
-                            feature="market_insights"
-                            fallback={
-                              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-                                <div className="flex">
-                                  <div className="flex-shrink-0">
-                                    <Zap className="h-5 w-5 text-yellow-400" />
-                                  </div>
-                                  <div className="ml-3">
-                                    <p className="text-sm text-yellow-700">
-                                      Upgrade to Premium to unlock advanced property insights, in-depth analytics, and personalized recommendations.
-                                    </p>
-                                    <div className="mt-2">
-                                      <Button 
-                                        size="sm" 
-                                        variant="outline"
-                                        onClick={() => navigate('/subscription')}
-                                        className="mt-2"
-                                      >
-                                        Upgrade Now
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            }
-                          >
-                            <PropertyInsights
-                              address={property.address}
-                              latitude={property.latitude}
-                              longitude={property.longitude}
-                              propertyId={property.id}
-                            />
-                          </FeatureGate>
-                        </div>
+                        <PropertyCard 
+                          key={property.id} 
+                          property={property} 
+                          showInsights={true}
+                        />
                       ))}
                     </div>
+
+                    {!canUseMarketInsights && (
+                      <div className="mt-8 bg-gradient-to-r from-yellow-400/10 to-amber-500/10 border border-yellow-400/30 rounded-lg p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0">
+                            <Lock className="h-8 w-8 text-yellow-400" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-white mb-2">
+                              Unlock Neighborhood Insights
+                            </h3>
+                            <p className="text-gray-300 mb-4">
+                              Upgrade to Premium to access detailed neighborhood data, including schools, restaurants, transit, and more for each property.
+                            </p>
+                            <Button 
+                              onClick={() => navigate('/subscription')}
+                              className="bg-yellow-400 hover:bg-amber-500 text-black"
+                            >
+                              <Zap className="w-4 h-4 mr-2" />
+                              Upgrade Now
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="text-center py-8">
@@ -234,7 +247,8 @@ const EnhancedSearchFiltersPage = () => {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </BuyerLayout>
   );
 };
 

@@ -24,6 +24,7 @@ export type AuditAction =
   | 'SEARCH' 
   | 'EXPORT' 
   | 'IMPORT'
+  | 'INVITE'
   | 'RATE_LIMIT_EXCEEDED'
   | 'VALIDATION_ERROR'
   | 'IMAGE_UPLOAD_START'

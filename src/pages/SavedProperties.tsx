@@ -1,3 +1,4 @@
+import { BuyerLayout } from '@/components/layouts/BuyerLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -415,8 +416,8 @@ const SavedPropertiesPageComponent = () => {
   };
 
   return (
-    <PageWrapper title="Saved Properties" showBackButton={true} backTo="/" backText="Back to Home">
-        <div className="space-y-6">
+    <BuyerLayout>
+      <div className="space-y-6">
           {/* Header Subtitle */}
           <p className="text-gray-300">
             {filteredProperties.length} of {savedProperties.length} properties
@@ -599,7 +600,7 @@ const SavedPropertiesPageComponent = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </PageWrapper>
+    </BuyerLayout>
   );
 };
 

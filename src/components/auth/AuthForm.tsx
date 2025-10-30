@@ -7,12 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
+import { useCSRFProtection } from '@/hooks/useCSRFProtection';
+import { signInSchema, signUpSchema } from '@/utils/validationSchemas';
 import { toast } from 'sonner';
-import { Loader2, User, Building, Shield } from 'lucide-react';
+import { Loader2, User, Building, Shield, Lock } from 'lucide-react';
+import { z } from 'zod';
 
 export const AuthForm = () => {
   const { signIn, signUp, updateProfile } = useAuth();
   const navigate = useNavigate();
+  const csrf = useCSRFProtection();
   const [loading, setLoading] = useState(false);
   const [signInData, setSignInData] = useState({
     email: '',
@@ -30,14 +34,30 @@ export const AuthForm = () => {
     e.preventDefault();
     setLoading(true);
     
-    const { error } = await signIn(signInData.email, signInData.password);
-    
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success('Welcome back!');
+    try {
+      // Zod validation for type safety and input validation
+      const validated = signInSchema.parse({
+        ...signInData,
+        csrfToken: csrf.token
+      });
+
+      const { error } = await signIn(validated.email, validated.password);
+      
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Welcome back! 🎉');
+        csrf.regenerate(); // Regenerate CSRF token after successful login
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.issues[0].message);
+      } else {
+        toast.error('An error occurred during sign in');
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -48,33 +68,58 @@ export const AuthForm = () => {
       return;
     }
     
-    if (signUpData.password.length < 6) {
-      toast.error('Password must be at least 6 characters long');
-      return;
-    }
-    
     setLoading(true);
     
-    const { error } = await signUp(
-      signUpData.email, 
-      signUpData.password, 
-      signUpData.fullName, 
-      signUpData.userType
-    );
-    
-    if (error) {
-      toast.error(error.message);
-    } else {
-      // Wait for profile creation and ensure role is set correctly
-      setTimeout(async () => {
-        const updateResult = await updateProfile({ role: signUpData.userType });
-        if (updateResult.error) {
-          console.error('Failed to update profile role:', updateResult.error);
-        }
-      }, 2000);
-      toast.success('Registration successful! Please check your email to verify your account.');
+    try {
+      // Zod validation for type safety and input validation
+      const validated = signUpSchema.parse({
+        email: signUpData.email,
+        password: signUpData.password,
+        fullName: signUpData.fullName,
+        userType: signUpData.userType,
+        csrfToken: csrf.token
+      });
+
+      const { error } = await signUp(
+        validated.email, 
+        validated.password, 
+        validated.fullName, 
+        validated.userType
+      );
+      
+      if (error) {
+        toast.error(error.message);
+        setLoading(false);
+      } else {
+        // Wait for profile creation and ensure role is set correctly
+        setTimeout(async () => {
+          const updateResult = await updateProfile({ role: validated.userType });
+          if (updateResult.error) {
+            console.error('Failed to update profile role:', updateResult.error);
+          }
+        }, 2000);
+        
+        toast.success('Account created! Please check your email to verify your account before signing in.', {
+          duration: 5000,
+        });
+        
+        csrf.regenerate(); // Regenerate CSRF token after successful signup
+        setLoading(false);
+        
+        // Redirect to sign-in after 2 seconds
+        setTimeout(() => {
+          const signInTab = document.querySelector('[value="signin"]') as HTMLElement;
+          signInTab?.click();
+        }, 2000);
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.issues[0].message);
+      } else {
+        toast.error('An error occurred during sign up');
+      }
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSignInInputChange = (field: string, value: string) => {
@@ -121,6 +166,8 @@ export const AuthForm = () => {
           
           <TabsContent value="signin">
             <form onSubmit={handleSignIn} className="space-y-4">
+              <input type="hidden" name="csrfToken" value={csrf.token} />
+              
               <div className="space-y-2">
                 <Label htmlFor="signin-email" className="text-white font-semibold">Email</Label>
                 <Input
@@ -163,6 +210,8 @@ export const AuthForm = () => {
           
           <TabsContent value="signup">
             <form onSubmit={handleSignUp} className="space-y-4">
+              <input type="hidden" name="csrfToken" value={csrf.token} />
+              
               <div className="space-y-2">
                 <Label htmlFor="userType" className="text-white font-semibold flex items-center gap-2">
                   <Shield className="w-4 h-4 text-pickfirst-yellow" />

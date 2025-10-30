@@ -3,7 +3,11 @@ import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/type
 import { rateLimitService } from './rateLimitService';
 import { auditService, AuditAction } from './auditService';
 
-export type Client = Tables<'clients'>;
+export type Client = Tables<'clients'> & {
+  user_id?: string | null;
+  invited_at?: string | null;
+  invite_accepted_at?: string | null;
+};
 export type ClientInsert = TablesInsert<'clients'>;
 export type ClientUpdate = TablesUpdate<'clients'>;
 
@@ -140,7 +144,130 @@ class ClientService {
 
 
 
-  // Create a new client by linking to an existing user
+  // Create a new client (with or without existing user account)
+  async createClient(
+    clientData: {
+      name: string;
+      email?: string;
+      phone?: string;
+      status?: string;
+      budget_range?: string;
+      preferred_areas?: string[];
+      property_type?: string;
+      notes?: string;
+      rating?: number;
+    }
+  ): Promise<{ data: Client | null; error: any }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { data: null, error: { message: 'User not authenticated' } };
+      }
+
+      // Validate inputs
+      if (!clientData.name?.trim()) {
+        return { data: null, error: { message: 'Name is required' } };
+      }
+
+      if (!clientData.email && !clientData.phone) {
+        return { data: null, error: { message: 'Either email or phone is required' } };
+      }
+
+      // Validate email format if provided
+      if (clientData.email && !validateEmail(clientData.email)) {
+        return { data: null, error: { message: 'Invalid email format' } };
+      }
+
+      // Validate phone if provided
+      if (clientData.phone && !validatePhone(clientData.phone)) {
+        return { data: null, error: { message: 'Invalid phone number format' } };
+      }
+
+      // Check rate limit
+      const rateLimit = await rateLimitService.checkRateLimit(user.id, 'client:create');
+      if (!rateLimit.allowed) {
+        return { 
+          data: null, 
+          error: { 
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimit.resetTime - Date.now()) / 1000)} seconds.` 
+          } 
+        };
+      }
+
+      // Sanitize inputs
+      const sanitizedName = sanitizeInput(clientData.name);
+      const sanitizedEmail = clientData.email ? clientData.email.trim().toLowerCase() : null;
+      const sanitizedPhone = clientData.phone ? sanitizeInput(clientData.phone) : null;
+      const sanitizedNotes = clientData.notes ? sanitizeInput(clientData.notes) : null;
+
+      // Check if user already exists and link if they do
+      let userId: string | null = null;
+      if (sanitizedEmail) {
+        const { data: existingUser } = await supabase
+          .from('profiles')
+          .select('id, role')
+          .eq('email', sanitizedEmail)
+          .maybeSingle();
+
+        if (existingUser) {
+          if (existingUser.role !== 'buyer') {
+            return { data: null, error: { message: 'Only buyers can be added as clients' } };
+          }
+          userId = existingUser.id;
+
+          // Check if already a client
+          const { data: existingClient } = await supabase
+            .from('clients')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('agent_id', user.id)
+            .maybeSingle();
+
+          if (existingClient) {
+            return { data: null, error: { message: 'This user is already your client' } };
+          }
+        }
+      }
+
+      // Create client record
+      const newClient: Partial<ClientInsert> = {
+        agent_id: user.id,
+        user_id: userId,
+        name: sanitizedName,
+        email: sanitizedEmail,
+        phone: sanitizedPhone,
+        status: clientData.status || 'lead',
+        budget_range: clientData.budget_range,
+        preferred_areas: clientData.preferred_areas,
+        property_type: clientData.property_type,
+        rating: clientData.rating || 0,
+        notes: sanitizedNotes,
+      };
+
+      const { data, error } = await supabase
+        .from('clients')
+        .insert(newClient as ClientInsert)
+        .select()
+        .single();
+
+      if (!error && data) {
+        await auditService.log(user.id, 'CREATE', 'clients', {
+          recordId: data.id,
+          newValues: { 
+            client_name: data.name,
+            client_email: data.email,
+            has_account: !!userId,
+          }
+        });
+      }
+
+      return { data, error };
+    } catch (error) {
+      return { data: null, error };
+    }
+  }
+
+  // Legacy method for backward compatibility
   async createClientByEmail(
     email: string, 
     clientData: Omit<ClientInsert, 'agent_id' | 'id' | 'name' | 'email' | 'created_at' | 'updated_at'> & {
@@ -539,65 +666,65 @@ class ClientService {
     }
   }
 
-  // Delete a client interaction
-  async deleteClientInteraction(interactionId: string): Promise<{ error: any }> {
-    try {
-      const { error } = await supabase
-        .from('client_interactions')
-        .delete()
-        .eq('id', interactionId);
-
-      return { error };
-    } catch (error) {
-      return { error };
-    }
-  }
-
-  // Get client statistics
-  async getClientStats(): Promise<{ data: any; error: any }> {
+  // Send invitation email to client
+  async sendClientInvite(clientId: string, agentName: string): Promise<{ error: any }> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        return { data: null, error: { message: 'User not authenticated' } };
+        return { error: { message: 'User not authenticated' } };
       }
 
-      // Get total clients
-      const { count: totalClients } = await supabase
+      // Get client details
+      const { data: client, error: clientError } = await supabase
         .from('clients')
-        .select('*', { count: 'exact', head: true })
-        .eq('agent_id', user.id);
-
-      // Get clients by status
-      const { data: statusCounts } = await supabase
-        .from('clients')
-        .select('status')
-        .eq('agent_id', user.id);
-
-      const statusStats = statusCounts?.reduce((acc: any, client) => {
-        acc[client.status] = (acc[client.status] || 0) + 1;
-        return acc;
-      }, {}) || {};
-
-      // Get recent activity (last 30 days)
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      const { count: recentInteractions } = await supabase
-        .from('client_interactions')
-        .select('*', { count: 'exact', head: true })
+        .select('id, name, email')
+        .eq('id', clientId)
         .eq('agent_id', user.id)
-        .gte('created_at', thirtyDaysAgo.toISOString());
+        .single();
 
-      return {
-        data: {
-          totalClients: totalClients || 0,
-          statusStats,
-          recentInteractions: recentInteractions || 0,
-        },
-        error: null,
-      };
+      if (clientError || !client) {
+        return { error: { message: 'Client not found' } };
+      }
+
+      if (!client.email) {
+        return { error: { message: 'Client email is required to send invite' } };
+      }
+
+      // Check rate limit
+      const rateLimit = await rateLimitService.checkRateLimit(user.id, 'email:send');
+      if (!rateLimit.allowed) {
+        return { 
+          error: { 
+            message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimit.resetTime - Date.now()) / 1000)} seconds.` 
+          } 
+        };
+      }
+
+      // Call edge function to send invite
+      const { error } = await supabase.functions.invoke('send-client-invite', {
+        body: {
+          clientId: client.id,
+          clientEmail: client.email,
+          clientName: client.name,
+          agentName: agentName
+        }
+      });
+
+      if (error) {
+        return { error: { message: 'Failed to send invitation' } };
+      }
+
+      await auditService.log(user.id, 'INVITE', 'clients', {
+        recordId: clientId,
+        newValues: {
+          client_name: client.name,
+          client_email: client.email,
+        }
+      });
+
+      return { error: null };
     } catch (error) {
-      return { data: null, error };
+      return { error };
     }
   }
 }

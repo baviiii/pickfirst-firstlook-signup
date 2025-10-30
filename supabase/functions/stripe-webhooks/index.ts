@@ -4,8 +4,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2025-08-27.basil'
 });
-const supabaseUrl = Deno.env.get('SUPABASE_URL');
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,7 +50,7 @@ serve(async (req)=>{
       event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
       console.log('✅ Signature verification successful');
     } catch (err) {
-      const error = err;
+      const error = err as Error;
       console.error('❌ Webhook signature verification failed:', error.message);
       console.error('Error details:', error);
       console.error('Signature used:', signature);
@@ -72,7 +72,8 @@ serve(async (req)=>{
           throw new Error('Could not parse signature header');
         }
       } catch (altErr) {
-        console.error('❌ Alternative verification also failed:', altErr.message);
+        const altError = altErr as Error;
+        console.error('❌ Alternative verification also failed:', altError.message);
         // Last resort: try to parse the event without signature verification for debugging
         try {
           console.log('🔄 Attempting to parse event without signature verification (DEBUG MODE)...');
@@ -85,7 +86,8 @@ serve(async (req)=>{
             throw new Error('Invalid event structure');
           }
         } catch (parseErr) {
-          console.error('❌ Could not parse event body:', parseErr.message);
+          const parseError = parseErr as Error;
+          console.error('❌ Could not parse event body:', parseError.message);
           return new Response(JSON.stringify({
             error: 'Invalid signature',
             debug: {
@@ -93,8 +95,8 @@ serve(async (req)=>{
               webhookSecretPresent: !!webhookSecret,
               bodyLength: body.length,
               errorMessage: error.message,
-              alternativeError: altErr.message,
-              parseError: parseErr.message,
+              alternativeError: altError.message,
+              parseError: parseError.message,
               signatureHeader: signature
             }
           }), {
@@ -151,7 +153,7 @@ serve(async (req)=>{
     });
   }
 });
-async function handleSubscriptionCreated(subscription) {
+async function handleSubscriptionCreated(subscription: any) {
   console.log('Handling subscription created:', subscription.id);
   console.log('Subscription object keys:', Object.keys(subscription));
   console.log('Subscription current_period_end:', subscription.current_period_end, typeof subscription.current_period_end);
@@ -170,7 +172,7 @@ async function handleSubscriptionCreated(subscription) {
     tier = plan.name.toLowerCase();
   }
   // Update user profile with safe date handling
-  const updateData = {
+  const updateData: any = {
     subscription_tier: tier,
     subscription_status: subscription.status,
     stripe_subscription_id: subscription.id,
@@ -209,7 +211,7 @@ async function handleSubscriptionCreated(subscription) {
   });
   console.log('Subscription created emails sent for:', profile.email);
 }
-async function handleSubscriptionUpdated(subscription) {
+async function handleSubscriptionUpdated(subscription: any) {
   console.log('Handling subscription updated:', subscription.id);
   const customerId = subscription.customer;
   const { data: profile } = await supabase.from('profiles').select('*').eq('stripe_customer_id', customerId).single();
@@ -226,7 +228,7 @@ async function handleSubscriptionUpdated(subscription) {
   }
   const oldTier = profile.subscription_tier;
   // Update user profile with safe date handling
-  const updateData = {
+  const updateData: any = {
     subscription_tier: tier,
     subscription_status: subscription.status,
     updated_at: new Date().toISOString()
@@ -253,7 +255,7 @@ async function handleSubscriptionUpdated(subscription) {
     console.log('Subscription updated email sent for:', profile.email);
   }
 }
-async function handleSubscriptionCancelled(subscription) {
+async function handleSubscriptionCancelled(subscription: any) {
   console.log('Handling subscription cancelled:', subscription.id);
   const customerId = subscription.customer;
   const { data: profile } = await supabase.from('profiles').select('*').eq('stripe_customer_id', customerId).single();
@@ -262,7 +264,7 @@ async function handleSubscriptionCancelled(subscription) {
     return;
   }
   // Update user profile with safe date handling
-  const updateData = {
+  const updateData: any = {
     subscription_status: 'cancelled',
     subscription_tier: 'free',
     updated_at: new Date().toISOString()
@@ -296,7 +298,7 @@ async function handleSubscriptionCancelled(subscription) {
   });
   console.log('Subscription cancelled emails sent for:', profile.email);
 }
-async function handlePaymentSucceeded(invoice) {
+async function handlePaymentSucceeded(invoice: any) {
   console.log('Handling payment succeeded:', invoice.id);
   const customerId = invoice.customer;
   const { data: profile } = await supabase.from('profiles').select('*').eq('stripe_customer_id', customerId).single();
@@ -390,7 +392,7 @@ async function handlePaymentSucceeded(invoice) {
   });
   console.log('Payment success email sent for:', profile.email);
 }
-async function handlePaymentFailed(invoice) {
+async function handlePaymentFailed(invoice: any) {
   console.log('Handling payment failed:', invoice.id);
   const customerId = invoice.customer;
   const { data: profile } = await supabase.from('profiles').select('*').eq('stripe_customer_id', customerId).single();
@@ -423,7 +425,7 @@ async function handlePaymentFailed(invoice) {
   });
   console.log('Payment failed emails sent for:', profile.email);
 }
-async function sendAdminNotification({ subject, message }) {
+async function sendAdminNotification({ subject, message }: { subject: string; message: string }) {
   // Get all super admin emails
   const { data: admins } = await supabase.from('profiles').select('email').eq('role', 'super_admin');
   if (!admins || admins.length === 0) {

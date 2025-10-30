@@ -63,12 +63,9 @@ class IPTrackingService {
       const response = await supabase.functions.invoke('client-ip', {
         method: 'GET'
       });
-
-      console.log('Client-IP function response:', response);
       
       if (response.data && !response.error) {
         const data = response.data;
-        console.log('Client-IP response data:', data);
         
         const ipData: IPTrackingData = {
           ip: data.ip || 'unknown',
@@ -87,22 +84,17 @@ class IPTrackingService {
           timestamp: data.timestamp || new Date().toISOString()
         };
 
-        // Cache the result
         this.clientIPCache = ipData;
         this.cacheExpiry = Date.now() + this.CACHE_DURATION;
-
-        console.log('Successfully cached IP data from Edge Function:', ipData);
         return ipData;
       } else {
         console.error('Client-IP function error:', response.error);
       }
     } catch (error) {
-      console.error('Edge Function failed, trying fallback:', error);
+      // Fallback
     }
 
-    // Fallback: Use public IP service + browser detection
     try {
-      console.log('Using fallback IP detection...');
       const fallbackIP = await this.getFallbackIP();
       
       const ipData: IPTrackingData = {
@@ -122,11 +114,8 @@ class IPTrackingService {
         timestamp: new Date().toISOString()
       };
 
-      // Cache the result
       this.clientIPCache = ipData;
       this.cacheExpiry = Date.now() + this.CACHE_DURATION;
-
-      console.log('Successfully cached fallback IP data:', ipData);
       return ipData;
     } catch (error) {
       console.error('Fallback IP detection also failed:', error);
@@ -182,16 +171,7 @@ class IPTrackingService {
         });
 
       if (error) {
-        console.error('Failed to log login activity:', error);
-        // Log the specific error details for debugging
-        console.error('Login activity data:', {
-          user_id: activityData.user_id,
-          email: activityData.email,
-          login_type: activityData.login_type,
-          success: activityData.success
-        });
-      } else {
-        console.log('Successfully logged login activity for:', activityData.email);
+        throw error;
       }
     } catch (error) {
       console.error('Error logging login activity:', error);

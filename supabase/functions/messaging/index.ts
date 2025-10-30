@@ -344,6 +344,7 @@ serve(async (req) => {
             const isAgentSending = conversation.agent_id === user.id
             const conversationWithProfiles = conversation as any
             const recipient = isAgentSending ? conversationWithProfiles.client : conversationWithProfiles.agent
+            const sender = isAgentSending ? conversationWithProfiles.agent : conversationWithProfiles.client
             const senderName = data.sender_profile?.full_name || 'Someone'
 
             if (recipient?.email) {
@@ -357,13 +358,17 @@ serve(async (req) => {
                 body: JSON.stringify({
                   to: recipient.email,
                   subject: `New message from ${senderName}`,
-                  template: 'messageNotification', // This is the template you confirmed exists
+                  template: 'messageNotification',
                   data: {
                     recipientName: recipient.full_name || 'there',
                     senderName: senderName,
-                    messageContent: content.trim().substring(0, 200), // Truncate for preview
+                    senderEmail: sender?.email || null,
+                    messageContent: content.trim().substring(0, 200),
+                    messagePreview: content.trim().substring(0, 200),
+                    conversationId: conversationId,
                     conversationSubject: conversation.subject || 'Property Inquiry',
-                    platformName: 'PickFirst Real Estate'
+                    platformName: 'PickFirst Real Estate',
+                    platformUrl: 'https://pickfirst.com.au'
                   }
                 })
               })

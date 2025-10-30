@@ -40,13 +40,12 @@ export const PropertyConversationStarter: React.FC<PropertyConversationStarterPr
       // Determine the correct participant IDs based on user role
       const targetUserId = profile?.role === 'buyer' ? buyerId : user.id;
       const conversationSubject = `Property Inquiry: ${propertyTitle}`;
-
-      // Create or get conversation with property ID for property-specific conversation
+      
       const conversationId = await messageService.getOrCreateConversation(
         targetUserId, 
         conversationSubject,
-        undefined, // inquiry ID
-        propertyId // property ID to ensure separate conversations per property
+        undefined,
+        propertyId
       );
 
       if (!conversationId) {
@@ -59,7 +58,14 @@ export const PropertyConversationStarter: React.FC<PropertyConversationStarterPr
         `I'm interested in this property:\n\n${propertyTitle}\n${propertyAddress}\n\n${message.trim()}`
       );
 
-      toast.success('Message sent successfully');
+      if (profile?.role === 'buyer') {
+        toast.success('Inquiry sent! The agent has been notified and will respond soon.', {
+          description: 'You can track the conversation in your Messages',
+          duration: 5000
+        });
+      } else {
+        toast.success('Message sent successfully');
+      }
       onConversationStarted?.(conversationId);
       setMessage('');
       setOpen(false);

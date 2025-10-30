@@ -21,7 +21,7 @@ export class EmailService {
             name: userName || 'User',
             email: userEmail,
             platformName: 'PickFirst Real Estate',
-            platformUrl: 'https://baviiii.github.io/pickfirst-firstlook-signup',
+            platformUrl: 'https://pickfirst.com.au',
             userId
           }
         }
@@ -32,7 +32,7 @@ export class EmailService {
   }
 
   /**
-   * Send property alert email
+   * Send property alert email (on-market properties)
    */
   static async sendPropertyAlert(
     userEmail: string, 
@@ -61,11 +61,52 @@ export class EmailService {
             bedrooms: propertyData.bedrooms,
             bathrooms: propertyData.bathrooms,
             propertyUrl: propertyData.propertyUrl
-          }
+          },
+          subject: `🏠 New Property Alert: ${propertyData.title}`
         }
       });
     } catch (error) {
       console.error('Error sending property alert email:', error);
+    }
+  }
+
+  /**
+   * Send off-market property alert email (premium exclusive)
+   */
+  static async sendOffMarketPropertyAlert(
+    userEmail: string, 
+    userName: string, 
+    propertyData: {
+      title: string;
+      price: number;
+      location: string;
+      propertyType: string;
+      bedrooms: number;
+      bathrooms: number;
+      propertyUrl?: string;
+    }
+  ): Promise<void> {
+    try {
+      await supabase.functions.invoke('send-email', {
+        body: {
+          to: userEmail,
+          template: 'offMarketPropertyAlert',
+          data: {
+            name: userName,
+            propertyTitle: propertyData.title,
+            price: propertyData.price,
+            location: propertyData.location,
+            propertyType: propertyData.propertyType,
+            bedrooms: propertyData.bedrooms,
+            bathrooms: propertyData.bathrooms,
+            propertyUrl: propertyData.propertyUrl,
+            isOffMarket: true
+          },
+          subject: `🔐 Exclusive Off-Market Property: ${propertyData.title}`
+        }
+      });
+    } catch (error) {
+      console.error('Error sending off-market property alert email:', error);
     }
   }
 
@@ -367,7 +408,7 @@ export class EmailService {
             status: appointmentData.status,
             statusMessage: appointmentData.statusMessage,
             platformName: 'PickFirst Real Estate',
-            platformUrl: 'https://baviiii.github.io/pickfirst-firstlook-signup'
+            platformUrl: 'https://pickfirst.com.au'
           },
           subject: `Appointment ${appointmentData.status.charAt(0).toUpperCase() + appointmentData.status.slice(1)} - ${appointmentData.appointmentType}`
         }
@@ -388,9 +429,9 @@ export class EmailService {
           template: 'passwordReset',
           data: {
             email: userEmail,
-            resetUrl: resetUrl || `${window.location.origin}/reset-password`,
+            resetUrl: resetUrl || 'https://pickfirst.com.au/reset-password',
             platformName: 'PickFirst Real Estate',
-            platformUrl: 'https://baviiii.github.io/pickfirst-firstlook-signup'
+            platformUrl: 'https://pickfirst.com.au'
           },
           subject: 'Reset Your Password - PickFirst Real Estate'
         }
@@ -412,7 +453,7 @@ export class EmailService {
           data: {
             name: userName,
             platformName: 'PickFirst Real Estate',
-            platformUrl: 'https://baviiii.github.io/pickfirst-firstlook-signup'
+            platformUrl: 'https://pickfirst.com.au'
           }
         }
       });
@@ -433,7 +474,7 @@ export class EmailService {
           data: {
             name: userName,
             platformName: 'PickFirst Real Estate',
-            platformUrl: 'https://baviiii.github.io/pickfirst-firstlook-signup'
+            platformUrl: 'https://pickfirst.com.au'
           }
         }
       });
@@ -464,7 +505,7 @@ export class EmailService {
             name: userName,
             ...alertData,
             platformName: 'PickFirst Real Estate',
-            platformUrl: 'https://baviiii.github.io/pickfirst-firstlook-signup'
+            platformUrl: 'https://pickfirst.com.au'
           }
         }
       });
@@ -481,7 +522,9 @@ export class EmailService {
     recipientName: string,
     messageData: {
       senderName: string;
+      senderEmail: string;
       messagePreview: string;
+      messageContent?: string;
       conversationId: string;
     }
   ): Promise<void> {
@@ -493,7 +536,7 @@ export class EmailService {
           data: {
             recipientName,
             ...messageData,
-            platformUrl: 'https://baviiii.github.io/pickfirst-firstlook-signup'
+            platformUrl: 'https://pickfirst.com.au'
           }
         }
       });
@@ -527,7 +570,7 @@ export class EmailService {
           data: {
             agentName,
             ...leadData,
-            platformUrl: 'https://baviiii.github.io/pickfirst-firstlook-signup'
+            platformUrl: 'https://pickfirst.com.au'
           }
         }
       });
@@ -558,7 +601,7 @@ export class EmailService {
           data: {
             name: userName,
             ...viewingData,
-            platformUrl: 'https://baviiii.github.io/pickfirst-firstlook-signup'
+            platformUrl: 'https://pickfirst.com.au'
           }
         }
       });
@@ -587,7 +630,7 @@ export class EmailService {
           data: {
             name: userName,
             ...followUpData,
-            platformUrl: 'https://baviiii.github.io/pickfirst-firstlook-signup'
+            platformUrl: 'https://pickfirst.com.au'
           }
         }
       });
@@ -637,7 +680,7 @@ export class EmailService {
           data: {
             name: userName,
             ...subscriptionData,
-            platformUrl: 'https://baviiii.github.io/pickfirst-firstlook-signup'
+            platformUrl: 'https://pickfirst.com.au'
           }
         }
       });
@@ -676,7 +719,7 @@ export class EmailService {
               data: {
                 name: email.name,
                 ...campaignData,
-                platformUrl: 'https://baviiii.github.io/pickfirst-firstlook-signup'
+                platformUrl: 'https://pickfirst.com.au'
               }
             }
           })

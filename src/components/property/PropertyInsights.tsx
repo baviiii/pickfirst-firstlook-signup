@@ -6,8 +6,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Star, 
   MapPin, 
-  Clock, 
-  Car, 
   GraduationCap, 
   Stethoscope, 
   ShoppingBag, 
@@ -15,11 +13,7 @@ import {
   TreePine,
   Train,
   Dumbbell,
-  Shield,
-  TrendingUp,
   Info,
-  ExternalLink,
-  Navigation,
   ChevronDown,
   ChevronUp,
   Loader2,
@@ -27,6 +21,7 @@ import {
 } from 'lucide-react';
 
 import { googleMapsService } from '@/services/googleMapsService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PropertyInsightsProps {
   address: string;
@@ -54,16 +49,6 @@ interface NearbyPlace {
   };
 }
 
-interface AreaInsights {
-  walkScore: number;
-  crimeRating: number;
-  schoolRating: number;
-  transitScore: number;
-  bikeScore: number;
-  noiseLevel: number;
-  airQuality: number;
-  confidence: 'high' | 'medium' | 'low';
-}
 
 interface NearbyPlacesData {
   schools: NearbyPlace[];
@@ -73,6 +58,15 @@ interface NearbyPlacesData {
   parks: NearbyPlace[];
   transit: NearbyPlace[];
   gyms: NearbyPlace[];
+}
+
+interface AirQualityData {
+  aqi?: number;
+  category?: string;
+  dominantPollutant?: string;
+  healthRecommendations?: {
+    generalPopulation?: string;
+  };
 }
 
 const PropertyInsights: React.FC<PropertyInsightsProps> = ({ 
@@ -93,9 +87,10 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
     transit: [],
     gyms: []
   });
-  const [areaInsights, setAreaInsights] = useState<AreaInsights | null>(null);
+  const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string>('');
   const [retryCount, setRetryCount] = useState(0);
+  const [showMethodology, setShowMethodology] = useState(false);
 
   const maxRetries = 3;
 
@@ -112,82 +107,6 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
     return R * c;
   }, []);
 
-  const generateAreaInsights = useCallback((lat: number, lng: number, places: NearbyPlacesData): AreaInsights => {
-    try {
-      // Calculate school rating with proper validation
-      const validSchools = places.schools.filter(school => school.rating && school.rating > 0);
-      const avgSchoolRating = validSchools.length > 0 
-        ? validSchools.reduce((sum, school) => sum + (school.rating || 0), 0) / validSchools.length
-        : 0;
-
-      // Calculate walk score based on amenity diversity and density
-      const amenityTypes = [
-        places.restaurants.length,
-        places.shopping.length,
-        places.healthcare.length,
-        places.parks.length
-      ];
-      const totalAmenities = amenityTypes.reduce((sum, count) => sum + count, 0);
-      const diversityBonus = amenityTypes.filter(count => count > 0).length * 5;
-      const walkScore = Math.min(100, Math.max(0, (totalAmenities * 3) + diversityBonus + 20));
-
-      // Transit score based on nearby stations and their ratings
-      const validTransit = places.transit.filter(t => t.rating && t.rating > 0);
-      const avgTransitRating = validTransit.length > 0
-        ? validTransit.reduce((sum, t) => sum + (t.rating || 0), 0) / validTransit.length
-        : 0;
-      const transitScore = Math.min(100, (validTransit.length * 15) + (avgTransitRating * 10));
-
-      // Bike score based on parks and overall walkability
-      const parkCount = places.parks.length;
-      const bikeScore = Math.min(100, walkScore * 0.8 + (parkCount * 5));
-
-      // Enhanced crime rating simulation (in production, use real crime data APIs)
-      const baselineSafety = 7.5;
-      const hospitalBonus = places.healthcare.length > 0 ? 0.3 : 0;
-      const transitPenalty = places.transit.length > 5 ? -0.2 : 0; // Busy transit areas might have slightly more activity
-      const crimeRating = Math.min(10, Math.max(1, 
-        baselineSafety + hospitalBonus + transitPenalty + (Math.random() * 0.6 - 0.3)
-      ));
-
-      // Noise level based on nearby amenities
-      const highTrafficAmenities = places.restaurants.length + places.shopping.length + places.transit.length;
-      const noiseLevel = Math.min(5, Math.max(1, 2 + (highTrafficAmenities * 0.1) + (Math.random() * 0.5)));
-
-      // Air quality (in production, integrate with air quality APIs)
-      const parkBonus = places.parks.length * 2;
-      const airQuality = Math.min(100, Math.max(50, 85 + parkBonus - (highTrafficAmenities * 0.5) + (Math.random() * 10)));
-
-      // Confidence level based on data availability
-      const totalDataPoints = Object.values(places).reduce((sum, arr) => sum + arr.length, 0);
-      const confidence: 'high' | 'medium' | 'low' = 
-        totalDataPoints > 20 ? 'high' : 
-        totalDataPoints > 10 ? 'medium' : 'low';
-
-      return {
-        walkScore: Math.round(walkScore),
-        schoolRating: Math.round(avgSchoolRating * 10) / 10,
-        transitScore: Math.round(transitScore),
-        bikeScore: Math.round(bikeScore),
-        crimeRating: Math.round(crimeRating * 10) / 10,
-        noiseLevel: Math.round(noiseLevel * 10) / 10,
-        airQuality: Math.round(airQuality),
-        confidence
-      };
-    } catch (error) {
-      console.error('Error generating area insights:', error);
-      return {
-        walkScore: 50,
-        schoolRating: 0,
-        transitScore: 50,
-        bikeScore: 50,
-        crimeRating: 7.5,
-        noiseLevel: 3.0,
-        airQuality: 80,
-        confidence: 'low'
-      };
-    }
-  }, []);
 
   const fetchNearbyPlaces = useCallback(async (lat: number, lng: number): Promise<NearbyPlacesData> => {
     const categories = [
@@ -273,11 +192,71 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
     setError('');
     
     try {
-      const places = await fetchNearbyPlaces(coords.lat, coords.lng);
-      const insights = generateAreaInsights(coords.lat, coords.lng, places);
+      // Check cache first
+      const cacheKey = address.toLowerCase().trim();
+      const { data: cachedData } = await supabase
+        .from('area_insights')
+        .select('*')
+        .ilike('address', cacheKey)
+        .maybeSingle();
       
+      // Check if cache is valid (less than 30 days old)
+      const cacheValid = cachedData && 
+        new Date().getTime() - new Date(cachedData.fetched_at).getTime() < 30 * 24 * 60 * 60 * 1000;
+      
+      if (cacheValid && cachedData) {
+        setNearbyPlaces(cachedData.nearby_places as unknown as NearbyPlacesData);
+        setAirQuality(cachedData.air_quality as AirQualityData | null);
+        setRetryCount(0);
+        setLoading(false);
+        return;
+      }
+      
+      // Fetch nearby places first (required)
+      const places = await fetchNearbyPlaces(coords.lat, coords.lng);
       setNearbyPlaces(places);
-      setAreaInsights(insights);
+      
+      // Try to fetch air quality (optional - fails silently if API not enabled)
+      let airQualityData = null;
+      try {
+        const aqResponse = await googleMapsService.getAirQuality(coords.lat, coords.lng);
+        if (aqResponse?.indexes?.[0]) {
+          const aqiData = aqResponse.indexes[0];
+          airQualityData = {
+            aqi: aqiData.aqi,
+            category: aqiData.category,
+            dominantPollutant: aqiData.dominantPollutant,
+            healthRecommendations: aqResponse.healthRecommendations
+          };
+          setAirQuality(airQualityData);
+        }
+      } catch (aqError) {
+        setAirQuality(null);
+      }
+      
+      // Store in cache
+      const cachePayload = {
+        address: address.toLowerCase().trim(),
+        latitude: coords.lat,
+        longitude: coords.lng,
+        nearby_places: places as unknown as any,
+        air_quality: airQualityData as unknown as any,
+        fetched_at: new Date().toISOString()
+      };
+      
+      if (cachedData) {
+        // Update existing cache
+        await supabase
+          .from('area_insights')
+          .update(cachePayload)
+          .eq('id', cachedData.id);
+      } else {
+        // Insert new cache entry
+        await supabase
+          .from('area_insights')
+          .insert(cachePayload);
+      }
+      
       setRetryCount(0);
     } catch (error: any) {
       const errorMessage = error?.message || 'Failed to load property insights';
@@ -286,28 +265,14 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
       
       if (retryCount < maxRetries) {
         setRetryCount(prev => prev + 1);
-        // Retry with exponential backoff
         setTimeout(() => {
           fetchPropertyInsights(coords);
         }, Math.pow(2, retryCount) * 1000);
-      } else {
-        // Set default insights on final failure
-        const defaultInsights: AreaInsights = {
-          walkScore: 50,
-          schoolRating: 0,
-          transitScore: 50,
-          bikeScore: 50,
-          crimeRating: 7.5,
-          noiseLevel: 3.0,
-          airQuality: 80,
-          confidence: 'low'
-        };
-        setAreaInsights(defaultInsights);
       }
     } finally {
       setLoading(false);
     }
-  }, [fetchNearbyPlaces, generateAreaInsights, onError, retryCount, maxRetries]);
+  }, [address, fetchNearbyPlaces, onError, retryCount, maxRetries]);
 
   const initializeComponent = useCallback(async () => {
     if (latitude && longitude) {
@@ -336,29 +301,6 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
     initializeComponent();
   }, [initializeComponent]);
 
-  // Memoized UI helper functions
-  const getScoreColor = useCallback((score: number, max: number = 100) => {
-    const percentage = (score / max) * 100;
-    if (percentage >= 80) return 'text-green-400';
-    if (percentage >= 60) return 'text-yellow-400';
-    return 'text-red-400';
-  }, []);
-
-  const getScoreBgColor = useCallback((score: number, max: number = 100) => {
-    const percentage = (score / max) * 100;
-    if (percentage >= 80) return 'bg-green-500/10 border-green-500/20';
-    if (percentage >= 60) return 'bg-yellow-500/10 border-yellow-500/20';
-    return 'bg-red-500/10 border-red-500/20';
-  }, []);
-
-  const getConfidenceColor = useCallback((confidence: 'high' | 'medium' | 'low') => {
-    switch (confidence) {
-      case 'high': return 'text-green-400';
-      case 'medium': return 'text-yellow-400';
-      case 'low': return 'text-red-400';
-      default: return 'text-gray-400';
-    }
-  }, []);
 
   // Memoized components
   const PlaceCard = useMemo(() => ({ place, icon: Icon }: { place: NearbyPlace; icon: any }) => (
@@ -414,51 +356,27 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        {/* Loading skeleton for area insights */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-yellow-400" />
-              Area Insights
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="p-4 rounded-lg border border-gray-700 animate-pulse">
-                  <div className="h-4 bg-gray-700 rounded mb-2"></div>
-                  <div className="h-8 bg-gray-700 rounded mb-1"></div>
-                  <div className="h-3 bg-gray-700 rounded w-2/3"></div>
-                </div>
-              ))}
+      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-yellow-400" />
+            Neighborhood Insights
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <Loader2 className="h-8 w-8 text-yellow-400 animate-spin" />
+            <div className="text-gray-400 text-center">
+              <p>Loading real data from Google Maps...</p>
+              {retryCount > 0 && (
+                <p className="text-sm text-yellow-400 mt-1">
+                  Retry attempt {retryCount} of {maxRetries}
+                </p>
+              )}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Loading skeleton for nearby places */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-yellow-400" />
-              Nearby Places
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <Loader2 className="h-8 w-8 text-yellow-400 animate-spin" />
-              <div className="text-gray-400 text-center">
-                <p>Analyzing neighborhood data...</p>
-                {retryCount > 0 && (
-                  <p className="text-sm text-yellow-400 mt-1">
-                    Retry attempt {retryCount} of {maxRetries}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -493,85 +411,186 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
     );
   }
 
-  if (!areaInsights) {
-    return null;
-  }
+  const totalPlaces = Object.values(nearbyPlaces).reduce((sum, places) => sum + places.length, 0);
+
+  // Calculate real metrics from Google Maps data
+  const avgSchoolRating = nearbyPlaces.schools.length > 0
+    ? nearbyPlaces.schools.reduce((sum, s) => sum + (s.rating || 0), 0) / nearbyPlaces.schools.length
+    : 0;
+  
+  const topRatedRestaurants = nearbyPlaces.restaurants.filter(r => r.rating && r.rating >= 4.0).length;
+  const transitOptions = nearbyPlaces.transit.length;
+  const parksNearby = nearbyPlaces.parks.length;
+
+  // Get air quality color and label
+  const getAirQualityInfo = (category?: string) => {
+    switch (category) {
+      case 'EXCELLENT':
+        return { color: 'text-green-400', bgColor: 'bg-green-500/10', label: 'Excellent', icon: '😊' };
+      case 'GOOD':
+        return { color: 'text-blue-400', bgColor: 'bg-blue-500/10', label: 'Good', icon: '🙂' };
+      case 'MODERATE':
+        return { color: 'text-yellow-400', bgColor: 'bg-yellow-500/10', label: 'Moderate', icon: '😐' };
+      case 'UNHEALTHY_FOR_SENSITIVE_GROUPS':
+        return { color: 'text-orange-400', bgColor: 'bg-orange-500/10', label: 'Unhealthy for Sensitive', icon: '😷' };
+      case 'UNHEALTHY':
+        return { color: 'text-red-400', bgColor: 'bg-red-500/10', label: 'Unhealthy', icon: '😨' };
+      case 'VERY_UNHEALTHY':
+        return { color: 'text-red-600', bgColor: 'bg-red-600/10', label: 'Very Unhealthy', icon: '🤢' };
+      case 'HAZARDOUS':
+        return { color: 'text-purple-600', bgColor: 'bg-purple-600/10', label: 'Hazardous', icon: '☠️' };
+      default:
+        return { color: 'text-gray-400', bgColor: 'bg-gray-500/10', label: 'Unknown', icon: '❓' };
+    }
+  };
+
+  const aqInfo = getAirQualityInfo(airQuality?.category);
 
   return (
     <div className="space-y-6">
-      {/* Area Scores */}
+      {/* Quick Stats from Real Data */}
       <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
         <CardHeader>
-          <CardTitle className="text-white flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-yellow-400" />
-              Area Insights
-            </div>
-            <Badge variant="outline" className={`${getConfidenceColor(areaInsights.confidence)} border-current`}>
-              {areaInsights.confidence} confidence
-            </Badge>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Star className="h-5 w-5 text-yellow-400" />
+            Neighborhood at a Glance
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div className={`p-4 rounded-lg border ${getScoreBgColor(areaInsights.walkScore)}`}>
-              <div className="flex items-center gap-2 mb-2">
-                <Navigation className="h-4 w-4 text-yellow-400" />
-                <span className="text-sm font-medium text-white">Walk Score</span>
-              </div>
-              <div className={`text-2xl font-bold ${getScoreColor(areaInsights.walkScore)}`}>
-                {areaInsights.walkScore}
-              </div>
-              <div className="text-xs text-gray-400">out of 100</div>
-            </div>
-
-            <div className={`p-4 rounded-lg border ${getScoreBgColor(areaInsights.schoolRating, 5)}`}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Schools */}
+            <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/50">
               <div className="flex items-center gap-2 mb-2">
                 <GraduationCap className="h-4 w-4 text-yellow-400" />
                 <span className="text-sm font-medium text-white">Schools</span>
               </div>
-              <div className={`text-2xl font-bold ${getScoreColor(areaInsights.schoolRating, 5)}`}>
-                {areaInsights.schoolRating > 0 ? areaInsights.schoolRating.toFixed(1) : 'N/A'}
+              <div className="text-2xl font-bold text-yellow-400">
+                {avgSchoolRating > 0 ? avgSchoolRating.toFixed(1) : 'N/A'}
               </div>
-              <div className="text-xs text-gray-400">avg rating</div>
+              <div className="text-xs text-gray-400">
+                {nearbyPlaces.schools.length > 0 ? `${nearbyPlaces.schools.length} nearby` : 'avg rating'}
+              </div>
             </div>
 
-            <div className={`p-4 rounded-lg border ${getScoreBgColor(areaInsights.transitScore)}`}>
+            {/* Restaurants */}
+            <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/50">
+              <div className="flex items-center gap-2 mb-2">
+                <Coffee className="h-4 w-4 text-yellow-400" />
+                <span className="text-sm font-medium text-white">Dining</span>
+              </div>
+              <div className="text-2xl font-bold text-yellow-400">
+                {topRatedRestaurants}
+              </div>
+              <div className="text-xs text-gray-400">top-rated spots</div>
+            </div>
+
+            {/* Transit */}
+            <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/50">
               <div className="flex items-center gap-2 mb-2">
                 <Train className="h-4 w-4 text-yellow-400" />
                 <span className="text-sm font-medium text-white">Transit</span>
               </div>
-              <div className={`text-2xl font-bold ${getScoreColor(areaInsights.transitScore)}`}>
-                {areaInsights.transitScore}
+              <div className="text-2xl font-bold text-yellow-400">
+                {transitOptions}
               </div>
-              <div className="text-xs text-gray-400">access score</div>
+              <div className="text-xs text-gray-400">stations nearby</div>
             </div>
 
-            <div className={`p-4 rounded-lg border ${getScoreBgColor(areaInsights.crimeRating, 10)}`}>
+            {/* Parks */}
+            <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/50">
               <div className="flex items-center gap-2 mb-2">
-                <Shield className="h-4 w-4 text-yellow-400" />
-                <span className="text-sm font-medium text-white">Safety</span>
+                <TreePine className="h-4 w-4 text-yellow-400" />
+                <span className="text-sm font-medium text-white">Parks</span>
               </div>
-              <div className={`text-2xl font-bold ${getScoreColor(areaInsights.crimeRating, 10)}`}>
-                {areaInsights.crimeRating.toFixed(1)}
+              <div className="text-2xl font-bold text-yellow-400">
+                {parksNearby}
               </div>
-              <div className="text-xs text-gray-400">out of 10</div>
+              <div className="text-xs text-gray-400">green spaces</div>
             </div>
+
+            {/* Air Quality */}
+            {airQuality && (
+              <div className={`p-4 rounded-lg border border-gray-700 ${aqInfo.bgColor}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">{aqInfo.icon}</span>
+                  <span className="text-sm font-medium text-white">Air Quality</span>
+                </div>
+                <div className={`text-2xl font-bold ${aqInfo.color}`}>
+                  {airQuality.aqi || 'N/A'}
+                </div>
+                <div className={`text-xs ${aqInfo.color}`}>
+                  {aqInfo.label}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Additional metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-700">
-            <div className="text-center">
-              <div className="text-lg font-semibold text-white">{areaInsights.bikeScore}</div>
-              <div className="text-sm text-gray-400">Bike Score</div>
+          {/* Air Quality Details */}
+          {airQuality && airQuality.aqi && (
+            <div className={`mt-4 p-3 rounded-lg border ${aqInfo.bgColor} border-gray-700`}>
+              <div className="flex items-start gap-2">
+                <Info className={`h-4 w-4 ${aqInfo.color} flex-shrink-0 mt-0.5`} />
+                <div className="text-sm space-y-1">
+                  <p className={`font-medium ${aqInfo.color}`}>
+                    Air Quality Index: {airQuality.aqi} ({aqInfo.label})
+                  </p>
+                  {airQuality.dominantPollutant && (
+                    <p className="text-gray-300 text-xs">
+                      Primary pollutant: {airQuality.dominantPollutant}
+                    </p>
+                  )}
+                  {airQuality.healthRecommendations?.generalPopulation && (
+                    <p className="text-gray-400 text-xs mt-2">
+                      {airQuality.healthRecommendations.generalPopulation}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-white">{areaInsights.airQuality}</div>
-              <div className="text-sm text-gray-400">Air Quality</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-white">{areaInsights.noiseLevel}/5</div>
-              <div className="text-sm text-gray-400">Noise Level</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Data Source Notice */}
+      <Card className="bg-gradient-to-br from-blue-900/20 to-blue-950/20 backdrop-blur-xl border border-blue-400/30">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-3">
+            <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm space-y-2">
+              <p className="text-white font-medium">
+                100% Real Data from Google (Cached for 30 Days)
+              </p>
+              <p className="text-gray-300">
+                All information is sourced from <strong>Google Maps Places API</strong> and <strong>Google Air Quality API</strong>. 
+                Data is cached for 30 days to optimize performance. First-time views fetch fresh data, subsequent views use cached results for instant loading.
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-blue-400 hover:text-blue-300 p-0 h-auto font-normal"
+                onClick={() => setShowMethodology(!showMethodology)}
+              >
+                {showMethodology ? <ChevronUp className="h-4 w-4 inline mr-1" /> : <ChevronDown className="h-4 w-4 inline mr-1" />}
+                How we calculate this data
+              </Button>
+              {showMethodology && (
+                <div className="mt-3 p-4 bg-gray-900/50 rounded-lg border border-gray-700 space-y-2 text-gray-300">
+                  <p className="font-medium text-white">Calculation Methodology:</p>
+                  <ul className="space-y-1 text-xs list-disc list-inside">
+                    <li><strong>Distance:</strong> Calculated using the Haversine formula, which determines the great-circle distance between two points on Earth using their latitude and longitude coordinates.</li>
+                    <li><strong>Ratings:</strong> Pulled directly from Google Maps user reviews (out of 5 stars).</li>
+                    <li><strong>Filtering:</strong> We only show places with at least a 3.0 rating and 10+ reviews to ensure quality.</li>
+                    <li><strong>Sorting:</strong> Places are ranked by a weighted score: 70% rating quality + 30% proximity to property.</li>
+                    <li><strong>Search Radius:</strong> Schools (2km), Restaurants (1km), Shopping (1.5km), Healthcare (3km), Parks (1.5km), Transit (1km), Gyms (1.5km).</li>
+                    <li><strong>Air Quality:</strong> Real-time AQI (Air Quality Index) from Google's Air Quality API, based on official monitoring stations. Scale: 0-50 (Good), 51-100 (Moderate), 101-150 (Unhealthy for Sensitive), 151-200 (Unhealthy), 201-300 (Very Unhealthy), 301+ (Hazardous).</li>
+                    <li><strong>Caching:</strong> Data is stored in our database and refreshed every 30 days. This means instant loading for cached properties and zero duplicate API calls.</li>
+                    <li><strong>Data Freshness:</strong> First-time property views fetch fresh data from Google APIs. Subsequent views use cached data (max 30 days old) for instant performance.</li>
+                  </ul>
+                  <p className="text-xs text-gray-400 italic mt-2">
+                    Note: Air Quality data is from official monitoring stations. We do NOT use estimated metrics for noise levels or crime data. Cached data ensures fast, cost-effective insights.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -580,79 +599,67 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
       {/* Nearby Places */}
       <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-yellow-400" />
-            Nearby Places
+          <CardTitle className="text-white flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-yellow-400" />
+              Nearby Places
+            </div>
+            <Badge variant="outline" className="text-yellow-400 border-yellow-400/40">
+              {totalPlaces} verified places
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {categories.map(category => (
-              <div key={category.key} className="border-b border-gray-700 last:border-b-0 pb-4 last:pb-0">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-between text-left p-3 h-auto hover:bg-gray-800/50 rounded-lg"
-                  onClick={() => setExpandedCategory(
-                    expandedCategory === category.key ? '' : category.key
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <category.icon className="h-5 w-5 text-yellow-400" />
-                    <span className="text-white font-medium">{category.label}</span>
-                    <Badge 
-                      variant="outline" 
-                      className={`${category.places.length > 0 ? 'text-yellow-400 border-yellow-400/40' : 'text-gray-500 border-gray-500/40'}`}
-                    >
-                      {category.places.length}
-                    </Badge>
-                  </div>
-                  {expandedCategory === category.key ? (
-                    <ChevronUp className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
-                  )}
-                </Button>
-                
-                {expandedCategory === category.key && (
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {category.places.length > 0 ? (
-                      category.places.map((place, index) => (
-                        <PlaceCard key={place.place_id || index} place={place} icon={category.icon} />
-                      ))
-                    ) : (
-                      <div className="text-gray-400 text-sm col-span-full text-center py-4">
-                        No {category.label.toLowerCase()} found nearby
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Data Sources & Disclaimer */}
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-gray-700/50">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <Info className="h-4 w-4 text-blue-400 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-gray-400 space-y-1">
-              <p>
-                <strong className="text-gray-300">Data Sources:</strong> Property insights are generated using location-based services, 
-                public amenity databases, and aggregated community data.
-              </p>
-              <p>
-                <strong className="text-gray-300">Disclaimer:</strong> Scores and ratings are estimates based on available data 
-                and should be used as general guidance. Always verify information independently and visit the area personally 
-                before making property decisions.
-              </p>
-              <p className="text-xs">
-                Last updated: {new Date().toLocaleDateString()} | 
-                Confidence: <span className={getConfidenceColor(areaInsights.confidence)}>{areaInsights.confidence}</span>
-              </p>
+          {totalPlaces === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              <MapPin className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>No nearby places found in this area.</p>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-4">
+              {categories.map(category => (
+                <div key={category.key} className="border-b border-gray-700 last:border-b-0 pb-4 last:pb-0">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-between text-left p-3 h-auto hover:bg-gray-800/50 rounded-lg"
+                    onClick={() => setExpandedCategory(
+                      expandedCategory === category.key ? '' : category.key
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <category.icon className="h-5 w-5 text-yellow-400" />
+                      <span className="text-white font-medium">{category.label}</span>
+                      <Badge 
+                        variant="outline" 
+                        className={`${category.places.length > 0 ? 'text-yellow-400 border-yellow-400/40' : 'text-gray-500 border-gray-500/40'}`}
+                      >
+                        {category.places.length}
+                      </Badge>
+                    </div>
+                    {expandedCategory === category.key ? (
+                      <ChevronUp className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                    )}
+                  </Button>
+                  
+                  {expandedCategory === category.key && (
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {category.places.length > 0 ? (
+                        category.places.map((place, index) => (
+                          <PlaceCard key={place.place_id || index} place={place} icon={category.icon} />
+                        ))
+                      ) : (
+                        <div className="text-gray-400 text-sm col-span-full text-center py-4">
+                          No {category.label.toLowerCase()} found nearby
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

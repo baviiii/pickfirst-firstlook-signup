@@ -145,7 +145,10 @@ class MessageService {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+      
       return data?.id || null;
     } catch (error) {
       console.error('Error creating conversation:', error);

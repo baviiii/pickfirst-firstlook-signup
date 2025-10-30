@@ -1,12 +1,11 @@
-import { PageWrapper } from '@/components/ui/page-wrapper';
+import { BuyerLayout } from '@/components/layouts/BuyerLayout';
 import { BuyerMessages } from '@/components/buyer/BuyerMessages';
 
 const BuyerMessagesPage = () => {
-
   return (
-    <PageWrapper title="Messages">
+    <BuyerLayout>
       <BuyerMessages />
-    </PageWrapper>
+    </BuyerLayout>
   );
 };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Phone, Video, Send, MessageSquare, MoreVertical, User, ArrowLeft, Loader2 } from 'lucide-react';
+import { Search, Phone, Video, Send, MessageSquare, MoreVertical, User, ArrowLeft, Loader2, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -247,30 +247,37 @@ export const BuyerMessages = () => {
                 </div>
               ) : (
                 filteredConversations.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    className={`p-4 border-b cursor-pointer hover:bg-muted/50 ${
-                      selectedConversation?.id === conversation.id ? 'bg-muted' : ''
-                    }`}
-                    onClick={() => handleConversationSelect(conversation)}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={conversation.agent_profile?.avatar_url} />
-                        <AvatarFallback>
-                          {conversation.agent_profile?.full_name?.charAt(0) || 'A'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
+                <div
+                  key={conversation.id}
+                  className={`p-4 border-b cursor-pointer hover:bg-muted/50 ${
+                    selectedConversation?.id === conversation.id ? 'bg-muted' : ''
+                  }`}
+                  onClick={() => handleConversationSelect(conversation)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={conversation.agent_profile?.avatar_url} />
+                      <AvatarFallback>
+                        {conversation.agent_profile?.full_name?.charAt(0) || 'A'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
                         <p className="font-medium truncate">
                           {conversation.agent_profile?.full_name || 'Agent'}
                         </p>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {conversation.property?.title || conversation.subject || 'New conversation'}
-                        </p>
+                        {conversation.status === 'pending' && (
+                          <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
+                            Pending
+                          </Badge>
+                        )}
                       </div>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {conversation.property?.title || conversation.subject || 'New conversation'}
+                      </p>
                     </div>
                   </div>
+                </div>
                 ))
               )}
             </div>
@@ -323,6 +330,25 @@ export const BuyerMessages = () => {
                   ref={messagesContainerRef}
                   className="flex-1 overflow-y-auto p-4 space-y-4"
                 >
+                  {/* Pending Conversation Notice */}
+                  {selectedConversation?.status === 'pending' && messages.length <= 1 && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
+                      <div className="flex items-start gap-3">
+                        <Clock className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-yellow-500">Awaiting Agent Response</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Your inquiry has been sent to {selectedConversation.agent_profile?.full_name || 'the agent'}. 
+                            The agent will review your message and activate the conversation. You'll be notified when they respond.
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Typically, agents respond within 24 hours during business days.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                
                   {messageHistoryDays === -1 ? (
                     messages.map((msg) => (
                       <div
@@ -384,31 +410,37 @@ export const BuyerMessages = () => {
 
                 {/* Message Input */}
                 <div className="border-t p-4 bg-card">
-                  <form onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }} className="flex items-end space-x-2">
-                    <Textarea
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={handleKeyPress}
-                      placeholder="Type a message..."
-                      className="flex-1"
-                      rows={1}
-                    />
-                    <Button 
-                      type="submit"
-                      size="icon" 
-                      disabled={!newMessage.trim() || sending}
-                      className="bg-pickfirst-yellow hover:bg-pickfirst-yellow/90 text-foreground"
-                    >
-                      {sending ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <Send className="h-5 w-5" />
-                      )}
-                    </Button>
-                  </form>
+                  {selectedConversation?.status === 'pending' && messages.length <= 1 ? (
+                    <div className="text-center py-2 text-sm text-muted-foreground">
+                      <p>The agent will activate this conversation when they respond to your inquiry.</p>
+                    </div>
+                  ) : (
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }} className="flex items-end space-x-2">
+                      <Textarea
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={handleKeyPress}
+                        placeholder="Type a message..."
+                        className="flex-1"
+                        rows={1}
+                      />
+                      <Button 
+                        type="submit"
+                        size="icon" 
+                        disabled={!newMessage.trim() || sending}
+                        className="bg-pickfirst-yellow hover:bg-pickfirst-yellow/90 text-foreground"
+                      >
+                        {sending ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <Send className="h-5 w-5" />
+                        )}
+                      </Button>
+                    </form>
+                  )}
                 </div>
               </>
             ) : (

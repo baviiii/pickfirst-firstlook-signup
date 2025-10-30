@@ -158,24 +158,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       session_id: data.session?.access_token
     });
     
-    // Send welcome email for new users (async, don't wait for it)
-    // Note: Supabase sends its own verification email with the link
-    // This is just a supplementary welcome email
-    if (!error && data.user) {
-      setTimeout(async () => {
-        try {
-          const { EmailService } = await import('@/services/emailService');
-          await EmailService.sendWelcomeEmail(
-            data.user.id, 
-            emailValidation.sanitizedValue!, 
-            fullNameValidation.sanitizedValue
-          );
-        } catch (emailError) {
-          console.error('Welcome email failed:', emailError);
-        }
-      }, 2000);
-    }
-    
     setError(prev => ({ ...prev, signUp: error }));
     return { error };
   };

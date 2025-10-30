@@ -1,3 +1,4 @@
+import { BuyerLayout } from '@/components/layouts/BuyerLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -102,7 +103,7 @@ const OffMarketListings = () => {
   // If user doesn't have access, show upgrade prompt
   if (!canAccessOffMarketListings()) {
     return (
-      <PageWrapper title="Off-Market Listings">
+      <BuyerLayout>
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black p-6">
           <div className="max-w-4xl mx-auto">
             <Button
@@ -164,12 +165,12 @@ const OffMarketListings = () => {
             </Card>
           </div>
         </div>
-      </PageWrapper>
+      </BuyerLayout>
     );
   }
 
   return (
-    <PageWrapper title="Off-Market Listings">
+    <BuyerLayout>
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
@@ -298,7 +299,7 @@ const OffMarketListings = () => {
           )}
         </div>
       </div>
-    </PageWrapper>
+    </BuyerLayout>
   );
 };
 

@@ -1141,6 +1141,7 @@ export class PropertyService {
         body: {
           to: agent.email,
           template: 'agentInquiryNotification',
+          subject: `🔔 New Property Inquiry - ${property.title}`,
           data: {
             agentName: agent.full_name || 'Agent',
             propertyTitle: property.title,
@@ -1151,8 +1152,8 @@ export class PropertyService {
             buyerEmail: buyer.email,
             buyerPhone: buyer.phone || 'Not provided',
             inquiryMessage: inquiryMessage,
-            propertyUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://pickfirst.com.au'}/property/${propertyId}`,
-            dashboardUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://pickfirst.com.au'}/agent-dashboard`,
+            propertyUrl: `https://baviiii.github.io/pickfirst-firstlook-signup/property/${propertyId}`,
+            dashboardUrl: `https://baviiii.github.io/pickfirst-firstlook-signup/agent-leads`,
             platformName: 'PickFirst Real Estate'
           }
         }
@@ -1190,4 +1191,23 @@ export class PropertyService {
       throw error;
     }
   }
-} 
+
+  // Get agent details by ID
+  static async getAgentDetails(agentId: string): Promise<{ data: any | null; error: any }> {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, phone, bio, company, location, avatar_url')
+        .eq('id', agentId)
+        .eq('role', 'agent')
+        .single();
+
+      if (error) throw error;
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error fetching agent details:', error);
+      return { data: null, error };
+    }
+  }
+}

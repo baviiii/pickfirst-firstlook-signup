@@ -22,7 +22,7 @@ export interface PropertySearchCriteria {
   location?: string;
   minPrice?: number;
   maxPrice?: number;
-  propertyType?: string;
+  propertyTypes?: string[];
   bedrooms?: number;
   bathrooms?: number;
   garages?: number;
@@ -189,7 +189,7 @@ export class BuyerProfileService extends ProfileService {
         preferred_square_feet_min: criteria.minSquareFeet,
         preferred_square_feet_max: criteria.maxSquareFeet,
         preferred_areas: criteria.location ? [criteria.location] : undefined,
-        property_type_preferences: criteria.propertyType ? [criteria.propertyType] : undefined,
+        property_type_preferences: criteria.propertyTypes || undefined,
         preferred_features: criteria.features
       };
 

@@ -3,11 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
-import { Home, Users, MessageSquare, Settings, PlusCircle, BarChart3, Calendar, Phone } from 'lucide-react';
+import { Home, Users, MessageSquare, Settings, PlusCircle, BarChart3, Calendar, Phone, FileText, Edit3, Trash2, Eye, UserPlus, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PropertyListingModal } from '@/components/property/PropertyListingModal';
 import { analyticsService, AgentMetrics } from '@/services/analyticsService';
 import { AgentSpecialtyManager } from '@/components/agent/AgentSpecialtyManager';
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
+import { supabase } from '@/integrations/supabase/client';
 
 export const AgentDashboard = () => {
   const { profile } = useAuth();
@@ -51,7 +53,8 @@ export const AgentDashboard = () => {
           </h1>
           <p className="text-gray-300">Ready to help your clients find their dream home?</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <NotificationDropdown />
           <Badge className="bg-pickfirst-amber text-black">Real Estate Agent</Badge>
         </div>
       </div>
@@ -132,29 +135,94 @@ export const AgentDashboard = () => {
             <CardTitle className="text-white">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {loadingMetrics ? (
                 <div className="text-gray-300">Loading activity...</div>
               ) : metrics?.recentActivity && metrics.recentActivity.length > 0 ? (
-                metrics.recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-                    <div className={`h-2 w-2 rounded-full ${
-                      activity.action === 'INSERT' ? 'bg-green-500' :
-                      activity.action === 'UPDATE' ? 'bg-blue-500' :
-                      activity.action === 'DELETE' ? 'bg-red-500' : 'bg-purple-500'
-                    }`}></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-white">
-                        {activity.action.toLowerCase()} on {activity.table_name}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {new Date(activity.timestamp).toLocaleString()}
-                      </p>
+                metrics.recentActivity.map((activity) => {
+                  // Parse user-friendly messages
+                  const getActivityDetails = () => {
+                    const action = activity.action.toUpperCase();
+                    const table = activity.table_name;
+                    
+                    // Check for custom messages in details
+                    if (activity.details) {
+                      return {
+                        message: activity.details,
+                        icon: Eye,
+                        color: 'text-blue-400'
+                      };
+                    }
+                    
+                    // Map technical actions to user-friendly messages
+                    if (action === 'CREATE' || action === 'INSERT') {
+                      if (table === 'property_listings') return { message: 'Added a new property listing', icon: PlusCircle, color: 'text-green-400' };
+                      if (table === 'clients') return { message: 'Added a new client', icon: UserPlus, color: 'text-green-400' };
+                      if (table === 'appointments') return { message: 'Scheduled a new appointment', icon: Calendar, color: 'text-green-400' };
+                      if (table === 'messages') return { message: 'Sent a message', icon: Mail, color: 'text-green-400' };
+                      return { message: `Created new ${table.replace('_', ' ')}`, icon: PlusCircle, color: 'text-green-400' };
+                    }
+                    
+                    if (action === 'UPDATE') {
+                      if (table === 'property_listings') return { message: 'Updated a property listing', icon: Edit3, color: 'text-blue-400' };
+                      if (table === 'profiles') return { message: 'Updated profile information', icon: Edit3, color: 'text-blue-400' };
+                      if (table === 'appointments') return { message: 'Modified an appointment', icon: Calendar, color: 'text-blue-400' };
+                      if (table === 'clients') return { message: 'Updated client information', icon: Edit3, color: 'text-blue-400' };
+                      return { message: `Updated ${table.replace('_', ' ')}`, icon: Edit3, color: 'text-blue-400' };
+                    }
+                    
+                    if (action === 'DELETE') {
+                      if (table === 'property_listings') return { message: 'Removed a property listing', icon: Trash2, color: 'text-red-400' };
+                      if (table === 'clients') return { message: 'Removed a client', icon: Trash2, color: 'text-red-400' };
+                      if (table === 'appointments') return { message: 'Cancelled an appointment', icon: Trash2, color: 'text-red-400' };
+                      return { message: `Deleted ${table.replace('_', ' ')}`, icon: Trash2, color: 'text-red-400' };
+                    }
+                    
+                    if (action === 'VIEW') {
+                      if (table === 'property_listings') return { message: 'Viewed property listings', icon: Eye, color: 'text-purple-400' };
+                      return { message: `Viewed ${table.replace('_', ' ')}`, icon: Eye, color: 'text-purple-400' };
+                    }
+                    
+                    return { message: `${action.toLowerCase()} on ${table.replace('_', ' ')}`, icon: FileText, color: 'text-gray-400' };
+                  };
+                  
+                  const { message, icon: Icon, color } = getActivityDetails();
+                  const timeAgo = (() => {
+                    const now = new Date();
+                    const activityDate = new Date(activity.timestamp);
+                    const diffMs = now.getTime() - activityDate.getTime();
+                    const diffMins = Math.floor(diffMs / 60000);
+                    const diffHours = Math.floor(diffMs / 3600000);
+                    const diffDays = Math.floor(diffMs / 86400000);
+                    
+                    if (diffMins < 1) return 'Just now';
+                    if (diffMins < 60) return `${diffMins} ${diffMins === 1 ? 'minute' : 'minutes'} ago`;
+                    if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+                    if (diffDays < 7) return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+                    return activityDate.toLocaleDateString();
+                  })();
+                  
+                  return (
+                    <div key={activity.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                      <div className={`p-2 rounded-lg bg-white/5 ${color}`}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">
+                          {message}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {timeAgo}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
-                <div className="text-gray-400 text-sm">No recent activity</div>
+                <div className="text-center py-4">
+                  <FileText className="h-8 w-8 text-gray-600 mx-auto mb-2" />
+                  <div className="text-gray-400 text-sm">No recent activity</div>
+                </div>
               )}
             </div>
           </CardContent>

@@ -10,6 +10,7 @@ interface AlertJob {
   id: string;
   property_id: string;
   created_at: string;
+  alert_type: 'on_market' | 'off_market';
 }
 
 interface PropertyListing {
@@ -23,6 +24,7 @@ interface PropertyListing {
   bathrooms: number;
   square_feet: number;
   status: string;
+  listing_source: string;
 }
 
 interface BuyerPreferences {
@@ -53,8 +55,13 @@ interface AlertMatch {
 
 /**
  * Check if a user has access to property alerts feature
+ * @param alertType - 'on_market' or 'off_market'
  */
-async function checkPropertyAlertsAccess(supabaseClient: any, userId: string): Promise<boolean> {
+async function checkPropertyAlertsAccess(
+  supabaseClient: any, 
+  userId: string, 
+  alertType: 'on_market' | 'off_market'
+): Promise<boolean> {
   try {
     // Get user's subscription status first
     const { data: profile, error: profileError } = await supabaseClient
@@ -70,33 +77,36 @@ async function checkPropertyAlertsAccess(supabaseClient: any, userId: string): P
 
     const subscriptionTier = profile.subscription_tier || 'free';
     
-    // Only premium users get property alerts
-    if (subscriptionTier !== 'premium') {
-      return false;
+    // Off-market alerts are ONLY for premium users
+    if (alertType === 'off_market') {
+      if (subscriptionTier !== 'premium') {
+        return false;
+      }
+      
+      // Check for off-market alerts feature
+      const { data: featureConfig } = await supabaseClient
+        .from('feature_configurations')
+        .select('premium_tier_enabled')
+        .eq('feature_key', 'property_alerts_unlimited')
+        .single();
+      
+      return featureConfig?.premium_tier_enabled || false;
     }
     
-    // Check for unlimited property alerts for premium users
-    const { data: featureConfig, error } = await supabaseClient
-      .from('feature_configurations')
-      .select('free_tier_enabled, premium_tier_enabled')
-      .eq('feature_key', 'property_alerts_unlimited')
-      .single();
-
-    if (error || !featureConfig) {
-      console.error('Error checking property alerts feature config:', error);
-      // Fallback: allow alerts for premium users if config is missing
-      return subscriptionTier === 'premium';
-    }
-    
-    // Check if premium tier is enabled for property alerts
-    if (subscriptionTier === 'premium' && !featureConfig.premium_tier_enabled) {
-      return false;
+    // On-market alerts available for premium users
+    if (alertType === 'on_market' && subscriptionTier === 'premium') {
+      const { data: featureConfig } = await supabaseClient
+        .from('feature_configurations')
+        .select('premium_tier_enabled')
+        .eq('feature_key', 'property_alerts_unlimited')
+        .single();
+      
+      return featureConfig?.premium_tier_enabled || false;
     }
 
-    return subscriptionTier === 'premium';
+    return false;
   } catch (error) {
     console.error('Error in checkPropertyAlertsAccess:', error);
-    // Fallback: only allow premium users
     return false;
   }
 }
@@ -243,20 +253,24 @@ serve(async (req) => {
           const buyerEmail = profiles.email
           const buyerName = profiles.full_name || 'User'
 
-          // SECURITY: Check if buyer has access to property alerts feature
-          const hasAccess = await checkPropertyAlertsAccess(supabaseClient, buyerId);
+          // SECURITY: Check if buyer has access to this alert type
+          const hasAccess = await checkPropertyAlertsAccess(supabaseClient, buyerId, job.alert_type);
           if (!hasAccess) {
             accessDeniedCount++;
             await logFeatureAccessAttempt(supabaseClient, buyerId, 'edge_function_processing', false, {
               property_id: job.property_id,
-              reason: 'insufficient_subscription_tier'
+              alert_type: job.alert_type,
+              reason: job.alert_type === 'off_market' 
+                ? 'off_market_requires_premium' 
+                : 'insufficient_subscription_tier'
             });
             continue; // Skip users without proper subscription
           }
 
           // Log successful feature access
           await logFeatureAccessAttempt(supabaseClient, buyerId, 'edge_function_processing', true, {
-            property_id: job.property_id
+            property_id: job.property_id,
+            alert_type: job.alert_type
           });
 
           // Check if property matches buyer preferences
@@ -278,12 +292,12 @@ serve(async (req) => {
         let alertsSent = 0
         for (const match of matches) {
           try {
-            await sendPropertyAlert(supabaseClient, match)
-            await createAlertRecord(supabaseClient, match.buyerId, property.id, 'sent')
+            await sendPropertyAlert(supabaseClient, match, job.alert_type)
+            await createAlertRecord(supabaseClient, match.buyerId, property.id, 'sent', job.alert_type)
             alertsSent++
           } catch (error) {
             console.error(`Failed to send alert to buyer ${match.buyerId}:`, error)
-            await createAlertRecord(supabaseClient, match.buyerId, property.id, 'failed')
+            await createAlertRecord(supabaseClient, match.buyerId, property.id, 'failed', job.alert_type)
           }
         }
 
@@ -442,22 +456,38 @@ function checkPropertyMatch(
   }
 }
 
-async function sendPropertyAlert(supabaseClient: any, match: AlertMatch): Promise<void> {
-  const propertyUrl = `https://baviiii.github.io/pickfirst-firstlook-signup/property/${match.property.id}`
+async function sendPropertyAlert(
+  supabaseClient: any, 
+  match: AlertMatch, 
+  alertType: 'on_market' | 'off_market'
+): Promise<void> {
+  const propertyUrl = `https://pickfirst.com.au/property/${match.property.id}`
   
-  // Get property images
-  const { data: propertyWithImages } = await supabaseClient
+  // Get property images and features
+  const { data: propertyWithDetails } = await supabaseClient
     .from('property_listings')
-    .select('images')
+    .select('images, features')
     .eq('id', match.property.id)
     .single();
   
-  const firstImage = propertyWithImages?.images?.[0] || null;
+  const propertyImage = propertyWithDetails?.images?.[0] || null;
+  
+  // Extract matching features from matchedCriteria
+  const matchingFeatures = match.matchedCriteria
+    .filter(c => c.startsWith('feature_'))
+    .map(c => c.replace('feature_', '').replace(/_/g, ' '))
+    .map(f => f.charAt(0).toUpperCase() + f.slice(1));
+  
+  // Choose template and subject based on alert type
+  const template = alertType === 'off_market' ? 'offMarketPropertyAlert' : 'propertyAlert';
+  const subject = alertType === 'off_market' 
+    ? `🔐 Exclusive Off-Market Property: ${match.property.title}`
+    : `🏠 New Property Alert: ${match.property.title}`;
   
   await supabaseClient.functions.invoke('send-email', {
     body: {
       to: match.buyerEmail,
-      template: 'propertyAlert',
+      template,
       data: {
         name: match.buyerName,
         propertyTitle: match.property.title,
@@ -466,9 +496,12 @@ async function sendPropertyAlert(supabaseClient: any, match: AlertMatch): Promis
         propertyType: match.property.property_type,
         bedrooms: match.property.bedrooms || 0,
         bathrooms: match.property.bathrooms || 0,
-        image: firstImage,
-        propertyUrl
-      }
+        image: propertyImage,
+        matchingFeatures: matchingFeatures.length > 0 ? matchingFeatures : null,
+        propertyUrl,
+        isOffMarket: alertType === 'off_market'
+      },
+      subject
     }
   })
 }
@@ -477,15 +510,19 @@ async function createAlertRecord(
   supabaseClient: any,
   buyerId: string, 
   propertyId: string, 
-  status: 'sent' | 'delivered' | 'failed'
+  status: 'sent' | 'delivered' | 'failed',
+  alertType: 'on_market' | 'off_market'
 ): Promise<void> {
+  const template = alertType === 'off_market' ? 'offMarketPropertyAlert' : 'propertyAlert';
+  
   await supabaseClient
     .from('property_alerts')
     .insert({
       buyer_id: buyerId,
       property_id: propertyId,
       status,
-      email_template: 'propertyAlert',
+      alert_type: alertType,
+      email_template: template,
       sent_at: new Date().toISOString()
     })
 }

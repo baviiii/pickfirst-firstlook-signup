@@ -38,6 +38,13 @@ export type Database = {
             foreignKeyName: "agent_specialties_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_specialties_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -106,6 +113,13 @@ export type Database = {
             foreignKeyName: "appointments_agent_id_fkey"
             columns: ["agent_id"]
             isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -113,7 +127,14 @@ export type Database = {
             foreignKeyName: "appointments_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -130,7 +151,50 @@ export type Database = {
             referencedRelation: "property_listings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "appointments_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_listings_public"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      area_insights: {
+        Row: {
+          address: string
+          air_quality: Json | null
+          created_at: string
+          fetched_at: string
+          id: string
+          latitude: number
+          longitude: number
+          nearby_places: Json
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          air_quality?: Json | null
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          nearby_places?: Json
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          air_quality?: Json | null
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          nearby_places?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
       audit_logs: {
         Row: {
@@ -170,6 +234,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "audit_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "audit_logs_user_id_fkey"
             columns: ["user_id"]
@@ -224,6 +295,13 @@ export type Database = {
             foreignKeyName: "calendar_integrations_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_integrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -271,6 +349,13 @@ export type Database = {
             foreignKeyName: "client_interactions_agent_id_fkey"
             columns: ["agent_id"]
             isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_interactions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -313,6 +398,13 @@ export type Database = {
             foreignKeyName: "client_notes_agent_id_fkey"
             columns: ["agent_id"]
             isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_notes_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -330,8 +422,10 @@ export type Database = {
           agent_id: string
           budget_range: string | null
           created_at: string | null
-          email: string
+          email: string | null
           id: string
+          invite_accepted_at: string | null
+          invited_at: string | null
           last_contact: string | null
           name: string
           notes: string | null
@@ -341,13 +435,16 @@ export type Database = {
           rating: number | null
           status: string
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           agent_id: string
           budget_range?: string | null
           created_at?: string | null
-          email: string
-          id: string
+          email?: string | null
+          id?: string
+          invite_accepted_at?: string | null
+          invited_at?: string | null
           last_contact?: string | null
           name: string
           notes?: string | null
@@ -357,13 +454,16 @@ export type Database = {
           rating?: number | null
           status?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           agent_id?: string
           budget_range?: string | null
           created_at?: string | null
-          email?: string
+          email?: string | null
           id?: string
+          invite_accepted_at?: string | null
+          invited_at?: string | null
           last_contact?: string | null
           name?: string
           notes?: string | null
@@ -373,8 +473,16 @@ export type Database = {
           rating?: number | null
           status?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "clients_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "clients_agent_id_fkey"
             columns: ["agent_id"]
@@ -384,8 +492,29 @@ export type Database = {
           },
           {
             foreignKeyName: "clients_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -439,7 +568,21 @@ export type Database = {
             foreignKeyName: "conversations_agent_id_fkey"
             columns: ["agent_id"]
             isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "agent_public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -548,6 +691,13 @@ export type Database = {
             foreignKeyName: "login_history_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "login_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -599,10 +749,56 @@ export type Database = {
             foreignKeyName: "messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          link: string | null
+          message: string
+          metadata: Json | null
+          read: boolean | null
+          title: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          link?: string | null
+          message: string
+          metadata?: Json | null
+          read?: boolean | null
+          title: string
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          link?: string | null
+          message?: string
+          metadata?: Json | null
+          read?: boolean | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -669,6 +865,7 @@ export type Database = {
       }
       property_alert_jobs: {
         Row: {
+          alert_type: string
           created_at: string | null
           error_message: string | null
           id: string
@@ -678,6 +875,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          alert_type?: string
           created_at?: string | null
           error_message?: string | null
           id?: string
@@ -687,6 +885,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          alert_type?: string
           created_at?: string | null
           error_message?: string | null
           id?: string
@@ -703,10 +902,18 @@ export type Database = {
             referencedRelation: "property_listings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "property_alert_jobs_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_listings_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       property_alerts: {
         Row: {
+          alert_type: string
           buyer_id: string
           created_at: string | null
           email_template: string
@@ -716,6 +923,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          alert_type?: string
           buyer_id: string
           created_at?: string | null
           email_template?: string
@@ -725,6 +933,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          alert_type?: string
           buyer_id?: string
           created_at?: string | null
           email_template?: string
@@ -738,6 +947,13 @@ export type Database = {
             foreignKeyName: "property_alerts_buyer_id_fkey"
             columns: ["buyer_id"]
             isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_alerts_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -746,6 +962,13 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "property_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_alerts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_listings_public"
             referencedColumns: ["id"]
           },
         ]
@@ -774,6 +997,13 @@ export type Database = {
             foreignKeyName: "property_favorites_buyer_id_fkey"
             columns: ["buyer_id"]
             isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_favorites_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -782,6 +1012,13 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "property_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_favorites_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_listings_public"
             referencedColumns: ["id"]
           },
         ]
@@ -825,6 +1062,13 @@ export type Database = {
             foreignKeyName: "property_inquiries_buyer_id_fkey"
             columns: ["buyer_id"]
             isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_inquiries_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -833,6 +1077,13 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "property_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_inquiries_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_listings_public"
             referencedColumns: ["id"]
           },
         ]
@@ -963,7 +1214,21 @@ export type Database = {
             foreignKeyName: "property_listings_agent_id_fkey"
             columns: ["agent_id"]
             isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_listings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_listings_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "agent_public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -977,7 +1242,14 @@ export type Database = {
             foreignKeyName: "property_listings_sold_to_client_id_fkey"
             columns: ["sold_to_client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_listings_sold_to_client_id_fkey"
+            columns: ["sold_to_client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1011,6 +1283,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "saved_filters_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "saved_filters_user_id_fkey"
             columns: ["user_id"]
@@ -1230,10 +1509,41 @@ export type Database = {
             foreignKeyName: "user_preferences_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -1257,6 +1567,13 @@ export type Database = {
             foreignKeyName: "property_listings_agent_id_fkey"
             columns: ["agent_id"]
             isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_listings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1269,6 +1586,13 @@ export type Database = {
           source: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "clients_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "clients_agent_id_fkey"
             columns: ["agent_id"]
@@ -1288,6 +1612,160 @@ export type Database = {
           showings: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "property_listings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_listings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_public_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          company: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          location: string | null
+          phone: string | null
+          website: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          location?: string | null
+          phone?: string | null
+          website?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          location?: string | null
+          phone?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      property_listings_public: {
+        Row: {
+          address: string | null
+          agent_id: string | null
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string | null
+          description: string | null
+          early_access_until: string | null
+          features: string[] | null
+          garages: number | null
+          id: string | null
+          images: string[] | null
+          latitude: number | null
+          listing_source: string | null
+          longitude: number | null
+          lot_size: number | null
+          price: number | null
+          property_type: string | null
+          showing_instructions: string | null
+          square_feet: number | null
+          state: string | null
+          status: string | null
+          title: string | null
+          updated_at: string | null
+          year_built: number | null
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          agent_id?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          contact_email?: never
+          contact_phone?: never
+          created_at?: string | null
+          description?: string | null
+          early_access_until?: string | null
+          features?: string[] | null
+          garages?: number | null
+          id?: string | null
+          images?: string[] | null
+          latitude?: number | null
+          listing_source?: string | null
+          longitude?: number | null
+          lot_size?: number | null
+          price?: number | null
+          property_type?: string | null
+          showing_instructions?: string | null
+          square_feet?: number | null
+          state?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          year_built?: number | null
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          agent_id?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          contact_email?: never
+          contact_phone?: never
+          created_at?: string | null
+          description?: string | null
+          early_access_until?: string | null
+          features?: string[] | null
+          garages?: number | null
+          id?: string | null
+          images?: string[] | null
+          latitude?: number | null
+          listing_source?: string | null
+          longitude?: number | null
+          lot_size?: number | null
+          price?: number | null
+          property_type?: string | null
+          showing_instructions?: string | null
+          square_feet?: number | null
+          state?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          year_built?: number | null
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_listings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "property_listings_agent_id_fkey"
             columns: ["agent_id"]
@@ -1323,6 +1801,13 @@ export type Database = {
             foreignKeyName: "login_history_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "agent_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "login_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1334,6 +1819,10 @@ export type Database = {
         Args: { listing_id: string; user_subscription_tier: string }
         Returns: boolean
       }
+      can_view_property_contact: {
+        Args: { property_id: string }
+        Returns: boolean
+      }
       can_view_vendor_details: {
         Args: { user_subscription_tier: string }
         Returns: boolean
@@ -1342,10 +1831,8 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
-      cleanup_old_login_history: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_old_login_history: { Args: never; Returns: undefined }
+      cleanup_old_notifications: { Args: never; Returns: undefined }
       create_system_alert: {
         Args: {
           alert_category: string
@@ -1357,12 +1844,9 @@ export type Database = {
         }
         Returns: string
       }
-      get_database_performance: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      get_database_performance: { Args: never; Returns: Json }
       get_database_statistics: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           row_count: number
           table_name: string
@@ -1377,29 +1861,31 @@ export type Database = {
           property_id: string
         }[]
       }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       has_early_access_to_listing: {
         Args: { listing_id: string; user_subscription_tier: string }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
         Returns: boolean
       }
       mark_alert_job_completed: {
         Args: { error_msg?: string; job_id: string }
         Returns: boolean
       }
-      mark_alert_job_processing: {
-        Args: { job_id: string }
-        Returns: boolean
-      }
-      optimize_database: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      run_database_maintenance: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      mark_alert_job_processing: { Args: { job_id: string }; Returns: boolean }
+      optimize_database: { Args: never; Returns: Json }
+      run_database_maintenance: { Args: never; Returns: Json }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "buyer" | "agent" | "super_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1526,6 +2012,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["buyer", "agent", "super_admin"],
+    },
   },
 } as const

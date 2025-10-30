@@ -6,11 +6,15 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Search, Plus, Phone, Mail, MessageSquare, Calendar, Star, Edit, Trash2, Loader2, History } from 'lucide-react';
+import { Users, Search, Plus, Phone, Mail, MessageSquare, Calendar, Star, Edit, Trash2, Loader2, History, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { clientService, Client, ClientFilters } from '@/services/clientService';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { ClientHistory } from './ClientHistory';
+import { supabase } from '@/integrations/supabase/client';
+import { Checkbox } from '@/components/ui/checkbox';
+import { PhoneInput } from '@/components/ui/phone-input';
+import { useNavigate } from 'react-router-dom';
 
 export const MyClients = () => {
   const [clients, setClients] = useState<Client[]>([]);
@@ -20,6 +24,7 @@ export const MyClients = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [newClient, setNewClient] = useState({
+    name: '',
     email: '',
     phone: '',
     status: 'lead' as const,
@@ -31,13 +36,30 @@ export const MyClients = () => {
   });
   const [searchingUser, setSearchingUser] = useState(false);
   const [foundUser, setFoundUser] = useState<any>(null);
+  const [userSearched, setUserSearched] = useState(false);
+  const [sendingInvite, setSendingInvite] = useState(false);
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+  const navigate = useNavigate();
 
-  // Load clients on component mount
+  // Load clients and user profile on mount
   useEffect(() => {
     fetchClients();
+    fetchUserProfile();
   }, []);
+
+  const fetchUserProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+      setCurrentUserProfile(data);
+    }
+  };
 
   const fetchClients = async () => {
     setLoading(true);
@@ -82,16 +104,55 @@ export const MyClients = () => {
     ));
   };
 
-  const handleContactClient = (client: Client, method: 'phone' | 'email' | 'message') => {
+  const handleContactClient = async (client: Client, method: 'phone' | 'email' | 'message') => {
     switch (method) {
       case 'phone':
-        window.open(`tel:${client.phone}`);
+        if (client.phone) {
+          window.open(`tel:${client.phone}`);
+        } else {
+          toast.error('No phone number available');
+        }
         break;
       case 'email':
-        window.open(`mailto:${client.email}`);
+        if (client.email) {
+          window.open(`mailto:${client.email}`);
+        } else {
+          toast.error('No email available');
+        }
         break;
       case 'message':
-        toast.success(`Opening message thread with ${client.name}`);
+        // Find or create conversation with this client
+        const profileId = client.user_id || client.id;
+        
+        // Check if conversation exists
+        const { data: existingConv } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('client_id', profileId)
+          .maybeSingle();
+
+        if (existingConv) {
+          navigate(`/agent-messages?conversation=${existingConv.id}`);
+        } else {
+          // Create new conversation
+          const { data: newConv, error } = await supabase
+            .from('conversations')
+            .insert({
+              client_id: profileId,
+              agent_id: (await supabase.auth.getUser()).data.user?.id,
+              subject: `Chat with ${client.name}`,
+              status: 'active'
+            })
+            .select('id')
+            .single();
+
+          if (error) {
+            toast.error('Failed to start conversation');
+            return;
+          }
+
+          navigate(`/agent-messages?conversation=${newConv.id}`);
+        }
         break;
     }
   };
@@ -120,49 +181,102 @@ export const MyClients = () => {
 
   const handleSearchUser = async () => {
     if (!newClient.email) {
-      toast.error('Please enter an email address');
+      toast.error('Please enter an email address to search');
       return;
     }
 
     setSearchingUser(true);
+    setUserSearched(false);
     const { data, error } = await clientService.getUserByEmail(newClient.email);
     setSearchingUser(false);
+    setUserSearched(true);
 
-    if (error) {
-      toast.error('User not found. Please ensure the email is registered in the system.');
+    if (error || !data) {
       setFoundUser(null);
+      // Don't show error - just indicate not found
     } else {
       setFoundUser(data);
-      toast.success(`Found user: ${data.full_name || data.email}`);
+      // Pre-fill name if found
+      setNewClient(prev => ({
+        ...prev,
+        name: data.full_name || prev.name
+      }));
     }
   };
 
-  const handleCreateClient = async () => {
+  const handleAddExistingClient = async () => {
     if (!foundUser) {
-      toast.error('Please search for a user first');
+      toast.error('No user found');
       return;
     }
 
-    const { data, error } = await clientService.createClientByEmail(newClient.email, newClient);
+    const { data, error } = await clientService.createClient({
+      ...newClient,
+      name: foundUser.full_name || newClient.name,
+      email: foundUser.email
+    });
+
+    if (error) {
+      toast.error(error.message || 'Failed to add client');
+      return;
+    }
+
+    toast.success('Client added successfully');
+    setClients([data!, ...clients]);
+    resetClientForm();
+  };
+
+  const handleSendInvite = async () => {
+    if (!newClient.name.trim()) {
+      toast.error('Client name is required');
+      return;
+    }
+
+    if (!newClient.email) {
+      toast.error('Email is required to send invitation');
+      return;
+    }
+
+    // Create client first
+    const { data, error } = await clientService.createClient(newClient);
     if (error) {
       toast.error(error.message || 'Failed to create client');
-      console.error('Error creating client:', error);
-    } else {
-      setClients([data!, ...clients]);
-      setIsAddingClient(false);
-      setNewClient({
-        email: '',
-        phone: '',
-        status: 'lead' as const,
-        budget_range: '',
-        preferred_areas: [],
-        property_type: '',
-        rating: 0,
-        notes: ''
-      });
-      setFoundUser(null);
-      toast.success('Client added successfully');
+      return;
     }
+
+    // Send invitation
+    setSendingInvite(true);
+    const { error: inviteError } = await clientService.sendClientInvite(
+      data!.id,
+      currentUserProfile?.full_name || 'Your Agent'
+    );
+    setSendingInvite(false);
+
+    if (inviteError) {
+      toast.error('Client added but failed to send invitation');
+    } else {
+      toast.success('Client added and invitation sent!');
+    }
+
+    setClients([data!, ...clients]);
+    resetClientForm();
+  };
+
+  const resetClientForm = () => {
+    setIsAddingClient(false);
+    setFoundUser(null);
+    setUserSearched(false);
+    setNewClient({
+      name: '',
+      email: '',
+      phone: '',
+      status: 'lead' as const,
+      budget_range: '',
+      preferred_areas: [],
+      property_type: '',
+      rating: 0,
+      notes: ''
+    });
   };
 
   return (
@@ -361,23 +475,38 @@ export const MyClients = () => {
       )}
 
       {/* Add Client Dialog */}
-      <Dialog open={isAddingClient} onOpenChange={setIsAddingClient}>
-        <DialogContent className="bg-gray-900/95 backdrop-blur-xl border border-pickfirst-yellow/20 text-white">
+      <Dialog open={isAddingClient} onOpenChange={(open) => {
+        setIsAddingClient(open);
+        if (!open) resetClientForm();
+      }}>
+        <DialogContent className="bg-gray-900/95 backdrop-blur-xl border border-pickfirst-yellow/20 text-white max-h-[90vh] overflow-y-auto max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Add New Client</DialogTitle>
+            <DialogTitle className="text-xl">Add New Client</DialogTitle>
             <DialogDescription className="text-gray-300">
-              Enter the client's information to add them to your client list.
+              Search for existing users or add new clients with optional invitation.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-gray-300">Email Address *</label>
-              <div className="flex gap-2">
+          
+          <div className="space-y-6">
+            {/* Step 1: Email Search */}
+            <div className="space-y-3 p-4 bg-white/5 rounded-lg border border-white/10">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-6 w-6 rounded-full bg-pickfirst-yellow text-black flex items-center justify-center text-sm font-bold">1</div>
+                <h3 className="font-semibold text-white">Search by Email (Optional)</h3>
+              </div>
+              <p className="text-xs text-gray-400 ml-8">Check if the client is already registered in the system.</p>
+              
+              <div className="flex gap-2 ml-8">
                 <Input
+                  type="email"
                   value={newClient.email}
-                  onChange={(e) => setNewClient({...newClient, email: e.target.value})}
+                  onChange={(e) => {
+                    setNewClient({...newClient, email: e.target.value});
+                    setUserSearched(false);
+                    setFoundUser(null);
+                  }}
                   className="bg-white/5 border-white/20 text-white"
-                  placeholder="Enter registered user's email"
+                  placeholder="client@example.com"
                 />
                 <Button 
                   onClick={handleSearchUser}
@@ -388,88 +517,386 @@ export const MyClients = () => {
                   {searchingUser ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    'Search User'
+                    <>
+                      <Search className="h-4 w-4 mr-2" />
+                      Search
+                    </>
                   )}
                 </Button>
               </div>
+
+              {/* Search Results */}
+              {userSearched && foundUser && (
+                <div className="ml-8 bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <div className="text-green-400 mt-1">✓</div>
+                    <div className="flex-1">
+                      <div className="text-sm text-green-400 font-medium mb-2">User Found in System</div>
+                      <div className="text-sm text-gray-300 space-y-1">
+                        <div><strong>Name:</strong> {foundUser.full_name || 'Not provided'}</div>
+                        <div><strong>Email:</strong> {foundUser.email}</div>
+                        <div><strong>Registered:</strong> {new Date(foundUser.created_at).toLocaleDateString()}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {userSearched && !foundUser && (
+                <div className="ml-8 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <div className="text-blue-400 mt-1">ℹ</div>
+                    <div className="flex-1">
+                      <div className="text-sm text-blue-400 font-medium mb-1">Not Registered Yet</div>
+                      <div className="text-xs text-gray-400">
+                        This email isn't in our system. You can add them as a client and optionally send an invitation.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {foundUser && (
-              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
-                <div className="text-sm text-green-400 font-medium">User Found:</div>
-                <div className="text-sm text-gray-300">
-                  <div><strong>Name:</strong> {foundUser.full_name || 'Not provided'}</div>
-                  <div><strong>Email:</strong> {foundUser.email}</div>
-                  <div><strong>Member since:</strong> {new Date(foundUser.created_at).toLocaleDateString()}</div>
+            {/* Step 2: Client Details */}
+            <div className="space-y-3 p-4 bg-white/5 rounded-lg border border-white/10">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-6 w-6 rounded-full bg-pickfirst-yellow text-black flex items-center justify-center text-sm font-bold">2</div>
+                <h3 className="font-semibold text-white">Client Information</h3>
+              </div>
+              <p className="text-xs text-gray-400 ml-8">Enter the basic details about this client.</p>
+
+              <div className="ml-8 space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-300">Name *</label>
+                  <Input
+                    value={newClient.name}
+                    onChange={(e) => setNewClient({...newClient, name: e.target.value})}
+                    className="bg-white/5 border-white/20 text-white"
+                    placeholder="Client full name"
+                    disabled={!!foundUser}
+                  />
+                  {foundUser && (
+                    <p className="text-xs text-gray-400 mt-1">Using name from registered account</p>
+                  )}
+                </div>
+
+                {!foundUser && !newClient.email && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-300">Email</label>
+                    <Input
+                      type="email"
+                      value={newClient.email}
+                      onChange={(e) => setNewClient({...newClient, email: e.target.value})}
+                      className="bg-white/5 border-white/20 text-white"
+                      placeholder="client@example.com"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300">Phone</label>
+                  <PhoneInput
+                    value={newClient.phone}
+                    onChange={(value) => setNewClient({...newClient, phone: value})}
+                    className="bg-white/5 border-white/20 text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-300">Status</label>
+                    <Select value={newClient.status} onValueChange={(value) => setNewClient({...newClient, status: value as any})}>
+                      <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="lead">Lead</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="past_client">Past Client</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-300">Property Type</label>
+                    <Input
+                      value={newClient.property_type}
+                      onChange={(e) => setNewClient({...newClient, property_type: e.target.value})}
+                      className="bg-white/5 border-white/20 text-white"
+                      placeholder="e.g., Single Family"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300">Budget Range</label>
+                  <Input
+                    value={newClient.budget_range}
+                    onChange={(e) => setNewClient({...newClient, budget_range: e.target.value})}
+                    className="bg-white/5 border-white/20 text-white"
+                    placeholder="e.g., $300,000 - $500,000"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300">Notes</label>
+                  <Textarea
+                    value={newClient.notes}
+                    onChange={(e) => setNewClient({...newClient, notes: e.target.value})}
+                    className="bg-white/5 border-white/20 text-white"
+                    placeholder="Additional notes..."
+                    rows={2}
+                  />
                 </div>
               </div>
-            )}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-300">Phone</label>
-                <Input
-                  value={newClient.phone}
-                  onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
-                  className="bg-white/5 border-white/20 text-white"
-                  placeholder="(555) 123-4567"
-                />
+            </div>
+
+            {/* Step 3: Action Options */}
+            <div className="space-y-3 p-4 bg-white/5 rounded-lg border border-white/10">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-6 w-6 rounded-full bg-pickfirst-yellow text-black flex items-center justify-center text-sm font-bold">3</div>
+                <h3 className="font-semibold text-white">Choose Action</h3>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-300">Status</label>
-                <Select value={newClient.status} onValueChange={(value) => setNewClient({...newClient, status: value as any})}>
-                  <SelectTrigger className="bg-white/5 border-white/20 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="lead">Lead</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="past_client">Past Client</SelectItem>
-                  </SelectContent>
-                </Select>
+              <p className="text-xs text-gray-400 ml-8">Select how you want to add this client.</p>
+
+              <div className="ml-8 space-y-3">
+                {/* Option 1: Existing User */}
+                {userSearched && foundUser && (
+                  <div className="border-2 border-green-500/30 rounded-lg p-4 bg-green-500/5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-green-400 mb-1">Connect Existing User</h4>
+                        <p className="text-xs text-gray-400">
+                          Link this registered user to your client list. They'll see you as their agent.
+                        </p>
+                      </div>
+                      <Button 
+                        onClick={handleAddExistingClient}
+                        disabled={!newClient.name}
+                        className="bg-green-500 text-white hover:bg-green-600 whitespace-nowrap"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add as Client
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Option 2 & 3: New Client */}
+                {(!userSearched || !foundUser) && (
+                  <>
+                    <div className="border-2 border-pickfirst-yellow/30 rounded-lg p-4 bg-pickfirst-yellow/5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-pickfirst-yellow mb-1">Add as Client Only</h4>
+                          <p className="text-xs text-gray-400">
+                            Add to your client list with the information provided. No invitation sent.
+                          </p>
+                        </div>
+                        <Button 
+                          onClick={async () => {
+                            if (!newClient.name.trim()) {
+                              toast.error('Client name is required');
+                              return;
+                            }
+                            if (!newClient.email && !newClient.phone) {
+                              toast.error('Email or phone is required');
+                              return;
+                            }
+                            const { data, error } = await clientService.createClient(newClient);
+                            if (error) {
+                              toast.error(error.message || 'Failed to add client');
+                              return;
+                            }
+                            toast.success('Client added successfully');
+                            setClients([data!, ...clients]);
+                            resetClientForm();
+                          }}
+                          disabled={!newClient.name || (!newClient.email && !newClient.phone)}
+                          className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber whitespace-nowrap"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Client
+                        </Button>
+                      </div>
+                    </div>
+
+                    {newClient.email && (
+                      <div className="border-2 border-blue-500/30 rounded-lg p-4 bg-blue-500/5">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-blue-400 mb-1">Add & Send Invitation</h4>
+                            <p className="text-xs text-gray-400">
+                              Add to your client list and email them an invitation to join the platform.
+                            </p>
+                          </div>
+                          <Button 
+                            onClick={handleSendInvite}
+                            disabled={sendingInvite || !newClient.name || !newClient.email}
+                            className="bg-blue-500 text-white hover:bg-blue-600 whitespace-nowrap"
+                          >
+                            {sendingInvite ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Sending...
+                              </>
+                            ) : (
+                              <>
+                                <Send className="h-4 w-4 mr-2" />
+                                Add & Invite
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {!newClient.email && (
+                      <div className="text-xs text-gray-400 ml-4 flex items-start gap-2">
+                        <div className="mt-0.5">💡</div>
+                        <span>Add an email address to enable the invitation option.</span>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+          </div>
+
+          {/* Footer */}
+          <div className="flex justify-between gap-2 pt-4 border-t border-white/10">
+            <Button 
+              variant="outline" 
+              onClick={resetClientForm}
+            >
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Client Dialog */}
+      <Dialog open={!!selectedClient} onOpenChange={(open) => !open && setSelectedClient(null)}>
+        <DialogContent className="bg-gray-900/95 backdrop-blur-xl border border-pickfirst-yellow/20 text-white max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Client</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Update client information.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedClient && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-300">Name</label>
+                <Input
+                  value={selectedClient.name}
+                  onChange={(e) => setSelectedClient({...selectedClient, name: e.target.value})}
+                  className="bg-white/5 border-white/20 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-300">Email</label>
+                <Input
+                  type="email"
+                  value={selectedClient.email || ''}
+                  onChange={(e) => setSelectedClient({...selectedClient, email: e.target.value})}
+                  className="bg-white/5 border-white/20 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-300">Phone</label>
+                <PhoneInput
+                  value={selectedClient.phone || ''}
+                  onChange={(value) => setSelectedClient({...selectedClient, phone: value})}
+                  className="bg-white/5 border-white/20 text-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-300">Status</label>
+                  <Select 
+                    value={selectedClient.status} 
+                    onValueChange={(value) => setSelectedClient({...selectedClient, status: value as any})}
+                  >
+                    <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="lead">Lead</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="past_client">Past Client</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-300">Property Type</label>
+                  <Input
+                    value={selectedClient.property_type || ''}
+                    onChange={(e) => setSelectedClient({...selectedClient, property_type: e.target.value})}
+                    className="bg-white/5 border-white/20 text-white"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="text-sm font-medium text-gray-300">Budget Range</label>
                 <Input
-                  value={newClient.budget_range}
-                  onChange={(e) => setNewClient({...newClient, budget_range: e.target.value})}
+                  value={selectedClient.budget_range || ''}
+                  onChange={(e) => setSelectedClient({...selectedClient, budget_range: e.target.value})}
                   className="bg-white/5 border-white/20 text-white"
-                  placeholder="$300,000 - $500,000"
                 />
               </div>
+
               <div>
-                <label className="text-sm font-medium text-gray-300">Property Type</label>
-                <Input
-                  value={newClient.property_type}
-                  onChange={(e) => setNewClient({...newClient, property_type: e.target.value})}
+                <label className="text-sm font-medium text-gray-300">Notes</label>
+                <Textarea
+                  value={selectedClient.notes || ''}
+                  onChange={(e) => setSelectedClient({...selectedClient, notes: e.target.value})}
                   className="bg-white/5 border-white/20 text-white"
-                  placeholder="Single Family Home"
+                  rows={3}
                 />
               </div>
             </div>
-            <div>
-              <label className="text-sm font-medium text-gray-300">Notes</label>
-              <Textarea
-                value={newClient.notes}
-                onChange={(e) => setNewClient({...newClient, notes: e.target.value})}
-                className="bg-white/5 border-white/20 text-white"
-                placeholder="Any additional notes about this client..."
-                rows={3}
-              />
-            </div>
-          </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setIsAddingClient(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setSelectedClient(null)}
+            >
               Cancel
             </Button>
             <Button 
-              onClick={handleCreateClient}
-              disabled={!foundUser}
+              onClick={async () => {
+                if (!selectedClient) return;
+                
+                const { error } = await clientService.updateClient(selectedClient.id, {
+                  name: selectedClient.name,
+                  email: selectedClient.email,
+                  phone: selectedClient.phone,
+                  status: selectedClient.status,
+                  property_type: selectedClient.property_type,
+                  budget_range: selectedClient.budget_range,
+                  notes: selectedClient.notes,
+                });
+
+                if (error) {
+                  toast.error('Failed to update client');
+                  return;
+                }
+
+                toast.success('Client updated successfully');
+                setClients(clients.map(c => c.id === selectedClient.id ? selectedClient : c));
+                setSelectedClient(null);
+              }}
               className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber"
             >
-              Add Client
+              Save Changes
             </Button>
           </div>
         </DialogContent>

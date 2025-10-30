@@ -15,9 +15,11 @@ import { toast } from 'sonner';
 import { BuyerProfileView } from '@/components/buyer/BuyerProfileView';
 import { enhancedConversationService } from '@/services/enhancedConversationService';
 import type { EnhancedConversation } from '@/services/enhancedConversationService';
+import { useSearchParams } from 'react-router-dom';
 
 export const AgentMessages = () => {
   const { user, profile } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [conversations, setConversations] = useState<EnhancedConversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<EnhancedConversation | null>(null);
   const [messages, setMessages] = useState([]);
@@ -137,6 +139,20 @@ export const AgentMessages = () => {
         return;
       }
       setConversations(data || []);
+      
+      // Check if we have a conversation ID in URL params
+      const conversationId = searchParams.get('conversation');
+      if (conversationId && data) {
+        const conv = data.find(c => c.id === conversationId);
+        if (conv) {
+          setSelectedConversation(conv);
+          if (isMobile) {
+            setShowConversations(false);
+          }
+          // Clear the URL param
+          setSearchParams({});
+        }
+      }
     } catch (error) {
       console.error('Error loading conversations:', error);
       toast.error('Connection issue - please refresh');

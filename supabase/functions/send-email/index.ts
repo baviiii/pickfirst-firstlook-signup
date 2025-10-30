@@ -83,7 +83,7 @@ const getEmailFooter = () => `
       <tr>
         <td style="text-align: center; padding-top: 20px;">
           <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
-            © 2024 PickFirst Real Estate. All rights reserved.
+            © 2025 PickFirst Real Estate. All rights reserved.
           </p>
         </td>
       </tr>
@@ -480,6 +480,7 @@ Price: ${data.price ? `$${data.price.toLocaleString()}` : 'Contact for price'}
 Location: ${data.location}
 Bedrooms: ${data.bedrooms || 'N/A'}
 Bathrooms: ${data.bathrooms || 'N/A'}
+${data.matchingFeatures?.length > 0 ? `\nMatching Features:\n${data.matchingFeatures.map((f: string) => `- ${f}`).join('\n')}` : ''}
 
 View full details: ${data.propertyUrl || 'https://pickfirst.com.au'}
 
@@ -513,6 +514,22 @@ PickFirst Real Estate Team`,
             <p style="color: ${BRAND_COLORS.text}; font-size: 16px; text-align: center; margin-bottom: 30px;">
               Hi ${data.name}, a property matching your search criteria has been found
             </p>
+            
+            ${data.matchingFeatures?.length > 0 ? `
+              <div style="background: linear-gradient(135deg, ${BRAND_COLORS.primary}20, ${BRAND_COLORS.secondary}20); padding: 15px 20px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid ${BRAND_COLORS.primary};">
+                <div style="color: ${BRAND_COLORS.secondary}; font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 20px;">✨</span>
+                  <span>Matching Your Preferences:</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                  ${data.matchingFeatures.map((feature: string) => `
+                    <span style="background: ${BRAND_COLORS.primary}; color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;">
+                      ✓ ${feature}
+                    </span>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
             
             ${getPropertyCard({
               title: data.propertyTitle,
@@ -941,7 +958,7 @@ PickFirst Real Estate Team`,
   }),
 
   messageNotification: (data: any) => ({
-    subject: `New Message from ${data.senderName}`,
+    subject: `New Message from ${data.senderName || 'PickFirst User'}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
         ${getEmailHeader()}
@@ -952,15 +969,122 @@ PickFirst Real Estate Team`,
           </p>
           
           <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
-            <p style="margin: 0; font-style: italic; color: ${BRAND_COLORS.text};">"${data.messagePreview}"</p>
+            <p style="margin: 0; font-style: italic; color: ${BRAND_COLORS.text};">"${data.messagePreview || data.messageContent || 'You have a new message waiting for you.'}"</p>
           </div>
           
+          ${data.senderEmail ? `
+          <div style="background: #F0FDF4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${BRAND_COLORS.success};">
+            <p style="margin: 0; color: ${BRAND_COLORS.text}; font-size: 14px;">
+              <strong>💬 Reply directly to:</strong> <a href="mailto:${data.senderEmail}" style="color: ${BRAND_COLORS.primary}; text-decoration: none;">${data.senderEmail}</a>
+            </p>
+          </div>
+          ` : ''}
+          
           <div style="text-align: center;">
-            ${getButton((data.platformUrl || 'https://pickfirst.com.au') + '/messages/' + data.conversationId, 'View Message')}
+            ${getButton((data.platformUrl || 'https://pickfirst.com.au') + '/messages/' + data.conversationId, 'View Full Conversation')}
           </div>
         </div>
         ${getEmailFooter()}
       </div>
+    `
+  }),
+
+  agentInquiryNotification: (data: any) => ({
+    subject: `🔔 New Property Inquiry - ${data.propertyTitle}`,
+    text: `New Property Inquiry
+
+Hi ${data.agentName},
+
+You have received a new inquiry for your property listing!
+
+Property: ${data.propertyTitle}
+Address: ${data.propertyAddress}
+Price: ${data.propertyPrice}
+
+Buyer Information:
+Name: ${data.buyerName}
+Email: ${data.buyerEmail}
+Phone: ${data.buyerPhone}
+
+Message:
+${data.inquiryMessage}
+
+View Property: ${data.propertyUrl}
+Go to Dashboard: ${data.dashboardUrl}
+
+Best regards,
+PickFirst Real Estate Team`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        ${commonStyles}
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+          ${getEmailHeader()}
+          <div class="mobile-padding" style="padding: 40px 30px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <div style="display: inline-block; background: ${BRAND_COLORS.success}; padding: 10px 20px; border-radius: 25px;">
+                <span style="font-size: 24px; margin-right: 8px;">🔔</span>
+                <span style="color: white; font-weight: bold;">New Inquiry</span>
+              </div>
+            </div>
+            
+            <h1 class="mobile-heading" style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 28px; text-align: center;">
+              Property Inquiry Received
+            </h1>
+            <p style="color: ${BRAND_COLORS.text}; font-size: 16px; text-align: center; margin-bottom: 30px;">
+              Hi ${data.agentName}, you have a new inquiry for your property listing!
+            </p>
+            
+            ${getPropertyCard({
+              title: data.propertyTitle,
+              price: data.propertyPrice,
+              location: data.propertyAddress,
+              image: data.propertyImage,
+              url: data.propertyUrl,
+              badge: 'YOUR LISTING'
+            })}
+            
+            <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 30px 0; border: 2px solid ${BRAND_COLORS.primary};">
+              <h2 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 20px;">Buyer Information</h2>
+              <div style="color: ${BRAND_COLORS.text}; line-height: 1.8;">
+                <p style="margin: 8px 0;"><strong>👤 Name:</strong> ${data.buyerName}</p>
+                <p style="margin: 8px 0;"><strong>✉️ Email:</strong> <a href="mailto:${data.buyerEmail}" style="color: ${BRAND_COLORS.info}; text-decoration: none;">${data.buyerEmail}</a></p>
+                <p style="margin: 8px 0;"><strong>📱 Phone:</strong> ${data.buyerPhone}</p>
+              </div>
+            </div>
+            
+            <div style="background: #EFF6FF; padding: 25px; border-radius: 12px; border-left: 4px solid ${BRAND_COLORS.info};">
+              <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0;">Buyer's Message:</h3>
+              <p style="color: ${BRAND_COLORS.text}; font-size: 15px; line-height: 1.6; font-style: italic; margin: 0;">
+                "${data.inquiryMessage || 'The buyer is interested in this property and would like to know more details.'}"
+              </p>
+            </div>
+            
+            <div style="background: #F0FDF4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${BRAND_COLORS.success};">
+              <p style="margin: 0; color: ${BRAND_COLORS.text}; font-size: 14px;">
+                <strong>💬 Reply directly to:</strong> <a href="mailto:${data.buyerEmail}" style="color: ${BRAND_COLORS.primary}; text-decoration: none;">${data.buyerEmail}</a>
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin: 40px 0;">
+              ${getButton(data.dashboardUrl || 'https://pickfirst.com.au/agent-dashboard', 'Go to Dashboard')}
+            </div>
+            
+            <div style="background: ${BRAND_COLORS.lightBg}; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid ${BRAND_COLORS.primary};">
+              <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
+                💡 Quick tip: Respond quickly to increase your chances of converting this lead!
+              </p>
+            </div>
+          </div>
+          ${getEmailFooter()}
+        </div>
+      </body>
+      </html>
     `
   }),
 
@@ -1357,6 +1481,7 @@ const handler = async (req: Request) => {
 
     // Create a simple text version for better deliverability
     const textContent = (emailContent as any).text || emailContent.subject;
+    const templateReplyTo = (emailContent as any).replyTo;
     
     // Define which templates should be treated as transactional vs promotional
     const transactionalTemplates = [
@@ -1365,61 +1490,60 @@ const handler = async (req: Request) => {
       'paymentSuccess', 'paymentFailed', 'accountSuspension', 'securityAlert',
       'messageNotification', 'leadAssignment', 'propertyViewing', 'followUp',
       'subscriptionUpgrade', 'subscriptionExpiry', 'profileUpdate',
-      'subscriptionWelcome', 'subscriptionChanged', 'subscriptionCancelled'
+      'subscriptionWelcome', 'subscriptionChanged', 'subscriptionCancelled',
+      'propertyAlert', 'agentInquiryNotification' // Added for inbox delivery
     ];
     
     const isTransactional = transactionalTemplates.includes(template);
     
-    // Configure email settings based on template type
-    const emailConfig = {
+    // Configure headers based on template type
+    const headers: Record<string, string> = isTransactional ? {
+      'X-Priority': '1',
+      'X-MSMail-Priority': 'High',
+      'Importance': 'high',
+      'X-Mailer': 'PickFirst Real Estate System',
+      'X-Category': 'transactional',
+      'X-Entity-Ref-ID': `pf-tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      'X-Transaction-Type': template,
+      'Precedence': 'bulk'
+    } : {
+      'X-Mailer': 'PickFirst Real Estate System',
+      'X-Category': 'marketing',
+      'X-Entity-Ref-ID': `pf-promo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      'List-Unsubscribe': '<mailto:unsubscribe@pickfirst.com.au?subject=unsubscribe>',
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+    };
+    
+    // Configure email settings
+    const emailConfig: any = {
       from: "PickFirst Real Estate <info@pickfirst.com.au>",
       to: [to],
       subject: subject || emailContent.subject,
       html: emailContent.html,
       text: textContent,
-      ...(isTransactional ? {
-        // Transactional email configuration
-        headers: {
-          'X-Priority': '1',
-          'X-MSMail-Priority': 'High',
-          'Importance': 'high',
-          'X-Mailer': 'PickFirst Real Estate System',
-          'X-Category': 'transactional',
-          'X-Entity-Ref-ID': `pf-tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          'X-Transaction-Type': template,
-          'Precedence': 'bulk'
+      headers,
+      tags: [
+        {
+          name: 'category',
+          value: isTransactional ? 'transactional' : 'marketing'
         },
-        tags: [
-          {
-            name: 'category',
-            value: 'transactional'
-          },
-          {
-            name: 'type',
-            value: template
-          }
-        ]
-      } : {
-        // Promotional email configuration
-        headers: {
-          'X-Mailer': 'PickFirst Real Estate System',
-          'X-Category': 'marketing',
-          'X-Entity-Ref-ID': `pf-promo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          'List-Unsubscribe': '<mailto:unsubscribe@pickfirst.com.au?subject=unsubscribe>',
-          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
-        },
-        tags: [
-          {
-            name: 'category',
-            value: 'marketing'
-          },
-          {
-            name: 'type',
-            value: template
-          }
-        ]
-      })
+        {
+          name: 'type',
+          value: template
+        }
+      ]
     };
+    
+    // Set reply-to address
+    // For message/inquiry notifications, use sender's email so recipients can reply directly
+    // For all other emails, use support email
+    if (template === 'agentInquiryNotification' && data.buyerEmail) {
+      emailConfig.reply_to = [data.buyerEmail];
+    } else if (template === 'messageNotification' && data.senderEmail) {
+      emailConfig.reply_to = [data.senderEmail];
+    } else {
+      emailConfig.reply_to = ['info@pickfirst.com.au'];
+    }
     
     const { error } = await resend.emails.send(emailConfig);
 

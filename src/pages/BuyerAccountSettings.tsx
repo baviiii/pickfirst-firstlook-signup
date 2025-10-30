@@ -1,6 +1,7 @@
+import { BuyerLayout } from '@/components/layouts/BuyerLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Settings, User, Bell, Lock, CreditCard, Eye, EyeOff, Heart, Search, Activity, Home, Calendar, Check, X, MapPin } from 'lucide-react';
+import { ArrowLeft, Settings, User, Bell, Lock, CreditCard, Eye, EyeOff, Heart, Activity, Home, Calendar, Check, X } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,13 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import BuyerProfileService, { BuyerPreferences, PropertySearchCriteria } from '@/services/buyerProfileService';
+import BuyerProfileService, { BuyerPreferences } from '@/services/buyerProfileService';
+import { BuyerPreferencesManager } from '@/components/buyer/BuyerPreferencesManager';
 import { appointmentService, AppointmentWithDetails } from '@/services/appointmentService';
 import ProfileService from '@/services/profileService';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { LocationAutocomplete } from '@/components/ui/LocationAutocomplete';
-import { googleMapsService } from '@/services/googleMapsService';
 import { ipDetectionService } from '@/services/ipDetectionService';
 import { useSubscription } from '@/hooks/useSubscription';
 import { FeatureGate } from '@/components/ui/FeatureGate';
@@ -67,53 +67,10 @@ const BuyerAccountSettingsPage = () => {
     first_time_buyer: false
   });
 
-  const [searchCriteria, setSearchCriteria] = useState<PropertySearchCriteria>({
-    location: '',
-    minPrice: 0,
-    maxPrice: 1000000,
-    propertyType: '',
-    bedrooms: 2,
-    bathrooms: 2,
-    garages: 0,
-    features: []
-  });
-
   const [favoriteProperties, setFavoriteProperties] = useState<any[]>([]);
   const [matchingProperties, setMatchingProperties] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
-  const [currentPreferredArea, setCurrentPreferredArea] = useState('');
-  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
-  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
-
-  const handleLocationSearch = async (query: string) => {
-    if (!query || query.length < 2) {
-      setLocationSuggestions([]);
-      setShowLocationSuggestions(false);
-      return;
-    }
-
-    try {
-      // Use our fast location autocomplete service
-      const results = await googleMapsService.searchPlaces(query, 'AU');
-      const suggestions = results.slice(0, 5).map(result => result.description);
-      setLocationSuggestions(suggestions);
-      setShowLocationSuggestions(suggestions.length > 0);
-    } catch (error) {
-      console.error('Error searching locations:', error);
-      // Fallback to Australian locations
-      const australianLocations = [
-        'Sydney, NSW', 'Melbourne, VIC', 'Brisbane, QLD', 'Perth, WA', 'Adelaide, SA',
-        'Gold Coast, QLD', 'Newcastle, NSW', 'Canberra, ACT', 'Sunshine Coast, QLD',
-        'Wollongong, NSW', 'Geelong, VIC', 'Hobart, TAS', 'Townsville, QLD'
-      ];
-      const filtered = australianLocations
-        .filter(location => location.toLowerCase().includes(query.toLowerCase()))
-        .slice(0, 5);
-      setLocationSuggestions(filtered);
-      setShowLocationSuggestions(filtered.length > 0);
-    }
-  };
 
   // Handle URL parameters for tab navigation
   useEffect(() => {
@@ -131,22 +88,10 @@ const BuyerAccountSettingsPage = () => {
       
       setIsLoading(true);
       try {
-        // Load buyer preferences
+        // Load buyer preferences for display purposes only
         const preferences = await BuyerProfileService.getBuyerPreferences(user.id);
         if (preferences) {
           setBuyerPreferences(preferences);
-          
-          // Update search criteria from preferences
-          setSearchCriteria({
-            location: preferences.preferred_areas?.[0] || '',
-            minPrice: preferences.min_budget || 0,
-            maxPrice: preferences.max_budget || 1000000,
-            propertyType: preferences.property_type_preferences?.[0] || '',
-            bedrooms: preferences.preferred_bedrooms || 2,
-            bathrooms: preferences.preferred_bathrooms || 2,
-            garages: preferences.preferred_garages || 0,
-            features: preferences.preferred_features || []
-          });
         }
 
         // Load user preferences (notifications/privacy) and profile basics
@@ -195,26 +140,6 @@ const BuyerAccountSettingsPage = () => {
     loadBuyerData();
   }, [user]);
 
-  const handleAddPreferredArea = (location: string) => {
-    if (!location.trim()) return;
-    
-    const currentAreas = buyerPreferences.preferred_areas || [];
-    if (!currentAreas.includes(location.trim())) {
-      setBuyerPreferences(prev => ({
-        ...prev,
-        preferred_areas: [...currentAreas, location.trim()]
-      }));
-    }
-    setCurrentPreferredArea('');
-  };
-
-  const handleRemovePreferredArea = (areaToRemove: string) => {
-    setBuyerPreferences(prev => ({
-      ...prev,
-      preferred_areas: (prev.preferred_areas || []).filter(area => area !== areaToRemove)
-    }));
-  };
-
   const handleNotificationChange = (key: string, value: boolean) => {
     // Check if personalized notifications require premium access
     if (key === 'personalizedPropertyNotifications' && value && !isFeatureEnabled('personalized_property_notifications')) {
@@ -239,26 +164,6 @@ const BuyerAccountSettingsPage = () => {
         [key]: value
       }
     }));
-  };
-
-  const handleSaveSearchCriteria = async () => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    try {
-      const result = await BuyerProfileService.saveSearchCriteria(user.id, searchCriteria);
-      if (result.success) {
-        // Reload matching properties
-        const matches = await BuyerProfileService.getMatchingProperties(user.id, 5);
-        setMatchingProperties(matches);
-        toast.success('Search preferences saved successfully');
-      }
-    } catch (error) {
-      console.error('Error saving search criteria:', error);
-      toast.error('Failed to save search preferences');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleSaveBuyerPreferences = async () => {
@@ -493,8 +398,8 @@ const BuyerAccountSettingsPage = () => {
   };
 
   return (
-    <PageWrapper title="Account Settings" showBackButton={true} backTo="/dashboard" backText="Back to Dashboard">
-        <div className="max-w-6xl mx-auto space-y-6">
+    <BuyerLayout>
+      <div className="max-w-6xl mx-auto space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="overflow-x-auto -mx-2 px-2">
               <TabsList className="bg-card border border-border flex sm:grid sm:grid-cols-6 w-full p-1 gap-1 whitespace-nowrap">
@@ -503,8 +408,8 @@ const BuyerAccountSettingsPage = () => {
                   <span className="hidden sm:inline">Profile</span>
                 </TabsTrigger>
                 <TabsTrigger value="search" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
-                  <Search className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Search</span>
+                  <Settings className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Preferences</span>
                 </TabsTrigger>
                 <TabsTrigger value="favorites" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
                   <Heart className="h-4 w-4 mr-2" />
@@ -807,264 +712,17 @@ const BuyerAccountSettingsPage = () => {
               </Card>
             </TabsContent>
 
-            {/* Search Preferences Tab */}
+            {/* Property Preferences Tab */}
             <TabsContent value="search" className="space-y-6">
-              <Card className="bg-card border border-border shadow-lg">
-                <CardHeader>
-                  <CardTitle className="text-card-foreground flex items-center gap-2">
-                    <Search className="h-5 w-5 text-primary" />
-                    Property Search Preferences
-                  </CardTitle>
-                  <CardDescription className="text-muted-foreground">
-                    Set your ideal property criteria to get better matches
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                    <div>
-                      <Label htmlFor="location" className="text-card-foreground flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        Preferred Suburb/Location
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="location"
-                          value={searchCriteria.location}
-                          onChange={(e) => {
-                            setSearchCriteria(prev => ({ ...prev, location: e.target.value }));
-                            handleLocationSearch(e.target.value);
-                          }}
-                          onFocus={() => {
-                            if (searchCriteria.location) {
-                              handleLocationSearch(searchCriteria.location);
-                            }
-                          }}
-                          onBlur={() => {
-                            // Delay hiding suggestions to allow for click
-                            setTimeout(() => setShowLocationSuggestions(false), 150);
-                          }}
-                          placeholder="Type to search Australian suburbs, cities, or areas..."
-                          className="bg-input border border-border text-foreground pr-10 focus:ring-2 focus:ring-primary/50 focus:border-primary/50"
-                        />
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        
-                        {/* Location Suggestions Dropdown */}
-                        {showLocationSuggestions && locationSuggestions.length > 0 && (
-                          <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                            {locationSuggestions.map((suggestion, index) => (
-                              <button
-                                key={index}
-                                type="button"
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors"
-                                onMouseDown={(e) => {
-                                  e.preventDefault(); // Prevent blur event
-                                  setSearchCriteria(prev => ({ ...prev, location: suggestion }));
-                                  setShowLocationSuggestions(false);
-                                  toast.success(`Location set to: ${suggestion}`);
-                                }}
-                              >
-                                <MapPin className="h-3 w-3 inline mr-2" />
-                                {suggestion}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {googleMapsLoaded ? (
-                          <>Start typing to see location suggestions powered by Google Maps</>
-                        ) : (
-                          <>Using local location database (Google Maps unavailable)</>
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <Label htmlFor="propertyType" className="text-card-foreground">Property Type</Label>
-                      <Select
-                        value={searchCriteria.propertyType}
-                        onValueChange={(value) => setSearchCriteria(prev => ({ ...prev, propertyType: value }))}
-                      >
-                        <SelectTrigger className="bg-input border border-border text-foreground">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="house">House</SelectItem>
-                          <SelectItem value="condo">Condo</SelectItem>
-                          <SelectItem value="townhouse">Townhouse</SelectItem>
-                          <SelectItem value="apartment">Apartment</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                    <div>
-                      <Label htmlFor="minPrice" className="text-card-foreground">Min Price ($)</Label>
-                      <Input
-                        id="minPrice"
-                        type="number"
-                        value={searchCriteria.minPrice}
-                        onChange={(e) => setSearchCriteria(prev => ({ ...prev, minPrice: parseInt(e.target.value) || 0 }))}
-                        className="bg-input border border-border text-foreground"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="maxPrice" className="text-card-foreground">Max Price ($)</Label>
-                      <Input
-                        id="maxPrice"
-                        type="number"
-                        value={searchCriteria.maxPrice}
-                        onChange={(e) => setSearchCriteria(prev => ({ ...prev, maxPrice: parseInt(e.target.value) || 0 }))}
-                        className="bg-input border border-border text-foreground"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                    <div>
-                      <Label htmlFor="bedrooms" className="text-card-foreground">Bedrooms</Label>
-                      <Select
-                        value={searchCriteria.bedrooms?.toString()}
-                        onValueChange={(value) => setSearchCriteria(prev => ({ ...prev, bedrooms: parseInt(value) }))}
-                      >
-                        <SelectTrigger className="bg-input border border-border text-foreground">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">1</SelectItem>
-                          <SelectItem value="2">2</SelectItem>
-                          <SelectItem value="3">3</SelectItem>
-                          <SelectItem value="4">4</SelectItem>
-                          <SelectItem value="5">5+</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="bathrooms" className="text-card-foreground">Bathrooms</Label>
-                      <Select
-                        value={searchCriteria.bathrooms?.toString()}
-                        onValueChange={(value) => setSearchCriteria(prev => ({ ...prev, bathrooms: parseInt(value) }))}
-                      >
-                        <SelectTrigger className="bg-input border border-border text-foreground">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">1</SelectItem>
-                          <SelectItem value="2">2</SelectItem>
-                          <SelectItem value="3">3</SelectItem>
-                          <SelectItem value="4">4+</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                    <div>
-                      <Label htmlFor="garages" className="text-card-foreground">Garages</Label>
-                      <Select
-                        value={searchCriteria.garages?.toString() || '0'}
-                        onValueChange={(value) => setSearchCriteria(prev => ({ ...prev, garages: parseInt(value) }))}
-                      >
-                        <SelectTrigger className="bg-input border border-border text-foreground">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0">Any</SelectItem>
-                          <SelectItem value="1">1+</SelectItem>
-                          <SelectItem value="2">2+</SelectItem>
-                          <SelectItem value="3">3+</SelectItem>
-                          <SelectItem value="4">4+</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="features" className="text-card-foreground">Property Features</Label>
-                      <Select
-                        value={searchCriteria.features?.[0] || ''}
-                        onValueChange={(value) => {
-                          const currentFeatures = searchCriteria.features || [];
-                          if (value && !currentFeatures.includes(value)) {
-                            setSearchCriteria(prev => ({ 
-                              ...prev, 
-                              features: [...currentFeatures, value] 
-                            }));
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="bg-input border border-border text-foreground">
-                          <SelectValue placeholder="Select features" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pool">Pool</SelectItem>
-                          <SelectItem value="gym">Gym</SelectItem>
-                          <SelectItem value="garden">Garden</SelectItem>
-                          <SelectItem value="balcony">Balcony</SelectItem>
-                          <SelectItem value="air_conditioning">Air Conditioning</SelectItem>
-                          <SelectItem value="fireplace">Fireplace</SelectItem>
-                          <SelectItem value="security_system">Security System</SelectItem>
-                          <SelectItem value="solar_panels">Solar Panels</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {searchCriteria.features && searchCriteria.features.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {searchCriteria.features.map((feature, idx) => (
-                            <Badge 
-                              key={idx} 
-                              variant="secondary" 
-                              className="text-xs cursor-pointer"
-                              onClick={() => {
-                                setSearchCriteria(prev => ({
-                                  ...prev,
-                                  features: prev.features?.filter(f => f !== feature)
-                                }));
-                              }}
-                            >
-                              {feature} ×
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={handleSaveSearchCriteria}
-                    disabled={isLoading}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
-                  >
-                    {isLoading ? 'Saving...' : 'Save Search Preferences'}
-                  </Button>
-
-                  {/* Matching Properties Preview */}
-                  {matchingProperties.length > 0 && (
-                    <div className="pt-6 border-t border-border">
-                      <h3 className="text-lg font-semibold text-card-foreground mb-4">Properties Matching Your Criteria</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                        {matchingProperties.slice(0, 4).map((property: any) => (
-                          <div key={property.id} className="bg-muted/50 p-3 sm:p-4 rounded-lg border border-border">
-                            <h4 className="text-card-foreground font-medium">{property.title}</h4>
-                            <p className="text-muted-foreground">{property.city}, {property.state}</p>
-                            <p className="text-primary font-bold">${property.price?.toLocaleString()}</p>
-                            <div className="flex justify-between items-center mt-2 gap-2">
-                              <Badge variant="secondary" className="text-xs">{property.bedrooms}br/{property.bathrooms}ba</Badge>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleToggleFavorite(property.id)}
-                                className="text-muted-foreground hover:text-red-400 px-2 h-8"
-                              >
-                                <Heart className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <BuyerPreferencesManager 
+                showTitle={true}
+                onPreferencesUpdate={(prefs) => {
+                  // Reload matching properties when preferences are updated
+                  if (user) {
+                    BuyerProfileService.getMatchingProperties(user.id, 5).then(setMatchingProperties);
+                  }
+                }}
+              />
             </TabsContent>
 
             {/* Favorites Tab */}
@@ -1307,10 +965,10 @@ const BuyerAccountSettingsPage = () => {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-    </PageWrapper>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </BuyerLayout>
   );
 };
 

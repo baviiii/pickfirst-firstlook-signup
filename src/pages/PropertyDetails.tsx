@@ -22,7 +22,9 @@ import {
   Home,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  Clock,
+  User
 } from 'lucide-react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,6 +34,7 @@ import { InquiryStatus } from '@/components/buyer/InquiryStatus';
 import { PageWrapper } from '@/components/ui/page-wrapper';
 import { VendorDetails } from '@/components/property/VendorDetails';
 import { useSubscription } from '@/hooks/useSubscription';
+import PropertyInsights from '@/components/property/PropertyInsights';
 
 const PropertyDetailsComponent = () => {
   const { id } = useParams<{ id: string }>();
@@ -49,6 +52,8 @@ const PropertyDetailsComponent = () => {
   const [checkingInquiry, setCheckingInquiry] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [agentDetails, setAgentDetails] = useState<any>(null);
+  const [loadingAgent, setLoadingAgent] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -59,6 +64,25 @@ const PropertyDetailsComponent = () => {
       }
     }
   }, [id, profile]);
+
+  const fetchAgentDetails = async (agentId: string) => {
+    setLoadingAgent(true);
+    try {
+      const { data, error } = await PropertyService.getAgentDetails(agentId);
+      if (error) throw error;
+      setAgentDetails(data);
+    } catch (error) {
+      console.error('Error fetching agent details:', error);
+    } finally {
+      setLoadingAgent(false);
+    }
+  };
+
+  useEffect(() => {
+    if (property?.agent_id) {
+      fetchAgentDetails(property.agent_id);
+    }
+  }, [property?.agent_id]);
 
   const fetchProperty = async () => {
     if (!id) return;
@@ -236,9 +260,7 @@ const PropertyDetailsComponent = () => {
   return (
     <PageWrapper 
       title={property.title} 
-      showBackButton={true} 
-      backTo="/browse"
-      backText="Back to Properties"
+      showBackButton={true}
     >
       <div className="space-y-6">
         {/* Action Buttons */}
@@ -351,9 +373,17 @@ const PropertyDetailsComponent = () => {
             {/* Property Header */}
             <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
               <CardHeader className="pb-4">
-                <div className="flex items-center text-yellow-400/80 mb-4">
-                  <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span className="text-sm lg:text-base">{property.address}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                  <div className="flex items-center text-yellow-400/80">
+                    <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
+                    <span className="text-sm lg:text-base">{property.address}</span>
+                  </div>
+                  {property.created_at && (
+                    <div className="flex items-center text-gray-400 text-xs">
+                      <Clock className="w-3 h-3 mr-1" />
+                      <span>Posted {new Date(property.created_at).toLocaleDateString()}</span>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Price and Stats */}
@@ -439,6 +469,80 @@ const PropertyDetailsComponent = () => {
                   </div>
                 </CardContent>
               </Card>
+            )}
+
+            {/* Agent Details */}
+            {agentDetails && (
+              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+                <CardHeader>
+                  <CardTitle className="text-white text-lg flex items-center">
+                    <User className="w-5 h-5 mr-2 text-yellow-400" />
+                    Listing Agent
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      {agentDetails.avatar_url ? (
+                        <img 
+                          src={agentDetails.avatar_url} 
+                          alt={agentDetails.full_name}
+                          className="w-16 h-16 rounded-full object-cover border-2 border-yellow-400/20"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-yellow-400/10 border-2 border-yellow-400/20 flex items-center justify-center">
+                          <User className="w-8 h-8 text-yellow-400" />
+                        </div>
+                      )}
+                      <div>
+                        <h3 className="text-white font-semibold text-lg">{agentDetails.full_name}</h3>
+                        {agentDetails.company && (
+                          <p className="text-gray-400 text-sm">{agentDetails.company}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {agentDetails.bio && (
+                      <p className="text-gray-300 text-sm leading-relaxed">{agentDetails.bio}</p>
+                    )}
+                    
+                    <div className="space-y-2">
+                      {agentDetails.phone && (
+                        <div className="flex items-center text-gray-300 text-sm">
+                          <Phone className="w-4 h-4 mr-2 text-yellow-400" />
+                          <a href={`tel:${agentDetails.phone}`} className="hover:text-yellow-400 transition-colors">
+                            {agentDetails.phone}
+                          </a>
+                        </div>
+                      )}
+                      {agentDetails.email && (
+                        <div className="flex items-center text-gray-300 text-sm">
+                          <Mail className="w-4 h-4 mr-2 text-yellow-400" />
+                          <a href={`mailto:${agentDetails.email}`} className="hover:text-yellow-400 transition-colors">
+                            {agentDetails.email}
+                          </a>
+                        </div>
+                      )}
+                      {agentDetails.location && (
+                        <div className="flex items-center text-gray-300 text-sm">
+                          <MapPin className="w-4 h-4 mr-2 text-yellow-400" />
+                          <span>{agentDetails.location}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Property Insights */}
+            {property.latitude && property.longitude && (
+              <PropertyInsights
+                address={property.address}
+                latitude={property.latitude}
+                longitude={property.longitude}
+                propertyId={property.id}
+              />
             )}
 
             {/* Vendor Details - Premium Feature */}

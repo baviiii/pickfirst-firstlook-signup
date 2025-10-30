@@ -150,20 +150,16 @@ class MonitoringService {
       clearInterval(this.monitoringInterval);
     }
 
-    // Run health check every 5 minutes
     this.monitoringInterval = setInterval(async () => {
       await this.getSystemHealthMetrics();
       await systemAlertsService.monitorSystemHealth();
     }, 5 * 60 * 1000);
-
-    console.log('System monitoring started');
   }
 
   stopMonitoring(): void {
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = null;
-      console.log('System monitoring stopped');
     }
   }
 

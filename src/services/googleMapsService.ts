@@ -171,6 +171,20 @@ class GoogleMapsService {
       return null;
     }
   }
+
+  // Get air quality data from Google Maps Air Quality API
+  async getAirQuality(lat: number, lng: number): Promise<any> {
+    try {
+      const data = await this.callGoogleMapsAPI('air_quality', {
+        latitude: lat,
+        longitude: lng
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to get air quality data:', error);
+      throw error;
+    }
+  }
 }
 
 export const googleMapsService = new GoogleMapsService();

@@ -5,10 +5,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { PropertyService, CreatePropertyListingData } from '@/services/propertyService';
 import { googleMapsService } from '@/services/googleMapsService';
+import { InputSanitizer } from '@/utils/inputSanitization';
 import { toast } from 'sonner';
-import { Loader2, Home, MapPin, DollarSign, Bed, Bath, Ruler, Calendar, Phone, Mail, Upload, X, ImageIcon, CheckCircle, AlertCircle, Search, Clock, FileText, Handshake, Lightbulb, Sparkles } from 'lucide-react';
+import { Loader2, Home, MapPin, DollarSign, Bed, Bath, Ruler, Phone, Mail, Upload, X, ImageIcon, CheckCircle, AlertCircle, Search, Clock, FileText, Handshake, Lightbulb, Sparkles } from 'lucide-react';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 
 interface PropertyListingFormProps {
@@ -110,11 +112,10 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
     setSearchingAddress(true);
     try {
       // Use your Supabase edge function for Places API
-      const results = await googleMapsService.searchPlaces(query, 'AU'); // Australia first
+      const results = await googleMapsService.searchPlaces(query, 'AU');
       setAddressSuggestions(results);
       setShowSuggestions(true);
     } catch (error) {
-      console.error('Address search error:', error);
       toast.error('Failed to search addresses');
     } finally {
       setSearchingAddress(false);
@@ -185,7 +186,6 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
         }
       }
     } catch (error) {
-      console.error('Error getting place details:', error);
       toast.error('Failed to get address details');
     } finally {
       setSearchingAddress(false);
@@ -205,7 +205,28 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
   }, []);
 
   const handleInputChange = (field: keyof CreatePropertyListingData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Sanitize text inputs
+    let sanitizedValue = value;
+    if (typeof value === 'string' && !['contact_email', 'contact_phone'].includes(field)) {
+      const sanitizationResult = InputSanitizer.sanitizeText(value, 10000);
+      if (!sanitizationResult.isValid) {
+        toast.error(sanitizationResult.error || 'Invalid input');
+        return;
+      }
+      sanitizedValue = sanitizationResult.sanitizedValue;
+    }
+    
+    // Validate email
+    if (field === 'contact_email' && value) {
+      const emailValidation = InputSanitizer.validateEmail(value);
+      if (!emailValidation.isValid) {
+        toast.error(emailValidation.error || 'Invalid email');
+        return;
+      }
+      sanitizedValue = emailValidation.sanitizedValue;
+    }
+    
+    setFormData(prev => ({ ...prev, [field]: sanitizedValue }));
     
     // Reset geocoding status when address fields change
     if (['address', 'city', 'state', 'zip_code'].includes(field)) {
@@ -215,7 +236,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
 
     // Handle address search for autocomplete
     if (field === 'address') {
-      handleAddressSearch(value);
+      handleAddressSearch(sanitizedValue);
     }
   };
 
@@ -244,7 +265,6 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
         toast.error('Could not find coordinates for this address');
       }
     } catch (error) {
-      console.error('Geocoding error:', error);
       setGeocodingStatus('error');
       toast.error('Failed to get address coordinates');
     }
@@ -416,7 +436,6 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
         toast.info('No additional features detected in description');
       }
     } catch (error) {
-      console.error('Error analyzing description:', error);
       toast.error('Failed to analyze description. Please try again.');
     } finally {
       setAnalyzingDescription(false);
@@ -617,7 +636,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
             </p>
           </div>
 
-          {/* Price */}
+          {/* Price with Comma Formatting */}
           <div className="space-y-2">
             <Label htmlFor="price" className="text-white font-semibold flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
@@ -625,10 +644,14 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
             </Label>
             <Input
               id="price"
-              type="number"
-              value={formData.price || ''}
-              onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
-              placeholder="e.g., 750000"
+              type="text"
+              value={formData.price ? formData.price.toLocaleString() : ''}
+              onChange={(e) => {
+                const numericValue = e.target.value.replace(/,/g, '');
+                const parsedValue = parseFloat(numericValue) || 0;
+                handleInputChange('price', parsedValue);
+              }}
+              placeholder="e.g., 750,000"
               className="bg-white/5 border border-white/20 text-white"
               required
             />
@@ -688,75 +711,14 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
               </Label>
               <Input
                 id="square_feet"
-                type="number"
-                value={formData.square_feet || ''}
-                onChange={(e) => handleInputChange('square_feet', parseInt(e.target.value) || 0)}
+                type="text"
+                value={formData.square_feet ? formData.square_feet.toLocaleString() : ''}
+                onChange={(e) => {
+                  const numericValue = e.target.value.replace(/,/g, '');
+                  const parsedValue = parseInt(numericValue) || 0;
+                  handleInputChange('square_feet', parsedValue);
+                }}
                 placeholder="0"
-                className="bg-white/5 border border-white/20 text-white"
-              />
-            </div>
-          </div>
-
-          {/* Additional Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="price" className="text-white font-semibold flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-pickfirst-yellow" />
-                Price *
-              </Label>
-              <Input
-                id="price"
-                type="number"
-                value={formData.price === 0 ? '' : formData.price}
-                onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
-                placeholder="Enter price (e.g., 500000)"
-                className="bg-white/5 border border-white/20 text-white"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="bedrooms" className="text-white font-semibold flex items-center gap-2">
-                <Bed className="w-4 h-4 text-pickfirst-yellow" />
-                Bedrooms
-              </Label>
-              <Input
-                id="bedrooms"
-                type="number"
-                value={formData.bedrooms === 0 ? '' : formData.bedrooms}
-                onChange={(e) => handleInputChange('bedrooms', parseInt(e.target.value) || 0)}
-                placeholder="Number of bedrooms (e.g., 3)"
-                className="bg-white/5 border border-white/20 text-white"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="bathrooms" className="text-white font-semibold flex items-center gap-2">
-                <Bath className="w-4 h-4 text-pickfirst-yellow" />
-                Bathrooms
-              </Label>
-              <Input
-                id="bathrooms"
-                type="number"
-                step="0.5"
-                value={formData.bathrooms === 0 ? '' : formData.bathrooms}
-                onChange={(e) => handleInputChange('bathrooms', parseFloat(e.target.value) || 0)}
-                placeholder="Number of bathrooms (e.g., 2.5)"
-                className="bg-white/5 border border-white/20 text-white"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="square_feet" className="text-white font-semibold flex items-center gap-2">
-                <Ruler className="w-4 h-4 text-pickfirst-yellow" />
-                Square Feet
-              </Label>
-              <Input
-                id="square_feet"
-                type="number"
-                value={formData.square_feet === 0 ? '' : formData.square_feet}
-                onChange={(e) => handleInputChange('square_feet', parseInt(e.target.value) || 0)}
-                placeholder="Property size in sq ft (e.g., 2000)"
                 className="bg-white/5 border border-white/20 text-white"
               />
             </div>
@@ -965,13 +927,11 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
                 <Phone className="w-4 h-4 text-pickfirst-yellow" />
                 Contact Phone
               </Label>
-              <Input
+              <PhoneInput
                 id="contact_phone"
-                type="tel"
                 value={formData.contact_phone}
-                onChange={(e) => handleInputChange('contact_phone', e.target.value)}
-                placeholder="(555) 123-4567"
-                className="bg-white/5 border border-white/20 text-white"
+                onChange={(value) => handleInputChange('contact_phone', value)}
+                placeholder="Enter phone number"
               />
             </div>
             

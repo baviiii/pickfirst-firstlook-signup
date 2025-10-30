@@ -280,50 +280,60 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
               </div>
             ) : (
               <div className="space-y-4">
-                {alertHistory.map((alert) => (
-                  <div key={alert.id} className="p-4 rounded-lg bg-gray-800/50 border border-gray-700">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                         <h4 className="text-white font-medium">
-                           Property Alert
-                         </h4>
-                         <p className="text-sm text-gray-400 mt-1">
-                           {formatDate(alert.sent_at)}
-                         </p>
-                       </div>
-                       <Badge className={`${getStatusColor(alert.status)} text-white`}>
-                         {alert.status}
-                       </Badge>
-                     </div>
-                     
-                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                       <div>
-                         <span className="text-gray-400">Status:</span>
-                         <p className="text-white font-medium capitalize">
-                           {alert.status}
-                         </p>
-                       </div>
-                       <div>
-                         <span className="text-gray-400">Property ID:</span>
-                         <p className="text-white">
-                           {alert.property_id}
-                         </p>
-                       </div>
-                       <div>
-                         <span className="text-gray-400">Template:</span>
-                         <p className="text-white capitalize">
-                           {alert.email_template}
-                         </p>
-                       </div>
-                       <div>
-                         <span className="text-gray-400">Sent:</span>
-                         <p className="text-white">
-                           {formatDate(alert.sent_at)}
-                         </p>
-                       </div>
-                     </div>
-                  </div>
-                ))}
+                {alertHistory.map((alert) => {
+                  const isOffMarket = alert.alert_type === 'off_market';
+                  return (
+                    <div key={alert.id} className="p-4 rounded-lg bg-gray-800/50 border border-gray-700">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-white font-medium">
+                              {isOffMarket ? 'Off-Market Property Alert' : 'Property Alert'}
+                            </h4>
+                            {isOffMarket && (
+                              <Badge className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                                🔐 Premium Exclusive
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-400 mt-1">
+                            {formatDate(alert.sent_at)}
+                          </p>
+                        </div>
+                        <Badge className={`${getStatusColor(alert.status)} text-white`}>
+                          {alert.status}
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-400">Type:</span>
+                          <p className="text-white font-medium">
+                            {isOffMarket ? 'Off-Market' : 'On-Market'}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Status:</span>
+                          <p className="text-white font-medium capitalize">
+                            {alert.status}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Property ID:</span>
+                          <p className="text-white text-xs">
+                            {alert.property_id.slice(0, 8)}...
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Sent:</span>
+                          <p className="text-white">
+                            {formatDate(alert.sent_at)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </CardContent>

@@ -55,6 +55,7 @@ interface WeeklyDigest {
     bedrooms: number;
     bathrooms: number;
     square_feet: number;
+    images?: string[];
   }>;
   market_insights: {
     price_trend: 'up' | 'down' | 'stable';
@@ -205,11 +206,12 @@ async function getUserStats(supabaseClient: any, weekStart: string, weekEnd: str
 }
 
 /**
- * Get featured properties for the week
+ * Get featured properties for the week - ALL NEW PROPERTIES
  */
-async function getFeaturedProperties(supabaseClient: any): Promise<Array<any>> {
+async function getFeaturedProperties(supabaseClient: any, weekStart: string, weekEnd: string): Promise<Array<any>> {
   try {
-    const { data: featuredProperties, error } = await supabaseClient
+    // Get ALL new properties from this week, not just featured
+    const { data: weeklyProperties, error } = await supabaseClient
       .from('property_listings')
       .select(`
         id,
@@ -221,17 +223,20 @@ async function getFeaturedProperties(supabaseClient: any): Promise<Array<any>> {
         bedrooms,
         bathrooms,
         square_feet,
-        images
+        images,
+        created_at
       `)
       .eq('status', 'approved')
-      .order('created_at', { ascending: false })
-      .limit(6);
+      .gte('created_at', weekStart)
+      .lte('created_at', weekEnd)
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    return featuredProperties || [];
+    // Return all properties from the week, limited to reasonable number for email
+    return (weeklyProperties || []).slice(0, 12);
   } catch (error) {
-    console.error('Error getting featured properties:', error);
+    console.error('Error getting weekly properties:', error);
     throw error;
   }
 }
@@ -410,8 +415,8 @@ async function sendWeeklyDigestEmail(supabaseClient: any, digest: WeeklyDigest, 
             </div>
             
             <div class="featured-properties">
-              <h3>⭐ Featured Properties This Week</h3>
-              ${digest.featured_properties.map(property => `
+              <h3>⭐ New Properties This Week</h3>
+              ${digest.featured_properties.length > 0 ? digest.featured_properties.map(property => `
                 <div class="property-card" style="background: white; padding: 0; margin: 15px 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                   ${property.images?.[0] ? `
                     <div style="position: relative; width: 100%; height: 0; padding-bottom: 60%; overflow: hidden; background: #f0f0f0;">
@@ -423,11 +428,15 @@ async function sendWeeklyDigestEmail(supabaseClient: any, digest: WeeklyDigest, 
                     <div class="property-details" style="color: #6b7280; font-size: 0.9em; line-height: 1.6;">
                       📍 ${property.city}, ${property.state}<br/>
                       💰 $${property.price.toLocaleString()}<br/>
-                      🏠 ${property.bedrooms} bed • ${property.bathrooms} bath • ${property.square_feet} sq ft
+                      🏠 ${property.bedrooms} bed • ${property.bathrooms} bath • ${property.square_feet.toLocaleString()} sq ft
                     </div>
+                    <a href="https://baviiii.github.io/pickfirst-firstlook-signup/property/${property.id}" 
+                       style="display: inline-block; margin-top: 15px; padding: 10px 20px; background: #fbbf24; color: #000; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                      View Property
+                    </a>
                   </div>
                 </div>
-              `).join('')}
+              `).join('') : '<p style="text-align: center; color: #6b7280; padding: 30px;">No new properties this week. Check back soon!</p>'}
             </div>
             
             <div class="footer">
@@ -493,7 +502,7 @@ serve(async (req) => {
     const [propertyStats, userStats, featuredProperties, marketInsights] = await Promise.all([
       getPropertyStats(supabaseClient, weekStartStr, weekEndStr),
       getUserStats(supabaseClient, weekStartStr, weekEndStr),
-      getFeaturedProperties(supabaseClient),
+      getFeaturedProperties(supabaseClient, weekStartStr, weekEndStr),
       generateMarketInsights(supabaseClient, weekStartStr, weekEndStr)
     ])
 

@@ -13,6 +13,7 @@ export interface PropertyAlert {
   sent_at: string;
   status: 'sent' | 'delivered' | 'failed';
   email_template: string;
+  alert_type: 'on_market' | 'off_market';
   created_at: string;
 }
 
@@ -27,8 +28,12 @@ export interface AlertMatch {
 
 /**
  * Check if a user has access to property alerts feature
+ * @param alertType - 'on_market' or 'off_market'
  */
-async function checkPropertyAlertsAccess(userId: string): Promise<boolean> {
+async function checkPropertyAlertsAccess(
+  userId: string, 
+  alertType: 'on_market' | 'off_market'
+): Promise<boolean> {
   try {
     // Get user's subscription status first
     const { data: profile, error: profileError } = await supabase
@@ -44,33 +49,26 @@ async function checkPropertyAlertsAccess(userId: string): Promise<boolean> {
 
     const subscriptionTier = profile.subscription_tier || 'free';
     
-    // Only premium users get property alerts
-    if (subscriptionTier !== 'premium') {
+    // Off-market alerts are ONLY for premium users
+    if (alertType === 'off_market' && subscriptionTier !== 'premium') {
       return false;
     }
     
-    // Check for unlimited property alerts for premium users
+    // Check for property alerts feature config
     const { data: featureConfig, error } = await supabase
       .from('feature_configurations')
-      .select('free_tier_enabled, premium_tier_enabled')
+      .select('premium_tier_enabled')
       .eq('feature_key', 'property_alerts_unlimited')
       .single();
 
     if (error || !featureConfig) {
       console.error('Error checking property alerts feature config:', error);
-      // Fallback: allow alerts for premium users if config is missing
       return subscriptionTier === 'premium';
     }
     
-    // Check if premium tier is enabled for property alerts
-    if (subscriptionTier === 'premium' && !featureConfig.premium_tier_enabled) {
-      return false;
-    }
-
-    return subscriptionTier === 'premium';
+    return subscriptionTier === 'premium' && featureConfig.premium_tier_enabled;
   } catch (error) {
     console.error('Error in checkPropertyAlertsAccess:', error);
-    // Fallback: only allow premium users
     return false;
   }
 }
@@ -159,20 +157,28 @@ export class PropertyAlertService {
         const buyerEmail = buyerPref.profiles.email;
         const buyerName = buyerPref.profiles.full_name || 'User';
 
-        // SECURITY: Check if buyer has access to property alerts feature
-        const hasAccess = await checkPropertyAlertsAccess(buyerId);
+        // Determine alert type based on listing source
+        const alertType: 'on_market' | 'off_market' = 
+          property.listing_source === 'agent_posted' ? 'off_market' : 'on_market';
+
+        // SECURITY: Check if buyer has access to this alert type
+        const hasAccess = await checkPropertyAlertsAccess(buyerId, alertType);
         if (!hasAccess) {
           accessDeniedCount++;
           await logFeatureAccessAttempt(buyerId, 'property_alert_processing', false, {
             property_id: propertyId,
-            reason: 'insufficient_subscription_tier'
+            alert_type: alertType,
+            reason: alertType === 'off_market' 
+              ? 'off_market_requires_premium' 
+              : 'insufficient_subscription_tier'
           });
           continue; // Skip users without proper subscription
         }
 
         // Log successful feature access
         await logFeatureAccessAttempt(buyerId, 'property_alert_processing', true, {
-          property_id: propertyId
+          property_id: propertyId,
+          alert_type: alertType
         });
 
         // Get buyer's detailed preferences
@@ -196,6 +202,10 @@ export class PropertyAlertService {
         }
       }
 
+      // Determine alert type
+      const alertType: 'on_market' | 'off_market' = 
+        property.listing_source === 'agent_posted' ? 'off_market' : 'on_market';
+
       // Send alerts to matching buyers
       let alertsSent = 0;
       for (const alert of alertsToSend) {
@@ -203,18 +213,26 @@ export class PropertyAlertService {
           const match = matches.find(m => m.buyerId === alert.buyerId);
           if (!match) continue;
 
-          await this.sendPropertyAlert(match);
-          await this.logAlertSent(alert.buyerId, propertyId);
+          await this.sendPropertyAlert(match, alertType);
+          await this.logAlertSent(alert.buyerId, propertyId, alertType);
           
           // Create notification for the buyer
+          const notifTitle = alertType === 'off_market' 
+            ? '🔐 Exclusive Off-Market Property Match'
+            : 'Property Alert Match';
+          const notifMessage = alertType === 'off_market'
+            ? `Premium exclusive off-market property matches your criteria: ${alert.property.title}`
+            : `New property matches your criteria: ${alert.property.title}`;
+
           await notificationService.createNotification(
             alert.buyerId,
             'property_alert',
-            'Property Alert Match',
-            `New property matches your criteria: ${alert.property.title}`,
+            notifTitle,
+            notifMessage,
             `/property/${propertyId}`,
             { 
               property_id: propertyId,
+              alert_type: alertType,
               match_score: match.matchScore,
               matched_criteria: match.matchedCriteria
             }
@@ -332,6 +350,24 @@ export class PropertyAlertService {
       }
     }
 
+    // Property features matching
+    if (preferences.preferred_features && preferences.preferred_features.length > 0 && property.features) {
+      totalCriteria++;
+      const matchingFeatures = preferences.preferred_features.filter(feature => 
+        property.features?.includes(feature)
+      );
+      
+      if (matchingFeatures.length > 0) {
+        matchedCriteria.push('features');
+        // Add individual feature matches for display
+        matchingFeatures.forEach(feature => {
+          matchedCriteria.push(`feature_${feature.toLowerCase().replace(/\s+/g, '_')}`);
+        });
+        // Score based on percentage of preferred features matched
+        score += 0.2 * (matchingFeatures.length / preferences.preferred_features.length);
+      }
+    }
+
     // Consider it a match if it meets at least 60% of the criteria or has a high score
     const isMatch = totalCriteria === 0 || score >= 0.6 || (matchedCriteria.length >= 2 && score >= 0.4);
 
@@ -345,30 +381,50 @@ export class PropertyAlertService {
   /**
    * Send property alert email to buyer
    */
-  private static async sendPropertyAlert(match: AlertMatch): Promise<void> {
+  private static async sendPropertyAlert(
+    match: AlertMatch, 
+    alertType: 'on_market' | 'off_market'
+  ): Promise<void> {
     try {
-      const propertyUrl = `https://baviiii.github.io/pickfirst-firstlook-signup/property/${match.property.id}`;
+      const propertyUrl = `https://pickfirst.com.au/property/${match.property.id}`;
       
-      await EmailService.sendPropertyAlert(
-        match.buyerEmail,
-        match.buyerName,
-        {
-          title: match.property.title,
-          price: parseFloat(match.property.price.toString()),
-          location: `${match.property.city}, ${match.property.state}`,
-          propertyType: match.property.property_type,
-          bedrooms: match.property.bedrooms || 0,
-          bathrooms: match.property.bathrooms || 0,
-          propertyUrl
-        }
-      );
+      // Use different email method based on alert type
+      if (alertType === 'off_market') {
+        await EmailService.sendOffMarketPropertyAlert(
+          match.buyerEmail,
+          match.buyerName,
+          {
+            title: match.property.title,
+            price: parseFloat(match.property.price.toString()),
+            location: `${match.property.city}, ${match.property.state}`,
+            propertyType: match.property.property_type,
+            bedrooms: match.property.bedrooms || 0,
+            bathrooms: match.property.bathrooms || 0,
+            propertyUrl
+          }
+        );
+      } else {
+        await EmailService.sendPropertyAlert(
+          match.buyerEmail,
+          match.buyerName,
+          {
+            title: match.property.title,
+            price: parseFloat(match.property.price.toString()),
+            location: `${match.property.city}, ${match.property.state}`,
+            propertyType: match.property.property_type,
+            bedrooms: match.property.bedrooms || 0,
+            bathrooms: match.property.bathrooms || 0,
+            propertyUrl
+          }
+        );
+      }
 
       // Log the alert in the database
-      await this.createAlertRecord(match.buyerId, match.property.id, 'sent');
+      await this.createAlertRecord(match.buyerId, match.property.id, 'sent', alertType);
 
     } catch (error) {
       console.error('Error sending property alert:', error);
-      await this.createAlertRecord(match.buyerId, match.property.id, 'failed');
+      await this.createAlertRecord(match.buyerId, match.property.id, 'failed', alertType);
       throw error;
     }
   }
@@ -379,16 +435,20 @@ export class PropertyAlertService {
   private static async createAlertRecord(
     buyerId: string, 
     propertyId: string, 
-    status: 'sent' | 'delivered' | 'failed'
+    status: 'sent' | 'delivered' | 'failed',
+    alertType: 'on_market' | 'off_market'
   ): Promise<void> {
     try {
+      const template = alertType === 'off_market' ? 'offMarketPropertyAlert' : 'propertyAlert';
+      
       await supabase
         .from('property_alerts')
         .insert({
           buyer_id: buyerId,
           property_id: propertyId,
           status,
-          email_template: 'propertyAlert',
+          alert_type: alertType,
+          email_template: template,
           sent_at: new Date().toISOString()
         });
     } catch (error) {
@@ -428,7 +488,11 @@ export class PropertyAlertService {
   /**
    * Log individual alert sent
    */
-  private static async logAlertSent(buyerId: string, propertyId: string): Promise<void> {
+  private static async logAlertSent(
+    buyerId: string, 
+    propertyId: string, 
+    alertType: 'on_market' | 'off_market'
+  ): Promise<void> {
     try {
       await supabase
         .from('audit_logs')
@@ -438,6 +502,7 @@ export class PropertyAlertService {
           action: 'alert_sent',
           new_values: {
             property_id: propertyId,
+            alert_type: alertType,
             timestamp: new Date().toISOString()
           }
         });
@@ -451,13 +516,18 @@ export class PropertyAlertService {
    */
   static async getBuyerAlertHistory(buyerId: string, limit: number = 20): Promise<PropertyAlert[]> {
     try {
-      // SECURITY: Check if buyer has access to property alerts feature
-      const hasAccess = await checkPropertyAlertsAccess(buyerId);
-      if (!hasAccess) {
+      // SECURITY: Premium users can see all alerts, others get empty
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_tier')
+        .eq('id', buyerId)
+        .single();
+
+      if (!profile || profile.subscription_tier !== 'premium') {
         await logFeatureAccessAttempt(buyerId, 'alert_history_access', false, {
           reason: 'insufficient_subscription_tier'
         });
-        return []; // Return empty array for unauthorized users
+        return [];
       }
 
       await logFeatureAccessAttempt(buyerId, 'alert_history_access', true);
@@ -572,7 +642,7 @@ export class PropertyAlertService {
     try {
       // If testing for a specific user, validate their access
       if (testUserId) {
-        const hasAccess = await checkPropertyAlertsAccess(testUserId);
+        const hasAccess = await checkPropertyAlertsAccess(testUserId, 'on_market');
         if (!hasAccess) {
           await logFeatureAccessAttempt(testUserId, 'alert_system_test', false, {
             property_id: propertyId,

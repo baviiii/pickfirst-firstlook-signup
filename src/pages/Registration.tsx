@@ -58,10 +58,19 @@ const Registration = () => {
     }
     if (error) {
       toast.error(error.message);
+      setLoading(false);
     } else {
-      toast.success('Registration successful! Please check your email to verify your account.');
+      toast.success('Account created! Please check your email to verify your account before signing in.', {
+        duration: 5000,
+      });
+      
+      setLoading(false);
+      
+      // Redirect to sign-in page after 2 seconds
+      setTimeout(() => {
+        navigate('/auth');
+      }, 2000);
     }
-    setLoading(false);
   };
 
   const handleInputChange = (field: string, value: string) => {

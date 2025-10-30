@@ -26,6 +26,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { AgentSpecialtyManager } from './AgentSpecialtyManager';
+import { AnalyticsService } from '@/services/analyticsService';
+import type { AgentAnalytics } from '@/services/analyticsService';
 
 export const AgentProfile = () => {
   const { profile, updateProfile, user } = useAuth();
@@ -66,20 +68,40 @@ export const AgentProfile = () => {
     system_updates: true,
   });
 
-  const [achievements] = useState([
-    { title: 'Top Performer', description: 'Top 10% of agents this quarter', date: '2024-01-15', type: 'performance' },
-    { title: 'Client Satisfaction', description: '5-star average rating', date: '2024-01-10', type: 'service' },
-    { title: 'Million Dollar Club', description: 'Exceeded $1M in sales', date: '2023-12-20', type: 'sales' },
-  ]);
-
-  const [stats] = useState({
-    total_sales: 42,
-    total_revenue: 2450000,
-    client_satisfaction: 4.9,
-    listings_sold: 38,
-    average_sale_time: 24,
-    referral_rate: 85
+  const [stats, setStats] = useState<AgentAnalytics>({
+    active_listings: 0,
+    total_sales: 0,
+    monthly_sales: 0,
+    weekly_sales: 0,
+    monthly_revenue: 0,
+    avg_sale_price: 0,
+    total_clients: 0,
+    total_appointments: 0,
+    monthly_appointments: 0,
+    total_inquiries: 0,
+    monthly_inquiries: 0,
   });
+
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  // Load real analytics data
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      if (!user?.id) return;
+      
+      setLoadingStats(true);
+      const { data, error } = await AnalyticsService.getAgentAnalytics(user.id);
+      
+      if (data) {
+        setStats(data);
+      } else if (error) {
+        console.error('Error loading analytics:', error);
+      }
+      setLoadingStats(false);
+    };
+
+    loadAnalytics();
+  }, [user?.id]);
 
   const handleSaveProfile = async () => {
     try {
@@ -108,13 +130,27 @@ export const AgentProfile = () => {
       }
 
       const file = event.target.files[0];
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Please select an image file.');
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('Image must be less than 5MB.');
+      }
+
       const fileExt = file.name.split('.').pop();
-      const filePath = `avatars/${user?.id}-${Math.random()}.${fileExt}`;
+      const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
 
       // Upload file to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
 
       if (uploadError) {
         throw uploadError;
@@ -123,7 +159,11 @@ export const AgentProfile = () => {
       // Get public URL
       const { data } = supabase.storage
         .from('avatars')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
+
+      if (!data.publicUrl) {
+        throw new Error('Failed to get public URL');
+      }
 
       // Update profile with new avatar URL
       const updatedData = { ...profileData, avatar_url: data.publicUrl };
@@ -135,7 +175,8 @@ export const AgentProfile = () => {
       }
 
       toast.success('Avatar updated successfully!');
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Avatar upload error:', error);
       toast.error(error.message || 'Error uploading avatar');
     } finally {
       setUploading(false);
@@ -331,72 +372,105 @@ export const AgentProfile = () => {
 
         {/* Performance Tab */}
         <TabsContent value="performance" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-gradient-to-br from-background/90 to-muted/90 border border-primary/20">
-              <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-primary">{stats.total_sales}</div>
-                <div className="text-sm text-muted-foreground">Total Sales</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-background/90 to-muted/90 border border-secondary/20">
-              <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-secondary">${(stats.total_revenue / 1000000).toFixed(1)}M</div>
-                <div className="text-sm text-muted-foreground">Total Revenue</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-background/90 to-muted/90 border border-accent/20">
-              <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-accent">{stats.client_satisfaction}</div>
-                <div className="text-sm text-muted-foreground">Client Rating</div>
-              </CardContent>
-            </Card>
-          </div>
+          {loadingStats ? (
+            <div className="flex justify-center items-center p-12">
+              <div className="text-muted-foreground">Loading analytics...</div>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="bg-gradient-to-br from-background/90 to-muted/90 border border-primary/20">
+                  <CardContent className="p-6 text-center">
+                    <div className="text-3xl font-bold text-primary">{stats.total_sales || 0}</div>
+                    <div className="text-sm text-muted-foreground">Total Sales</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-background/90 to-muted/90 border border-secondary/20">
+                  <CardContent className="p-6 text-center">
+                    <div className="text-3xl font-bold text-secondary">
+                      ${((stats.monthly_revenue || 0) / 1000).toFixed(1)}K
+                    </div>
+                    <div className="text-sm text-muted-foreground">Monthly Revenue</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-background/90 to-muted/90 border border-accent/20">
+                  <CardContent className="p-6 text-center">
+                    <div className="text-3xl font-bold text-accent">{stats.total_clients || 0}</div>
+                    <div className="text-sm text-muted-foreground">Total Clients</div>
+                  </CardContent>
+                </Card>
+              </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-gradient-to-br from-background/90 to-muted/90 border border-primary/20">
-              <CardHeader>
-                <CardTitle>Performance Metrics</CardTitle>
-                <CardDescription>Your key performance indicators</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Listings Sold</span>
-                  <span className="font-bold">{stats.listings_sold}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Average Sale Time</span>
-                  <span className="font-bold">{stats.average_sale_time} days</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Referral Rate</span>
-                  <span className="font-bold">{stats.referral_rate}%</span>
-                </div>
-              </CardContent>
-            </Card>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="bg-gradient-to-br from-background/90 to-muted/90 border border-primary/20">
+                  <CardHeader>
+                    <CardTitle>Performance Metrics</CardTitle>
+                    <CardDescription>Your key performance indicators</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Active Listings</span>
+                      <span className="font-bold">{stats.active_listings || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Monthly Sales</span>
+                      <span className="font-bold">{stats.monthly_sales || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Total Inquiries</span>
+                      <span className="font-bold">{stats.total_inquiries || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Total Appointments</span>
+                      <span className="font-bold">{stats.total_appointments || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Average Sale Price</span>
+                      <span className="font-bold">
+                        ${stats.avg_sale_price ? (stats.avg_sale_price / 1000).toFixed(0) : 0}K
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
 
-            <Card className="bg-gradient-to-br from-background/90 to-muted/90 border border-primary/20">
-              <CardHeader>
-                <CardTitle>Achievements</CardTitle>
-                <CardDescription>Your recent accomplishments</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {achievements.map((achievement, index) => (
-                    <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                      {getAchievementIcon(achievement.type)}
+                <Card className="bg-gradient-to-br from-background/90 to-muted/90 border border-primary/20">
+                  <CardHeader>
+                    <CardTitle>Recent Activity</CardTitle>
+                    <CardDescription>Your performance this month</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                      <TrendingUp className="h-5 w-5 text-primary" />
                       <div className="flex-1">
-                        <h4 className="font-semibold text-sm">{achievement.title}</h4>
-                        <p className="text-xs text-muted-foreground">{achievement.description}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(achievement.date).toLocaleDateString()}
+                        <h4 className="font-semibold text-sm">Monthly Sales</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {stats.monthly_sales || 0} properties sold this month
                         </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                      <Calendar className="h-5 w-5 text-secondary" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sm">Appointments</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {stats.monthly_appointments || 0} appointments this month
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                      <Briefcase className="h-5 w-5 text-accent" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sm">New Inquiries</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {stats.monthly_inquiries || 0} inquiries this month
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
         </TabsContent>
 
         {/* Specialties Tab */}

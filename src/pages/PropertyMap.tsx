@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { PageWrapper } from '@/components/ui/page-wrapper';
+import { BuyerLayout } from '@/components/layouts/BuyerLayout';
 import PropertyMap from '@/components/maps/PropertyMap';
 import { MapAnalyticsService } from '@/services/mapAnalyticsService';
 import { toast } from 'sonner';
@@ -45,7 +45,6 @@ const PropertyMapPage = () => {
   }, []);
 
   const handlePropertySelect = (property: PropertyListing) => {
-    console.log('Selected property:', property);
     toast.success(`Selected: ${property.title}`);
     // Handle property selection - could navigate to property details
     // You can implement navigation to property details page here
@@ -53,20 +52,20 @@ const PropertyMapPage = () => {
 
   if (loading) {
     return (
-      <PageWrapper title="Property Map" showBackButton={false}>
+      <BuyerLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <Loader2 className="animate-spin h-8 w-8 mx-auto mb-4 text-blue-500" />
             <p className="text-gray-600">Loading properties...</p>
           </div>
         </div>
-      </PageWrapper>
+      </BuyerLayout>
     );
   }
 
   if (error) {
     return (
-      <PageWrapper title="Property Map" showBackButton={false}>
+      <BuyerLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="text-red-500 mb-4">
@@ -84,12 +83,12 @@ const PropertyMapPage = () => {
             </button>
           </div>
         </div>
-      </PageWrapper>
+      </BuyerLayout>
     );
   }
 
   return (
-    <PageWrapper title="Property Map" showBackButton={false}>
+    <BuyerLayout>
       <div className="space-y-6">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Property Map</h1>
@@ -115,7 +114,7 @@ const PropertyMapPage = () => {
           className="w-full"
         />
       </div>
-    </PageWrapper>
+    </BuyerLayout>
   );
 };
 

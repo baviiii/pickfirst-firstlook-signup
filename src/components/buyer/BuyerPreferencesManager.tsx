@@ -220,13 +220,14 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
               Minimum Bedrooms
             </Label>
             <Select
-              value={preferences.preferred_bedrooms?.toString() || ''}
-              onValueChange={(value) => handlePreferenceChange('preferred_bedrooms', parseInt(value))}
+              value={preferences.preferred_bedrooms?.toString() || 'any'}
+              onValueChange={(value) => handlePreferenceChange('preferred_bedrooms', value === 'any' ? null : parseInt(value))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Any" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
                 <SelectItem value="0">Studio</SelectItem>
                 <SelectItem value="1">1+ bedroom</SelectItem>
                 <SelectItem value="2">2+ bedrooms</SelectItem>
@@ -243,13 +244,14 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
               Minimum Bathrooms
             </Label>
             <Select
-              value={preferences.preferred_bathrooms?.toString() || ''}
-              onValueChange={(value) => handlePreferenceChange('preferred_bathrooms', parseInt(value))}
+              value={preferences.preferred_bathrooms?.toString() || 'any'}
+              onValueChange={(value) => handlePreferenceChange('preferred_bathrooms', value === 'any' ? null : parseInt(value))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Any" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
                 <SelectItem value="1">1+ bathroom</SelectItem>
                 <SelectItem value="2">2+ bathrooms</SelectItem>
                 <SelectItem value="3">3+ bathrooms</SelectItem>
@@ -264,13 +266,14 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
               Minimum Garages
             </Label>
             <Select
-              value={preferences.preferred_garages?.toString() || '0'}
-              onValueChange={(value) => handlePreferenceChange('preferred_garages', parseInt(value))}
+              value={preferences.preferred_garages?.toString() || 'any'}
+              onValueChange={(value) => handlePreferenceChange('preferred_garages', value === 'any' ? null : parseInt(value))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Any" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
                 <SelectItem value="0">No preference</SelectItem>
                 <SelectItem value="1">1+ garage</SelectItem>
                 <SelectItem value="2">2+ garages</SelectItem>
@@ -530,10 +533,38 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
           </div>
         </div>
 
-        {/* Save Button */}
+        {/* Save and Reset Buttons */}
         <div className="flex items-center justify-between pt-4 border-t border-border">
-          <div className="text-sm text-muted-foreground">
-            {hasChanges ? 'You have unsaved changes' : 'All changes saved'}
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setPreferences({
+                  min_budget: null,
+                  max_budget: null,
+                  preferred_bedrooms: null,
+                  preferred_bathrooms: null,
+                  preferred_garages: null,
+                  preferred_areas: [],
+                  property_type_preferences: [],
+                  preferred_features: [],
+                  move_in_timeline: null,
+                  property_alerts: true,
+                  new_listings: true,
+                  price_changes: false,
+                  market_updates: false,
+                  email_notifications: true
+                });
+                setHasChanges(true);
+              }}
+              className="text-muted-foreground"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Reset All
+            </Button>
+            <div className="text-sm text-muted-foreground">
+              {hasChanges ? 'You have unsaved changes' : 'All changes saved'}
+            </div>
           </div>
           <Button 
             onClick={handleSave} 

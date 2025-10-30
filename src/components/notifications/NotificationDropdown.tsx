@@ -82,21 +82,17 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      // Try to get real notifications first
       const { data: realNotifications } = await notificationService.getNotifications(20);
       
-      // If no real notifications, generate synthetic ones from existing data
-      if (!realNotifications || realNotifications.length === 0) {
-        const syntheticNotifications = await notificationService.generateSyntheticNotifications();
-        setNotifications(syntheticNotifications);
-        const unread = syntheticNotifications.filter(n => !n.read).length;
-        setUnreadCount(unread);
-        onUnreadCountChange?.(unread);
-      } else {
+      if (realNotifications) {
         setNotifications(realNotifications);
         const unread = realNotifications.filter(n => !n.read).length;
         setUnreadCount(unread);
         onUnreadCountChange?.(unread);
+      } else {
+        setNotifications([]);
+        setUnreadCount(0);
+        onUnreadCountChange?.(0);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -228,10 +224,11 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    navigate('/buyer-account-settings?tab=notifications');
+                    navigate('/notifications');
                     setIsOpen(false);
                   }}
                   className="text-xs text-gray-400 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
+                  title="View all notifications"
                 >
                   <Settings className="h-4 w-4" />
                 </Button>
@@ -260,13 +257,16 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
                     onClick={() => handleNotificationClick(notification)}
                     className={`p-4 transition-all cursor-pointer group relative ${
                       !notification.read 
-                        ? 'bg-pickfirst-yellow/5 hover:bg-pickfirst-yellow/10' 
+                        ? 'bg-pickfirst-yellow/5 hover:bg-pickfirst-yellow/10 animate-[pulse_2s_ease-in-out_infinite]' 
                         : 'hover:bg-white/5'
                     }`}
                   >
-                    {/* Unread Indicator */}
+                    {/* Unread Indicator with Enhanced Animation */}
                     {!notification.read && (
-                      <div className="absolute left-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-pickfirst-yellow animate-pulse"></div>
+                      <>
+                        <div className="absolute left-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-pickfirst-yellow animate-ping"></div>
+                        <div className="absolute left-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-pickfirst-yellow"></div>
+                      </>
                     )}
 
                     <div className={`flex gap-3 ${!notification.read ? 'ml-4' : ''}`}>
@@ -319,7 +319,7 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  navigate('/buyer-account-settings?tab=notifications');
+                  navigate('/notifications');
                   setIsOpen(false);
                 }}
                 className="w-full text-sm text-pickfirst-yellow hover:text-amber-400 hover:bg-pickfirst-yellow/10"

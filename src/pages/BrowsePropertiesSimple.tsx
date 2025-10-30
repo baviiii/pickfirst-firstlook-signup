@@ -421,33 +421,35 @@ const BrowsePropertiesSimple = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        {/* Header - Mobile Optimized */}
+        <div className="space-y-4">
+          {/* Back Button and Title */}
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
-              onClick={() => navigate(-1)}
-              className="text-gray-300 hover:text-yellow-400"
+              onClick={() => navigate('/dashboard')}
+              className="text-gray-300 hover:text-yellow-400 shrink-0"
             >
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              Back
+              <ArrowLeft className="h-5 w-5" />
+              <span className="hidden sm:inline ml-2">Back</span>
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Browse Properties</h1>
-              <p className="text-gray-400">
-                {filteredListings.length} properties found
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white truncate">Browse Properties</h1>
+              <p className="text-sm text-gray-400">
+                {filteredListings.length} {filteredListings.length === 1 ? 'property' : 'properties'} found
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* Controls Row - Responsive */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             {/* Sort Options */}
-            <div className="flex items-center gap-2">
-              <SortAsc className="h-4 w-4 text-gray-400" />
+            <div className="flex items-center gap-2 flex-1">
+              <SortAsc className="h-4 w-4 text-gray-400 shrink-0" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="bg-gray-800 border border-gray-700 text-white rounded px-3 py-1 text-sm"
+                className="bg-gray-800 border border-gray-700 text-white rounded px-3 py-2 text-sm w-full sm:w-auto"
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
@@ -457,7 +459,7 @@ const BrowsePropertiesSimple = () => {
             </div>
 
             {/* View Mode Toggle */}
-            <div className="flex border border-gray-700 rounded">
+            <div className="flex border border-gray-700 rounded self-end sm:self-auto">
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="sm"
@@ -465,6 +467,7 @@ const BrowsePropertiesSimple = () => {
                 className="rounded-r-none"
               >
                 <Grid className="h-4 w-4" />
+                <span className="ml-2 hidden sm:inline">Grid</span>
               </Button>
               <Button
                 variant={viewMode === 'list' ? 'default' : 'ghost'}
@@ -473,6 +476,7 @@ const BrowsePropertiesSimple = () => {
                 className="rounded-l-none"
               >
                 <List className="h-4 w-4" />
+                <span className="ml-2 hidden sm:inline">List</span>
               </Button>
             </div>
           </div>

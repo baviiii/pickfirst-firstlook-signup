@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import Index from "./pages/Index";
+import Index from "./pages/ComingSoon";
 import Auth from "./pages/Auth";
 import Registration from "./pages/Registration";
 import Dashboard from "./pages/Dashboard";
@@ -42,6 +42,7 @@ import PropertyDetails from './pages/PropertyDetails';
 import SystemTestingPage from './pages/SystemTesting';
 import LoginHistoryManagementPage from './pages/LoginHistoryManagement';
 import OffMarketListings from './pages/OffMarketListings';
+import NotificationsPage from './pages/Notifications';
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ const App = () => (
               <Route path="/agent-leads" element={<ProtectedRoute requiredRole="agent"><AgentLeadsPage /></ProtectedRoute>} />
               <Route path="/agent-profile" element={<ProtectedRoute requiredRole="agent"><AgentProfilePage /></ProtectedRoute>} />
               <Route path="/my-listings" element={<ProtectedRoute requiredRole="agent"><MyListingsPage /></ProtectedRoute>} />
+              <Route path="/agent-notifications" element={<ProtectedRoute requiredRole="agent"><NotificationsPage /></ProtectedRoute>} />
               
               {/* Buyer Routes - Buyer Role Required */}
               <Route path="/buyer-messages" element={<ProtectedRoute requiredRole="buyer"><BuyerMessagesPage /></ProtectedRoute>} />
@@ -98,6 +100,7 @@ const App = () => (
               <Route path="/search-filters" element={<ProtectedRoute requiredRole="buyer"><SearchFiltersPage /></ProtectedRoute>} />
               <Route path="/buyer-account-settings" element={<ProtectedRoute requiredRole="buyer"><BuyerAccountSettingsPage /></ProtectedRoute>} />
               <Route path="/off-market" element={<ProtectedRoute requiredRole="buyer"><OffMarketListings /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
               
               {/* 404 Route */}
               <Route path="*" element={<NotFound />} />

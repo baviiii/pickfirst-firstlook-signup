@@ -12,10 +12,57 @@ serve(async (req) => {
   }
 
   try {
+    // CRITICAL SECURITY: This endpoint requires authentication and authorization
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Create client with user's JWT for auth validation
     const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    )
+
+    // Verify user is authenticated
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Check if user has super_admin role (only admins can search users)
+    const serviceClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
+
+    const { data: userRole, error: roleError } = await serviceClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single()
+
+    if (roleError || userRole?.role !== 'super_admin') {
+      // Log unauthorized access attempt
+      await serviceClient.from('audit_logs').insert({
+        user_id: user.id,
+        action: 'unauthorized_user_search',
+        table_name: 'profiles',
+        new_values: { attempted_email: (await req.clone().json()).email }
+      })
+
+      return new Response(
+        JSON.stringify({ error: 'Forbidden - Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     const { email } = await req.json()
 
@@ -29,10 +76,18 @@ serve(async (req) => {
       )
     }
 
+    // Log the search (audit trail)
+    await serviceClient.from('audit_logs').insert({
+      user_id: user.id,
+      action: 'user_search',
+      table_name: 'profiles',
+      new_values: { searched_email: email.trim().toLowerCase() }
+    })
+
     // Use service role to bypass RLS and search for user
-    const { data, error } = await supabaseClient
+    const { data, error } = await serviceClient
       .from('profiles')
-      .select('id, email, full_name, role, created_at')
+      .select('id, email, full_name, created_at')
       .eq('email', email.trim().toLowerCase())
       .maybeSingle()
 
@@ -46,8 +101,29 @@ serve(async (req) => {
       )
     }
 
+    // If user found, also get their role from user_roles table
+    if (data) {
+      const { data: roleData } = await serviceClient
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', data.id)
+        .single()
+
+      return new Response(
+        JSON.stringify({ 
+          data: {
+            ...data,
+            role: roleData?.role || null
+          }
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
     return new Response(
-      JSON.stringify({ data }),
+      JSON.stringify({ data: null }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }

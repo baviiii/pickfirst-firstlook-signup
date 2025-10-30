@@ -35,7 +35,7 @@ class NotificationService {
         return { data: null, error: 'User not authenticated' };
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('notifications')
         .select('*')
         .eq('user_id', user.id)
@@ -59,7 +59,7 @@ class NotificationService {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return 0;
 
-      const { count, error } = await supabase
+      const { count, error } = await (supabase as any)
         .from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
@@ -79,7 +79,7 @@ class NotificationService {
    */
   async markAsRead(notificationId: string): Promise<{ error: any }> {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('notifications')
         .update({ read: true })
         .eq('id', notificationId);
@@ -103,7 +103,7 @@ class NotificationService {
         return { error: 'User not authenticated' };
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('notifications')
         .update({ read: true })
         .eq('user_id', user.id)
@@ -123,7 +123,7 @@ class NotificationService {
    */
   async deleteNotification(notificationId: string): Promise<{ error: any }> {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('notifications')
         .delete()
         .eq('id', notificationId);
@@ -149,7 +149,7 @@ class NotificationService {
     metadata?: Record<string, any>
   ): Promise<{ data: Notification | null; error: any }> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('notifications')
         .insert({
           user_id: userId,
@@ -205,11 +205,21 @@ class NotificationService {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return notifications;
 
+      // Get user profile to determine role
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      const userRole = profile?.role || 'buyer';
+      const messagesLink = userRole === 'agent' ? '/agent-messages' : '/buyer-messages';
+
       // Get unread messages
-      const { data: conversations } = await supabase
+      const { data: conversations } = await (supabase as any)
         .from('conversations')
         .select('*, messages(*)')
-        .or(`buyer_id.eq.${user.id},agent_id.eq.${user.id}`)
+        .or(`client_id.eq.${user.id},agent_id.eq.${user.id}`)
         .order('updated_at', { ascending: false })
         .limit(10);
 
@@ -226,7 +236,7 @@ class NotificationService {
               type: 'new_message',
               title: 'New Message',
               message: `You have ${unreadMessages.length} unread message${unreadMessages.length > 1 ? 's' : ''}`,
-              link: '/buyer-messages',
+              link: messagesLink,
               read: false,
               created_at: unreadMessages[0].created_at,
               metadata: { conversation_id: conv.id }
@@ -236,10 +246,12 @@ class NotificationService {
       }
 
       // Get pending appointments
-      const { data: appointments } = await supabase
+      const appointmentsLink = userRole === 'agent' ? '/appointments' : '/buyer-account-settings?tab=appointments';
+      
+      const { data: appointments } = await (supabase as any)
         .from('appointments')
-        .select('*, property:properties(title), agent:profiles!appointments_agent_id_fkey(full_name)')
-        .eq('buyer_id', user.id)
+        .select('*, property:property_listings(title), agent:profiles!appointments_agent_id_fkey(full_name)')
+        .eq(userRole === 'agent' ? 'agent_id' : 'client_id', user.id)
         .in('status', ['scheduled', 'confirmed'])
         .order('date', { ascending: true })
         .limit(5);
@@ -252,7 +264,7 @@ class NotificationService {
             type: appt.status === 'confirmed' ? 'appointment_confirmed' : 'appointment_scheduled',
             title: appt.status === 'confirmed' ? 'Appointment Confirmed' : 'New Appointment',
             message: `${appt.appointment_type?.replace('_', ' ')} on ${appt.date} at ${appt.time}`,
-            link: '/buyer-account-settings?tab=appointments',
+            link: appointmentsLink,
             read: false,
             created_at: appt.created_at,
             metadata: { appointment_id: appt.id, property_title: (appt.property as any)?.title }
@@ -261,9 +273,9 @@ class NotificationService {
       }
 
       // Get recent property alerts
-      const { data: alerts } = await supabase
-        .from('property_alert_history')
-        .select('*, property:properties(title, price)')
+      const { data: alerts } = await (supabase as any)
+        .from('property_alerts')
+        .select('*, property:property_listings(title, price)')
         .eq('buyer_id', user.id)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -279,7 +291,7 @@ class NotificationService {
             link: `/property/${alert.property_id}`,
             read: false,
             created_at: alert.created_at,
-            metadata: { property_id: alert.property_id, alert_id: alert.alert_id }
+            metadata: { property_id: alert.property_id }
           });
         }
       }

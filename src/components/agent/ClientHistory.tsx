@@ -81,7 +81,11 @@ export const ClientHistory = ({ client, isOpen, onClose }: ClientHistoryProps) =
     
     setLoading(true);
     try {
-      // Fetch conversations
+      // Use user_id for tables that reference profiles (appointments, conversations)
+      // Use client.id for tables that reference clients table directly
+      const profileId = client.user_id || client.id;
+
+      // Fetch conversations (references profiles.id as client_id)
       const { data: conversationsData, error: convError } = await supabase
         .from('conversations')
         .select(`
@@ -90,44 +94,49 @@ export const ClientHistory = ({ client, isOpen, onClose }: ClientHistoryProps) =
           created_at,
           last_message_at,
           status,
-          messages!inner(
+          messages(
             id,
             content,
             created_at,
             sender_id
           )
         `)
-        .eq('client_id', client.id)
+        .eq('client_id', profileId)
         .order('last_message_at', { ascending: false });
 
-      if (convError) throw convError;
+      if (convError) {
+        console.error('Conversations error:', convError);
+      }
 
-      // Transform conversations data
       const transformedConversations = conversationsData?.map(conv => ({
         ...conv,
-        unread_count: 0, // You can add unread count logic here
-        messages: conv.messages || []
+        unread_count: 0,
+        messages: Array.isArray(conv.messages) ? conv.messages : []
       })) || [];
 
       setConversations(transformedConversations);
 
-      // Fetch interactions
+      // Fetch interactions (references clients.id)
       const { data: interactionsData, error: intError } = await supabase
         .from('client_interactions')
         .select('*')
         .eq('client_id', client.id)
         .order('created_at', { ascending: false });
 
-      if (intError) throw intError;
+      if (intError) {
+        console.error('Interactions error:', intError);
+      }
 
-      // Fetch appointments and add them to interactions
+      // Fetch appointments (references profiles.id as client_id)
       const { data: appointmentsData, error: apptError } = await supabase
         .from('appointments')
         .select('*')
-        .eq('client_id', client.id)
+        .eq('client_id', profileId)
         .order('created_at', { ascending: false });
 
-      if (apptError) throw apptError;
+      if (apptError) {
+        console.error('Appointments error:', apptError);
+      }
 
       // Transform appointments to interaction format
       const transformedAppointments = appointmentsData?.map(appt => ({
@@ -147,14 +156,16 @@ export const ClientHistory = ({ client, isOpen, onClose }: ClientHistoryProps) =
 
       setInteractions(allInteractions);
 
-      // Fetch notes
+      // Fetch notes (references clients.id)
       const { data: notesData, error: notesError } = await supabase
         .from('client_notes')
         .select('*')
         .eq('client_id', client.id)
         .order('created_at', { ascending: false });
 
-      if (notesError) throw notesError;
+      if (notesError) {
+        console.error('Notes error:', notesError);
+      }
       setNotes(notesData || []);
 
     } catch (error) {

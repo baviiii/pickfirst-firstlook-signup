@@ -102,12 +102,12 @@ export const Appointments = () => {
     
     setLoading(true);
     try {
-      // Fetch from the actual appointments table with proper joins
+      // Fetch from the actual appointments table
+      // Note: client_id references profiles, not clients table anymore
       const { data, error } = await supabase
         .from('appointments')
         .select(`
           *,
-          clients!appointments_client_id_fkey(name, email, phone),
           property_listings!appointments_property_id_fkey(title, address)
         `)
         .eq('agent_id', user.id)
@@ -122,9 +122,9 @@ export const Appointments = () => {
         agent_id: appointment.agent_id,
         client_id: appointment.client_id,
         inquiry_id: appointment.inquiry_id,
-        client_name: appointment.client_name || appointment.clients?.name || 'Unknown Client',
-        client_phone: appointment.client_phone || appointment.clients?.phone || '',
-        client_email: appointment.client_email || appointment.clients?.email || '',
+        client_name: appointment.client_name || 'Unknown Client',
+        client_phone: appointment.client_phone || '',
+        client_email: appointment.client_email || '',
         property_address: appointment.property_address || appointment.property_listings?.address || 'Virtual/Office Meeting',
         appointment_type: appointment.appointment_type as any,
         date: appointment.date,
@@ -138,7 +138,6 @@ export const Appointments = () => {
 
       setAppointments(appointmentsData);
     } catch (error) {
-      console.error('Error fetching appointments:', error);
       toast.error('Failed to load appointments');
     } finally {
       setLoading(false);

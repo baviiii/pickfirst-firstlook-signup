@@ -99,6 +99,36 @@ serve(async (req) => {
         }
         break;
 
+      case 'air_quality':
+        // Google Maps Air Quality API
+        apiUrl = 'https://airquality.googleapis.com/v1/currentConditions:lookup';
+        
+        // Air Quality API uses POST with JSON body
+        const airQualityBody = {
+          location: {
+            latitude: params.latitude,
+            longitude: params.longitude
+          }
+        };
+        
+        const airQualityResponse = await fetch(`${apiUrl}?key=${GOOGLE_MAPS_API_KEY}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(airQualityBody)
+        });
+        
+        if (!airQualityResponse.ok) {
+          throw new Error(`Air Quality API error: ${airQualityResponse.status}`);
+        }
+        
+        const airQualityData = await airQualityResponse.json();
+        
+        return new Response(JSON.stringify(airQualityData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
       default:
         throw new Error(`Unsupported action: ${action}`);
     }

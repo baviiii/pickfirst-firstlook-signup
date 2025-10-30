@@ -156,42 +156,42 @@ export const AgentProfileView = ({ agentId, isOpen, onClose, onStartConversation
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-gray-900 border border-pickfirst-yellow/20 max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg sm:text-xl text-white">Agent Profile</DialogTitle>
+          <DialogTitle className="text-xl text-white">Agent Profile</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-6">
           {/* Agent Header */}
-          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-            <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
+          <div className="flex items-start gap-4">
+            <Avatar className="h-20 w-20 flex-shrink-0">
               <AvatarImage src={agent.avatar_url} />
-              <AvatarFallback className="bg-pickfirst-yellow text-black text-xl sm:text-2xl">
+              <AvatarFallback className="bg-pickfirst-yellow text-black text-2xl">
                 {agent.full_name.split(' ').map(n => n[0]).join('')}
               </AvatarFallback>
             </Avatar>
             
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl sm:text-2xl font-bold text-white truncate">{agent.full_name}</h2>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-1.5">
-                <Badge className="bg-pickfirst-yellow/20 text-pickfirst-yellow border-pickfirst-yellow/30 w-fit">
+              <h2 className="text-2xl font-bold text-white mb-2">{agent.full_name}</h2>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <Badge className="bg-pickfirst-yellow/20 text-pickfirst-yellow border-pickfirst-yellow/30">
                   <Home className="h-3 w-3 mr-1" />
                   {agent.total_listings} listings
                 </Badge>
-                <span className="text-xs sm:text-sm text-gray-400">
+                <span className="text-sm text-gray-400">
                   Member since {new Date(agent.joined_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                 </span>
               </div>
               
               {agent.company && (
-                <div className="flex items-center gap-1 mt-1.5">
-                  <Building className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
-                  <span className="text-sm text-gray-300 truncate">{agent.company}</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <Building className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  <span className="text-sm text-gray-300">{agent.company}</span>
                 </div>
               )}
 
               {agent.location && (
-                <div className="flex items-center gap-1 mt-1">
-                  <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
-                  <span className="text-sm text-gray-300 truncate">{agent.location}</span>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  <span className="text-sm text-gray-300">{agent.location}</span>
                 </div>
               )}
             </div>
@@ -199,29 +199,29 @@ export const AgentProfileView = ({ agentId, isOpen, onClose, onStartConversation
 
           {/* Agent Performance Stats */}
           <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="pb-3 sm:pb-4">
-              <CardTitle className="text-base sm:text-lg text-white flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-pickfirst-yellow" />
+            <CardHeader>
+              <CardTitle className="text-lg text-white flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-pickfirst-yellow" />
                 Performance & Activity
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-                <div className="text-center p-2 sm:p-3 bg-gray-700/50 rounded-lg">
-                  <div className="text-lg sm:text-xl font-bold text-pickfirst-yellow">{agent.active_listings}</div>
-                  <div className="text-[10px] sm:text-sm text-gray-400">Active Listings</div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-4 bg-gray-700/50 rounded-lg">
+                  <div className="text-2xl font-bold text-pickfirst-yellow">{agent.active_listings}</div>
+                  <div className="text-sm text-gray-400 mt-1">Active Listings</div>
                 </div>
-                <div className="text-center p-2 sm:p-3 bg-gray-700/50 rounded-lg">
-                  <div className="text-lg sm:text-xl font-bold text-pickfirst-yellow">{agent.total_listings}</div>
-                  <div className="text-[10px] sm:text-sm text-gray-400">Total Listings</div>
+                <div className="text-center p-4 bg-gray-700/50 rounded-lg">
+                  <div className="text-2xl font-bold text-pickfirst-yellow">{agent.total_listings}</div>
+                  <div className="text-sm text-gray-400 mt-1">Total Listings</div>
                 </div>
-                <div className="text-center p-2 sm:p-3 bg-gray-700/50 rounded-lg">
-                  <div className="text-lg sm:text-xl font-bold text-pickfirst-yellow">{agent.total_inquiries}</div>
-                  <div className="text-[10px] sm:text-sm text-gray-400">Inquiries Received</div>
+                <div className="text-center p-4 bg-gray-700/50 rounded-lg">
+                  <div className="text-2xl font-bold text-pickfirst-yellow">{agent.total_inquiries}</div>
+                  <div className="text-sm text-gray-400 mt-1">Inquiries</div>
                 </div>
-                <div className="text-center p-2 sm:p-3 bg-gray-700/50 rounded-lg">
-                  <div className="text-lg sm:text-xl font-bold text-pickfirst-yellow">{agent.response_time}</div>
-                  <div className="text-[10px] sm:text-sm text-gray-400">Avg Response</div>
+                <div className="text-center p-4 bg-gray-700/50 rounded-lg">
+                  <div className="text-2xl font-bold text-pickfirst-yellow">{agent.response_time}</div>
+                  <div className="text-sm text-gray-400 mt-1">Avg Response</div>
                 </div>
               </div>
             </CardContent>
@@ -229,27 +229,27 @@ export const AgentProfileView = ({ agentId, isOpen, onClose, onStartConversation
 
           {/* Contact Information */}
           <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="pb-3 sm:pb-4">
-              <CardTitle className="text-base sm:text-lg text-white flex items-center gap-2">
-                <Mail className="h-4 w-4 sm:h-5 sm:w-5 text-pickfirst-yellow" />
+            <CardHeader>
+              <CardTitle className="text-lg text-white flex items-center gap-2">
+                <Mail className="h-5 w-5 text-pickfirst-yellow" />
                 Contact Information
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 sm:space-y-3">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-pickfirst-yellow flex-shrink-0" />
-                <span className="text-sm text-gray-300 truncate">{agent.email}</span>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Mail className="h-4 w-4 text-pickfirst-yellow flex-shrink-0" />
+                <span className="text-sm text-gray-300 break-all">{agent.email}</span>
               </div>
               {agent.phone && (
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-pickfirst-yellow flex-shrink-0" />
+                <div className="flex items-center gap-3">
+                  <Phone className="h-4 w-4 text-pickfirst-yellow flex-shrink-0" />
                   <span className="text-sm text-gray-300">{agent.phone}</span>
                 </div>
               )}
               {agent.website && (
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-pickfirst-yellow flex-shrink-0" />
-                  <a href={agent.website} target="_blank" rel="noopener noreferrer" className="text-sm text-pickfirst-yellow hover:underline truncate">
+                <div className="flex items-center gap-3">
+                  <Globe className="h-4 w-4 text-pickfirst-yellow flex-shrink-0" />
+                  <a href={agent.website} target="_blank" rel="noopener noreferrer" className="text-sm text-pickfirst-yellow hover:underline break-all">
                     {agent.website}
                   </a>
                 </div>
@@ -288,20 +288,20 @@ export const AgentProfileView = ({ agentId, isOpen, onClose, onStartConversation
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4">
+          <div className="flex gap-3 pt-4">
             <Button
               onClick={onStartConversation}
-              className="flex-1 bg-pickfirst-yellow text-black hover:bg-pickfirst-yellow/90 h-9 sm:h-10"
+              className="flex-1 bg-pickfirst-yellow text-black hover:bg-pickfirst-yellow/90"
             >
-              <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-              <span className="text-sm sm:text-base">Start Conversation</span>
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Start Conversation
             </Button>
             <Button
               variant="outline"
               onClick={onClose}
-              className="border-gray-600 text-gray-300 hover:bg-gray-700 h-9 sm:h-10 sm:min-w-[100px]"
+              className="border-gray-600 text-gray-300 hover:bg-gray-700 min-w-[100px]"
             >
-              <span className="text-sm sm:text-base">Close</span>
+              Close
             </Button>
           </div>
         </div>

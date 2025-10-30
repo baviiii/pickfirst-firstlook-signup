@@ -25,14 +25,12 @@ export class MapAnalyticsService {
         .eq('status', 'approved')
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
-        .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching map properties:', error);
         return { data: null, error };
       }
 
-      console.log(`✅ Fetched ${data?.length || 0} properties for map`);
       return { data, error: null };
     } catch (error) {
       console.error('Exception in getMapProperties:', error);
@@ -46,30 +44,18 @@ export class MapAnalyticsService {
     center: { lat: number; lng: number },
     radiusKm: number = 2
   ): AreaAnalytics | null {
-    console.log('🧮 Calculating analytics for center:', center, 'radius:', radiusKm);
-    console.log('Total properties available:', properties.length);
-    
     const nearbyProperties = properties.filter(property => {
-      if (!property.latitude || !property.longitude) {
-        return false;
-      }
+      if (!property.latitude || !property.longitude) return false;
       
       const distance = this.getDistance(
         center.lat, center.lng,
         property.latitude, property.longitude
       );
       
-      const isNearby = distance <= radiusKm;
-      if (isNearby) {
-        console.log(`Property "${property.title}" is ${distance.toFixed(2)}km away - INCLUDED`);
-      }
-      return isNearby;
+      return distance <= radiusKm;
     });
 
-    console.log(`Found ${nearbyProperties.length} properties within ${radiusKm}km`);
-
     if (nearbyProperties.length === 0) {
-      console.log('❌ No nearby properties found');
       return null;
     }
 
@@ -137,7 +123,6 @@ export class MapAnalyticsService {
       marketTrend
     };
 
-    console.log('✅ Analytics calculated:', analytics);
     return analytics;
   }
 
