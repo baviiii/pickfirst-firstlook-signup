@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -46,6 +47,25 @@ import NotificationsPage from './pages/Notifications';
 
 const queryClient = new QueryClient();
 
+// Ensure Supabase auth hash callbacks land on the dashboard route for onboarding
+const AuthHashRedirect = () => {
+  useEffect(() => {
+    const hasAuthHash = typeof window !== 'undefined' && window.location.hash && (
+      window.location.hash.includes('access_token') ||
+      window.location.hash.includes('refresh_token') ||
+      window.location.hash.includes('type=')
+    );
+    const onRootPath = window.location.pathname === '/' || window.location.pathname === import.meta.env.BASE_URL;
+    if (hasAuthHash && onRootPath) {
+      const base = import.meta.env.BASE_URL || '';
+      const targetPath = `${base.endsWith('/') ? base.slice(0, -1) : base}/dashboard`;
+      const newUrl = `${window.location.origin}${targetPath}${window.location.hash}`;
+      window.location.replace(newUrl);
+    }
+  }, []);
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -54,6 +74,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter basename={import.meta.env.BASE_URL}>
+            <AuthHashRedirect />
             <Routes>
               {/* Public Routes - No Authentication Required */}
               <Route path="/" element={<Index />} />
