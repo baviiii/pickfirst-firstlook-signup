@@ -38,7 +38,7 @@ jobs:
           protocol: ftps
       
           local-dir: ./dist/
-          server-dir: /public_html/
+          server-dir: /
           
           # Cleanly replace the remote contents with this build
           dangerous-clean-slate: true
