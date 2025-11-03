@@ -23,6 +23,10 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
 
       - name: Deploy to FTP server
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
@@ -34,4 +38,19 @@ jobs:
           protocol: ftps
       
           local-dir: ./dist/
-          server-dir: /public_html/ 
+          server-dir: /public_html/
+          
+          # Cleanly replace the remote contents with this build
+          dangerous-clean-slate: true
+          
+          # Keep a named state file for efficient diffs across runs
+          state-name: .ftp-deploy-sync-state-pickfirst.json
+          
+          # Don't touch server control dirs, caches, or temporary files
+          exclude: |
+            **/.git*
+            **/.github/**
+            **/node_modules/**
+            **/*.map
+            **/.DS_Store
+            **/Thumbs.db
