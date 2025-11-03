@@ -45,7 +45,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   className,
   disabled = false,
   countryCode = 'AU',
-  types = ['(regions)']
+  types = ['(cities)'] // Changed from (regions) to (cities) to include suburbs
 }) => {
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);

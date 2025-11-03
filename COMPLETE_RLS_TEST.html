@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 Complete RLS Security Test - PickFirst</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            background: #e9ecef;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .tab:hover:not(.active) {
+            background: #dee2e6;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .test-result {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ccc;
+        }
+        
+        .test-result.safe {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .test-result.unsafe {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        .test-result h3 {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .test-result .status {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .test-result.safe .status {
+            color: #28a745;
+        }
+        
+        .test-result.unsafe .status {
+            color: #dc3545;
+        }
+        
+        .test-result pre {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .summary h2 {
+            margin-bottom: 15px;
+        }
+        
+        .summary .score {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .summary.safe {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .summary.unsafe {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+        
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Complete RLS Security Test Suite</h1>
+            <p>Test both Anonymous Access and Cross-User Access</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('anonymous')">
+                🌐 Test 1: Anonymous Access (No Login)
+            </button>
+            <button class="tab" onclick="switchTab('crossuser')">
+                👥 Test 2: Cross-User Access (Logged In)
+            </button>
+        </div>
+        
+        <!-- TAB 1: Anonymous Access -->
+        <div id="anonymous" class="tab-content active">
+            <div class="warning">
+                <strong>⚠️ CRITICAL TEST:</strong> This tests if someone WITHOUT logging in can access your database using only your public anon key.
+            </div>
+            
+            <button onclick="runAnonymousTest()">
+                🚀 Run Anonymous Access Test
+            </button>
+            
+            <div id="anonymousLoading" style="display: none;">
+                <div class="loader"></div>
+                <p style="text-align: center; color: #666;">Testing anonymous access...</p>
+            </div>
+            
+            <div id="anonymousResults"></div>
+        </div>
+        
+        <!-- TAB 2: Cross-User Access -->
+        <div id="crossuser" class="tab-content">
+            <div class="warning">
+                <strong>⚠️ IMPORTANT TEST:</strong> This tests if User A (logged in) can access User B's private data.
+            </div>
+            
+            <div class="info">
+                <strong>📋 Instructions:</strong>
+                <ol style="margin-left: 20px; margin-top: 10px;">
+                    <li>Sign in to your PickFirst app in another tab</li>
+                    <li>Open DevTools Console (F12)</li>
+                    <li>Run: <code>await window.supabase.auth.getSession()</code></li>
+                    <li>Copy your access_token and paste below</li>
+                    <li>Get another user's ID from Supabase Dashboard</li>
+                </ol>
+            </div>
+            
+            <div class="form-group">
+                <label for="userToken">Your JWT Token (from logged-in session):</label>
+                <input type="text" id="userToken" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." />
+            </div>
+            
+            <div class="form-group">
+                <label for="targetUserId">Target User ID (User B to try accessing):</label>
+                <input type="text" id="targetUserId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+            </div>
+            
+            <button onclick="runCrossUserTest()">
+                🚀 Run Cross-User Access Test
+            </button>
+            
+            <div id="crossuserLoading" style="display: none;">
+                <div class="loader"></div>
+                <p style="text-align: center; color: #666;">Testing cross-user access...</p>
+            </div>
+            
+            <div id="crossuserResults"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://rkwvgqozbpqgmpbvujgz.supabase.co';
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrd3ZncW96YnBxZ21wYnZ1amd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzMDYyNDMsImV4cCI6MjA2Nzg4MjI0M30.fSLOGnAo3OU7B726VAAAboPtWJZkBoVuSlttuHzpVJU';
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function testEndpoint(name, table, description, token = null) {
+            try {
+                const headers = {
+                    'apikey': ANON_KEY,
+                    'Content-Type': 'application/json'
+                };
+                
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/${table}?limit=5`,
+                    { headers }
+                );
+                
+                const data = await response.json();
+                const hasData = Array.isArray(data) && data.length > 0;
+                const isSafe = !hasData || response.status === 401 || response.status === 403;
+                
+                return {
+                    name,
+                    table,
+                    description,
+                    safe: isSafe,
+                    status: response.status,
+                    dataCount: Array.isArray(data) ? data.length : 0,
+                    data: hasData ? data : null,
+                    error: data.code || data.message || null
+                };
+            } catch (error) {
+                return {
+                    name,
+                    table,
+                    description,
+                    safe: true,
+                    error: error.message
+                };
+            }
+        }
+
+        async function runAnonymousTest() {
+            const loading = document.getElementById('anonymousLoading');
+            const resultsDiv = document.getElementById('anonymousResults');
+            
+            loading.style.display = 'block';
+            resultsDiv.innerHTML = '';
+            
+            const tests = [
+                { name: 'User Profiles', table: 'profiles', description: 'Personal information (email, phone, name)' },
+                { name: 'Property Favorites', table: 'property_favorites', description: 'User saved properties' },
+                { name: 'Messages', table: 'messages', description: 'Private conversations' },
+                { name: 'Conversations', table: 'conversations', description: 'Conversation threads' },
+                { name: 'Appointments', table: 'appointments', description: 'Scheduled property viewings' },
+                { name: 'Property Inquiries', table: 'property_inquiries', description: 'Property inquiries from buyers' },
+                { name: 'Property Alerts', table: 'property_alerts', description: 'User search alerts' },
+                { name: 'Audit Logs', table: 'audit_logs', description: 'System activity logs' },
+                { name: 'User Preferences', table: 'user_preferences', description: 'User settings and preferences' },
+                { name: 'Saved Filters', table: 'saved_filters', description: 'User saved search filters' },
+                { name: 'Calendar Integrations', table: 'calendar_integrations', description: 'User calendar connections' },
+                { name: 'Login History', table: 'login_history', description: 'User login records' },
+                { name: 'Clients', table: 'clients', description: 'Agent client lists' },
+                { name: 'Client Notes', table: 'client_notes', description: 'Agent notes on clients' },
+                { name: 'Client Interactions', table: 'client_interactions', description: 'Agent-client interactions' },
+                { name: 'Property Listings', table: 'property_listings', description: 'Property listings (approved should be public)' }
+            ];
+            
+            const results = [];
+            
+            for (const test of tests) {
+                const result = await testEndpoint(test.name, test.table, test.description);
+                results.push(result);
+                
+                const resultDiv = document.createElement('div');
+                resultDiv.className = `test-result ${result.safe ? 'safe' : 'unsafe'}`;
+                resultDiv.innerHTML = `
+                    <h3>${result.safe ? '✅' : '❌'} ${result.name}</h3>
+                    <div class="status">${result.safe ? 'SAFE - Access Denied' : '⚠️ UNSAFE - DATA EXPOSED!'}</div>
+                    <div><strong>Table:</strong> ${result.table}</div>
+                    <div><strong>Contains:</strong> ${result.description}</div>
+                    <div><strong>HTTP Status:</strong> ${result.status || 'Error'}</div>
+                    ${result.dataCount > 0 ? `<div style="color: #dc3545;"><strong>⚠️ Records Exposed:</strong> ${result.dataCount}</div>` : ''}
+                    ${result.error ? `<div><strong>Error:</strong> ${result.error}</div>` : ''}
+                    ${result.data ? `<pre>${JSON.stringify(result.data.slice(0, 2), null, 2)}</pre>` : ''}
+                `;
+                resultsDiv.appendChild(resultDiv);
+            }
+            
+            loading.style.display = 'none';
+            
+            // Summary
+            const safeCount = results.filter(r => r.safe).length;
+            const unsafeCount = results.filter(r => !r.safe).length;
+            const score = Math.round((safeCount / results.length) * 100);
+            
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = `summary ${score === 100 ? 'safe' : 'unsafe'}`;
+            summaryDiv.innerHTML = `
+                <h2>${score === 100 ? '🎉 Excellent Security!' : '⚠️ Security Vulnerabilities Detected'}</h2>
+                <div class="score">${score}%</div>
+                <div>Safe: ${safeCount} / ${results.length} tests</div>
+                ${unsafeCount > 0 ? `<div style="margin-top: 15px; font-size: 14px;">⚠️ ${unsafeCount} table(s) are publicly accessible without authentication!</div>` : ''}
+                ${score === 100 ? '<div style="margin-top: 15px; font-size: 14px;">All sensitive data is protected from anonymous access.</div>' : ''}
+            `;
+            resultsDiv.appendChild(summaryDiv);
+        }
+
+        async function runCrossUserTest() {
+            const token = document.getElementById('userToken').value.trim();
+            const targetUserId = document.getElementById('targetUserId').value.trim();
+            const loading = document.getElementById('crossuserLoading');
+            const resultsDiv = document.getElementById('crossuserResults');
+            
+            if (!token || !targetUserId) {
+                alert('Please provide both your JWT token and target user ID');
+                return;
+            }
+            
+            loading.style.display = 'block';
+            resultsDiv.innerHTML = '';
+            
+            // First, get current user's ID from token
+            let currentUserId = 'unknown';
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                currentUserId = payload.sub || payload.user_id || 'unknown';
+            } catch (e) {
+                console.error('Failed to decode token:', e);
+            }
+            
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'info';
+            infoDiv.innerHTML = `
+                <strong>Test Configuration:</strong><br>
+                Your User ID: ${currentUserId}<br>
+                Target User ID: ${targetUserId}<br>
+                <br>
+                <strong>What we're testing:</strong> Can you (User A) access User B's private data?
+            `;
+            resultsDiv.appendChild(infoDiv);
+            
+            const tests = [
+                { name: 'Read Other User Profile', table: `profiles?id=eq.${targetUserId}`, description: 'Can you read another user\'s profile?' },
+                { name: 'Read Other User Favorites', table: `property_favorites?buyer_id=eq.${targetUserId}`, description: 'Can you see their saved properties?' },
+                { name: 'Read Other User Messages', table: `messages?sender_id=eq.${targetUserId}`, description: 'Can you read their private messages?' },
+                { name: 'Read Other User Conversations', table: `conversations?client_id=eq.${targetUserId}`, description: 'Can you see their conversations?' },
+                { name: 'Read Other User Appointments', table: `appointments?client_id=eq.${targetUserId}`, description: 'Can you see their appointments?' },
+                { name: 'Read Other User Inquiries', table: `property_inquiries?buyer_id=eq.${targetUserId}`, description: 'Can you see their property inquiries?' },
+                { name: 'Read Other User Alerts', table: `property_alerts?buyer_id=eq.${targetUserId}`, description: 'Can you see their property alerts?' },
+                { name: 'Read Other User Preferences', table: `user_preferences?user_id=eq.${targetUserId}`, description: 'Can you see their settings?' },
+                { name: 'Read Other User Saved Filters', table: `saved_filters?user_id=eq.${targetUserId}`, description: 'Can you see their saved searches?' },
+                { name: 'Read Other User Login History', table: `login_history?user_id=eq.${targetUserId}`, description: 'Can you see their login records?' },
+                { name: 'Read Other User Audit Logs', table: `audit_logs?user_id=eq.${targetUserId}`, description: 'Can you see their activity logs?' }
+            ];
+            
+            const results = [];
+            
+            for (const test of tests) {
+                try {
+                    const response = await fetch(
+                        `${SUPABASE_URL}/rest/v1/${test.table}`,
+                        {
+                            headers: {
+                                'apikey': ANON_KEY,
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        }
+                    );
+                    
+                    const data = await response.json();
+                    const hasData = Array.isArray(data) && data.length > 0;
+                    const isSafe = !hasData || response.status === 401 || response.status === 403;
+                    
+                    const result = {
+                        name: test.name,
+                        description: test.description,
+                        safe: isSafe,
+                        status: response.status,
+                        dataCount: Array.isArray(data) ? data.length : 0,
+                        data: hasData ? data : null,
+                        error: data.code || data.message || null
+                    };
+                    
+                    results.push(result);
+                    
+                    const resultDiv = document.createElement('div');
+                    resultDiv.className = `test-result ${result.safe ? 'safe' : 'unsafe'}`;
+                    resultDiv.innerHTML = `
+                        <h3>${result.safe ? '✅' : '❌'} ${result.name}</h3>
+                        <div class="status">${result.safe ? 'SAFE - Access Denied' : '⚠️ UNSAFE - DATA LEAKED!'}</div>
+                        <div><strong>Test:</strong> ${result.description}</div>
+                        <div><strong>HTTP Status:</strong> ${result.status}</div>
+                        ${result.dataCount > 0 ? `<div style="color: #dc3545;"><strong>⚠️ Records Exposed:</strong> ${result.dataCount}</div>` : ''}
+                        ${result.error ? `<div><strong>Error:</strong> ${result.error}</div>` : ''}
+                        ${result.data ? `<pre>${JSON.stringify(result.data, null, 2)}</pre>` : ''}
+                    `;
+                    resultsDiv.appendChild(resultDiv);
+                } catch (error) {
+                    console.error('Test error:', error);
+                }
+            }
+            
+            loading.style.display = 'none';
+            
+            // Summary
+            const safeCount = results.filter(r => r.safe).length;
+            const unsafeCount = results.filter(r => !r.safe).length;
+            const score = Math.round((safeCount / results.length) * 100);
+            
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = `summary ${score === 100 ? 'safe' : 'unsafe'}`;
+            summaryDiv.innerHTML = `
+                <h2>${score === 100 ? '🎉 Perfect RLS Protection!' : '⚠️ Cross-User Data Leaks Detected!'}</h2>
+                <div class="score">${score}%</div>
+                <div>Safe: ${safeCount} / ${results.length} tests</div>
+                ${unsafeCount > 0 ? `<div style="margin-top: 15px; font-size: 14px;">⚠️ ${unsafeCount} test(s) failed - User A can access User B\'s data!</div>` : ''}
+                ${score === 100 ? '<div style="margin-top: 15px; font-size: 14px;">All cross-user access attempts were blocked. RLS is working correctly!</div>' : ''}
+            `;
+            resultsDiv.appendChild(summaryDiv);
+        }
+    </script>
+</body>
+</html>

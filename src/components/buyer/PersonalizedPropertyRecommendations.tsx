@@ -78,9 +78,10 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
         };
 
         // Add location filtering if preferred areas exist
+        // Note: FilterService will handle multiple areas through fuzzy matching
         if (preferences.preferred_areas && preferences.preferred_areas.length > 0) {
-          // Use the first preferred area as primary location filter
-          filters.location = preferences.preferred_areas[0];
+          // Pass all preferred areas - fuzzy matching will find properties in any of them
+          filters.location = preferences.preferred_areas.join(', ');
         }
 
         // Get filtered properties

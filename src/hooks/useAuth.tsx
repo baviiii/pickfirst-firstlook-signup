@@ -226,6 +226,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await supabase.auth.signOut();
       clearAuthTokens(); // Clear any remaining tokens
       
+      // Clear session storage to allow welcome toast on next login
+      sessionStorage.removeItem('hasShownWelcome');
+      
       // Log signout attempt
       await ipTrackingService.logLoginActivity({
         user_id: currentUser?.id,
@@ -235,6 +238,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
     } catch (error) {
       clearAuthTokens(); // Clear tokens even if signout fails
+      sessionStorage.removeItem('hasShownWelcome'); // Clear welcome flag even on error
       
       // Log failed signout attempt
       await ipTrackingService.logLoginActivity({
@@ -302,7 +306,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Log failed attempt
         await ipTrackingService.logLoginActivity({
           email: emailValidation.sanitizedValue!,
-          login_type: 'forgot_password',
+          login_type: 'password_reset',
           success: false,
           failure_reason: 'Account not found'
         });
@@ -319,7 +323,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Log forgot password attempt
       await ipTrackingService.logLoginActivity({
         email: emailValidation.sanitizedValue!,
-        login_type: 'forgot_password',
+        login_type: 'password_reset',
         success: !error,
         failure_reason: error?.message
       });
@@ -342,7 +346,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Log forgot password attempt
       await ipTrackingService.logLoginActivity({
         email: emailValidation.sanitizedValue!,
-        login_type: 'forgot_password',
+        login_type: 'password_reset',
         success: false,
         failure_reason: error.message
       });

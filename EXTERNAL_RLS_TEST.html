@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 PickFirst External RLS Security Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .warning strong {
+            color: #856404;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        #results {
+            margin-top: 20px;
+        }
+        
+        .test-result {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ccc;
+        }
+        
+        .test-result.safe {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .test-result.unsafe {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        .test-result h3 {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .test-result .status {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .test-result.safe .status {
+            color: #28a745;
+        }
+        
+        .test-result.unsafe .status {
+            color: #dc3545;
+        }
+        
+        .test-result pre {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        
+        .summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .summary h2 {
+            margin-bottom: 15px;
+        }
+        
+        .summary .score {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .summary.safe {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .summary.unsafe {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+        
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 PickFirst External RLS Security Test</h1>
+            <p>Testing if anonymous users can access your database without logging in</p>
+        </div>
+        
+        <div class="content">
+            <div class="warning">
+                <strong>⚠️ CRITICAL TEST:</strong> This test simulates an external attacker who has NEVER logged into your system. They only need your public anon key (which is visible in your frontend code) to attempt data access.
+            </div>
+            
+            <div class="info">
+                <strong>ℹ️ What This Tests:</strong> Can someone access your database tables without any authentication? This is the most dangerous security vulnerability.
+            </div>
+            
+            <button id="runTest" onclick="runSecurityTest()">
+                🚀 Run External Security Test
+            </button>
+            
+            <div id="loading" style="display: none;">
+                <div class="loader"></div>
+                <p style="text-align: center; color: #666;">Testing security policies...</p>
+            </div>
+            
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://rkwvgqozbpqgmpbvujgz.supabase.co';
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrd3ZncW96YnBxZ21wYnZ1amd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzMDYyNDMsImV4cCI6MjA2Nzg4MjI0M30.fSLOGnAo3OU7B726VAAAboPtWJZkBoVuSlttuHzpVJU';
+
+        async function testEndpoint(name, table, description) {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/${table}?limit=10`,
+                    {
+                        headers: {
+                            'apikey': ANON_KEY,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+                
+                const data = await response.json();
+                
+                // Check if data was returned
+                const hasData = Array.isArray(data) && data.length > 0;
+                const isSafe = !hasData || response.status === 401 || response.status === 403;
+                
+                return {
+                    name,
+                    table,
+                    description,
+                    safe: isSafe,
+                    status: response.status,
+                    dataCount: Array.isArray(data) ? data.length : 0,
+                    data: hasData ? data : null,
+                    error: data.code || null
+                };
+            } catch (error) {
+                return {
+                    name,
+                    table,
+                    description,
+                    safe: true,
+                    error: error.message
+                };
+            }
+        }
+
+        async function runSecurityTest() {
+            const button = document.getElementById('runTest');
+            const loading = document.getElementById('loading');
+            const resultsDiv = document.getElementById('results');
+            
+            button.disabled = true;
+            loading.style.display = 'block';
+            resultsDiv.innerHTML = '';
+            
+            const tests = [
+                { name: 'User Profiles', table: 'profiles', description: 'Personal information (email, phone, name)' },
+                { name: 'User Favorites', table: 'favorites', description: 'Saved properties' },
+                { name: 'Messages', table: 'messages', description: 'Private conversations' },
+                { name: 'Appointments', table: 'appointments', description: 'Scheduled property viewings' },
+                { name: 'Inquiries', table: 'inquiries', description: 'Property inquiries' },
+                { name: 'Property Alerts', table: 'property_alerts', description: 'User search alerts' },
+                { name: 'Subscriptions', table: 'subscriptions', description: 'Payment and subscription data' },
+                { name: 'Audit Logs', table: 'audit_logs', description: 'System activity logs' },
+                { name: 'Properties', table: 'properties', description: 'Property listings (should be public)' },
+                { name: 'Notifications', table: 'notifications', description: 'User notifications' }
+            ];
+            
+            const results = [];
+            
+            for (const test of tests) {
+                const result = await testEndpoint(test.name, test.table, test.description);
+                results.push(result);
+                
+                // Display result immediately
+                const resultDiv = document.createElement('div');
+                resultDiv.className = `test-result ${result.safe ? 'safe' : 'unsafe'}`;
+                resultDiv.innerHTML = `
+                    <h3>${result.safe ? '✅' : '❌'} ${result.name}</h3>
+                    <div class="status">${result.safe ? 'SAFE - Access Denied' : '⚠️ UNSAFE - DATA EXPOSED!'}</div>
+                    <div><strong>Table:</strong> ${result.table}</div>
+                    <div><strong>Contains:</strong> ${result.description}</div>
+                    <div><strong>HTTP Status:</strong> ${result.status || 'Error'}</div>
+                    ${result.dataCount > 0 ? `<div style="color: #dc3545;"><strong>⚠️ Records Exposed:</strong> ${result.dataCount}</div>` : ''}
+                    ${result.error ? `<div><strong>Error:</strong> ${result.error}</div>` : ''}
+                    ${result.data ? `<pre>${JSON.stringify(result.data.slice(0, 2), null, 2)}</pre>` : ''}
+                `;
+                resultsDiv.appendChild(resultDiv);
+            }
+            
+            loading.style.display = 'none';
+            
+            // Summary
+            const safeCount = results.filter(r => r.safe).length;
+            const unsafeCount = results.filter(r => !r.safe).length;
+            const score = Math.round((safeCount / results.length) * 100);
+            
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = `summary ${score === 100 ? 'safe' : 'unsafe'}`;
+            summaryDiv.innerHTML = `
+                <h2>${score === 100 ? '🎉 Excellent Security!' : '⚠️ Security Vulnerabilities Detected'}</h2>
+                <div class="score">${score}%</div>
+                <div>Safe: ${safeCount} / ${results.length} tests</div>
+                ${unsafeCount > 0 ? `<div style="margin-top: 15px; font-size: 14px;">⚠️ ${unsafeCount} table(s) are publicly accessible without authentication!</div>` : ''}
+                ${score === 100 ? '<div style="margin-top: 15px; font-size: 14px;">All sensitive data is protected from anonymous access.</div>' : ''}
+            `;
+            resultsDiv.appendChild(summaryDiv);
+            
+            // Re-enable button
+            button.disabled = false;
+            button.textContent = '🔄 Run Test Again';
+        }
+    </script>
+</body>
+</html>

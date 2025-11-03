@@ -99,66 +99,53 @@ const getButton = (url: string, text: string, isPrimary = true) => `
 `;
 
 // Property card component with image
-const getPropertyCard = (property: any) => `
-  <div class="property-card" style="border: 2px solid ${BRAND_COLORS.primary}; border-radius: 12px; overflow: hidden; margin: 25px 0; background: ${BRAND_COLORS.background}; box-shadow: 0 6px 20px rgba(0,0,0,0.1);">
-    ${property.image ? `
-      <div style="position: relative; width: 100%; height: 0; padding-bottom: 60%; overflow: hidden; background: #f0f0f0;">
-        <img src="${property.image}" alt="${property.title}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" />
-        <div style="position: absolute; top: 15px; right: 15px; background: ${BRAND_COLORS.primary}; color: ${BRAND_COLORS.secondary}; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-          ${property.badge || 'NEW'}
-        </div>
+const getPropertyCard = (property: any) => {
+  // Get the first image from images array or use the image property
+  const imageUrl = property.images?.[0] || property.image || '';
+  
+  return `
+  <div style="background: white; border-radius: 16px; overflow: hidden; margin: 25px 0; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+    ${imageUrl ? `
+      <div style="position: relative; width: 100%; height: 300px; overflow: hidden; background: #f0f0f0;">
+        <img src="${imageUrl}" alt="${property.title || 'Property'}" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+        ${property.badge ? `
+          <div style="position: absolute; top: 16px; right: 16px; background: linear-gradient(135deg, #FFCC00, #FFB800); color: #1a1a1a; padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+            ${property.badge}
+          </div>
+        ` : ''}
       </div>
     ` : ''}
-    <div style="padding: 25px;">
-      <h2 style="margin: 0 0 12px 0; color: ${BRAND_COLORS.secondary}; font-size: 22px; font-weight: bold;">
-        ${property.title}
-      </h2>
-      <p style="margin: 0 0 15px 0; font-size: 28px; font-weight: bold; color: ${BRAND_COLORS.secondary};">
+    <div style="padding: 28px;">
+      <div style="font-size: 28px; font-weight: 700; color: #1a202c; margin-bottom: 12px;">
         ${property.price ? `$${property.price.toLocaleString()}` : property.priceText || 'Contact for price'}
-      </p>
-      <p style="margin: 0 0 15px 0; color: ${BRAND_COLORS.text}; font-size: 15px; display: flex; align-items: center;">
-        📍 ${property.location}
-      </p>
+      </div>
+      <div style="font-size: 18px; color: #4a5568; margin-bottom: 16px; font-weight: 500;">
+        ${property.location}
+      </div>
       ${property.description ? `
-        <p style="margin: 0 0 15px 0; color: ${BRAND_COLORS.textLight}; font-size: 14px; line-height: 1.6;">
+        <p style="margin: 0 0 20px 0; color: #718096; font-size: 15px; line-height: 1.7;">
           ${property.description}
         </p>
       ` : ''}
-      <div style="display: flex; gap: 20px; margin: 15px 0; padding: 15px; background: ${BRAND_COLORS.lightBg}; border-radius: 8px;">
+      <div style="display: flex; gap: 20px; margin: 20px 0; padding: 16px 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
         ${property.bedrooms ? `
-          <div style="text-align: center; flex: 1;">
-            <div style="font-size: 24px; margin-bottom: 5px;">🛏️</div>
-            <div style="color: ${BRAND_COLORS.text}; font-weight: bold;">${property.bedrooms}</div>
-            <div style="color: ${BRAND_COLORS.textLight}; font-size: 12px;">Bedrooms</div>
-          </div>
+          <span style="font-size: 15px; color: #4a5568;">🛏️ ${property.bedrooms} bed</span>
         ` : ''}
         ${property.bathrooms ? `
-          <div style="text-align: center; flex: 1;">
-            <div style="font-size: 24px; margin-bottom: 5px;">🚿</div>
-            <div style="color: ${BRAND_COLORS.text}; font-weight: bold;">${property.bathrooms}</div>
-            <div style="color: ${BRAND_COLORS.textLight}; font-size: 12px;">Bathrooms</div>
-          </div>
+          <span style="font-size: 15px; color: #4a5568;">🛁 ${property.bathrooms} bath</span>
         ` : ''}
         ${property.parking ? `
-          <div style="text-align: center; flex: 1;">
-            <div style="font-size: 24px; margin-bottom: 5px;">🚗</div>
-            <div style="color: ${BRAND_COLORS.text}; font-weight: bold;">${property.parking}</div>
-            <div style="color: ${BRAND_COLORS.textLight}; font-size: 12px;">Parking</div>
-          </div>
+          <span style="font-size: 15px; color: #4a5568;">🚗 ${property.parking} car</span>
         ` : ''}
         ${property.landSize ? `
-          <div style="text-align: center; flex: 1;">
-            <div style="font-size: 24px; margin-bottom: 5px;">📏</div>
-            <div style="color: ${BRAND_COLORS.text}; font-weight: bold;">${property.landSize}</div>
-            <div style="color: ${BRAND_COLORS.textLight}; font-size: 12px;">Land Size</div>
-          </div>
+          <span style="font-size: 15px; color: #4a5568;">📐 ${property.landSize}</span>
         ` : ''}
       </div>
       ${property.features?.length > 0 ? `
-        <div style="margin: 15px 0;">
+        <div style="margin: 20px 0;">
           <div style="display: flex; flex-wrap: wrap; gap: 8px;">
             ${property.features.map((feature: string) => `
-              <span style="background: ${BRAND_COLORS.lightBg}; color: ${BRAND_COLORS.text}; padding: 6px 12px; border-radius: 20px; font-size: 12px; border: 1px solid ${BRAND_COLORS.primary};">
+              <span style="background: #f7fafc; color: #2d3748; padding: 6px 12px; border-radius: 6px; font-size: 13px; border: 1px solid #e2e8f0;">
                 ✓ ${feature}
               </span>
             `).join('')}
@@ -166,13 +153,14 @@ const getPropertyCard = (property: any) => `
         </div>
       ` : ''}
       ${property.url ? `
-        <div style="margin-top: 20px; text-align: center;">
-          ${getButton(property.url, 'View Full Details')}
+        <div style="margin-top: 20px;">
+          <a href="${property.url}" style="display: inline-block; background: linear-gradient(135deg, #FFCC00, #FFB800); color: #1a1a1a; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">View Property</a>
         </div>
       ` : ''}
     </div>
   </div>
 `;
+};
 
 const templates = {
   // Enhanced Welcome Email with Email Verification

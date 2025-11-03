@@ -44,15 +44,28 @@ const Pricing = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-xl pickfirst-gradient-yellow-amber flex items-center justify-center shadow-xl shadow-pickfirst-yellow/30 transition-all duration-300 hover:shadow-pickfirst-yellow/50 hover:scale-105 cursor-pointer" onClick={() => navigate('/') }>
-                <Home className="w-6 h-6 text-black" />
+              {/* PickFirst Logo */}
+              <img 
+                src="/pickfirst-logo.png" 
+                alt="PickFirst Logo" 
+                className="h-12 w-auto cursor-pointer transition-all duration-300 hover:scale-105"
+                onClick={() => navigate('/dashboard')}
+                onError={(e) => {
+                  // Fallback if logo image doesn't load
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+              {/* Fallback logo */}
+              <div className="hidden w-12 h-12 rounded-xl pickfirst-gradient-yellow-amber flex items-center justify-center shadow-xl shadow-pickfirst-yellow/30 transition-all duration-300 hover:shadow-pickfirst-yellow/50 hover:scale-105 cursor-pointer" onClick={() => navigate('/dashboard')}>
+                <span className="text-2xl font-bold text-black">P</span>
               </div>
               <div>
                 <h1 className="text-2xl font-bold pickfirst-gradient-yellow-amber-text">PickFirst</h1>
                 <p className="text-sm text-gray-400">Off-Market Property Access</p>
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/')}
+            <Button variant="ghost" size="sm" onClick={() => navigate(-1)}
               className="text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-all duration-300 border border-transparent hover:border-pickfirst-yellow/30 rounded-lg">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back

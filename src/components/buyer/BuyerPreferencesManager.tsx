@@ -40,7 +40,6 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
   compact = false
 }) => {
   const { user } = useAuth();
-  const { getPropertyAlertsLimit } = useSubscription();
   const [preferences, setPreferences] = useState<Partial<BuyerPreferences>>({
     min_budget: 0,
     max_budget: 1000000,
@@ -432,25 +431,17 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
                 <div className="flex items-center gap-2">
                   <Bell className="h-4 w-4 text-primary" />
                   <span className="font-medium">Property Alerts</span>
-                  {getPropertyAlertsLimit() === -1 ? (
-                    <Badge className="bg-primary text-primary-foreground text-xs">
-                      <Crown className="h-3 w-3 mr-1" />
-                      Premium - Unlimited
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-xs text-gray-400">
-                      Free - No Alerts
-                    </Badge>
-                  )}
+                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                    Unlimited
+                  </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Get notified when new properties match your criteria
+                  Get notified when new on-market properties match your criteria. Premium members also get exclusive off-market alerts! 🔐
                 </p>
               </div>
               <Switch
                 checked={preferences.property_alerts || false}
                 onCheckedChange={(checked) => handlePreferenceChange('property_alerts', checked)}
-                className="data-[state=checked]:bg-pickfirst-yellow data-[state=checked]:border-pickfirst-yellow"
               />
             </div>
 

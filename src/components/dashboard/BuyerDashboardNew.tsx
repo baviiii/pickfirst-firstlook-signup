@@ -7,6 +7,7 @@ import { PropertyComparisonTool } from '@/components/property/PropertyComparison
 import PropertyAlerts from '@/components/buyer/PropertyAlerts';
 import { BuyerLayout } from '@/components/layouts/BuyerLayout';
 import { NewUserSetupDialog } from '@/components/auth/NewUserSetupDialog';
+import { BuyerOnboardingModal } from '@/components/onboarding/BuyerOnboardingModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -65,6 +66,7 @@ const BuyerDashboardNewComponent = () => {
   const [loadingMetrics, setLoadingMetrics] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Fetch all data on component mount
   useEffect(() => {
@@ -98,12 +100,20 @@ const BuyerDashboardNewComponent = () => {
     fetchData();
   }, []);
 
-  // Show welcome toast once per session
+  // Show welcome toast or onboarding modal once per session
   useEffect(() => {
-    const hasShownWelcome = sessionStorage.getItem('hasShownWelcome');
+    // Use a ref to prevent multiple executions
+    let hasExecuted = false;
     
-    if (!hasShownWelcome && profile?.full_name) {
+    const hasShownWelcome = sessionStorage.getItem('hasShownWelcome');
+    const hasCompletedOnboarding = localStorage.getItem('hasCompletedOnboarding');
+    
+    if (!hasShownWelcome && profile?.full_name && !hasExecuted) {
+      hasExecuted = true;
       const firstName = profile.full_name.split(' ')[0] || 'Buyer';
+      
+      // Mark as shown immediately to prevent duplicates
+      sessionStorage.setItem('hasShownWelcome', 'true');
       
       // Check if user preferences exist to determine if this is a new user
       const checkNewUser = async () => {
@@ -113,29 +123,31 @@ const BuyerDashboardNewComponent = () => {
           .eq('user_id', profile.id)
           .single();
         
-        if (!preferences) {
-          // New user - show setup prompt
-          toast.info(`Welcome to PickFirst, ${firstName}! 🎉`, {
-            description: "Set up your preferences and enable property alerts to get started.",
-            duration: 5000,
-            action: {
-              label: "Set Preferences",
-              onClick: () => navigate('/buyer-account-settings?tab=search')
-            }
-          });
+        if (!preferences && !hasCompletedOnboarding) {
+          // New user - show onboarding modal
+          setTimeout(() => {
+            setShowOnboarding(true);
+          }, 500); // Small delay for better UX
         } else {
-          // Returning user
+          // Returning user - show welcome toast
           toast.success(`Welcome back, ${firstName}! 👋`, {
             description: "Ready to find your dream home?",
             duration: 3000,
+            dismissible: true,
+            closeButton: true,
           });
         }
       };
       
       checkNewUser();
-      sessionStorage.setItem('hasShownWelcome', 'true');
     }
   }, [profile, navigate]);
+
+  // Handle onboarding modal close
+  const handleOnboardingClose = () => {
+    setShowOnboarding(false);
+    localStorage.setItem('hasCompletedOnboarding', 'true');
+  };
 
   // Refresh appointments
   const refreshAppointments = useCallback(async () => {
@@ -198,6 +210,14 @@ const BuyerDashboardNewComponent = () => {
   return (
     <BuyerLayout>
       <NewUserSetupDialog />
+      
+      {/* Onboarding Modal for New Buyers */}
+      <BuyerOnboardingModal
+        isOpen={showOnboarding}
+        onClose={handleOnboardingClose}
+        userName={profile?.full_name?.split(' ')[0] || 'there'}
+      />
+      
       <div className="space-y-4 sm:space-y-6">
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -17,6 +17,8 @@ export const ResetPasswordForm = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [validatingToken, setValidatingToken] = useState(true);
+  const [hasValidToken, setHasValidToken] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordScore, setPasswordScore] = useState(0);
@@ -47,9 +49,19 @@ export const ResetPasswordForm = () => {
       const refreshToken = searchParams.get('refresh_token');
       const type = searchParams.get('type');
       
+      // Skip validation if we're not on the reset password page
+      // (component might be pre-loaded by React Router)
+      if (!accessToken && !refreshToken && !type) {
+        console.debug('Reset password form loaded but no reset params present, skipping validation');
+        setValidatingToken(false);
+        setHasValidToken(false);
+        return;
+      }
+      
       // Basic URL parameter validation
       if (!accessToken || !refreshToken || type !== 'recovery') {
-        handleInvalidToken();
+        setValidatingToken(false);
+        setHasValidToken(false);
         return;
       }
 
@@ -64,30 +76,20 @@ export const ResetPasswordForm = () => {
         if (error) {
           throw error;
         }
+        
+        // Token is valid!
+        setHasValidToken(true);
+        setValidatingToken(false);
       } catch (error) {
         console.error('Token validation error:', error);
-        handleInvalidToken();
+        setHasValidToken(false);
+        setValidatingToken(false);
       }
     };
 
     validateResetToken();
   }, [searchParams]);
 
-  const handleInvalidToken = () => {
-    auditService.log('anonymous', 'PASSWORD_RESET_TOKEN_INVALID', 'password_reset', {
-      newValues: {
-        reason: 'Invalid or expired reset token',
-        hasAccessToken: !!searchParams.get('access_token'),
-        hasRefreshToken: !!searchParams.get('refresh_token'),
-        type: searchParams.get('type')
-      }
-    });
-    
-    toast.error('Invalid or expired reset link. Please request a new one.', {
-      icon: <ShieldAlert className="w-5 h-5" />
-    });
-    navigate('/forgot-password');
-  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -202,6 +204,79 @@ export const ResetPasswordForm = () => {
     return 'Very Strong';
   };
 
+  // Show loading state while validating token
+  if (validatingToken) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
+          <CardDescription>
+            Validating your reset link...
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+          <p className="text-sm text-gray-500">Please wait...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show error state if token is invalid
+  if (!hasValidToken) {
+    return (
+      <Card className="w-full max-w-md mx-auto border-red-200">
+        <CardHeader className="space-y-1">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-6 w-6 text-red-500" />
+            <CardTitle className="text-2xl font-bold text-red-600">Invalid Reset Link</CardTitle>
+          </div>
+          <CardDescription className="text-red-600">
+            This password reset link is invalid or has expired.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h3 className="font-semibold text-red-800 mb-2">Why am I seeing this?</h3>
+            <ul className="text-sm text-red-700 space-y-1 list-disc list-inside">
+              <li>The reset link has expired (links are valid for 1 hour)</li>
+              <li>The link has already been used</li>
+              <li>The link was copied incorrectly</li>
+              <li>You don't have an account with us yet</li>
+            </ul>
+          </div>
+          
+          <div className="space-y-2">
+            <Button 
+              onClick={() => navigate('/forgot-password')}
+              className="w-full"
+              variant="default"
+            >
+              Request New Reset Link
+            </Button>
+            
+            <Button 
+              onClick={() => navigate('/auth')}
+              className="w-full"
+              variant="outline"
+            >
+              Back to Login
+            </Button>
+            
+            <Button 
+              onClick={() => navigate('/signup')}
+              className="w-full"
+              variant="ghost"
+            >
+              Don't have an account? Sign Up
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show the reset password form only if token is valid
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">

@@ -343,38 +343,63 @@ async function sendWeeklyDigestEmail(supabaseClient: any, digest: WeeklyDigest, 
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Weekly Property Digest - PickFirst</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Your Weekly Property Digest - PickFirst</title>
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-          .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
-          .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
-          .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-          .stat-number { font-size: 2em; font-weight: bold; color: #f59e0b; }
-          .stat-label { color: #6b7280; font-size: 0.9em; }
-          .featured-properties { margin: 30px 0; }
-          .property-card { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-          .property-title { font-weight: bold; color: #1f2937; margin-bottom: 10px; }
-          .property-details { color: #6b7280; font-size: 0.9em; }
-          .market-insights { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-          .trend { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #2d3748; background: #f7fafc; }
+          .email-wrapper { background: #f7fafc; padding: 40px 20px; }
+          .container { max-width: 680px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.08); }
+          .header { background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 50px 40px; text-align: center; }
+          .logo { width: 60px; height: 60px; background: #FFCC00; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; color: #1a1a1a; margin-bottom: 20px; }
+          .header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+          .header .subtitle { font-size: 16px; opacity: 0.9; }
+          .stats-section { padding: 40px; background: linear-gradient(to bottom, #fff 0%, #f8f9fa 100%); }
+          .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-top: 20px; }
+          .stat-card { background: white; padding: 24px; border-radius: 12px; text-align: center; border: 2px solid #f0f0f0; }
+          .stat-number { font-size: 36px; font-weight: 700; color: #FFCC00; display: block; margin-bottom: 8px; }
+          .stat-label { font-size: 14px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
+          .properties-section { padding: 40px; }
+          .section-title { font-size: 24px; font-weight: 700; margin-bottom: 24px; color: #1a202c; }
+          .property-card { background: white; border-radius: 16px; overflow: hidden; margin-bottom: 32px; border: 1px solid #e2e8f0; }
+          .property-image { width: 100%; height: 300px; object-fit: cover; display: block; }
+          .property-content { padding: 28px; }
+          .property-price { font-size: 28px; font-weight: 700; color: #1a202c; margin-bottom: 12px; }
+          .property-address { font-size: 18px; color: #4a5568; margin-bottom: 16px; font-weight: 500; }
+          .property-features { display: flex; gap: 20px; margin: 20px 0; padding: 16px 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+          .feature { font-size: 15px; color: #4a5568; }
+          .view-button { display: inline-block; background: linear-gradient(135deg, #FFCC00 0%, #FFB800 100%); color: #1a1a1a; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; margin-top: 16px; }
+          .insights-section { padding: 40px; background: #f8f9fa; }
+          .trend { display: inline-block; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
           .trend-up { background: #dcfce7; color: #166534; }
           .trend-down { background: #fee2e2; color: #991b1b; }
           .trend-stable { background: #f3f4f6; color: #374151; }
-          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 0.9em; }
+          .footer { background: #1a202c; color: white; padding: 40px; text-align: center; }
+          .footer-link { color: #FFCC00; text-decoration: none; margin: 0 16px; font-size: 14px; }
+          .footer-text { font-size: 13px; color: #a0aec0; margin-top: 20px; }
+          @media only screen and (max-width: 600px) {
+            .email-wrapper { padding: 20px 10px; }
+            .header { padding: 40px 24px; }
+            .header h1 { font-size: 24px; }
+            .properties-section, .stats-section { padding: 24px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .property-features { flex-wrap: wrap; }
+            .property-content { padding: 20px; }
+          }
         </style>
       </head>
       <body>
-        <div class="container">
-          <div class="header">
-            <h1>🏠 PickFirst Weekly Digest</h1>
-            <p>${digest.week_start} - ${digest.week_end}</p>
-          </div>
-          
-          <div class="content">
-            <h2>Hello ${userName}!</h2>
-            <p>Here's what's happening in the property market this week:</p>
+        <div class="email-wrapper">
+          <div class="container">
+            <div class="header">
+              <div class="logo">P</div>
+              <h1>Your Weekly Property Digest</h1>
+              <p class="subtitle">${digest.week_start} - ${digest.week_end}</p>
+            </div>
+            
+            <div class="stats-section">
+              <h2 style="font-size: 20px; margin-bottom: 8px;">Hello ${userName}!</h2>
+              <p style="color: #718096;">Here's what's happening in the property market this week</p>
             
             <div class="stats-grid">
               <div class="stat-card">
@@ -395,53 +420,55 @@ async function sendWeeklyDigestEmail(supabaseClient: any, digest: WeeklyDigest, 
               </div>
             </div>
             
-            <div class="market-insights">
-              <h3>📊 Market Insights</h3>
-              <p><strong>Price Trend:</strong> 
+            </div>
+            
+            <div class="insights-section">
+              <h2 class="section-title">📊 Market Insights</h2>
+              <p style="margin-bottom: 12px; font-size: 15px;"><strong>Price Trend:</strong> 
                 <span class="trend trend-${digest.market_insights.price_trend}">
-                  ${digest.market_insights.price_trend.toUpperCase()}
+                  ${digest.market_insights.price_trend}
                 </span>
               </p>
-              <p><strong>Inventory Trend:</strong> 
+              <p style="margin-bottom: 12px; font-size: 15px;"><strong>Inventory:</strong> 
                 <span class="trend trend-${digest.market_insights.inventory_trend}">
-                  ${digest.market_insights.inventory_trend.toUpperCase()}
+                  ${digest.market_insights.inventory_trend}
                 </span>
               </p>
-              <p><strong>Demand Trend:</strong> 
+              <p style="font-size: 15px;"><strong>Demand:</strong> 
                 <span class="trend trend-${digest.market_insights.demand_trend}">
-                  ${digest.market_insights.demand_trend.toUpperCase()}
+                  ${digest.market_insights.demand_trend}
                 </span>
               </p>
             </div>
             
-            <div class="featured-properties">
-              <h3>⭐ New Properties This Week</h3>
+            
+            <div class="properties-section">
+              <h2 class="section-title">🏠 New Properties This Week</h2>
               ${digest.featured_properties.length > 0 ? digest.featured_properties.map(property => `
-                <div class="property-card" style="background: white; padding: 0; margin: 15px 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <div class="property-card">
                   ${property.images?.[0] ? `
-                    <div style="position: relative; width: 100%; height: 0; padding-bottom: 60%; overflow: hidden; background: #f0f0f0;">
-                      <img src="${property.images[0]}" alt="${property.title}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" />
-                    </div>
+                    <img src="${property.images[0]}" alt="${property.title}" class="property-image" />
                   ` : ''}
-                  <div style="padding: 20px;">
-                    <div class="property-title" style="font-weight: bold; color: #1f2937; margin-bottom: 10px; font-size: 18px;">${property.title}</div>
-                    <div class="property-details" style="color: #6b7280; font-size: 0.9em; line-height: 1.6;">
-                      📍 ${property.city}, ${property.state}<br/>
-                      💰 $${property.price.toLocaleString()}<br/>
-                      🏠 ${property.bedrooms} bed • ${property.bathrooms} bath • ${property.square_feet.toLocaleString()} sq ft
+                  <div class="property-content">
+                    <div class="property-price">$${property.price.toLocaleString()}</div>
+                    <div class="property-address">${property.city}, ${property.state}</div>
+                    <div class="property-features">
+                      <span class="feature">🛏️ ${property.bedrooms} bed</span>
+                      <span class="feature">🛁 ${property.bathrooms} bath</span>
+                      <span class="feature">📐 ${property.square_feet.toLocaleString()} sq ft</span>
                     </div>
-                    <a href="https://baviiii.github.io/pickfirst-firstlook-signup/property/${property.id}" 
-                       style="display: inline-block; margin-top: 15px; padding: 10px 20px; background: #fbbf24; color: #000; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                    <a href="https://baviiii.github.io/pickfirst-firstlook-signup/property/${property.id}" class="view-button">
                       View Property
                     </a>
                   </div>
                 </div>
-              `).join('') : '<p style="text-align: center; color: #6b7280; padding: 30px;">No new properties this week. Check back soon!</p>'}
+              `).join('') : '<p style="text-align: center; color: #718096; padding: 40px;">No new properties this week. Check back soon!</p>'}
             </div>
             
             <div class="footer">
-              <p>Thank you for using PickFirst! 🏠</p>
-              <p>Visit <a href="https://pickfirst.com">pickfirst.com</a> to browse more properties.</p>
+              <p style="font-size: 16px; margin-bottom: 16px;">Thank you for using PickFirst! 🏠</p>
+              <a href="https://pickfirst.com" class="footer-link">Visit pickfirst.com</a>
+              <p class="footer-text">You're receiving this because you signed up for weekly property updates.</p>
             </div>
           </div>
         </div>

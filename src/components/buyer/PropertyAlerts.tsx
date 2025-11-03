@@ -17,7 +17,7 @@ interface PropertyAlertsProps {
 
 const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
   const { profile } = useAuth();
-  const { getPropertyAlertsLimit, isFeatureEnabled } = useSubscription();
+  const { isFeatureEnabled } = useSubscription();
   const [preferences, setPreferences] = useState<BuyerPreferences | null>(null);
   const [alertHistory, setAlertHistory] = useState<PropertyAlert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,9 +162,8 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
     );
   }
 
-  const alertsLimit = getPropertyAlertsLimit();
-  const hasBasicAlerts = isFeatureEnabled('property_alerts_basic');
-  const hasUnlimitedAlerts = isFeatureEnabled('property_alerts_unlimited');
+  // Property alerts are unlimited for all users
+  // Only off-market alerts require premium subscription
 
   return (
     <FeatureGate feature="property_alerts_unlimited">

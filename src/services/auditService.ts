@@ -71,6 +71,20 @@ class AuditService {
     } = {}
   ): Promise<void> {
     try {
+      // Skip logging if userId is 'anonymous' or invalid UUID
+      // Database requires valid UUID for user_id field
+      if (!userId || userId === 'anonymous' || userId === 'unknown') {
+        console.debug('Skipping audit log for anonymous user:', action, tableName);
+        return;
+      }
+
+      // Validate UUID format (basic check)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(userId)) {
+        console.debug('Skipping audit log for invalid user ID format:', userId, action, tableName);
+        return;
+      }
+
       // Get real IP address and device info for enhanced security
       let realIpAddress = options.ipAddress;
       let realUserAgent = options.userAgent;
@@ -109,23 +123,7 @@ class AuditService {
       }
     } catch (error) {
       console.error('Error creating audit log:', error);
-      // Fallback to minimal logging
-      const fallbackLog: AuditLog = {
-        user_id: userId,
-        action,
-        table_name: tableName,
-        record_id: options.recordId,
-        old_values: options.oldValues,
-        new_values: options.newValues,
-        ip_address: 'audit-error',
-        user_agent: 'unknown',
-      };
-      
-      this.queue.push(fallbackLog);
-      
-      if (this.queue.length >= this.batchSize) {
-        await this.flush();
-      }
+      // Don't re-queue on error to avoid infinite loops
     }
   }
 

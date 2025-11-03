@@ -88,10 +88,10 @@ class IPTrackingService {
         this.cacheExpiry = Date.now() + this.CACHE_DURATION;
         return ipData;
       } else {
-        console.error('Client-IP function error:', response.error);
+        // Client-IP function error - silently fallback
       }
     } catch (error) {
-      // Fallback
+      // Fallback to alternative method
     }
 
     try {
@@ -118,10 +118,10 @@ class IPTrackingService {
       this.cacheExpiry = Date.now() + this.CACHE_DURATION;
       return ipData;
     } catch (error) {
-      console.error('Fallback IP detection also failed:', error);
+      // Fallback IP detection failed
     }
 
-    console.warn('All IP detection methods failed, returning null');
+    // All IP detection methods failed
     return null;
   }
 
@@ -134,7 +134,7 @@ class IPTrackingService {
       
       // Provide fallback values if getClientInfo fails
       if (!clientInfo) {
-        console.warn('Could not get client IP info, using fallback values');
+        // Using fallback values for client info
         clientInfo = {
           ip: 'unknown',
           userAgent: navigator.userAgent || 'unknown',
@@ -174,7 +174,7 @@ class IPTrackingService {
         throw error;
       }
     } catch (error) {
-      console.error('Error logging login activity:', error);
+      // Error logging login activity - silently fail
     }
   }
 
@@ -211,10 +211,10 @@ class IPTrackingService {
         .insert(activityData);
 
       if (error) {
-        console.error('Failed to log user activity:', error);
+        // Failed to log user activity
       }
     } catch (error) {
-      console.error('Error logging user activity:', error);
+      // Error logging user activity
     }
   }
 
@@ -231,13 +231,11 @@ class IPTrackingService {
         .limit(limit);
 
       if (error) {
-        console.error('Failed to get login history:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error getting login history:', error);
       return [];
     }
   }
@@ -254,13 +252,11 @@ class IPTrackingService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Failed to get suspicious logins:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error getting suspicious logins:', error);
       return [];
     }
   }
@@ -278,14 +274,12 @@ class IPTrackingService {
         .gte('created_at', new Date(Date.now() - hours * 60 * 60 * 1000).toISOString());
 
       if (error) {
-        console.error('Failed to check IP suspicion:', error);
         return false;
       }
 
       // Consider IP suspicious if more than 5 failed attempts in the time window
       return (data?.length || 0) > 5;
     } catch (error) {
-      console.error('Error checking IP suspicion:', error);
       return false;
     }
   }
@@ -304,13 +298,11 @@ class IPTrackingService {
         .limit(limit);
 
       if (error) {
-        console.error('Failed to get login locations:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error getting login locations:', error);
       return [];
     }
   }
@@ -324,7 +316,6 @@ class IPTrackingService {
       const data = await response.json();
       return data.ip || 'unknown';
     } catch (error) {
-      console.error('Failed to get fallback IP:', error);
       return 'unknown';
     }
   }

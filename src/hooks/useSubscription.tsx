@@ -218,9 +218,7 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
           'property_alerts_unlimited': { free: false, basic: false, premium: true }, // Unlimited alerts
           
           // === COMMUNICATION ===
-          'agent_messaging': { free: true, basic: true, premium: true },
-          'message_history_30days': { free: true, basic: true, premium: true },
-          'message_history_unlimited': { free: false, basic: false, premium: true },
+          'agent_messaging': { free: false, basic: false, premium: true }, // Premium only
           'priority_support': { free: false, basic: false, premium: true },
           
           // === PREMIUM FEATURES ===
@@ -342,9 +340,8 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
   };
 
   const getMessageHistoryDays = (): number => {
-    if (isFeatureEnabled('message_history_unlimited')) return -1; // Unlimited
-    if (isFeatureEnabled('message_history_30days')) return 30;
-    return 0; // No message history
+    // Message history is unlimited for all premium users with messaging access
+    return subscriptionTier === 'premium' ? -1 : 0;
   };
 
   // New helper functions for new subscription features

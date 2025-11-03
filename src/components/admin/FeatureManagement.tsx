@@ -60,9 +60,7 @@ export const FeatureManagement = () => {
       'property_alerts_unlimited': 'Unlimited customized property alerts',
       
       // Communication
-      'agent_messaging': 'Send messages to agents about properties',
-      'message_history_30days': 'Access to 30 days of message history',
-      'message_history_unlimited': 'Access to complete message history',
+      'agent_messaging': 'Chat with agents about properties (Premium only)',
       'priority_support': 'Get priority response from agents',
       
       // Premium Features
