@@ -59,13 +59,33 @@ export const ProtectedRoute = ({
     );
   }
 
-  // If not authenticated, don't render children (redirect will happen in useEffect)
+  // If not authenticated, show loading (redirect will happen in useEffect)
+  // NEVER render the protected content for unauthenticated users
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-black">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-pickfirst-yellow mx-auto mb-4" />
+          <p className="text-white/70">Redirecting...</p>
+        </div>
+      </div>
+    );
   }
 
-  // If role is required but user doesn't have permission, don't render children
-  if (requiredRole && profile) {
+  // If role is required, check permissions
+  if (requiredRole) {
+    // Wait for profile to load
+    if (!profile) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-black">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-pickfirst-yellow mx-auto mb-4" />
+            <p className="text-white/70">Loading profile...</p>
+          </div>
+        </div>
+      );
+    }
+
     const userRole = profile.role;
     const hasPermission = 
       userRole === 'super_admin' || 
@@ -73,7 +93,14 @@ export const ProtectedRoute = ({
       (requiredRole === 'buyer' && userRole === 'agent');
 
     if (!hasPermission) {
-      return null;
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-black">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-pickfirst-yellow mx-auto mb-4" />
+            <p className="text-white/70">Redirecting...</p>
+          </div>
+        </div>
+      );
     }
   }
 
