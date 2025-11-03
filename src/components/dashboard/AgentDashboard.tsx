@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { AgentLayout } from '@/components/layouts/AgentLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { Home, Users, MessageSquare, Settings, PlusCircle, BarChart3, Calendar, Phone, FileText, Edit3, Trash2, Eye, UserPlus, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -44,7 +45,8 @@ export const AgentDashboard = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+    <AgentLayout>
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -291,5 +293,6 @@ export const AgentDashboard = () => {
       {/* Agent Specialties */}
       <AgentSpecialtyManager />
     </div>
+    </AgentLayout>
   );
 };

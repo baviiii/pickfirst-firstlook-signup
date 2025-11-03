@@ -288,6 +288,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
+      // Check if user exists with this email
+      const { data: profiles, error: checkError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', emailValidation.sanitizedValue!)
+        .limit(1);
+
+      if (checkError || !profiles || profiles.length === 0) {
+        const notFoundError = new Error('No account found with this email address. Please check your email or sign up.');
+        setError(prev => ({ ...prev, forgotPassword: notFoundError }));
+        
+        // Log failed attempt
+        await ipTrackingService.logLoginActivity({
+          email: emailValidation.sanitizedValue!,
+          login_type: 'forgot_password',
+          success: false,
+          failure_reason: 'Account not found'
+        });
+        
+        return { error: notFoundError };
+      }
+
       const redirectUrl = `${window.location.origin}/reset-password`;
       
       const { error } = await supabase.auth.resetPasswordForEmail(emailValidation.sanitizedValue!, {

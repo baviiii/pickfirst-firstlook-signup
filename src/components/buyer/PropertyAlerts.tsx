@@ -177,9 +177,10 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
               Property Alert Settings
             </CardTitle>
             <CardDescription className="text-gray-300">
-              Get notified when new properties match your preferences
-              <span className="ml-2 text-yellow-400">
-                (Premium Feature - Unlimited Alerts)
+              Get notified when new on-market properties match your preferences.
+              <br />
+              <span className="text-yellow-400 font-medium mt-1 inline-block">
+                🔐 Premium subscribers get exclusive OFF-MARKET property alerts
               </span>
             </CardDescription>
           </CardHeader>
@@ -192,12 +193,15 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
                   <BellOff className="h-5 w-5 text-gray-400" />
                 )}
                 <div>
-                  <h4 className="text-white font-medium">Property Alerts</h4>
+                  <h4 className="text-white font-medium">On-Market Property Alerts</h4>
                   <p className="text-sm text-gray-400">
                     {preferences?.property_alerts 
-                      ? 'You will receive email notifications for matching properties'
-                      : 'Enable to receive notifications for new matching properties'
+                      ? 'You will receive email alerts for new on-market properties matching your criteria'
+                      : 'Enable to receive alerts for new on-market properties'
                     }
+                  </p>
+                  <p className="text-xs text-yellow-400/70 mt-1">
+                    Premium members also receive exclusive off-market alerts
                   </p>
                 </div>
               </div>

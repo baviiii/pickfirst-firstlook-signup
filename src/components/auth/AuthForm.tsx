@@ -91,14 +91,6 @@ export const AuthForm = () => {
         toast.error(error.message);
         setLoading(false);
       } else {
-        // Wait for profile creation and ensure role is set correctly
-        setTimeout(async () => {
-          const updateResult = await updateProfile({ role: validated.userType });
-          if (updateResult.error) {
-            console.error('Failed to update profile role:', updateResult.error);
-          }
-        }, 2000);
-        
         toast.success('Account created! Please check your email to verify your account before signing in.', {
           duration: 5000,
         });

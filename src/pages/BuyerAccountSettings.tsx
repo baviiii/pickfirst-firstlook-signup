@@ -812,7 +812,7 @@ const BuyerAccountSettingsPage = () => {
                             )}
                           </div>
                           <p className="text-sm text-gray-400">
-                            {key === 'propertyAlerts' && 'Property alerts for matching properties (managed in dashboard)'}
+                            {key === 'propertyAlerts' && 'Get email alerts for new on-market properties matching your criteria. Premium members also receive exclusive off-market alerts! 🔐'}
                             {key === 'priceChanges' && 'Alerts when saved properties change price'}
                             {key === 'marketUpdates' && 'Weekly market trends and insights'}
                             {key === 'agentMessages' && 'Notifications for new messages from agents'}
@@ -865,12 +865,12 @@ const BuyerAccountSettingsPage = () => {
                     </h4>
                     <div className="space-y-2 text-sm text-gray-300">
                       <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">Free</Badge>
-                        <span>Basic property alerts and agent messages</span>
+                        <Badge variant="secondary" className="text-xs">All Users</Badge>
+                        <span>On-market property alerts and agent messages</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-xs text-pickfirst-yellow border-pickfirst-yellow">Premium</Badge>
-                        <span>Enhanced property matching and location-based market insights</span>
+                        <span>Exclusive off-market property alerts and enhanced insights</span>
                       </div>
                     </div>
                   </div>

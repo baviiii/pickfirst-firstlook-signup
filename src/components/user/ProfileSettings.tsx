@@ -379,16 +379,6 @@ export const ProfileSettings = () => {
                     onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, marketingEmails: checked }))}
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-white">Property Alerts</Label>
-                    <p className="text-sm text-gray-400">Get notified about new properties matching your criteria</p>
-                  </div>
-                  <Switch
-                    checked={notifications.propertyAlerts}
-                    onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, propertyAlerts: checked }))}
-                  />
-                </div>
               </div>
               <Button 
                 onClick={handleSaveNotifications} 

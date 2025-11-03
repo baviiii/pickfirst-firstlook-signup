@@ -6,6 +6,7 @@ import { PersonalizedPropertyRecommendations } from '@/components/buyer/Personal
 import { PropertyComparisonTool } from '@/components/property/PropertyComparisonTool';
 import PropertyAlerts from '@/components/buyer/PropertyAlerts';
 import { BuyerLayout } from '@/components/layouts/BuyerLayout';
+import { NewUserSetupDialog } from '@/components/auth/NewUserSetupDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -25,6 +26,7 @@ import { appointmentService } from '@/services/appointmentService';
 import { messageService } from '@/services/messageService';
 import PropertyAlertService, { PropertyAlert } from '@/services/propertyAlertService';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 type AppointmentStatus = 'scheduled' | 'confirmed' | 'declined' | 'completed' | 'cancelled' | 'no_show';
 
@@ -96,14 +98,44 @@ const BuyerDashboardNewComponent = () => {
     fetchData();
   }, []);
 
-  // Show welcome toast on mount
+  // Show welcome toast once per session
   useEffect(() => {
-    const firstName = profile?.full_name?.split(' ')[0] || 'Buyer';
-    toast.success(`Welcome back, ${firstName}! 👋`, {
-      description: "Ready to find your dream home?",
-      duration: 3000,
-    });
-  }, [profile]);
+    const hasShownWelcome = sessionStorage.getItem('hasShownWelcome');
+    
+    if (!hasShownWelcome && profile?.full_name) {
+      const firstName = profile.full_name.split(' ')[0] || 'Buyer';
+      
+      // Check if user preferences exist to determine if this is a new user
+      const checkNewUser = async () => {
+        const { data: preferences } = await supabase
+          .from('user_preferences')
+          .select('id')
+          .eq('user_id', profile.id)
+          .single();
+        
+        if (!preferences) {
+          // New user - show setup prompt
+          toast.info(`Welcome to PickFirst, ${firstName}! 🎉`, {
+            description: "Set up your preferences and enable property alerts to get started.",
+            duration: 5000,
+            action: {
+              label: "Set Preferences",
+              onClick: () => navigate('/buyer-account-settings?tab=search')
+            }
+          });
+        } else {
+          // Returning user
+          toast.success(`Welcome back, ${firstName}! 👋`, {
+            description: "Ready to find your dream home?",
+            duration: 3000,
+          });
+        }
+      };
+      
+      checkNewUser();
+      sessionStorage.setItem('hasShownWelcome', 'true');
+    }
+  }, [profile, navigate]);
 
   // Refresh appointments
   const refreshAppointments = useCallback(async () => {
@@ -165,6 +197,7 @@ const BuyerDashboardNewComponent = () => {
 
   return (
     <BuyerLayout>
+      <NewUserSetupDialog />
       <div className="space-y-4 sm:space-y-6">
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
