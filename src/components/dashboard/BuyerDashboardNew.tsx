@@ -102,18 +102,11 @@ const BuyerDashboardNewComponent = () => {
 
   // Show welcome toast or onboarding modal once per session
   useEffect(() => {
-    // Use a ref to prevent multiple executions
-    let hasExecuted = false;
-    
     const hasShownWelcome = sessionStorage.getItem('hasShownWelcome');
     const hasCompletedOnboarding = localStorage.getItem('hasCompletedOnboarding');
     
-    if (!hasShownWelcome && profile?.full_name && !hasExecuted) {
-      hasExecuted = true;
+    if (!hasShownWelcome && profile?.full_name) {
       const firstName = profile.full_name.split(' ')[0] || 'Buyer';
-      
-      // Mark as shown immediately to prevent duplicates
-      sessionStorage.setItem('hasShownWelcome', 'true');
       
       // Check if user preferences exist to determine if this is a new user
       const checkNewUser = async () => {
@@ -123,25 +116,30 @@ const BuyerDashboardNewComponent = () => {
           .eq('user_id', profile.id)
           .single();
         
+        // Mark as shown AFTER checking preferences
+        sessionStorage.setItem('hasShownWelcome', 'true');
+        
         if (!preferences && !hasCompletedOnboarding) {
           // New user - show onboarding modal
           setTimeout(() => {
             setShowOnboarding(true);
           }, 500); // Small delay for better UX
         } else {
-          // Returning user - show welcome toast
+          // Returning user - show welcome toast with close button
           toast.success(`Welcome back, ${firstName}! 👋`, {
             description: "Ready to find your dream home?",
             duration: 3000,
-            dismissible: true,
-            closeButton: true,
+            action: {
+              label: "×",
+              onClick: () => toast.dismiss(),
+            },
           });
         }
       };
       
       checkNewUser();
     }
-  }, [profile, navigate]);
+  }, [profile]);
 
   // Handle onboarding modal close
   const handleOnboardingClose = () => {
