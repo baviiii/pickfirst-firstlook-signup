@@ -1447,6 +1447,169 @@ PickFirst Real Estate Team`,
         ${getEmailFooter()}
       </div>
     `
+  }),
+
+  // Property Listing Workflow Email Templates
+  propertyListingSubmitted: (data: any) => ({
+    subject: `Property Listing Submitted: ${data.propertyTitle}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+        ${getEmailHeader()}
+        <div style="padding: 40px 20px;">
+          <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">🏠 Property Listing Submitted!</h1>
+          <p style="color: ${BRAND_COLORS.text}; font-size: 16px;">Hi ${data.agentName},</p>
+          
+          <p style="color: ${BRAND_COLORS.text}; margin-bottom: 25px;">
+            Great news! Your property listing has been successfully submitted and is now awaiting admin approval.
+          </p>
+          
+          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
+            <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 18px;">📋 Property Details</h3>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Title:</strong> ${data.propertyTitle}</p>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Address:</strong> ${data.propertyAddress}</p>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Price:</strong> $${data.propertyPrice?.toLocaleString()}</p>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Type:</strong> ${data.propertyType}</p>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Submitted:</strong> ${data.submissionDate}</p>
+          </div>
+          
+          <div style="background: #E0F2FE; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.info};">
+            <h4 style="color: ${BRAND_COLORS.text}; margin: 0 0 10px 0;">⏳ What happens next?</h4>
+            <ul style="color: ${BRAND_COLORS.text}; margin: 0; padding-left: 20px;">
+              <li>Our admin team will review your listing within 24 hours</li>
+              <li>You'll receive an email notification once it's approved</li>
+              <li>Your property will then go live on our platform</li>
+              <li>Potential buyers will be able to view and inquire about your property</li>
+            </ul>
+          </div>
+          
+          <p style="color: ${BRAND_COLORS.text};">
+            You can track the status of your listing in your agent dashboard. If you have any questions, feel free to contact our support team.
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            ${getButton(data.dashboardUrl || 'https://pickfirst.com.au/dashboard', 'View My Listings')}
+          </div>
+          
+          <p style="color: ${BRAND_COLORS.textLight}; font-size: 14px; text-align: center;">
+            Thank you for choosing PickFirst Real Estate!
+          </p>
+        </div>
+        ${getEmailFooter()}
+      </div>
+    `
+  }),
+
+  propertyListingApproved: (data: any) => ({
+    subject: `🎉 Property Approved: ${data.propertyTitle} is Now Live!`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+        ${getEmailHeader()}
+        <div style="padding: 40px 20px;">
+          <h1 style="color: ${BRAND_COLORS.success}; margin: 0 0 20px 0;">🎉 Congratulations! Your Property is Live!</h1>
+          <p style="color: ${BRAND_COLORS.text}; font-size: 16px;">Hi ${data.agentName},</p>
+          
+          <p style="color: ${BRAND_COLORS.text}; margin-bottom: 25px;">
+            Excellent news! Your property listing has been approved and is now live on the PickFirst platform. Potential buyers can now view and inquire about your property.
+          </p>
+          
+          <div style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 25px; border-radius: 12px; margin: 25px 0; color: white; text-align: center;">
+            <h3 style="color: white; margin: 0 0 10px 0; font-size: 20px;">✅ APPROVED & LIVE</h3>
+            <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 14px;">
+              Approved on ${data.approvalDate} by ${data.approvedBy}
+            </p>
+          </div>
+          
+          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
+            <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 18px;">🏠 Your Live Property</h3>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Title:</strong> ${data.propertyTitle}</p>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Address:</strong> ${data.propertyAddress}</p>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Price:</strong> $${data.propertyPrice?.toLocaleString()}</p>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Type:</strong> ${data.propertyType}</p>
+            ${data.propertyImages && data.propertyImages.length > 0 ? `
+              <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Images:</strong> ${data.propertyImages.length} photos uploaded</p>
+            ` : ''}
+          </div>
+          
+          <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.warning};">
+            <h4 style="color: ${BRAND_COLORS.text}; margin: 0 0 10px 0;">🚀 What you can expect now:</h4>
+            <ul style="color: ${BRAND_COLORS.text}; margin: 0; padding-left: 20px;">
+              <li><strong>Visibility:</strong> Your property is now searchable by all buyers</li>
+              <li><strong>Inquiries:</strong> You'll receive email notifications for new inquiries</li>
+              <li><strong>Analytics:</strong> Track views and engagement in your dashboard</li>
+              <li><strong>Alerts:</strong> Buyers with matching criteria will be notified</li>
+            </ul>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            ${getButton(data.propertyUrl || 'https://pickfirst.com.au/properties', 'View Live Property', true)}
+            ${getButton(data.dashboardUrl || 'https://pickfirst.com.au/dashboard', 'Manage Listings', false)}
+          </div>
+          
+          <p style="color: ${BRAND_COLORS.text}; text-align: center;">
+            <strong>Pro Tip:</strong> Share your property link on social media and with your network to maximize exposure!
+          </p>
+          
+          <p style="color: ${BRAND_COLORS.textLight}; font-size: 14px; text-align: center;">
+            Best of luck with your sale! 🏡
+          </p>
+        </div>
+        ${getEmailFooter()}
+      </div>
+    `
+  }),
+
+  propertyListingRejected: (data: any) => ({
+    subject: `Property Listing Requires Updates: ${data.propertyTitle}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+        ${getEmailHeader()}
+        <div style="padding: 40px 20px;">
+          <h1 style="color: ${BRAND_COLORS.warning}; margin: 0 0 20px 0;">📝 Property Listing Needs Updates</h1>
+          <p style="color: ${BRAND_COLORS.text}; font-size: 16px;">Hi ${data.agentName},</p>
+          
+          <p style="color: ${BRAND_COLORS.text}; margin-bottom: 25px;">
+            We've reviewed your property listing and need some updates before we can approve it for publication.
+          </p>
+          
+          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
+            <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 18px;">🏠 Property Details</h3>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Title:</strong> ${data.propertyTitle}</p>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Address:</strong> ${data.propertyAddress}</p>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Reviewed:</strong> ${data.reviewDate}</p>
+          </div>
+          
+          <div style="background: #FEF2F2; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.error};">
+            <h4 style="color: ${BRAND_COLORS.error}; margin: 0 0 10px 0;">❌ Reason for Update Request:</h4>
+            <p style="color: ${BRAND_COLORS.text}; margin: 0; font-size: 15px; line-height: 1.6;">
+              ${data.rejectionReason}
+            </p>
+          </div>
+          
+          <div style="background: #E0F2FE; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.info};">
+            <h4 style="color: ${BRAND_COLORS.text}; margin: 0 0 10px 0;">💡 Next Steps:</h4>
+            <ul style="color: ${BRAND_COLORS.text}; margin: 0; padding-left: 20px;">
+              <li>Review the feedback above</li>
+              <li>Edit your listing to address the concerns</li>
+              <li>Resubmit for approval</li>
+              <li>We'll review it again within 24 hours</li>
+            </ul>
+          </div>
+          
+          <p style="color: ${BRAND_COLORS.text};">
+            Don't worry - this is a common part of the process to ensure all listings meet our quality standards. Once updated, your property will be approved quickly.
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            ${getButton(data.editUrl || 'https://pickfirst.com.au/dashboard', 'Edit My Listing')}
+          </div>
+          
+          <p style="color: ${BRAND_COLORS.textLight}; font-size: 14px; text-align: center;">
+            Need help? Contact our support team - we're here to help you succeed!
+          </p>
+        </div>
+        ${getEmailFooter()}
+      </div>
+    `
   })
 };
 
@@ -1479,7 +1642,8 @@ const handler = async (req: Request) => {
       'messageNotification', 'leadAssignment', 'propertyViewing', 'followUp',
       'subscriptionUpgrade', 'subscriptionExpiry', 'profileUpdate',
       'subscriptionWelcome', 'subscriptionChanged', 'subscriptionCancelled',
-      'propertyAlert', 'agentInquiryNotification' // Added for inbox delivery
+      'propertyAlert', 'agentInquiryNotification', // Added for inbox delivery
+      'propertyListingSubmitted', 'propertyListingApproved', 'propertyListingRejected' // Property workflow emails
     ];
     
     const isTransactional = transactionalTemplates.includes(template);

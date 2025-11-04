@@ -306,7 +306,7 @@ export class PropertyService {
         .select()
         .single();
 
-      // Log the property creation action
+      // Log the property creation action and send email notification
       if (!error && data) {
         await auditService.log(user.id, 'CREATE', 'property_listings', {
           recordId: data.id,
@@ -323,6 +323,38 @@ export class PropertyService {
             created_at: data.created_at
           }
         });
+
+        // Send email notification to agent about successful submission
+        try {
+          // Get agent profile for email
+          const { data: agentProfile } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', user.id)
+            .single();
+
+          if (agentProfile?.email) {
+            // Send property listing submitted email
+            await supabase.functions.invoke('send-email', {
+              body: {
+                to: agentProfile.email,
+                template: 'propertyListingSubmitted',
+                data: {
+                  agentName: agentProfile.full_name || 'Agent',
+                  propertyTitle: data.title,
+                  propertyAddress: `${data.address}, ${data.city}, ${data.state}`,
+                  propertyPrice: data.price,
+                  propertyType: data.property_type?.replace(/\b\w/g, (l: string) => l.toUpperCase()),
+                  submissionDate: new Date(data.created_at).toLocaleDateString(),
+                  dashboardUrl: `${window.location.origin}/dashboard`
+                }
+              }
+            });
+          }
+        } catch (emailError) {
+          console.error('Failed to send property submission email:', emailError);
+          // Don't fail the property creation if email fails
+        }
       } else if (error) {
         // Log property creation failure
         await auditService.log(user.id, 'CREATE_FAILED', 'property_listings', {
@@ -804,6 +836,41 @@ export class PropertyService {
         // Don't fail the approval if alert triggering fails
       }
 
+      // Send approval email notification to the agent
+      try {
+        // Get agent profile for email
+        const { data: agentProfile } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', updatedListing.agent_id)
+          .single();
+
+        if (agentProfile?.email) {
+          // Send property listing approved email
+          await supabase.functions.invoke('send-email', {
+            body: {
+              to: agentProfile.email,
+              template: 'propertyListingApproved',
+              data: {
+                agentName: agentProfile.full_name || 'Agent',
+                propertyTitle: updatedListing.title,
+                propertyAddress: `${updatedListing.address}, ${updatedListing.city}, ${updatedListing.state}`,
+                propertyPrice: updatedListing.price,
+                propertyType: updatedListing.property_type?.replace(/\b\w/g, (l: string) => l.toUpperCase()),
+                propertyImages: updatedListing.images || [],
+                approvalDate: new Date(updatedListing.approved_at!).toLocaleDateString(),
+                approvedBy: 'Admin Team',
+                propertyUrl: `${typeof window !== 'undefined' ? window.location.origin : 'https://pickfirst.com.au'}/property/${id}`,
+                dashboardUrl: `${typeof window !== 'undefined' ? window.location.origin : 'https://pickfirst.com.au'}/dashboard`
+              }
+            }
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send property approval email:', emailError);
+        // Don't fail the approval if email fails
+      }
+
       return { data: updatedListing, error: null };
     } catch (error) {
       return { data: null, error };
@@ -872,6 +939,37 @@ export class PropertyService {
         });
       } catch (auditError) {
         // Don't fail the rejection if audit logging fails
+      }
+
+      // Send rejection email notification to the agent
+      try {
+        // Get agent profile for email
+        const { data: agentProfile } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', updatedListing.agent_id)
+          .single();
+
+        if (agentProfile?.email) {
+          // Send property listing rejected email
+          await supabase.functions.invoke('send-email', {
+            body: {
+              to: agentProfile.email,
+              template: 'propertyListingRejected',
+              data: {
+                agentName: agentProfile.full_name || 'Agent',
+                propertyTitle: updatedListing.title,
+                propertyAddress: `${updatedListing.address}, ${updatedListing.city}, ${updatedListing.state}`,
+                rejectionReason: reason,
+                reviewDate: new Date().toLocaleDateString(),
+                editUrl: `${typeof window !== 'undefined' ? window.location.origin : 'https://pickfirst.com.au'}/dashboard`
+              }
+            }
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send property rejection email:', emailError);
+        // Don't fail the rejection if email fails
       }
 
       return { data: updatedListing, error: null };
