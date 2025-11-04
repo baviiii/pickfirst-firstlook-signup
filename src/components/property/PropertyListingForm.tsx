@@ -205,25 +205,19 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
   }, []);
 
   const handleInputChange = (field: keyof CreatePropertyListingData, value: any) => {
-    // Sanitize text inputs
+    // Allow free typing - sanitization will happen on submit
+    // Only validate email format as user types (but don't block input)
     let sanitizedValue = value;
-    if (typeof value === 'string' && !['contact_email', 'contact_phone'].includes(field)) {
-      const sanitizationResult = InputSanitizer.sanitizeText(value, 10000);
-      if (!sanitizationResult.isValid) {
-        toast.error(sanitizationResult.error || 'Invalid input');
-        return;
-      }
-      sanitizedValue = sanitizationResult.sanitizedValue;
-    }
     
-    // Validate email
-    if (field === 'contact_email' && value) {
-      const emailValidation = InputSanitizer.validateEmail(value);
-      if (!emailValidation.isValid) {
-        toast.error(emailValidation.error || 'Invalid email');
-        return;
+    // For email, allow typing but don't block invalid formats during typing
+    // Full validation happens on submit
+    if (field === 'contact_email' && value && typeof value === 'string') {
+      // Only sanitize email if it looks complete (contains @)
+      if (value.includes('@')) {
+        const emailValidation = InputSanitizer.validateEmail(value);
+        // Don't block input, just update the value
+        sanitizedValue = emailValidation.isValid ? emailValidation.sanitizedValue : value;
       }
-      sanitizedValue = emailValidation.sanitizedValue;
     }
     
     setFormData(prev => ({ ...prev, [field]: sanitizedValue }));
@@ -460,16 +454,49 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
     setLoading(true);
 
     try {
+      // Sanitize all text fields before submission
+      const sanitizedFormData: any = { ...formData };
+      
+      // Sanitize string fields (preserve spaces, but clean dangerous content)
+      const textFields: (keyof CreatePropertyListingData)[] = [
+        'title', 'description', 'address', 'city', 'state', 'zip_code', 
+        'showing_instructions', 'vendor_special_conditions', 
+        'vendor_favorable_contracts', 'vendor_motivation'
+      ];
+      
+      for (const field of textFields) {
+        if (sanitizedFormData[field] && typeof sanitizedFormData[field] === 'string') {
+          const sanitizationResult = InputSanitizer.sanitizeText(sanitizedFormData[field], 10000);
+          if (!sanitizationResult.isValid) {
+            toast.error(`${field}: ${sanitizationResult.error || 'Invalid input'}`);
+            setLoading(false);
+            return;
+          }
+          sanitizedFormData[field] = sanitizationResult.sanitizedValue;
+        }
+      }
+      
+      // Validate email if provided
+      if (sanitizedFormData.contact_email) {
+        const emailValidation = InputSanitizer.validateEmail(sanitizedFormData.contact_email);
+        if (!emailValidation.isValid) {
+          toast.error(emailValidation.error || 'Invalid email address');
+          setLoading(false);
+          return;
+        }
+        sanitizedFormData.contact_email = emailValidation.sanitizedValue;
+      }
+      
       // Add coordinates and listing source to the form data
       const listingDataWithCoordinates = {
-        ...formData,
+        ...sanitizedFormData,
         latitude: coordinates.lat,
         longitude: coordinates.lng,
         listing_source: listingType === 'off-market' ? 'agent_posted' : 'external_feed',
-        vendor_ownership_duration: formData.vendor_ownership_duration || null,
-        vendor_special_conditions: formData.vendor_special_conditions || null,
-        vendor_favorable_contracts: formData.vendor_favorable_contracts || null,
-        vendor_motivation: formData.vendor_motivation || null
+        vendor_ownership_duration: sanitizedFormData.vendor_ownership_duration || null,
+        vendor_special_conditions: sanitizedFormData.vendor_special_conditions || null,
+        vendor_favorable_contracts: sanitizedFormData.vendor_favorable_contracts || null,
+        vendor_motivation: sanitizedFormData.vendor_motivation || null
       };
       
       let result;
