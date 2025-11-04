@@ -107,12 +107,12 @@ class GoogleMapsService {
     return data.predictions || [];
   }
 
-  // Search places with country bias (Australia first)
+  // Search places with country bias (Australia first) - optimized for suburbs
   async searchPlaces(query: string, countryCode: string = 'AU'): Promise<PlaceAutocompleteResult[]> {
     const data = await this.callGoogleMapsAPI('places_autocomplete', {
       input: query,
       components: `country:${countryCode}`,
-      types: 'address'
+      types: 'geocode' // Use geocode instead of address to include suburbs, neighborhoods, and all location types
     });
     return data.predictions || [];
   }

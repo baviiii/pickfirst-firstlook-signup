@@ -24,33 +24,10 @@ interface LocationAutocompleteProps {
   types?: string[];
 }
 
-// Australian fallback data for fast initial response - including suburbs
+// Minimal fallback data - only use when Google Maps is completely unavailable
 const AUSTRALIAN_LOCATIONS = [
-  // Major cities
   'Sydney, NSW', 'Melbourne, VIC', 'Brisbane, QLD', 'Perth, WA', 'Adelaide, SA',
-  'Gold Coast, QLD', 'Newcastle, NSW', 'Canberra, ACT', 'Sunshine Coast, QLD',
-  'Wollongong, NSW', 'Geelong, VIC', 'Hobart, TAS', 'Townsville, QLD',
-  'Cairns, QLD', 'Toowoomba, QLD', 'Darwin, NT', 'Ballarat, VIC', 'Bendigo, VIC',
-  'Albury, NSW', 'Launceston, TAS', 'Mackay, QLD', 'Rockhampton, QLD',
-  'Bunbury, WA', 'Bundaberg, QLD', 'Coffs Harbour, NSW', 'Wagga Wagga, NSW',
-  'Hervey Bay, QLD', 'Mildura, VIC', 'Shepparton, VIC', 'Port Macquarie, NSW',
-  'Orange, NSW', 'Dubbo, NSW', 'Geraldton, WA', 'Kalgoorlie, WA', 'Mount Gambier, SA',
-  'Warrnambool, VIC', 'Gladstone, QLD', 'Tamworth, NSW', 'Traralgon, VIC', 'Nowra, NSW',
-  // Adelaide suburbs
-  'Mawson Lakes, SA', 'Salisbury, SA', 'Parafield Gardens, SA', 'Elizabeth, SA',
-  'Glenelg, SA', 'Brighton, SA', 'Norwood, SA', 'Unley, SA', 'Burnside, SA',
-  'Prospect, SA', 'Walkerville, SA', 'Campbelltown, SA', 'Athelstone, SA',
-  'Tea Tree Gully, SA', 'Modbury, SA', 'Golden Grove, SA', 'Greenwith, SA',
-  'The Ponds, SA', 'Craigmore, SA', 'Smithfield, SA', 'Blakeview, SA',
-  // Melbourne suburbs
-  'Doncaster, VIC', 'Box Hill, VIC', 'Richmond, VIC', 'South Yarra, VIC',
-  'St Kilda, VIC', 'Brighton, VIC', 'Caulfield, VIC', 'Glen Waverley, VIC',
-  // Sydney suburbs
-  'Parramatta, NSW', 'Bondi, NSW', 'Manly, NSW', 'Chatswood, NSW',
-  'Hornsby, NSW', 'Penrith, NSW', 'Liverpool, NSW', 'Blacktown, NSW',
-  // Brisbane suburbs
-  'Indooroopilly, QLD', 'Toowong, QLD', 'New Farm, QLD', 'Fortitude Valley, QLD',
-  'South Bank, QLD', 'Kangaroo Point, QLD', 'West End, QLD', 'Paddington, QLD'
+  'Gold Coast, QLD', 'Newcastle, NSW', 'Canberra, ACT', 'Darwin, NT'
 ];
 
 export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
@@ -66,7 +43,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [mapsMethod, setMapsMethod] = useState<'client' | 'server' | 'fallback'>('fallback');
+  const [mapsMethod, setMapsMethod] = useState<'client' | 'server' | 'fallback'>('client');
   const [clientMapsReady, setClientMapsReady] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
@@ -170,7 +147,9 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       service.getPlacePredictions({
         input: query,
         types: types,
-        componentRestrictions: { country: countryCode.toLowerCase() }
+        componentRestrictions: { country: countryCode.toLowerCase() },
+        // Add sessionToken for better performance and billing
+        sessionToken: new window.google.maps.places.AutocompleteSessionToken()
       }, (predictions, status) => {
         if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
           const suggestions = predictions.slice(0, 8).map(p => ({
@@ -225,48 +204,39 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     try {
       let results: LocationSuggestion[] = [];
       
-      // Try multiple methods concurrently for maximum speed
-      const promises: Promise<LocationSuggestion[]>[] = [];
+      // Prioritize client-side Google Maps for speed
+      if (mapsMethod === 'client' && clientMapsReady) {
+        // Client-side is fastest - use it directly
+        results = await getClientSideSuggestions(query);
+        
+        if (results.length > 0) {
+          setSuggestions(results.slice(0, 8));
+          setCachedSuggestions(query, results);
+          setIsOpen(true);
+          return;
+        }
+      }
       
-      // Always include fallback for instant response
+      // Fallback to server-side if client fails or not ready
+      if (mapsMethod === 'server' || !clientMapsReady) {
+        results = await getServerSideSuggestions(query);
+        
+        if (results.length > 0) {
+          setSuggestions(results.slice(0, 8));
+          setCachedSuggestions(query, results);
+          setIsOpen(true);
+          return;
+        }
+      }
+      
+      // Last resort: use fallback data
       const fallbackResults = getFallbackSuggestions(query);
       if (fallbackResults.length > 0) {
-        promises.push(Promise.resolve(fallbackResults));
-      }
-      
-      // Add Google Maps methods
-      if (mapsMethod === 'client' && clientMapsReady) {
-        promises.push(getClientSideSuggestions(query));
-      } else if (mapsMethod === 'server') {
-        promises.push(getServerSideSuggestions(query));
-      }
-      
-      // Race the promises for fastest response
-      if (promises.length > 0) {
-        const allResults = await Promise.allSettled(promises);
-        
-        // Merge results, preferring Google Maps over fallback
-        const googleResults = allResults
-          .filter((result, index) => result.status === 'fulfilled' && index > 0) // Skip fallback
-          .flatMap(result => result.status === 'fulfilled' ? result.value : []);
-          
-        if (googleResults.length > 0) {
-          results = googleResults;
-        } else {
-          // Use fallback if Google Maps failed
-          results = fallbackResults;
-        }
-        
-        // Remove duplicates and limit results
-        const uniqueResults = results
-          .filter((item, index, arr) => 
-            arr.findIndex(other => other.description.toLowerCase() === item.description.toLowerCase()) === index
-          )
-          .slice(0, 6);
-          
-        setSuggestions(uniqueResults);
-        setCachedSuggestions(query, uniqueResults);
-        setIsOpen(uniqueResults.length > 0);
+        setSuggestions(fallbackResults);
+        setIsOpen(true);
+      } else {
+        setSuggestions([]);
+        setIsOpen(false);
       }
     } catch (error) {
       console.error('Location search error:', error);
@@ -296,10 +266,10 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       return;
     }
     
-    // For longer queries, use debouncing but with shorter delay for responsiveness
+    // For longer queries, use minimal debouncing for maximum responsiveness
     timeoutRef.current = setTimeout(() => {
       searchLocations(newValue);
-    }, newValue.length < 4 ? 200 : 100); // Faster response for longer queries
+    }, clientMapsReady ? 150 : 300); // Even faster when client-side is ready
   };
 
   const handleSuggestionClick = (suggestion: LocationSuggestion) => {
