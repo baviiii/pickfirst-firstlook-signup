@@ -108,18 +108,24 @@ const BuyerDashboardNewComponent = () => {
     if (!hasShownWelcome && profile?.full_name) {
       const firstName = profile.full_name.split(' ')[0] || 'Buyer';
       
-      // Check if user preferences exist to determine if this is a new user
+      // Check preferences content to decide if onboarding is needed
       const checkNewUser = async () => {
         const { data: preferences } = await supabase
           .from('user_preferences')
-          .select('id')
+          .select('budget_range, preferred_areas, property_type_preferences')
           .eq('user_id', profile.id)
           .single();
         
         // Mark as shown AFTER checking preferences
         sessionStorage.setItem('hasShownWelcome', 'true');
         
-        if (!preferences && !hasCompletedOnboarding) {
+        const isEmptyPreferences = !preferences || (
+          (preferences.budget_range == null || String(preferences.budget_range).trim() === '') &&
+          (!Array.isArray(preferences.preferred_areas) || preferences.preferred_areas.length === 0) &&
+          (!Array.isArray(preferences.property_type_preferences) || preferences.property_type_preferences.length === 0)
+        );
+
+        if (isEmptyPreferences && !hasCompletedOnboarding) {
           // New user - show onboarding modal
           setTimeout(() => {
             setShowOnboarding(true);
