@@ -22,7 +22,7 @@ jobs:
         run: npm ci
 
       - name: Update browserslist database
-        run: npx update-browserslist-db@latest
+        run: npm update caniuse-lite
 
       - name: Build
         run: npm run build
