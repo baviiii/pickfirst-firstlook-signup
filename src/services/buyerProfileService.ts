@@ -58,18 +58,18 @@ export class BuyerProfileService extends ProfileService {
         const bathroomPref = preferences.preferred_areas.find(area => area.startsWith('bathrooms:'));
         const garagePref = preferences.preferred_areas.find(area => area.startsWith('garages:'));
         
-        buyerPreferences.preferred_bedrooms = bedroomPref ? parseInt(bedroomPref.split(':')[1]) : 2;
-        buyerPreferences.preferred_bathrooms = bathroomPref ? parseInt(bathroomPref.split(':')[1]) : 2;
-        buyerPreferences.preferred_garages = garagePref ? parseInt(garagePref.split(':')[1]) : 0;
+        buyerPreferences.preferred_bedrooms = bedroomPref ? parseInt(bedroomPref.split(':')[1]) : null;
+        buyerPreferences.preferred_bathrooms = bathroomPref ? parseInt(bathroomPref.split(':')[1]) : null;
+        buyerPreferences.preferred_garages = garagePref ? parseInt(garagePref.split(':')[1]) : null;
         
         // Filter out bedroom/bathroom/garage preferences from areas
         buyerPreferences.preferred_areas = preferences.preferred_areas.filter(area => 
           !area.startsWith('bedrooms:') && !area.startsWith('bathrooms:') && !area.startsWith('garages:')
         );
       } else {
-        buyerPreferences.preferred_bedrooms = 2;
-        buyerPreferences.preferred_bathrooms = 2;
-        buyerPreferences.preferred_garages = 0;
+        buyerPreferences.preferred_bedrooms = null;
+        buyerPreferences.preferred_bathrooms = null;
+        buyerPreferences.preferred_garages = null;
       }
 
       // Set default values for fields that don't exist in the database
@@ -107,20 +107,25 @@ export class BuyerProfileService extends ProfileService {
       }
 
       // Store bedrooms, bathrooms, and garages in preferred_areas array for now (temporary solution)
-      if (preferences.preferred_bedrooms || preferences.preferred_bathrooms || preferences.preferred_garages !== undefined) {
+      if (preferences.preferred_bedrooms !== undefined || preferences.preferred_bathrooms !== undefined || preferences.preferred_garages !== undefined) {
         const existingAreas = dbPreferences.preferred_areas || [];
-        const bedroomPref = preferences.preferred_bedrooms ? `bedrooms:${preferences.preferred_bedrooms}` : null;
-        const bathroomPref = preferences.preferred_bathrooms ? `bathrooms:${preferences.preferred_bathrooms}` : null;
-        const garagePref = preferences.preferred_garages !== undefined ? `garages:${preferences.preferred_garages}` : null;
         
-        // Remove existing bedroom/bathroom/garage preferences and add new ones
+        // Remove existing bedroom/bathroom/garage preferences
         const filteredAreas = existingAreas.filter(area => 
           !area.startsWith('bedrooms:') && !area.startsWith('bathrooms:') && !area.startsWith('garages:')
         );
         const newAreas = [...filteredAreas];
-        if (bedroomPref) newAreas.push(bedroomPref);
-        if (bathroomPref) newAreas.push(bathroomPref);
-        if (garagePref) newAreas.push(garagePref);
+        
+        // Add new preferences only if they have values (not null/undefined)
+        if (preferences.preferred_bedrooms !== null && preferences.preferred_bedrooms !== undefined) {
+          newAreas.push(`bedrooms:${preferences.preferred_bedrooms}`);
+        }
+        if (preferences.preferred_bathrooms !== null && preferences.preferred_bathrooms !== undefined) {
+          newAreas.push(`bathrooms:${preferences.preferred_bathrooms}`);
+        }
+        if (preferences.preferred_garages !== null && preferences.preferred_garages !== undefined) {
+          newAreas.push(`garages:${preferences.preferred_garages}`);
+        }
         
         dbPreferences.preferred_areas = newAreas;
       }

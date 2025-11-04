@@ -309,14 +309,53 @@ export class PropertyAlertService {
       }
     }
 
-    // Location matching
+    // Location matching with fuzzy matching
     if (preferences.preferred_areas && preferences.preferred_areas.length > 0) {
       totalCriteria++;
       const propertyLocation = `${property.city}, ${property.state}`.toLowerCase();
-      const isLocationMatch = preferences.preferred_areas.some(area => 
-        propertyLocation.includes(area.toLowerCase()) || 
-        property.city.toLowerCase().includes(area.toLowerCase())
+      const propertyCity = property.city.toLowerCase();
+      
+      // Filter out non-location preferences (bedrooms, bathrooms, etc.)
+      const locationAreas = preferences.preferred_areas.filter(area => 
+        !area.startsWith('bedrooms:') && 
+        !area.startsWith('bathrooms:') && 
+        !area.startsWith('garages:')
       );
+      
+      const isLocationMatch = locationAreas.some(area => {
+        const areaLower = area.toLowerCase().trim();
+        
+        // Exact match
+        if (propertyLocation.includes(areaLower) || propertyCity.includes(areaLower)) {
+          return true;
+        }
+        
+        // Fuzzy matching for common variations
+        // Handle "Mawson Lakes" vs "mawson lakes", "The Mall" variations, etc.
+        const areaWords = areaLower.split(/\s+/);
+        const cityWords = propertyCity.split(/\s+/);
+        
+        // Check if all area words are found in city
+        const allWordsMatch = areaWords.every(word => 
+          cityWords.some(cityWord => 
+            cityWord.includes(word) || word.includes(cityWord)
+          )
+        );
+        
+        if (allWordsMatch) {
+          return true;
+        }
+        
+        // Check for partial matches (at least 60% of words match)
+        const matchingWords = areaWords.filter(word => 
+          cityWords.some(cityWord => 
+            cityWord.includes(word) || word.includes(cityWord) ||
+            this.calculateStringSimilarity(word, cityWord) > 0.7
+          )
+        );
+        
+        return matchingWords.length / areaWords.length >= 0.6;
+      });
       
       if (isLocationMatch) {
         matchedCriteria.push('location');
@@ -561,6 +600,36 @@ export class PropertyAlertService {
       console.error('Error getting buyer alert history:', error);
       return [];
     }
+  }
+
+  /**
+   * Calculate string similarity using Levenshtein distance
+   */
+  private static calculateStringSimilarity(str1: string, str2: string): number {
+    const len1 = str1.length;
+    const len2 = str2.length;
+    
+    if (len1 === 0) return len2 === 0 ? 1 : 0;
+    if (len2 === 0) return 0;
+    
+    const matrix = Array(len2 + 1).fill(null).map(() => Array(len1 + 1).fill(null));
+    
+    for (let i = 0; i <= len1; i++) matrix[0][i] = i;
+    for (let j = 0; j <= len2; j++) matrix[j][0] = j;
+    
+    for (let j = 1; j <= len2; j++) {
+      for (let i = 1; i <= len1; i++) {
+        const substitutionCost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1, // deletion
+          matrix[j - 1][i] + 1, // insertion
+          matrix[j - 1][i - 1] + substitutionCost // substitution
+        );
+      }
+    }
+    
+    const maxLen = Math.max(len1, len2);
+    return (maxLen - matrix[len2][len1]) / maxLen;
   }
 
   /**

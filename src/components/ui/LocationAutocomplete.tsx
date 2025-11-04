@@ -24,8 +24,9 @@ interface LocationAutocompleteProps {
   types?: string[];
 }
 
-// Australian fallback data for fast initial response
+// Australian fallback data for fast initial response - including suburbs
 const AUSTRALIAN_LOCATIONS = [
+  // Major cities
   'Sydney, NSW', 'Melbourne, VIC', 'Brisbane, QLD', 'Perth, WA', 'Adelaide, SA',
   'Gold Coast, QLD', 'Newcastle, NSW', 'Canberra, ACT', 'Sunshine Coast, QLD',
   'Wollongong, NSW', 'Geelong, VIC', 'Hobart, TAS', 'Townsville, QLD',
@@ -34,7 +35,22 @@ const AUSTRALIAN_LOCATIONS = [
   'Bunbury, WA', 'Bundaberg, QLD', 'Coffs Harbour, NSW', 'Wagga Wagga, NSW',
   'Hervey Bay, QLD', 'Mildura, VIC', 'Shepparton, VIC', 'Port Macquarie, NSW',
   'Orange, NSW', 'Dubbo, NSW', 'Geraldton, WA', 'Kalgoorlie, WA', 'Mount Gambier, SA',
-  'Warrnambool, VIC', 'Gladstone, QLD', 'Tamworth, NSW', 'Traralgon, VIC', 'Nowra, NSW'
+  'Warrnambool, VIC', 'Gladstone, QLD', 'Tamworth, NSW', 'Traralgon, VIC', 'Nowra, NSW',
+  // Adelaide suburbs
+  'Mawson Lakes, SA', 'Salisbury, SA', 'Parafield Gardens, SA', 'Elizabeth, SA',
+  'Glenelg, SA', 'Brighton, SA', 'Norwood, SA', 'Unley, SA', 'Burnside, SA',
+  'Prospect, SA', 'Walkerville, SA', 'Campbelltown, SA', 'Athelstone, SA',
+  'Tea Tree Gully, SA', 'Modbury, SA', 'Golden Grove, SA', 'Greenwith, SA',
+  'The Ponds, SA', 'Craigmore, SA', 'Smithfield, SA', 'Blakeview, SA',
+  // Melbourne suburbs
+  'Doncaster, VIC', 'Box Hill, VIC', 'Richmond, VIC', 'South Yarra, VIC',
+  'St Kilda, VIC', 'Brighton, VIC', 'Caulfield, VIC', 'Glen Waverley, VIC',
+  // Sydney suburbs
+  'Parramatta, NSW', 'Bondi, NSW', 'Manly, NSW', 'Chatswood, NSW',
+  'Hornsby, NSW', 'Penrith, NSW', 'Liverpool, NSW', 'Blacktown, NSW',
+  // Brisbane suburbs
+  'Indooroopilly, QLD', 'Toowong, QLD', 'New Farm, QLD', 'Fortitude Valley, QLD',
+  'South Bank, QLD', 'Kangaroo Point, QLD', 'West End, QLD', 'Paddington, QLD'
 ];
 
 export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
@@ -45,7 +61,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   className,
   disabled = false,
   countryCode = 'AU',
-  types = ['(cities)'] // Changed from (regions) to (cities) to include suburbs
+  types = ['geocode'] // Use geocode to include all location types including suburbs
 }) => {
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);

@@ -582,17 +582,42 @@ export class FilterService {
     if (s1 === s2) return 1.0;
     
     // Substring match
-    if (s1.includes(s2) || s2.includes(s1)) return 0.8;
+    if (s1.includes(s2) || s2.includes(s1)) return 0.9;
     
-    // Levenshtein distance calculation
-    const matrix = Array(s2.length + 1).fill(null).map(() => Array(s1.length + 1).fill(null));
+    // Word-based matching for multi-word locations like "Mawson Lakes"
+    const words1 = s1.split(/\s+/);
+    const words2 = s2.split(/\s+/);
     
-    for (let i = 0; i <= s1.length; i++) matrix[0][i] = i;
-    for (let j = 0; j <= s2.length; j++) matrix[j][0] = j;
+    // Check if all words from shorter string are found in longer string
+    const [shorter, longer] = words1.length <= words2.length ? [words1, words2] : [words2, words1];
+    const matchingWords = shorter.filter(word => 
+      longer.some(longerWord => 
+        longerWord.includes(word) || word.includes(longerWord) ||
+        this.levenshteinSimilarity(word, longerWord) > 0.7
+      )
+    );
     
-    for (let j = 1; j <= s2.length; j++) {
-      for (let i = 1; i <= s1.length; i++) {
-        const indicator = s1[i - 1] === s2[j - 1] ? 0 : 1;
+    if (matchingWords.length === shorter.length && shorter.length > 0) {
+      return 0.85; // High score for word-based match
+    }
+    
+    if (matchingWords.length / shorter.length >= 0.6 && shorter.length > 0) {
+      return 0.7; // Good score for partial word match
+    }
+    
+    // Fallback to Levenshtein distance
+    return this.levenshteinSimilarity(s1, s2);
+  }
+  
+  private static levenshteinSimilarity(str1: string, str2: string): number {
+    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+    
+    for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+    for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+    
+    for (let j = 1; j <= str2.length; j++) {
+      for (let i = 1; i <= str1.length; i++) {
+        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
         matrix[j][i] = Math.min(
           matrix[j][i - 1] + 1,     // deletion
           matrix[j - 1][i] + 1,     // insertion
@@ -601,8 +626,8 @@ export class FilterService {
       }
     }
     
-    const maxLength = Math.max(s1.length, s2.length);
-    const distance = matrix[s2.length][s1.length];
+    const maxLength = Math.max(str1.length, str2.length);
+    const distance = matrix[str2.length][str1.length];
     return Math.max(0, (maxLength - distance) / maxLength);
   }
 

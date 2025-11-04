@@ -156,6 +156,15 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
     return `$${value}`;
   };
 
+  const formatNumberWithCommas = (value: number | string): string => {
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    return num.toLocaleString();
+  };
+
+  const parseNumberFromCommas = (value: string): number => {
+    return parseFloat(value.replace(/,/g, '')) || 0;
+  };
+
   return (
     <Card className={`bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20 ${compact ? 'p-4' : ''}`}>
       {showTitle && (
@@ -183,10 +192,17 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
                 <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="min-budget"
-                  type="number"
-                  value={preferences.min_budget || ''}
-                  onChange={(e) => handlePreferenceChange('min_budget', parseInt(e.target.value) || 0)}
-                  placeholder="0"
+                  type="text"
+                  value={preferences.min_budget ? formatNumberWithCommas(preferences.min_budget) : ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '' || value.toLowerCase() === 'any') {
+                      handlePreferenceChange('min_budget', 0);
+                    } else {
+                      handlePreferenceChange('min_budget', parseNumberFromCommas(value));
+                    }
+                  }}
+                  placeholder="Any or 0"
                   className="pl-10"
                 />
               </div>
@@ -197,10 +213,17 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
                 <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="max-budget"
-                  type="number"
-                  value={preferences.max_budget || ''}
-                  onChange={(e) => handlePreferenceChange('max_budget', parseInt(e.target.value) || 0)}
-                  placeholder="1000000"
+                  type="text"
+                  value={preferences.max_budget && preferences.max_budget < 10000000 ? formatNumberWithCommas(preferences.max_budget) : ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '' || value.toLowerCase() === 'any') {
+                      handlePreferenceChange('max_budget', 10000000);
+                    } else {
+                      handlePreferenceChange('max_budget', parseNumberFromCommas(value));
+                    }
+                  }}
+                  placeholder="Any or 1,000,000"
                   className="pl-10"
                 />
               </div>
