@@ -206,6 +206,9 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
 
   const handleInputChange = (field: keyof CreatePropertyListingData, value: any) => {
     // Allow free typing - sanitization will happen on submit
+    // DEBUG: Log the input to see what's happening
+    console.log(`Input change - Field: ${field}, Value: "${value}", Length: ${value?.length}`);
+    
     // Only validate email format as user types (but don't block input)
     let sanitizedValue = value;
     
