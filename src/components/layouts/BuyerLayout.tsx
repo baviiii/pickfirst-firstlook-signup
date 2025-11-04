@@ -128,6 +128,13 @@ export const BuyerLayout = ({ children }: BuyerLayoutProps) => {
   // Buyer action items configuration
   const buyerActions = [
     { 
+      icon: Home, 
+      label: 'Dashboard', 
+      description: 'View your overview', 
+      color: 'bg-pickfirst-yellow/10 text-pickfirst-yellow', 
+      onClick: () => navigate('/dashboard') 
+    },
+    { 
       icon: Search, 
       label: 'Browse Properties', 
       description: 'Find your perfect home', 
@@ -198,8 +205,8 @@ export const BuyerLayout = ({ children }: BuyerLayoutProps) => {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div 
-              className="flex items-center gap-3 cursor-pointer"
-              onClick={() => navigate('/')}
+              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => navigate('/dashboard')}
             >
               <div className="relative group">
                 <div className="absolute -inset-1 bg-gradient-to-r from-pickfirst-yellow via-amber-500 to-pickfirst-yellow rounded-xl blur-md opacity-75 group-hover:opacity-100 transition duration-500 animate-[pulse_3s_ease-in-out_infinite]"></div>

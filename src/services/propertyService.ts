@@ -346,7 +346,7 @@ export class PropertyService {
                   propertyPrice: data.price,
                   propertyType: data.property_type?.replace(/\b\w/g, (l: string) => l.toUpperCase()),
                   submissionDate: new Date(data.created_at).toLocaleDateString(),
-                  dashboardUrl: `${window.location.origin}/dashboard`
+                  dashboardUrl: typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : 'https://pickfirst.com.au/dashboard'
                 }
               }
             });
@@ -479,7 +479,7 @@ export class PropertyService {
                           address: updatedListing.address || '',
                           sold_price: soldPrice,
                           agent_name: agentName,
-                          property_url: `${window.location.origin}/property/${id}`
+                          property_url: typeof window !== 'undefined' ? `${window.location.origin}/property/${id}` : `https://pickfirst.com.au/property/${id}`
                         }
                       }
                     }
