@@ -28,21 +28,46 @@ const AdminPropertyManagementComponent = () => {
 
   const handleApprove = async (id: string) => {
     try {
+      // Optimistically update the UI first
+      setListings(prevListings => 
+        prevListings.map(listing => 
+          listing.id === id 
+            ? { ...listing, status: 'approved', approved_at: new Date().toISOString() }
+            : listing
+        )
+      );
+
       const { data, error } = await PropertyService.approveListing(id);
       
       if (error) {
+        // Revert optimistic update on error
+        setListings(prevListings => 
+          prevListings.map(listing => 
+            listing.id === id 
+              ? { ...listing, status: 'pending', approved_at: null }
+              : listing
+          )
+        );
         toast.error(error.message || 'Failed to approve listing');
       } else {
-        if (data) {
-          toast.success('Listing approved!');
-          // Refresh the listings to get updated data
-          await handleRefresh();
-        } else {
-          toast.warning('Approval completed but no data returned');
-          await handleRefresh();
-        }
+        toast.success('Listing approved successfully!');
+        // Force a fresh fetch to ensure data consistency
+        setTimeout(async () => {
+          const { data: freshData } = await PropertyService.getAllListings();
+          if (freshData) {
+            setListings(freshData);
+          }
+        }, 500);
       }
     } catch (error) {
+      // Revert optimistic update on error
+      setListings(prevListings => 
+        prevListings.map(listing => 
+          listing.id === id 
+            ? { ...listing, status: 'pending', approved_at: null }
+            : listing
+        )
+      );
       toast.error('An unexpected error occurred while approving the listing');
     }
   };

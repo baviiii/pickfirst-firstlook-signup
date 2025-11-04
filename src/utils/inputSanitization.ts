@@ -91,10 +91,10 @@ export class InputSanitizer {
       return { isValid: true, sanitizedValue: '' };
     }
 
-    // Remove null bytes and control characters except newlines/tabs
+    // Remove null bytes and control characters except newlines/tabs/spaces
     let sanitized = input.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
     
-    // Trim whitespace
+    // Preserve internal spaces but trim leading/trailing whitespace
     sanitized = sanitized.trim();
 
     // Check length
