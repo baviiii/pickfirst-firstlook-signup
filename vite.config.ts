@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
-    mode === 'production' && stripConsolePlugin(),
+    // Temporarily disabled: mode === 'production' && stripConsolePlugin(),
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -24,13 +24,13 @@ export default defineConfig(({ mode }) => ({
   // Additional production optimizations
   build: {
     // Remove console logs in production
-    minify: 'terser',
-    terserOptions: {
+    minify: mode === 'production' ? 'terser' : false,
+    terserOptions: mode === 'production' ? {
       compress: {
         drop_console: true,
         drop_debugger: true,
       },
-    },
+    } : undefined,
     // Source maps only in development
     sourcemap: mode === 'development',
   },

@@ -468,6 +468,10 @@ export class PropertyService {
                 // Use a type assertion for the buyer object
                 const buyerEmail = (inquiry.buyer as any)?.email;
                 if (buyerEmail) {
+                  // Get property URL safely for build environment
+                  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://pickfirst.com.au';
+                  const propertyUrl = `${baseUrl}/property/${id}`;
+                  
                   await supabase.functions.invoke('send-email', {
                     body: {
                       to: buyerEmail,
@@ -479,7 +483,7 @@ export class PropertyService {
                           address: updatedListing.address || '',
                           sold_price: soldPrice,
                           agent_name: agentName,
-                          property_url: typeof window !== 'undefined' ? `${window.location.origin}/property/${id}` : `https://pickfirst.com.au/property/${id}`
+                          property_url: propertyUrl
                         }
                       }
                     }
