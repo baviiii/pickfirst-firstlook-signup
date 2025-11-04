@@ -114,7 +114,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                 garagesMatch: !preferences.preferred_garages || ((property as any).garages && (property as any).garages >= preferences.preferred_garages),
                 featuresMatch: !preferences.preferred_features || preferences.preferred_features.length === 0,
                 locationMatch: true, // Fuzzy match already found location similarity
-                propertyTypeMatch: !preferences.property_type_preferences || preferences.property_type_preferences.includes(property.property_type),
+                propertyTypeMatch: !preferences.property_type_preferences || preferences.property_type_preferences.some((prefType: string) => prefType.toLowerCase() === property.property_type.toLowerCase()),
                 score: property.similarityScore,
                 matchedCriteria: [property.matchReason || 'Location similarity']
               };
@@ -234,14 +234,60 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
       }
     }
 
-    // Location matching
+    // Location matching (improved fuzzy matching)
     if (preferences.preferred_areas && preferences.preferred_areas.length > 0) {
       totalCriteria++;
       const propertyLocation = `${property.city}, ${property.state}`.toLowerCase();
-      const hasLocationMatch = preferences.preferred_areas.some((area: string) => 
-        propertyLocation.includes(area.toLowerCase()) || 
-        property.city.toLowerCase().includes(area.toLowerCase())
+      const propertyCity = property.city.toLowerCase();
+      const propertyAddress = (property as any).address?.toLowerCase() || '';
+      
+      // Filter out non-location preferences
+      const locationAreas = preferences.preferred_areas.filter((area: string) => 
+        !area.startsWith('bedrooms:') && 
+        !area.startsWith('bathrooms:') && 
+        !area.startsWith('garages:')
       );
+      
+      const hasLocationMatch = locationAreas.some((area: string) => {
+        const areaLower = area.toLowerCase().trim();
+        
+        // Remove common suffixes like ", australia", ", sa", etc.
+        const cleanArea = areaLower
+          .replace(/,?\s*(australia|sa|nsw|vic|qld|wa|tas|nt|act)\s*$/g, '')
+          .trim();
+        
+        // Exact match - check city, full location, and address
+        if (propertyLocation.includes(cleanArea) || 
+            propertyCity.includes(cleanArea) ||
+            cleanArea.includes(propertyCity) ||
+            propertyAddress.includes(cleanArea)) {
+          return true;
+        }
+        
+        // Word-based fuzzy matching
+        const areaWords = cleanArea.split(/\s+/).filter(word => word.length > 2);
+        const cityWords = propertyCity.split(/\s+/).filter(word => word.length > 2);
+        
+        // Check if all area words are found in city
+        const allWordsMatch = areaWords.length > 0 && areaWords.every(word => 
+          cityWords.some(cityWord => 
+            cityWord.includes(word) || word.includes(cityWord)
+          )
+        );
+        
+        if (allWordsMatch) {
+          return true;
+        }
+        
+        // Check for partial matches (at least 70% of words match)
+        const matchingWords = areaWords.filter(word => 
+          cityWords.some(cityWord => 
+            cityWord.includes(word) || word.includes(cityWord)
+          )
+        );
+        
+        return areaWords.length > 0 && (matchingWords.length / areaWords.length) >= 0.7;
+      });
       
       if (hasLocationMatch) {
         criteria.locationMatch = true;
@@ -250,10 +296,15 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
       }
     }
 
-    // Property type matching
+    // Property type matching (case-insensitive)
     if (preferences.property_type_preferences && preferences.property_type_preferences.length > 0) {
       totalCriteria++;
-      if (preferences.property_type_preferences.includes(property.property_type)) {
+      const propertyTypeLower = property.property_type.toLowerCase();
+      const hasTypeMatch = preferences.property_type_preferences.some((prefType: string) => 
+        prefType.toLowerCase() === propertyTypeLower
+      );
+      
+      if (hasTypeMatch) {
         criteria.propertyTypeMatch = true;
         criteria.matchedCriteria.push('Property Type');
         matches++;

@@ -133,16 +133,19 @@ export class FilterService {
         // Add individual parts (suburb, city, state, etc.)
         locationParts.forEach(part => {
           if (part && part.length > 2) {
-            searchTerms.push(part);
+            // Clean up common suffixes
+            const cleanPart = part.replace(/\s*(australia|sa|nsw|vic|qld|wa|tas|nt|act)\s*$/gi, '').trim();
+            if (cleanPart && cleanPart.length > 2) {
+              searchTerms.push(cleanPart);
+              searchTerms.push(part); // Also add original part
+            }
           }
         });
         
         // For better matching, also add partial matches
         const mainSuburb = locationParts.find(part => 
           part && !part.toLowerCase().includes('australia') && 
-          !part.toLowerCase().includes('sa') && 
-          !part.toLowerCase().includes('nsw') && 
-          !part.toLowerCase().includes('vic') &&
+          !part.toLowerCase().match(/\b(sa|nsw|vic|qld|wa|tas|nt|act)\b/i) &&
           part.length > 3
         );
         
@@ -150,14 +153,15 @@ export class FilterService {
           // Add variations of the main suburb
           const suburbWords = mainSuburb.split(' ');
           suburbWords.forEach(word => {
-            if (word.length > 3) {
+            if (word.length > 2) { // Lowered threshold for better matching
               searchTerms.push(word);
             }
           });
         }
         
-        // Create OR conditions for all search terms against city, state, and address
-        const orConditions = searchTerms.map(term => 
+        // Remove duplicates and create OR conditions
+        const uniqueTerms = [...new Set(searchTerms)];
+        const orConditions = uniqueTerms.map(term => 
           `city.ilike."%${term}%",state.ilike."%${term}%",address.ilike."%${term}%"`
         ).join(',');
         

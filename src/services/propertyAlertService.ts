@@ -314,6 +314,7 @@ export class PropertyAlertService {
       totalCriteria++;
       const propertyLocation = `${property.city}, ${property.state}`.toLowerCase();
       const propertyCity = property.city.toLowerCase();
+      const propertyAddress = property.address?.toLowerCase() || '';
       
       // Filter out non-location preferences (bedrooms, bathrooms, etc.)
       const locationAreas = preferences.preferred_areas.filter(area => 
@@ -325,36 +326,63 @@ export class PropertyAlertService {
       const isLocationMatch = locationAreas.some(area => {
         const areaLower = area.toLowerCase().trim();
         
-        // Exact match
-        if (propertyLocation.includes(areaLower) || propertyCity.includes(areaLower)) {
+        // Remove common suffixes like ", australia", ", sa", etc.
+        const cleanArea = areaLower
+          .replace(/,?\s*(australia|sa|nsw|vic|qld|wa|tas|nt|act)\s*$/g, '')
+          .trim();
+        
+        // Exact match - check city, full location, and address
+        if (propertyLocation.includes(cleanArea) || 
+            propertyCity.includes(cleanArea) ||
+            cleanArea.includes(propertyCity) ||
+            propertyAddress.includes(cleanArea)) {
           return true;
         }
         
         // Fuzzy matching for common variations
         // Handle "Mawson Lakes" vs "mawson lakes", "The Mall" variations, etc.
-        const areaWords = areaLower.split(/\s+/);
-        const cityWords = propertyCity.split(/\s+/);
+        const areaWords = cleanArea.split(/\s+/).filter(word => word.length > 2);
+        const cityWords = propertyCity.split(/\s+/).filter(word => word.length > 2);
+        const addressWords = propertyAddress.split(/\s+/).filter(word => word.length > 2);
         
-        // Check if all area words are found in city
-        const allWordsMatch = areaWords.every(word => 
+        // Check if all area words are found in city or address
+        const allWordsMatchCity = areaWords.length > 0 && areaWords.every(word => 
           cityWords.some(cityWord => 
-            cityWord.includes(word) || word.includes(cityWord)
+            cityWord.includes(word) || word.includes(cityWord) ||
+            this.calculateStringSimilarity(word, cityWord) > 0.8
           )
         );
         
-        if (allWordsMatch) {
+        const allWordsMatchAddress = areaWords.length > 0 && areaWords.every(word => 
+          addressWords.some(addressWord => 
+            addressWord.includes(word) || word.includes(addressWord) ||
+            this.calculateStringSimilarity(word, addressWord) > 0.8
+          )
+        );
+        
+        if (allWordsMatchCity || allWordsMatchAddress) {
           return true;
         }
         
-        // Check for partial matches (at least 60% of words match)
-        const matchingWords = areaWords.filter(word => 
+        // Check for partial matches (at least 70% of words match)
+        const matchingWordsCity = areaWords.filter(word => 
           cityWords.some(cityWord => 
             cityWord.includes(word) || word.includes(cityWord) ||
             this.calculateStringSimilarity(word, cityWord) > 0.7
           )
         );
         
-        return matchingWords.length / areaWords.length >= 0.6;
+        const matchingWordsAddress = areaWords.filter(word => 
+          addressWords.some(addressWord => 
+            addressWord.includes(word) || word.includes(addressWord) ||
+            this.calculateStringSimilarity(word, addressWord) > 0.7
+          )
+        );
+        
+        const cityMatchRatio = areaWords.length > 0 ? matchingWordsCity.length / areaWords.length : 0;
+        const addressMatchRatio = areaWords.length > 0 ? matchingWordsAddress.length / areaWords.length : 0;
+        
+        return cityMatchRatio >= 0.7 || addressMatchRatio >= 0.7;
       });
       
       if (isLocationMatch) {
@@ -363,10 +391,15 @@ export class PropertyAlertService {
       }
     }
 
-    // Property type matching
+    // Property type matching (case-insensitive)
     if (preferences.property_type_preferences && preferences.property_type_preferences.length > 0) {
       totalCriteria++;
-      if (preferences.property_type_preferences.includes(property.property_type)) {
+      const propertyTypeLower = property.property_type.toLowerCase();
+      const hasTypeMatch = preferences.property_type_preferences.some(prefType => 
+        prefType.toLowerCase() === propertyTypeLower
+      );
+      
+      if (hasTypeMatch) {
         matchedCriteria.push('property_type');
         score += 0.2;
       }
