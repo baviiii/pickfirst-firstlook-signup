@@ -236,7 +236,15 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
     onLoadingChange?.(true);
 
     try {
-      const results = await FilterService.applyFilters(filters);
+      // Clean filters to remove any null/undefined values that could cause database errors
+      const cleanFilters = Object.fromEntries(
+        Object.entries(filters).filter(([_, value]) => value !== null && value !== undefined)
+      ) as AdvancedPropertyFilters;
+      
+      console.log('ProductionFilterSystem - Original filters:', filters);
+      console.log('ProductionFilterSystem - Cleaned filters:', cleanFilters);
+      
+      const results = await FilterService.applyFilters(cleanFilters);
       setResults(results);
       onResultsChange?.(results);
     } catch (error) {

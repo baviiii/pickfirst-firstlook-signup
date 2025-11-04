@@ -64,14 +64,14 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
           return;
         }
 
-        // Build advanced filters from preferences
+        // Build advanced filters from preferences - filter out null values
         const filters: AdvancedPropertyFilters = {
-          priceMin: preferences.min_budget || 0,
-          priceMax: preferences.max_budget || 10000000,
-          bedrooms: preferences.preferred_bedrooms,
-          bathrooms: preferences.preferred_bathrooms,
-          garageSpaces: preferences.preferred_garages,
-          propertyType: preferences.property_type_preferences?.[0],
+          priceMin: preferences.min_budget && preferences.min_budget > 0 ? preferences.min_budget : undefined,
+          priceMax: preferences.max_budget && preferences.max_budget < 10000000 ? preferences.max_budget : undefined,
+          bedrooms: preferences.preferred_bedrooms && preferences.preferred_bedrooms > 0 ? preferences.preferred_bedrooms : undefined,
+          bathrooms: preferences.preferred_bathrooms && preferences.preferred_bathrooms > 0 ? preferences.preferred_bathrooms : undefined,
+          garageSpaces: preferences.preferred_garages && preferences.preferred_garages >= 0 ? preferences.preferred_garages : undefined,
+          propertyType: preferences.property_type_preferences?.[0] || undefined,
           sortBy: 'price',
           sortOrder: 'asc',
           limit: 12
@@ -84,8 +84,16 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
           filters.location = preferences.preferred_areas.join(', ');
         }
 
+        // Clean filters to remove any null/undefined values that could cause database errors
+        const cleanFilters = Object.fromEntries(
+          Object.entries(filters).filter(([_, value]) => value !== null && value !== undefined)
+        ) as AdvancedPropertyFilters;
+        
+        console.log('Original filters:', filters);
+        console.log('Cleaned filters:', cleanFilters);
+        
         // Get filtered properties
-        const result = await FilterService.applyFilters(filters);
+        const result = await FilterService.applyFilters(cleanFilters);
         
         if (result.properties) {
           // Calculate match criteria for each property

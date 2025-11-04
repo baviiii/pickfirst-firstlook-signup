@@ -132,14 +132,19 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
   const handleSave = async () => {
     if (!user) return;
     
+    console.log('Saving preferences:', preferences);
     setIsLoading(true);
     try {
       const result = await BuyerProfileService.updateBuyerPreferences(user.id, preferences);
+      console.log('Save result:', result);
       if (result.success) {
         toast.success('Preferences updated successfully');
         setHasChanges(false);
         onPreferencesUpdate?.(preferences as BuyerPreferences);
+        // Reload preferences to confirm save
+        await loadPreferences();
       } else {
+        console.error('Save failed:', result.error);
         toast.error(result.error || 'Failed to update preferences');
       }
     } catch (error) {
@@ -318,6 +323,9 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
               <LocationAutocomplete
                 value={currentLocation}
                 onChange={setCurrentLocation}
+                onLocationSelect={(location) => {
+                  handleAddLocation(location.description);
+                }}
                 placeholder="Add suburb, city, or area..."
                 countryCode="AU"
               />

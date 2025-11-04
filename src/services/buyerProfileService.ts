@@ -92,6 +92,9 @@ export class BuyerProfileService extends ProfileService {
     preferences: Partial<BuyerPreferences>
   ): Promise<{ success: boolean; error?: string }> {
     try {
+      console.log('BuyerProfileService: Updating preferences for user:', userId);
+      console.log('BuyerProfileService: Input preferences:', preferences);
+      
       // Convert numeric budget fields to budget_range text for database compatibility
       const dbPreferences: any = { ...preferences };
       
@@ -140,8 +143,11 @@ export class BuyerProfileService extends ProfileService {
       delete dbPreferences.financing_pre_approved;
       delete dbPreferences.first_time_buyer;
 
+      console.log('BuyerProfileService: Final dbPreferences to save:', dbPreferences);
+      
       // First update the basic preferences
       const result = await super.updateUserPreferences(userId, dbPreferences);
+      console.log('BuyerProfileService: Database update result:', result);
       
       if (result.success) {
         // Log the preference update for analytics

@@ -164,20 +164,20 @@ export class FilterService {
         query = query.or(orConditions);
       }
 
-      if (filters.priceMin !== undefined) {
+      if (filters.priceMin !== undefined && filters.priceMin !== null && filters.priceMin > 0) {
         query = query.gte('price', filters.priceMin);
       }
 
-      if (filters.priceMax !== undefined) {
+      if (filters.priceMax !== undefined && filters.priceMax !== null && filters.priceMax > 0) {
         query = query.lte('price', filters.priceMax);
       }
 
-      if (filters.bedrooms !== undefined) {
+      if (filters.bedrooms !== undefined && filters.bedrooms !== null && filters.bedrooms > 0) {
         // UI selects X+ so use gte for better matching
         query = query.gte('bedrooms', filters.bedrooms);
       }
 
-      if (filters.bathrooms !== undefined) {
+      if (filters.bathrooms !== undefined && filters.bathrooms !== null && filters.bathrooms > 0) {
         // Bathrooms can be fractional; use gte for X+
         query = query.gte('bathrooms', filters.bathrooms);
       }
@@ -186,31 +186,31 @@ export class FilterService {
         query = query.eq('property_type', filters.propertyType);
       }
 
-      if (filters.squareFootageMin !== undefined) {
+      if (filters.squareFootageMin !== undefined && filters.squareFootageMin !== null && filters.squareFootageMin > 0) {
         query = query.gte('square_feet', filters.squareFootageMin);
       }
 
-      if (filters.squareFootageMax !== undefined) {
+      if (filters.squareFootageMax !== undefined && filters.squareFootageMax !== null && filters.squareFootageMax > 0) {
         query = query.lte('square_feet', filters.squareFootageMax);
       }
 
-      if (filters.yearBuiltMin !== undefined) {
+      if (filters.yearBuiltMin !== undefined && filters.yearBuiltMin !== null && filters.yearBuiltMin > 0) {
         query = query.gte('year_built', filters.yearBuiltMin);
       }
 
-      if (filters.yearBuiltMax !== undefined) {
+      if (filters.yearBuiltMax !== undefined && filters.yearBuiltMax !== null && filters.yearBuiltMax > 0) {
         query = query.lte('year_built', filters.yearBuiltMax);
       }
 
-      if (filters.lotSizeMin !== undefined) {
+      if (filters.lotSizeMin !== undefined && filters.lotSizeMin !== null && filters.lotSizeMin > 0) {
         query = query.gte('lot_size', filters.lotSizeMin);
       }
 
-      if (filters.lotSizeMax !== undefined) {
+      if (filters.lotSizeMax !== undefined && filters.lotSizeMax !== null && filters.lotSizeMax > 0) {
         query = query.lte('lot_size', filters.lotSizeMax);
       }
 
-      if (filters.garageSpaces !== undefined) {
+      if (filters.garageSpaces !== undefined && filters.garageSpaces !== null && filters.garageSpaces >= 0) {
         query = query.gte('garages', filters.garageSpaces);
       }
 
@@ -386,6 +386,26 @@ export class FilterService {
       return result;
     } catch (error) {
       console.error('Filter service error:', error);
+      console.error('Filters that caused error:', filters);
+      
+      // Check for common database type errors
+      if (error instanceof Error && error.message.includes('invalid input syntax for type integer')) {
+        console.error('Database type error - likely null value passed to integer field');
+        console.error('Check filter values:', {
+          priceMin: filters.priceMin,
+          priceMax: filters.priceMax,
+          bedrooms: filters.bedrooms,
+          bathrooms: filters.bathrooms,
+          garageSpaces: filters.garageSpaces,
+          squareFootageMin: filters.squareFootageMin,
+          squareFootageMax: filters.squareFootageMax,
+          yearBuiltMin: filters.yearBuiltMin,
+          yearBuiltMax: filters.yearBuiltMax,
+          lotSizeMin: filters.lotSizeMin,
+          lotSizeMax: filters.lotSizeMax
+        });
+      }
+      
       throw new Error('Failed to apply filters');
     }
   }

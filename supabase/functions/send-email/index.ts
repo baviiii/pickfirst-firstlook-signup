@@ -37,7 +37,7 @@ const commonStyles = `
 // Enhanced email header with gradient
 const getEmailHeader = () => `
   <div style="background: linear-gradient(135deg, ${BRAND_COLORS.secondary} 0%, #2a2a2a 100%); padding: 40px 20px; text-align: center; border-bottom: 4px solid ${BRAND_COLORS.primary};">
-    <img src="https://pickfirst.com.au/logo.png" alt="PickFirst Real Estate" style="max-width: 200px; height: auto; margin-bottom: 10px;" />
+    <img src="https://rkwvgqozbpqgmpbvujgz.supabase.co/storage/v1/object/public/logo/logo.jpg" alt="PickFirst Real Estate" style="max-width: 200px; height: auto; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" />
     <p style="color: ${BRAND_COLORS.primary}; margin: 10px 0 0 0; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;">Your Trusted Property Partner</p>
   </div>
 `;
@@ -48,7 +48,7 @@ const getEmailFooter = () => `
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
       <tr>
         <td style="text-align: center; padding-bottom: 20px;">
-          <img src="https://pickfirst.com.au/logo.png" alt="PickFirst" style="max-width: 120px; height: auto; opacity: 0.8;" />
+          <img src="https://rkwvgqozbpqgmpbvujgz.supabase.co/storage/v1/object/public/logo/logo.jpg" alt="PickFirst" style="max-width: 120px; height: auto; opacity: 0.8; border-radius: 6px;" />
         </td>
       </tr>
       <tr>
