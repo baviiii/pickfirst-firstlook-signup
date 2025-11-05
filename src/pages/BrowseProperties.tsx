@@ -1,4 +1,3 @@
-import { BuyerLayout } from '@/components/layouts/BuyerLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -28,7 +27,6 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import SimplePropertyFilters from '@/components/property/SimplePropertyFilters';
-import { PageWrapper } from '@/components/ui/page-wrapper';
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'price-low' | 'price-high' | 'newest' | 'oldest';
@@ -616,8 +614,7 @@ const BrowsePropertiesPageComponent = () => {
   };
 
   return (
-    <BuyerLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header Info */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -700,10 +697,9 @@ const BrowsePropertiesPageComponent = () => {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Inquiry Dialog */}
-      <Dialog open={isInquiryDialogOpen} onOpenChange={setIsInquiryDialogOpen}>
+        {/* Inquiry Dialog */}
+        <Dialog open={isInquiryDialogOpen} onOpenChange={setIsInquiryDialogOpen}>
         <DialogContent className="w-full max-w-[95vw] sm:max-w-lg bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-yellow-400/20 text-white">
           <DialogHeader>
             <DialogTitle className="text-yellow-400">Enquire About Property</DialogTitle>
@@ -749,7 +745,7 @@ const BrowsePropertiesPageComponent = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </BuyerLayout>
+    </div>
   );
 };
 

@@ -1,4 +1,3 @@
-import { BuyerLayout } from '@/components/layouts/BuyerLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Settings, User, Bell, Lock, CreditCard, Eye, EyeOff, Heart, Activity, Home, Calendar, Check, X } from 'lucide-react';
@@ -398,8 +397,7 @@ const BuyerAccountSettingsPage = () => {
   };
 
   return (
-    <BuyerLayout>
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="overflow-x-auto -mx-2 px-2">
               <TabsList className="bg-card border border-border flex sm:grid sm:grid-cols-6 w-full p-1 gap-1 whitespace-nowrap">
@@ -968,7 +966,6 @@ const BuyerAccountSettingsPage = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </BuyerLayout>
   );
 };
 

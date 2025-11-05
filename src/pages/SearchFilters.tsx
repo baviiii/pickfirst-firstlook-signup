@@ -1,4 +1,3 @@
-import { BuyerLayout } from '@/components/layouts/BuyerLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Search, Zap, TrendingUp, Lock, ChevronDown, ChevronUp } from 'lucide-react';
@@ -102,8 +101,7 @@ const EnhancedSearchFiltersPage = () => {
   };
 
   return (
-    <BuyerLayout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
       {/* Subtle Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-30">
         <div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-gradient-to-r from-yellow-400/10 to-amber-500/10 blur-3xl"></div>
@@ -247,8 +245,7 @@ const EnhancedSearchFiltersPage = () => {
           )}
         </div>
       </div>
-      </div>
-    </BuyerLayout>
+    </div>
   );
 };
 
