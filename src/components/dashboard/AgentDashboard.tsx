@@ -27,6 +27,23 @@ export const AgentDashboard = () => {
       setLoadingMetrics(false);
     };
     fetchMetrics();
+
+    // Check if URL hash indicates we should open the modal
+    if (window.location.hash === '#add-listing') {
+      setShowModal(true);
+      // Clear the hash
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+
+    // Listen for custom event from sidebar
+    const handleOpenModal = () => {
+      setShowModal(true);
+    };
+    window.addEventListener('openAddListingModal', handleOpenModal);
+
+    return () => {
+      window.removeEventListener('openAddListingModal', handleOpenModal);
+    };
   }, []);
 
   const handleListingCreated = () => {

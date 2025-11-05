@@ -176,7 +176,7 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-transparent">
+    <div className="flex min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
       {/* Mobile Overlay */}
       {mobileMenuOpen && (
         <div 
@@ -185,11 +185,13 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
         />
       )}
 
-      {/* Sidebar - Hidden by default, slides in when opened */}
+      {/* Sidebar - Pushes content on desktop, overlay on mobile */}
       <aside className={`${
-        (sidebarOpen || mobileMenuOpen) ? 'translate-x-0' : '-translate-x-full'
+        sidebarOpen ? 'lg:w-72' : 'lg:w-0'
+      } ${
+        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       } 
-      w-72 transition-all duration-300 bg-gradient-to-b from-gray-900/95 to-black/95 backdrop-blur-xl border-r border-pickfirst-yellow/20 flex flex-col h-screen fixed top-0 z-40 lg:z-40`}>
+      w-72 transition-all duration-300 bg-gradient-to-b from-gray-900/95 to-black/95 backdrop-blur-xl border-r border-pickfirst-yellow/20 flex flex-col h-screen fixed lg:relative top-0 z-40 overflow-hidden`}>
         
         {/* Sidebar Header */}
         <div className="p-4 sm:p-6 border-b border-pickfirst-yellow/20">
@@ -311,54 +313,45 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
         </div>
       </aside>
 
-      {/* Floating Menu Button - Always Visible */}
-      <Button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="hidden lg:flex fixed top-4 left-4 z-50 bg-pickfirst-yellow hover:bg-amber-500 text-black shadow-lg hover:shadow-xl transition-all duration-200 rounded-full p-3"
-        size="sm"
-      >
-        <Menu className="h-5 w-5" />
-        {totalNotifications > 0 && (
-          <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs min-w-[20px] h-5 flex items-center justify-center rounded-full">
-            {totalNotifications > 99 ? '99+' : totalNotifications}
-          </Badge>
-        )}
-      </Button>
-
-      {/* Mobile Menu Button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setMobileMenuOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 text-gray-400 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 bg-gray-900/90 backdrop-blur-sm rounded-full p-3"
-      >
-        <Menu className="h-5 w-5" />
-        {totalNotifications > 0 && (
-          <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs min-w-[18px] h-4 flex items-center justify-center rounded-full">
-            {totalNotifications > 9 ? '9+' : totalNotifications}
-          </Badge>
-        )}
-      </Button>
 
       {/* Main Content */}
-      <main className="flex-1 transition-all duration-300 overflow-y-auto h-screen">
-        {/* Top Header Bar - Hidden on mobile, simplified on desktop */}
-        <header className="hidden lg:block sticky top-0 z-10 bg-gradient-to-r from-gray-900/95 to-black/95 backdrop-blur-xl border-b border-pickfirst-yellow/20 px-4 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-2 sm:gap-4 ml-16">
-            {/* Advanced Search Bar */}
-            <div className="flex-1 max-w-2xl">
+      <main className="flex-1 transition-all duration-300 overflow-y-auto h-screen flex flex-col">
+        {/* Minimal Header - Just toggle and notifications */}
+        <header className="sticky top-0 z-10 bg-gradient-to-r from-gray-900/95 to-black/95 backdrop-blur-xl border-b border-pickfirst-yellow/20 px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
+            {/* Left: Menu Toggle */}
+            <Button
+              onClick={() => {
+                if (window.innerWidth < 1024) {
+                  setMobileMenuOpen(!mobileMenuOpen);
+                } else {
+                  setSidebarOpen(!sidebarOpen);
+                }
+              }}
+              variant="ghost"
+              size="sm"
+              className="text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
+            >
+              <Menu className="h-5 w-5" />
+              {totalNotifications > 0 && (
+                <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs min-w-[18px] h-4 flex items-center justify-center rounded-full">
+                  {totalNotifications > 9 ? '9+' : totalNotifications}
+                </Badge>
+              )}
+            </Button>
+
+            {/* Center: Search (desktop only) */}
+            <div className="hidden lg:flex flex-1 max-w-2xl">
               <AdvancedSearchDropdown />
             </div>
 
-            {/* Right Side Actions */}
+            {/* Right: Notifications & Profile */}
             <div className="flex items-center gap-3">
-              {/* Notifications Dropdown */}
               <NotificationDropdown 
                 unreadCount={totalNotifications}
                 onUnreadCountChange={() => {}}
               />
 
-              {/* User Profile */}
               <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/5 border border-pickfirst-yellow/20">
                 <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-gradient-to-br from-pickfirst-yellow to-amber-600 flex items-center justify-center text-black font-bold text-sm">
                   {profile?.full_name?.charAt(0) || 'B'}
@@ -372,8 +365,8 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
           </div>
         </header>
 
-        {/* Content Area - Better spacing and mobile optimization */}
-        <div className="pt-16 lg:pt-4 p-4 sm:p-6">
+        {/* Content Area - Pages will have their own headers */}
+        <div className="flex-1 p-4 sm:p-6">
           {children}
         </div>
       </main>

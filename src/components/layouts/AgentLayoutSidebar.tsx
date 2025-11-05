@@ -62,8 +62,10 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
       icon: PlusCircle,
       description: "Create property listing",
       onClick: () => {
-        // This will be handled by the dashboard modal
-        navigate('/dashboard');
+        // Navigate to dashboard and trigger modal via URL hash
+        navigate('/dashboard#add-listing');
+        // Dispatch custom event for dashboard to open modal
+        window.dispatchEvent(new CustomEvent('openAddListingModal'));
       }
     },
     {
@@ -113,7 +115,7 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-gradient-to-br from-black via-gray-900 to-black">
-        <Sidebar variant="inset" className="bg-gradient-to-b from-gray-900/95 to-black/95 backdrop-blur-xl border-r border-pickfirst-yellow/20">
+        <Sidebar variant="inset" className="bg-gradient-to-b from-gray-900/95 to-black/95 backdrop-blur-xl border-r border-pickfirst-yellow/20 [&>div]:bg-gradient-to-b [&>div]:from-gray-900/95 [&>div]:to-black/95">
           <SidebarHeader className="border-b border-pickfirst-yellow/20 p-4">
             <div 
               className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
@@ -219,21 +221,11 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
           </SidebarFooter>
         </Sidebar>
         
-        <SidebarInset className="flex-1">
-          {/* Header */}
+        <SidebarInset className="flex-1 bg-gradient-to-br from-black via-gray-900 to-black">
+          {/* Minimal Header with just trigger and notifications */}
           <header className="sticky top-0 z-10 bg-gradient-to-r from-gray-900/95 to-black/95 backdrop-blur-xl border-b border-pickfirst-yellow/20 px-4 py-3">
             <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger className="text-pickfirst-yellow hover:bg-pickfirst-yellow/10" />
-                <div>
-                  <h1 className="text-lg font-semibold text-white">
-                    Agent Dashboard
-                  </h1>
-                  <p className="text-sm text-gray-400">
-                    Welcome back, {profile?.full_name?.split(' ')[0] || 'Agent'}!
-                  </p>
-                </div>
-              </div>
+              <SidebarTrigger className="text-pickfirst-yellow hover:bg-pickfirst-yellow/10" />
               
               {/* Right Side Actions */}
               <div className="flex items-center gap-3">
@@ -252,7 +244,7 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
             </div>
           </header>
           
-          {/* Main Content */}
+          {/* Main Content - Pages will have their own headers */}
           <main className="flex-1 p-6">
             {children}
           </main>
