@@ -101,16 +101,10 @@ const EnhancedSearchFiltersPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
-      {/* Subtle Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-30">
-        <div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-gradient-to-r from-yellow-400/10 to-amber-500/10 blur-3xl"></div>
-        <div className="absolute bottom-32 left-16 w-80 h-80 rounded-full bg-gradient-to-r from-yellow-400/5 to-amber-500/5 blur-2xl"></div>
-      </div>
-
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-gray-900/95 border-b border-yellow-400/20 backdrop-blur-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button

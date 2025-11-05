@@ -114,7 +114,25 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-gradient-to-br from-black via-gray-900 to-black">
+      <div className="flex min-h-screen w-full bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
+        {/* Gorgeous Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Primary glow */}
+          <div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-gradient-to-r from-pickfirst-yellow/20 via-amber-500/20 to-pickfirst-yellow/20 blur-3xl animate-pulse"></div>
+          
+          {/* Secondary glow */}
+          <div className="absolute bottom-32 left-16 w-80 h-80 rounded-full bg-gradient-to-r from-pickfirst-yellow/15 via-amber-500/15 to-pickfirst-yellow/15 blur-2xl animate-pulse" style={{animationDelay: '1s'}}></div>
+          
+          {/* Accent glow */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-pickfirst-yellow/10 blur-xl animate-bounce" style={{animationDuration: '4s'}}></div>
+          
+          {/* Moving orbs */}
+          <div className="absolute top-1/4 right-1/4 w-32 h-32 rounded-full bg-pickfirst-yellow/5 blur-lg animate-pulse" style={{animationDuration: '3s'}}></div>
+          <div className="absolute bottom-1/4 left-1/3 w-24 h-24 rounded-full bg-amber-500/8 blur-md animate-pulse" style={{animationDuration: '2s', animationDelay: '0.5s'}}></div>
+          
+          {/* Subtle grid pattern */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.05)_1px,transparent_0)] bg-[length:20px_20px]"></div>
+        </div>
         <Sidebar variant="inset" className="bg-gradient-to-b from-gray-900/95 to-black/95 backdrop-blur-xl border-r border-pickfirst-yellow/20 [&>div]:bg-gradient-to-b [&>div]:from-gray-900/95 [&>div]:to-black/95">
           <SidebarHeader className="border-b border-pickfirst-yellow/20 p-4">
             <div 

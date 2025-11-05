@@ -102,8 +102,7 @@ const OffMarketListings = () => {
   // If user doesn't have access, show upgrade prompt
   if (!canAccessOffMarketListings()) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black p-6">
-        <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto">
           <Button
             variant="ghost"
             onClick={() => navigate(-1)}
@@ -161,14 +160,12 @@ const OffMarketListings = () => {
               </Button>
             </CardContent>
           </Card>
-        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Button
@@ -294,7 +291,6 @@ const OffMarketListings = () => {
           </div>
         )}
       </div>
-    </div>
   );
 };
 
