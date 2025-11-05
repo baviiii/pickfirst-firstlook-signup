@@ -13,7 +13,6 @@ interface SubscriptionContextType {
   openCustomerPortal: () => Promise<void>;
   isFeatureEnabled: (feature: string) => boolean;
   refreshFeatures: () => Promise<void>;
-  // Helper functions for common feature checks
   canUseFavorites: () => boolean;
   getFavoritesLimit: () => number;
   canUseAdvancedSearch: () => boolean;
@@ -24,10 +23,6 @@ interface SubscriptionContextType {
   canAccessOffMarketListings: () => boolean;
   canChatWithAgents: () => boolean;
   canScheduleAppointments: () => boolean;
-  canViewVendorDetails: () => boolean;
-  hasEarlyAccess: () => boolean;
-  canUsePropertyInsights: () => boolean;
-  canUseInvestorFilters: () => boolean;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -199,52 +194,25 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
         });
         setFeatureConfigs(configs);
       } catch (error) {
-        // Fallback to default configs if fetch fails
+        // CLEAN, SIMPLIFIED FEATURE GATES
         setFeatureConfigs({
-          // === SEARCH & DISCOVERY ===
-          'browse_listings': { free: true, basic: true, premium: true },
+          // === CORE FEATURES (All Users) ===
+          'browse_properties': { free: true, basic: true, premium: true },
           'basic_search': { free: true, basic: true, premium: true },
           'save_searches': { free: true, basic: true, premium: true },
-          'early_access_listings': { free: false, basic: true, premium: true },
-          'property_insights': { free: false, basic: true, premium: true },
-          'investor_filters': { free: false, basic: true, premium: true },
+          'property_alerts': { free: true, basic: true, premium: true }, // All users get alerts
+          'agent_messaging': { free: true, basic: true, premium: true }, // All users can message
           
-          // === PROPERTY MANAGEMENT ===
-          'favorites_basic': { free: true, basic: true, premium: true }, // Up to 10 favorites
-          'favorites_unlimited': { free: false, basic: false, premium: true }, // Unlimited favorites
-          'property_comparison_basic': { free: true, basic: true, premium: true }, // Compare 2 properties
-          'property_comparison_unlimited': { free: false, basic: false, premium: true }, // Compare unlimited
-          'property_alerts_basic': { free: true, basic: true, premium: true }, // 3 alerts max
-          'property_alerts_unlimited': { free: false, basic: false, premium: true }, // Unlimited alerts
+          // === LIMITED FEATURES (Free users get limited, Premium gets unlimited) ===
+          'favorites': { free: true, basic: true, premium: true }, // Free: 10, Premium: unlimited
+          'property_comparison': { free: true, basic: true, premium: true }, // Free: 2, Premium: unlimited
           
-          // === COMMUNICATION ===
-          'agent_messaging': { free: false, basic: false, premium: true }, // Premium only
+          // === PREMIUM ONLY FEATURES ===
+          'off_market_properties': { free: false, basic: false, premium: true },
+          'advanced_search': { free: false, basic: false, premium: true },
+          'market_insights': { free: false, basic: false, premium: true },
           'priority_support': { free: false, basic: false, premium: true },
-          
-          // === PREMIUM FEATURES ===
-          'exclusive_offmarket': { free: false, basic: false, premium: true },
-          'vendor_details': { free: false, basic: false, premium: true },
-          'schedule_appointments': { free: false, basic: false, premium: true },
-          'direct_chat_agents': { free: false, basic: false, premium: true },
-          
-          // === NOTIFICATIONS ===
-          'email_notifications': { free: true, basic: true, premium: true },
-          'personalized_alerts': { free: false, basic: true, premium: true },
-          'instant_notifications': { free: false, basic: false, premium: true },
-          
-          // === LEGACY SUPPORT (for backward compatibility) ===
-          'limited_favorites': { free: true, basic: true, premium: true },
-          'standard_agent_contact': { free: true, basic: true, premium: true },
-          'property_inquiry_messaging': { free: true, basic: true, premium: true },
-          'unlimited_favorites': { free: false, basic: false, premium: true },
-          'priority_agent_connections': { free: false, basic: false, premium: true },
-          'email_property_alerts': { free: true, basic: true, premium: true },
-          'direct_messaging': { free: true, basic: true, premium: true },
-          'live_messaging': { free: true, basic: true, premium: true },
-          'message_history_access': { free: false, basic: false, premium: true },
-          'personalized_property_notifications': { free: false, basic: false, premium: true },
-          'property_comparison': { free: true, basic: true, premium: true },
-          'property_alerts': { free: true, basic: true, premium: true }
+          'schedule_appointments': { free: false, basic: false, premium: true }
         });
       }
     };
@@ -308,19 +276,18 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     }
   };
 
-  // Helper functions for common feature checks
+  // SIMPLIFIED HELPER FUNCTIONS
   const canUseFavorites = (): boolean => {
-    return isFeatureEnabled('favorites_basic') || isFeatureEnabled('favorites_unlimited');
+    return isFeatureEnabled('favorites');
   };
 
   const getFavoritesLimit = (): number => {
-    if (isFeatureEnabled('favorites_unlimited')) return -1; // Unlimited
-    if (isFeatureEnabled('favorites_basic')) return 10;
-    return 0; // No favorites allowed
+    if (subscriptionTier === 'premium') return -1; // Unlimited for premium
+    return 10; // 10 for free users
   };
 
   const canUseAdvancedSearch = (): boolean => {
-    return isFeatureEnabled('advanced_search_filters');
+    return isFeatureEnabled('advanced_search');
   };
 
   const canUseMarketInsights = (): boolean => {
@@ -328,49 +295,29 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
   };
 
   const getPropertyComparisonLimit = (): number => {
-    if (isFeatureEnabled('property_comparison_unlimited')) return -1; // Unlimited
-    if (isFeatureEnabled('property_comparison_basic')) return 2;
-    return 0; // No comparison allowed
+    if (subscriptionTier === 'premium') return -1; // Unlimited for premium
+    return 2; // 2 for free users
   };
 
   const getPropertyAlertsLimit = (): number => {
-    if (isFeatureEnabled('property_alerts_unlimited')) return -1; // Unlimited
-    if (isFeatureEnabled('property_alerts_basic')) return 3;
-    return 0; // No alerts allowed
+    // All users get property alerts, no artificial limits
+    return -1; // Unlimited for everyone
   };
 
   const getMessageHistoryDays = (): number => {
-    // Message history is unlimited for all premium users with messaging access
-    return subscriptionTier === 'premium' ? -1 : 0;
+    return subscriptionTier === 'premium' ? -1 : 30; // Premium: unlimited, Free: 30 days
   };
 
-  // New helper functions for new subscription features
   const canAccessOffMarketListings = (): boolean => {
-    return isFeatureEnabled('exclusive_offmarket');
+    return isFeatureEnabled('off_market_properties');
   };
 
   const canChatWithAgents = (): boolean => {
-    return isFeatureEnabled('agent_messaging') || subscriptionTier === 'premium';
+    return isFeatureEnabled('agent_messaging'); // All users can message
   };
 
   const canScheduleAppointments = (): boolean => {
-    return subscriptionTier === 'premium'; // Only premium users
-  };
-
-  const canViewVendorDetails = (): boolean => {
-    return isFeatureEnabled('vendor_details');
-  };
-
-  const hasEarlyAccess = (): boolean => {
-    return isFeatureEnabled('early_access_listings');
-  };
-
-  const canUsePropertyInsights = (): boolean => {
-    return isFeatureEnabled('property_insights');
-  };
-
-  const canUseInvestorFilters = (): boolean => {
-    return isFeatureEnabled('investor_filters');
+    return isFeatureEnabled('schedule_appointments');
   };
 
   // Set up auth state listener
@@ -431,7 +378,7 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
         openCustomerPortal,
         isFeatureEnabled,
         refreshFeatures,
-        // Helper functions
+        // SIMPLIFIED HELPER FUNCTIONS
         canUseFavorites,
         getFavoritesLimit,
         canUseAdvancedSearch,
@@ -442,10 +389,6 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
         canAccessOffMarketListings,
         canChatWithAgents,
         canScheduleAppointments,
-        canViewVendorDetails,
-        hasEarlyAccess,
-        canUsePropertyInsights,
-        canUseInvestorFilters,
       }}
     >
       {children}

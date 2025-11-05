@@ -230,7 +230,7 @@ const BrowsePropertiesPageComponent = () => {
     }
   };
 
-  const handleInquireProperty = (property: PropertyListing, e: React.MouseEvent) => {
+  const handleEnquireProperty = (property: PropertyListing, e: React.MouseEvent) => {
     e.stopPropagation();
     
     if (!profile) {
@@ -424,17 +424,17 @@ const BrowsePropertiesPageComponent = () => {
                       className="text-blue-400 border-blue-400/40 cursor-not-allowed"
                     >
                       <MessageSquare className="w-4 h-4 mr-2" />
-                      Already Inquired
+                      Already Enquired
                     </Button>
                   ) : (
                     <Button 
                       size="sm" 
                       variant="outline"
                       className="text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10"
-                      onClick={(e) => handleInquireProperty(listing, e)}
+                      onClick={(e) => handleEnquireProperty(listing, e)}
                     >
                       <MessageSquare className="w-4 h-4 mr-2" />
-                      Inquire
+                      Enquire
                     </Button>
                   )
                 ) : (
@@ -584,17 +584,17 @@ const BrowsePropertiesPageComponent = () => {
                     className="flex-1 text-blue-400 border-blue-400/40 cursor-not-allowed text-xs py-2"
                   >
                     <MessageSquare className="w-3 h-3 mr-1" />
-                    Inquired
+                    Enquired
                   </Button>
                 ) : (
                   <Button 
                     size="sm" 
                     variant="outline"
                     className="flex-1 text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10 text-xs py-2"
-                    onClick={(e) => handleInquireProperty(listing, e)}
+                    onClick={(e) => handleEnquireProperty(listing, e)}
                   >
                     <MessageSquare className="w-3 h-3 mr-1" />
-                    Inquire
+                    Enquire
                   </Button>
                 )
               ) : (
@@ -706,7 +706,7 @@ const BrowsePropertiesPageComponent = () => {
       <Dialog open={isInquiryDialogOpen} onOpenChange={setIsInquiryDialogOpen}>
         <DialogContent className="w-full max-w-[95vw] sm:max-w-lg bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-yellow-400/20 text-white">
           <DialogHeader>
-            <DialogTitle className="text-yellow-400">Inquire About Property</DialogTitle>
+            <DialogTitle className="text-yellow-400">Enquire About Property</DialogTitle>
             <DialogDescription className="text-gray-300">
               Send a message to the agent about {selectedProperty?.title}
             </DialogDescription>

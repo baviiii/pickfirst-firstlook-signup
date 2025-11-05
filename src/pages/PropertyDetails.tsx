@@ -147,7 +147,7 @@ const PropertyDetailsComponent = () => {
     }
   };
 
-  const handleInquire = () => {
+  const handleEnquire = () => {
     if (!profile) {
       toast.error('Please log in to inquire about properties');
       navigate('/auth');
@@ -595,12 +595,12 @@ const PropertyDetailsComponent = () => {
                 ) : (
                   <div className="space-y-3">
                     <Button 
-                      onClick={handleInquire}
+                      onClick={handleEnquire}
                       className="w-full bg-yellow-400 hover:bg-amber-500 text-black font-medium py-4 text-base transition-all duration-300 hover:scale-[1.02] shadow-lg"
                       size="lg"
                     >
                       <MessageSquare className="w-5 h-5 mr-2" />
-                      Make an Inquiry
+                      Make an Enquiry
                     </Button>
                     <p className="text-gray-400 text-xs text-center">
                       Connect directly with the listing agent
@@ -643,7 +643,7 @@ const PropertyDetailsComponent = () => {
       <Dialog open={isInquiryDialogOpen} onOpenChange={setIsInquiryDialogOpen}>
         <DialogContent className="w-full max-w-[95vw] sm:max-w-lg bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-yellow-400/20 text-white">
           <DialogHeader>
-            <DialogTitle className="text-yellow-400">Inquire About Property</DialogTitle>
+            <DialogTitle className="text-yellow-400">Enquire About Property</DialogTitle>
             <DialogDescription className="text-gray-300">
               Send a message to the agent about {property.title}
             </DialogDescription>

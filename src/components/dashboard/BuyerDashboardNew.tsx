@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { PersonalizedPropertyRecommendations } from '@/components/buyer/PersonalizedPropertyRecommendations';
 import { PropertyComparisonTool } from '@/components/property/PropertyComparisonTool';
 import PropertyAlerts from '@/components/buyer/PropertyAlerts';
-import { BuyerLayout } from '@/components/layouts/BuyerLayout';
+import { BuyerLayoutImproved as BuyerLayout } from '@/components/layouts/BuyerLayoutImproved';
 import { NewUserSetupDialog } from '@/components/auth/NewUserSetupDialog';
 import { BuyerOnboardingModal } from '@/components/onboarding/BuyerOnboardingModal';
 import { useAuth } from '@/hooks/useAuth';

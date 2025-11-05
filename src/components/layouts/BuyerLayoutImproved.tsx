@@ -31,13 +31,13 @@ interface BuyerLayoutProps {
   children: ReactNode;
 }
 
-export const BuyerLayout = ({ children }: BuyerLayoutProps) => {
+export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
   const { profile, signOut } = useAuth();
   const { subscriptionTier, openCustomerPortal } = useSubscription();
   const navigate = useNavigate();
   
-  // State management
-  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
+  // State management - Start with sidebar closed for cleaner look
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [pendingAppointments, setPendingAppointments] = useState(0);
@@ -79,30 +79,19 @@ export const BuyerLayout = ({ children }: BuyerLayoutProps) => {
         ).length;
         setNewPropertyAlerts(newAlerts);
         
-        // Count new properties from last 3 days
+        // Count recent properties (last 3 days)
         const threeDaysAgo = new Date();
         threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-        const newProps = (listingsResult.data || []).filter(
+        const recent = (listingsResult.data || []).filter(
           listing => new Date(listing.created_at || '') > threeDaysAgo
         ).length;
-        setRecentProperties(newProps);
+        setRecentProperties(recent);
       } catch (error) {
         console.error('Error fetching notifications:', error);
       }
     };
-    
+
     fetchNotifications();
-    
-    // Set up real-time message updates
-    const messageSubscription = messageService.subscribeToConversations(() => {
-      messageService.getConversationStats()
-        .then(stats => setUnreadMessages(stats.unread || 0))
-        .catch(console.error);
-    });
-    
-    return () => {
-      messageSubscription?.unsubscribe();
-    };
   }, [profile]);
 
   // Get subscription badge
@@ -179,9 +168,9 @@ export const BuyerLayout = ({ children }: BuyerLayoutProps) => {
     },
     { 
       icon: Settings, 
-      label: 'Settings', 
-      description: 'Update profile', 
-      color: 'bg-gray-500/10 text-gray-500', 
+      label: 'Account Settings', 
+      description: 'Manage your account', 
+      color: 'bg-gray-500/10 text-gray-400', 
       onClick: () => navigate('/buyer-account-settings') 
     }
   ];
@@ -196,10 +185,12 @@ export const BuyerLayout = ({ children }: BuyerLayoutProps) => {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Hidden by default, slides in when opened */}
       <aside className={`${
-        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 ${sidebarOpen ? 'w-72' : 'w-20'} transition-all duration-300 bg-gradient-to-b from-gray-900/95 to-black/95 backdrop-blur-xl border-r border-pickfirst-yellow/20 flex flex-col h-screen fixed lg:sticky top-0 z-40 lg:z-20`}>
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:-translate-x-full'} 
+      w-72 transition-all duration-300 bg-gradient-to-b from-gray-900/95 to-black/95 backdrop-blur-xl border-r border-pickfirst-yellow/20 flex flex-col h-screen fixed top-0 z-40`}>
+        
         {/* Sidebar Header */}
         <div className="p-4 sm:p-6 border-b border-pickfirst-yellow/20">
           <div className="flex items-center justify-between">
@@ -218,30 +209,21 @@ export const BuyerLayout = ({ children }: BuyerLayoutProps) => {
                   />
                 </div>
               </div>
-              {sidebarOpen && (
-                <span className="font-bold text-white text-lg tracking-wide">PickFirst</span>
-              )}
+              <span className="font-bold text-white text-lg tracking-wide">PickFirst</span>
             </div>
             
-            {/* Toggle Buttons */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="text-gray-400 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 hidden lg:flex"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-gray-400 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 lg:hidden"
-              >
-                <CloseIcon className="h-5 w-5" />
-              </Button>
-            </div>
+            {/* Close Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSidebarOpen(false);
+                setMobileMenuOpen(false);
+              }}
+              className="text-gray-400 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
+            >
+              <CloseIcon className="h-5 w-5" />
+            </Button>
           </div>
         </div>
 
@@ -256,148 +238,113 @@ export const BuyerLayout = ({ children }: BuyerLayoutProps) => {
                 key={index}
                 onClick={() => {
                   action.onClick();
+                  setSidebarOpen(false);
                   setMobileMenuOpen(false);
                 }}
-                className={`w-full flex items-center gap-3 rounded-lg transition-all duration-200 ${
-                  sidebarOpen ? 'justify-start px-4 py-3' : 'justify-center p-3'
-                } hover:bg-pickfirst-yellow/10 hover:border-pickfirst-yellow/30 border border-transparent group relative`}
-                title={!sidebarOpen ? action.label : undefined}
+                className="w-full flex items-center gap-3 rounded-lg transition-all duration-200 justify-start px-4 py-3 hover:bg-pickfirst-yellow/10 hover:border-pickfirst-yellow/30 border border-transparent group relative"
               >
-                <div className={`p-2 rounded-lg ${action.color} transition-transform group-hover:scale-110 ${
-                  !sidebarOpen ? 'mx-auto' : ''
-                }`}>
+                <div className={`p-2 rounded-lg ${action.color} transition-transform group-hover:scale-110`}>
                   <Icon className="h-4 w-4" />
                 </div>
-                {sidebarOpen && (
-                  <>
-                    <div className="flex-1 text-left">
-                      <div className="text-sm font-medium text-white">{action.label}</div>
-                      <div className="text-xs text-gray-400 line-clamp-1">{action.description}</div>
-                    </div>
-                    {showPremiumBadge && (
-                      <Crown className="w-4 h-4 text-pickfirst-yellow" />
-                    )}
-                  </>
-                )}
-                {!sidebarOpen && showPremiumBadge && (
-                  <div className="absolute -top-1 -right-1">
-                    <div className="w-2 h-2 rounded-full bg-pickfirst-yellow animate-pulse"></div>
-                  </div>
+                <div className="flex-1 text-left">
+                  <div className="text-sm font-medium text-white">{action.label}</div>
+                  <div className="text-xs text-gray-400 line-clamp-1">{action.description}</div>
+                </div>
+                {showPremiumBadge && (
+                  <Crown className="w-4 h-4 text-pickfirst-yellow" />
                 )}
               </button>
             );
           })}
         </nav>
 
-        {/* Collapsed Sidebar Divider */}
-        {!sidebarOpen && (
-          <div className="px-2 py-2">
-            <div className="h-px bg-gradient-to-r from-transparent via-pickfirst-yellow/30 to-transparent"></div>
-          </div>
-        )}
-
         {/* Sidebar Footer */}
         <div className="p-4 border-t border-pickfirst-yellow/20 space-y-3">
-          {sidebarOpen ? (
-            <>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-pickfirst-yellow" />
-                    <span className="text-sm text-gray-300">Plan</span>
-                  </div>
-                  {getSubscriptionBadge()}
-                </div>
-                {subscriptionTier === 'free' ? (
-                  <Button
-                    onClick={() => navigate('/pricing')}
-                    className="w-full bg-pickfirst-yellow hover:bg-amber-500 text-black text-sm"
-                    size="sm"
-                  >
-                    <Crown className="h-3 w-3 mr-2" />
-                    Upgrade
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={openCustomerPortal}
-                    variant="outline"
-                    className="w-full text-gray-300 border-pickfirst-yellow/30 hover:bg-pickfirst-yellow/10 text-sm"
-                    size="sm"
-                  >
-                    Manage Plan
-                  </Button>
-                )}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-pickfirst-yellow" />
+                <span className="text-sm text-gray-300">Plan</span>
               </div>
-              <div className="pt-2 border-t border-pickfirst-yellow/10 space-y-2">
-                <Button
-                  onClick={() => navigate('/about')}
-                  variant="ghost"
-                  className="w-full justify-start text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 text-sm"
-                  size="sm"
-                >
-                  <Info className="h-4 w-4 mr-2" />
-                  About Us
-                </Button>
-                <Button
-                  onClick={handleSignOut}
-                  variant="ghost"
-                  className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10 text-sm"
-                  size="sm"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
-              </div>
-            </>
-          ) : (
-            <div className="space-y-2">
+              {getSubscriptionBadge()}
+            </div>
+            {subscriptionTier === 'free' ? (
               <Button
                 onClick={() => navigate('/pricing')}
-                variant="ghost"
+                className="w-full bg-pickfirst-yellow hover:bg-amber-500 text-black text-sm"
                 size="sm"
-                className="w-full flex justify-center"
-                title="Upgrade Plan"
               >
-                <Crown className="h-5 w-5 text-pickfirst-yellow" />
+                <Crown className="h-3 w-3 mr-2" />
+                Upgrade
               </Button>
+            ) : (
               <Button
-                onClick={() => navigate('/about')}
-                variant="ghost"
+                onClick={openCustomerPortal}
+                variant="outline"
+                className="w-full text-gray-300 border-pickfirst-yellow/30 hover:bg-pickfirst-yellow/10 text-sm"
                 size="sm"
-                className="w-full flex justify-center text-gray-400 hover:text-pickfirst-yellow"
-                title="About Us"
               >
-                <Info className="h-5 w-5" />
+                Manage Plan
               </Button>
-              <Button
-                onClick={handleSignOut}
-                variant="ghost"
-                size="sm"
-                className="w-full flex justify-center text-red-400 hover:text-red-300"
-                title="Sign Out"
-              >
-                <LogOut className="h-5 w-5" />
-              </Button>
-            </div>
-          )}
+            )}
+          </div>
+          <div className="pt-2 border-t border-pickfirst-yellow/10 space-y-2">
+            <Button
+              onClick={() => navigate('/about')}
+              variant="ghost"
+              className="w-full justify-start text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 text-sm"
+              size="sm"
+            >
+              <Info className="h-4 w-4 mr-2" />
+              About Us
+            </Button>
+            <Button
+              onClick={handleSignOut}
+              variant="ghost"
+              className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10 text-sm"
+              size="sm"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </aside>
 
+      {/* Floating Menu Button - Always Visible */}
+      <Button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="hidden lg:flex fixed top-4 left-4 z-50 bg-pickfirst-yellow hover:bg-amber-500 text-black shadow-lg hover:shadow-xl transition-all duration-200 rounded-full p-3"
+        size="sm"
+      >
+        <Menu className="h-5 w-5" />
+        {totalNotifications > 0 && (
+          <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs min-w-[20px] h-5 flex items-center justify-center rounded-full">
+            {totalNotifications > 99 ? '99+' : totalNotifications}
+          </Badge>
+        )}
+      </Button>
+
+      {/* Mobile Menu Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setMobileMenuOpen(true)}
+        className="lg:hidden fixed top-4 left-4 z-50 text-gray-400 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 bg-gray-900/90 backdrop-blur-sm rounded-full p-3"
+      >
+        <Menu className="h-5 w-5" />
+        {totalNotifications > 0 && (
+          <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs min-w-[18px] h-4 flex items-center justify-center rounded-full">
+            {totalNotifications > 9 ? '9+' : totalNotifications}
+          </Badge>
+        )}
+      </Button>
+
       {/* Main Content */}
       <main className="flex-1 transition-all duration-300 overflow-y-auto h-screen">
-        {/* Top Header Bar */}
-        <header className="sticky top-0 z-10 bg-gradient-to-r from-gray-900/95 to-black/95 backdrop-blur-xl border-b border-pickfirst-yellow/20 px-4 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-2 sm:gap-4">
-            {/* Mobile Menu Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden text-gray-400 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 p-3 -ml-2"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-
+        {/* Top Header Bar - Hidden on mobile, simplified on desktop */}
+        <header className="hidden lg:block sticky top-0 z-10 bg-gradient-to-r from-gray-900/95 to-black/95 backdrop-blur-xl border-b border-pickfirst-yellow/20 px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-4 ml-16">
             {/* Advanced Search Bar */}
             <div className="flex-1 max-w-2xl">
               <AdvancedSearchDropdown />
@@ -425,8 +372,8 @@ export const BuyerLayout = ({ children }: BuyerLayoutProps) => {
           </div>
         </header>
 
-        {/* Page Content */}
-        <div className="p-4 sm:p-6">
+        {/* Content Area - Better spacing and mobile optimization */}
+        <div className="pt-16 lg:pt-4 p-4 sm:p-6">
           {children}
         </div>
       </main>

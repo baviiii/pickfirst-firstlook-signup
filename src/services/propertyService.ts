@@ -8,11 +8,60 @@ export type PropertyListing = Tables<'property_listings'>;
 export type PropertyFavorite = Tables<'property_favorites'>;
 export type PropertyInquiry = Tables<'property_inquiries'>;
 
+// Helper function to parse price input (ranges, text, numbers)
+function parsePriceForDatabase(priceInput: string | number | undefined): number {
+  if (typeof priceInput === 'number') {
+    return priceInput;
+  }
+  
+  if (typeof priceInput === 'string') {
+    const cleanInput = priceInput.trim();
+    
+    // Handle ranges like "900,000-1,200,000" or "900k-1.2M"
+    const rangeMatch = cleanInput.match(/^([\d,k.m]+)\s*[-–—]\s*([\d,k.m]+)$/i);
+    if (rangeMatch) {
+      const minPrice = parseNumericPrice(rangeMatch[1]);
+      const maxPrice = parseNumericPrice(rangeMatch[2]);
+      // Use the minimum price for database storage and filtering
+      return minPrice > 0 ? minPrice : maxPrice;
+    }
+    
+    // Handle single numeric values
+    const numericPrice = parseNumericPrice(cleanInput);
+    if (numericPrice > 0) {
+      return numericPrice;
+    }
+    
+    // For text like "Best Offers", "POA", etc., use 0 as fallback
+    return 0;
+  }
+  
+  return 0;
+}
+
+// Helper to parse numeric price with K/M suffixes
+function parseNumericPrice(priceStr: string): number {
+  const cleaned = priceStr.replace(/[,$\s]/g, '').toLowerCase();
+  
+  if (cleaned.includes('k')) {
+    const num = parseFloat(cleaned.replace('k', ''));
+    return isNaN(num) ? 0 : num * 1000;
+  }
+  
+  if (cleaned.includes('m')) {
+    const num = parseFloat(cleaned.replace('m', ''));
+    return isNaN(num) ? 0 : num * 1000000;
+  }
+  
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
+}
+
 export interface CreatePropertyListingData {
   title: string;
   description?: string;
   property_type: string;
-  price: number | undefined;
+  price: string | number | undefined;
   bedrooms?: number | undefined;
   bathrooms?: number | undefined;
   square_feet?: number | undefined;
@@ -29,7 +78,7 @@ export interface CreatePropertyListingData {
   contact_phone?: string;
   contact_email?: string;
   showing_instructions?: string;
-  vendor_ownership_duration?: number | null;
+  vendor_ownership_duration?: string | null;
   vendor_special_conditions?: string | null;
   vendor_favorable_contracts?: string | null;
   vendor_motivation?: string | null;
@@ -202,15 +251,17 @@ export class PropertyService {
         return { data: null, error: { message: 'Property title must be at least 3 characters long' } };
       }
 
-      if (listingData.price && listingData.price <= 0) {
+      // Parse and validate price
+      const numericPrice = parsePriceForDatabase(listingData.price);
+      if (listingData.price && numericPrice < 0) {
         await auditService.log(user.id, 'VALIDATION_ERROR', 'property_listings', {
           newValues: {
             error: 'invalid price',
-            price: listingData.price
+            price: listingData.price,
+            parsedPrice: numericPrice
           }
-          // Removed recordId for validation errors since no actual record exists
         });
-        return { data: null, error: { message: 'Property price must be greater than 0' } };
+        return { data: null, error: { message: 'Invalid price format' } };
       }
 
       if (listingData.contact_email && !validateEmail(listingData.contact_email)) {
@@ -280,11 +331,13 @@ export class PropertyService {
         }
       });
 
-      // Sanitize inputs
+      // Sanitize inputs and convert price
       const sanitizedData = {
         ...listingData,
         title: sanitizeInput(listingData.title),
         description: listingData.description ? sanitizeInput(listingData.description) : undefined,
+        price: numericPrice, // Use parsed numeric price for database
+        price_display: typeof listingData.price === 'string' ? listingData.price : undefined, // Store original text
         address: sanitizeInput(listingData.address),
         city: sanitizeInput(listingData.city),
         state: sanitizeInput(listingData.state),
@@ -417,10 +470,16 @@ export class PropertyService {
         }
       }
 
+      // Convert price if it's a string/range
+      const updateData: any = { ...data };
+      if (data.price !== undefined) {
+        updateData.price = parsePriceForDatabase(data.price);
+      }
+
       // Update the listing
       const { data: updatedListing, error } = await supabase
         .from('property_listings')
-        .update(data)
+        .update(updateData)
         .eq('id', id)
         .select('*')
         .single();
@@ -529,8 +588,10 @@ export class PropertyService {
         return { data: null, error: { message: 'Property title must be at least 3 characters long' } };
       }
 
-      if (listingData.price && listingData.price <= 0) {
-        return { data: null, error: { message: 'Property price must be greater than 0' } };
+      // Parse and validate price
+      const numericPrice = parsePriceForDatabase(listingData.price);
+      if (listingData.price && numericPrice < 0) {
+        return { data: null, error: { message: 'Invalid price format' } };
       }
 
       if (listingData.contact_email && !validateEmail(listingData.contact_email)) {
@@ -546,6 +607,8 @@ export class PropertyService {
         ...listingData,
         title: sanitizeInput(listingData.title),
         description: listingData.description ? sanitizeInput(listingData.description) : undefined,
+        price: numericPrice, // Use parsed numeric price for database
+        price_display: typeof listingData.price === 'string' ? listingData.price : undefined, // Store original text
         address: sanitizeInput(listingData.address),
         city: sanitizeInput(listingData.city),
         state: sanitizeInput(listingData.state),

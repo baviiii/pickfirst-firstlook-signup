@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProfileService, { UserPreferences } from '@/services/profileService';
+import { PhoneInput } from '@/components/ui/phone-input';
 
 interface ProfileData {
   full_name: string;
@@ -277,12 +278,12 @@ export const ProfileSettings = () => {
                   </div>
                   <div>
                     <Label htmlFor="phone" className="text-white">Phone</Label>
-                    <Input
+                    <PhoneInput
                       id="phone"
                       value={profileData.phone}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
-                      className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
-                      placeholder="(555) 123-4567"
+                      onChange={(value) => setProfileData(prev => ({ ...prev, phone: value }))}
+                      placeholder="Enter phone number"
+                      className="bg-white/5 border-white/20 text-white"
                     />
                   </div>
                   <div>

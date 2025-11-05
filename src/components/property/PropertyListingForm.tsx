@@ -5,13 +5,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LocationAutocomplete } from '@/components/ui/LocationAutocomplete';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { PropertyService, CreatePropertyListingData } from '@/services/propertyService';
 import { googleMapsService } from '@/services/googleMapsService';
 import { InputSanitizer } from '@/utils/inputSanitization';
 import { toast } from 'sonner';
 import { Loader2, Home, MapPin, DollarSign, Bed, Bath, Ruler, Phone, Mail, Upload, X, ImageIcon, CheckCircle, AlertCircle, Search, Clock, FileText, Handshake, Lightbulb, Sparkles } from 'lucide-react';
-import { withErrorBoundary } from '@/components/ui/error-boundary';
 
 interface PropertyListingFormProps {
   onSuccess?: () => void;
@@ -31,6 +32,9 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
   const [loading, setLoading] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [floorPlanFiles, setFloorPlanFiles] = useState<File[]>([]);
+  const [floorPlanPreviews, setFloorPlanPreviews] = useState<string[]>([]);
+  const [openInspections, setOpenInspections] = useState<Array<{ date: string; startTime: string; endTime: string }>>([]);
   const [geocodingStatus, setGeocodingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
@@ -43,7 +47,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
   const [listingType, setListingType] = useState<'on-market' | 'off-market'>('on-market');
   
   const [formData, setFormData] = useState<CreatePropertyListingData & {
-    vendor_ownership_duration?: number;
+    vendor_ownership_duration?: string;
     vendor_special_conditions?: string;
     vendor_favorable_contracts?: string;
     vendor_motivation?: string;
@@ -66,7 +70,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
     showing_instructions: '',
     features: [],
     images: [],
-    vendor_ownership_duration: 0,
+    vendor_ownership_duration: '',
     vendor_special_conditions: '',
     vendor_favorable_contracts: '',
     vendor_motivation: ''
@@ -75,16 +79,17 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
   const propertyTypes = [
     { value: 'house', label: 'House' },
     { value: 'apartment', label: 'Apartment' },
-    { value: 'condo', label: 'Condo' },
+    { value: 'unit', label: 'Unit' },
     { value: 'townhouse', label: 'Townhouse' },
+    { value: 'acreage', label: 'Acreage' },
     { value: 'land', label: 'Land' },
     { value: 'commercial', label: 'Commercial' },
     { value: 'other', label: 'Other' }
   ];
 
   const commonFeatures = [
-    'Pool', 'Air Conditioning', 'Dishwasher', 'Fireplace', 'Basement', 'Attic', 'Deck', 'Patio',
-    'Garden', 'Central Air', 'Heating', 'Washer/Dryer', 'Hardwood Floors', 'Carpet', 'Tile Floors', 
+    'Pool', 'Dishwasher', 'Fireplace', 'Deck', 'Patio',
+    'Garden', 'Ducted Heating/Cooling', 'Washer/Dryer', 'Hardwood Floors', 'Carpet', 'Tile Floors', 
     'Granite Countertops', 'Stainless Steel Appliances', 'Walk-in Closet', 'Master Suite', 
     'Balcony', 'Study', 'Solar Panels', 'Security System', 'Outdoor Entertainment', 'Ensuite'
   ];
@@ -205,25 +210,12 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
   }, []);
 
   const handleInputChange = (field: keyof CreatePropertyListingData, value: any) => {
-    // Allow free typing - sanitization will happen on submit
-    // DEBUG: Log the input to see what's happening
+    // Allow completely free typing - NO sanitization during input
+    // All validation and sanitization happens only on submit
     console.log(`Input change - Field: ${field}, Value: "${value}", Length: ${value?.length}`);
     
-    // Only validate email format as user types (but don't block input)
-    let sanitizedValue = value;
-    
-    // For email, allow typing but don't block invalid formats during typing
-    // Full validation happens on submit
-    if (field === 'contact_email' && value && typeof value === 'string') {
-      // Only sanitize email if it looks complete (contains @)
-      if (value.includes('@')) {
-        const emailValidation = InputSanitizer.validateEmail(value);
-        // Don't block input, just update the value
-        sanitizedValue = emailValidation.isValid ? emailValidation.sanitizedValue : value;
-      }
-    }
-    
-    setFormData(prev => ({ ...prev, [field]: sanitizedValue }));
+    // Store the raw value directly without any processing
+    setFormData(prev => ({ ...prev, [field]: value }));
     
     // Reset geocoding status when address fields change
     if (['address', 'city', 'state', 'zip_code'].includes(field)) {
@@ -231,9 +223,9 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
       setCoordinates(null);
     }
 
-    // Handle address search for autocomplete
-    if (field === 'address') {
-      handleAddressSearch(sanitizedValue);
+    // Handle address search for autocomplete (only for address field)
+    if (field === 'address' && typeof value === 'string') {
+      handleAddressSearch(value);
     }
   };
 
@@ -286,8 +278,8 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    if (files.length + imageFiles.length > 10) {
-      toast.error('Maximum 10 images allowed');
+    if (files.length + imageFiles.length > 25) {
+      toast.error('Maximum 25 images allowed');
       return;
     }
 
@@ -311,6 +303,71 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
     const newPreviews = imagePreviews.filter((_, i) => i !== index);
     setImageFiles(newFiles);
     setImagePreviews(newPreviews);
+  };
+
+  const handleFloorPlanUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length + floorPlanFiles.length > 5) {
+      toast.error('Maximum 5 floor plans allowed');
+      return;
+    }
+
+    const newFiles = [...floorPlanFiles, ...files];
+    setFloorPlanFiles(newFiles);
+
+    // Create previews
+    const newPreviews = [...floorPlanPreviews];
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        newPreviews.push(e.target?.result as string);
+        setFloorPlanPreviews([...newPreviews]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeFloorPlan = (index: number) => {
+    const newFiles = floorPlanFiles.filter((_, i) => i !== index);
+    const newPreviews = floorPlanPreviews.filter((_, i) => i !== index);
+    setFloorPlanFiles(newFiles);
+    setFloorPlanPreviews(newPreviews);
+  };
+
+  const addOpenInspection = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateStr = tomorrow.toISOString().split('T')[0];
+    
+    setOpenInspections(prev => [...prev, {
+      date: dateStr,
+      startTime: '10:00',
+      endTime: '10:30'
+    }]);
+  };
+
+  const updateOpenInspection = (index: number, field: 'date' | 'startTime' | 'endTime', value: string) => {
+    setOpenInspections(prev => prev.map((inspection, i) => 
+      i === index ? { ...inspection, [field]: value } : inspection
+    ));
+  };
+
+  const removeOpenInspection = (index: number) => {
+    setOpenInspections(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const formatOpenInspectionsForSubmission = () => {
+    if (openInspections.length === 0) return '';
+    
+    return openInspections.map(inspection => {
+      const date = new Date(inspection.date).toLocaleDateString('en-AU', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      return `${date} from ${inspection.startTime} to ${inspection.endTime}`;
+    }).join('\n');
   };
 
   // Auto-detect property features from description using keyword matching
@@ -490,13 +547,14 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
         sanitizedFormData.contact_email = emailValidation.sanitizedValue;
       }
       
-      // Add coordinates and listing source to the form data
+      // Add coordinates, listing source, and formatted open inspections to the form data
       const listingDataWithCoordinates = {
         ...sanitizedFormData,
         latitude: coordinates.lat,
         longitude: coordinates.lng,
         listing_source: listingType === 'off-market' ? 'agent_posted' : 'external_feed',
-        vendor_ownership_duration: sanitizedFormData.vendor_ownership_duration || null,
+        showing_instructions: formatOpenInspectionsForSubmission(),
+        vendor_ownership_duration: sanitizedFormData.vendor_ownership_duration?.trim() || null,
         vendor_special_conditions: sanitizedFormData.vendor_special_conditions || null,
         vendor_favorable_contracts: sanitizedFormData.vendor_favorable_contracts || null,
         vendor_motivation: sanitizedFormData.vendor_motivation || null
@@ -666,7 +724,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
             </p>
           </div>
 
-          {/* Price with Comma Formatting */}
+          {/* Price - Allow text, numbers, and ranges */}
           <div className="space-y-2">
             <Label htmlFor="price" className="text-white font-semibold flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
@@ -675,16 +733,15 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
             <Input
               id="price"
               type="text"
-              value={formData.price ? formData.price.toLocaleString() : ''}
-              onChange={(e) => {
-                const numericValue = e.target.value.replace(/,/g, '');
-                const parsedValue = parseFloat(numericValue) || 0;
-                handleInputChange('price', parsedValue);
-              }}
-              placeholder="e.g., 750,000"
+              value={formData.price || ''}
+              onChange={(e) => handleInputChange('price', e.target.value)}
+              placeholder="e.g., 750,000 or Best Offers or 900,000-1,200,000"
               className="bg-white/5 border border-white/20 text-white"
               required
             />
+            <p className="text-xs text-gray-400">
+              💡 Examples: 750,000 • 900,000-1,200,000 • 1.2M-1.5M • Best Offers • Price on Application
+            </p>
           </div>
 
           {/* Property Details */}
@@ -737,7 +794,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
             <div className="space-y-2">
               <Label htmlFor="square_feet" className="text-white font-semibold flex items-center gap-2">
                 <Ruler className="h-4 w-4" />
-                Sq Ft
+                Square Meters
               </Label>
               <Input
                 id="square_feet"
@@ -862,13 +919,13 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="zip_code" className="text-white">ZIP Code *</Label>
+                <Label htmlFor="zip_code" className="text-white">Post Code *</Label>
                 <Input
                   id="zip_code"
                   value={formData.zip_code}
                   onChange={(e) => handleInputChange('zip_code', e.target.value)}
                   onBlur={handleAddressBlur}
-                  placeholder="ZIP Code"
+                  placeholder="Post Code"
                   className="bg-white/5 border border-white/20 text-white"
                   required
                 />
@@ -911,7 +968,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
               <Label htmlFor="images" className="cursor-pointer">
                 <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center hover:border-pickfirst-yellow/40 transition-colors">
                   <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-gray-400">Click to upload images (max 10)</p>
+                  <p className="text-gray-400">Click to upload images (max 25)</p>
                   <p className="text-xs text-gray-500 mt-1">JPG, PNG, GIF up to 5MB each</p>
                 </div>
               </Label>
@@ -944,6 +1001,58 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
                     >
                       <X className="h-3 w-3" />
                     </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Floor Plans Upload */}
+          <div className="space-y-4">
+            <Label className="text-white font-semibold flex items-center gap-2">
+              <FileText className="w-4 h-4 text-pickfirst-yellow" />
+              Floor Plans
+            </Label>
+            <div className="space-y-4">
+              <Label htmlFor="floorplans" className="cursor-pointer">
+                <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center hover:border-pickfirst-yellow/40 transition-colors">
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-gray-400">Click to upload floor plans (max 5)</p>
+                  <p className="text-xs text-gray-500 mt-1">JPG, PNG, PDF up to 10MB each</p>
+                </div>
+              </Label>
+              <Input
+                id="floorplans"
+                type="file"
+                multiple
+                accept="image/*,.pdf"
+                onChange={handleFloorPlanUpload}
+                className="hidden"
+              />
+            </div>
+
+            {/* Floor Plan Previews */}
+            {floorPlanPreviews.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {floorPlanPreviews.map((preview, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={preview}
+                      alt={`Floor Plan ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg border border-white/20"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                      onClick={() => removeFloorPlan(index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                    <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                      Floor Plan {index + 1}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1003,17 +1112,95 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
             </div>
           </div>
 
-          {/* Showing Instructions */}
-          <div className="space-y-2">
-            <Label htmlFor="showing_instructions" className="text-white font-semibold">Showing Instructions</Label>
-            <Textarea
-              id="showing_instructions"
-              value={formData.showing_instructions}
-              onChange={(e) => handleInputChange('showing_instructions', e.target.value)}
-              placeholder="Instructions for showing the property to potential buyers..."
-              className="bg-white/5 border border-white/20 text-white"
-              rows={3}
-            />
+          {/* Open Inspections Scheduler */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-white font-semibold flex items-center gap-2">
+                <Clock className="w-4 h-4 text-pickfirst-yellow" />
+                Open Inspections
+              </Label>
+              <Button
+                type="button"
+                onClick={addOpenInspection}
+                variant="outline"
+                size="sm"
+                className="text-pickfirst-yellow border-pickfirst-yellow/40 hover:bg-pickfirst-yellow/10"
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                Add Inspection
+              </Button>
+            </div>
+            
+            {openInspections.length === 0 ? (
+              <div className="text-center py-8 border-2 border-dashed border-white/20 rounded-lg">
+                <Clock className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-400 mb-2">No open inspections scheduled</p>
+                <p className="text-xs text-gray-500">Click "Add Inspection" to schedule viewing times</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {openInspections.map((inspection, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 bg-white/5 border border-white/20 rounded-lg">
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {/* Date Picker */}
+                      <div>
+                        <Label className="text-xs text-gray-400 mb-1 block">Date</Label>
+                        <Input
+                          type="date"
+                          value={inspection.date}
+                          onChange={(e) => updateOpenInspection(index, 'date', e.target.value)}
+                          min={new Date().toISOString().split('T')[0]}
+                          className="bg-white/5 border border-white/20 text-white"
+                        />
+                      </div>
+                      
+                      {/* Start Time */}
+                      <div>
+                        <Label className="text-xs text-gray-400 mb-1 block">Start Time</Label>
+                        <Input
+                          type="time"
+                          value={inspection.startTime}
+                          onChange={(e) => updateOpenInspection(index, 'startTime', e.target.value)}
+                          className="bg-white/5 border border-white/20 text-white"
+                        />
+                      </div>
+                      
+                      {/* End Time */}
+                      <div>
+                        <Label className="text-xs text-gray-400 mb-1 block">End Time</Label>
+                        <Input
+                          type="time"
+                          value={inspection.endTime}
+                          onChange={(e) => updateOpenInspection(index, 'endTime', e.target.value)}
+                          className="bg-white/5 border border-white/20 text-white"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Remove Button */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeOpenInspection(index)}
+                      className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Preview of formatted inspections */}
+            {openInspections.length > 0 && (
+              <div className="p-3 bg-green-900/20 border border-green-500/30 rounded-lg">
+                <Label className="text-green-400 text-sm font-medium mb-2 block">Preview:</Label>
+                <div className="text-green-300 text-sm whitespace-pre-line">
+                  {formatOpenInspectionsForSubmission()}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Vendor Details - Optional */}
@@ -1033,14 +1220,14 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
               <div className="space-y-2">
                 <Label htmlFor="vendor_ownership_duration" className="text-white font-semibold flex items-center gap-2">
                   <Clock className="w-4 h-4 text-yellow-400" />
-                  Ownership Duration (months)
+                  Ownership Duration (years/months)
                 </Label>
                 <Input
                   id="vendor_ownership_duration"
-                  type="number"
-                  value={formData.vendor_ownership_duration === 0 ? '' : formData.vendor_ownership_duration}
-                  onChange={(e) => handleInputChange('vendor_ownership_duration', parseInt(e.target.value) || 0)}
-                  placeholder="How long has the vendor owned this property? (e.g., 24)"
+                  type="text"
+                  value={formData.vendor_ownership_duration}
+                  onChange={(e) => handleInputChange('vendor_ownership_duration', e.target.value)}
+                  placeholder="e.g., 7 years, 2 months or 18 months or 2.5 years"
                   className="bg-white/5 border border-white/20 text-white"
                 />
               </div>

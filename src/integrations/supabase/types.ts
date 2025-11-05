@@ -1111,6 +1111,7 @@ export type Database = {
           longitude: number | null
           lot_size: number | null
           price: number
+          price_display: string | null
           property_type: string
           rejection_reason: string | null
           showing_instructions: string | null
@@ -1124,7 +1125,7 @@ export type Database = {
           updated_at: string | null
           vendor_favorable_contracts: string | null
           vendor_motivation: string | null
-          vendor_ownership_duration: number | null
+          vendor_ownership_duration: string | null
           vendor_special_conditions: string | null
           year_built: number | null
           zip_code: string
@@ -1151,6 +1152,7 @@ export type Database = {
           longitude?: number | null
           lot_size?: number | null
           price: number
+          price_display?: string | null
           property_type: string
           rejection_reason?: string | null
           showing_instructions?: string | null
@@ -1164,7 +1166,7 @@ export type Database = {
           updated_at?: string | null
           vendor_favorable_contracts?: string | null
           vendor_motivation?: string | null
-          vendor_ownership_duration?: number | null
+          vendor_ownership_duration?: string | null
           vendor_special_conditions?: string | null
           year_built?: number | null
           zip_code: string
@@ -1191,6 +1193,7 @@ export type Database = {
           longitude?: number | null
           lot_size?: number | null
           price?: number
+          price_display?: string | null
           property_type?: string
           rejection_reason?: string | null
           showing_instructions?: string | null
@@ -1204,7 +1207,7 @@ export type Database = {
           updated_at?: string | null
           vendor_favorable_contracts?: string | null
           vendor_motivation?: string | null
-          vendor_ownership_duration?: number | null
+          vendor_ownership_duration?: string | null
           vendor_special_conditions?: string | null
           year_built?: number | null
           zip_code?: string

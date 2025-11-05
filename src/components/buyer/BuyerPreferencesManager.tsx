@@ -42,10 +42,10 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
   const { user } = useAuth();
   const [preferences, setPreferences] = useState<Partial<BuyerPreferences>>({
     min_budget: 0,
-    max_budget: 1000000,
-    preferred_bedrooms: 2,
-    preferred_bathrooms: 2,
-    preferred_garages: 0,
+    max_budget: 10000000,
+    preferred_bedrooms: null, // Default: any number of bedrooms
+    preferred_bathrooms: null, // Default: any number of bathrooms
+    preferred_garages: null, // Default: any number of garages
     preferred_areas: [],
     property_type_preferences: [],
     preferred_features: [],
@@ -63,10 +63,9 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
   const [currentLocation, setCurrentLocation] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Property types
+  // Property types - synced with agent listing form
   const PROPERTY_TYPES = [
-    'House', 'Apartment', 'Townhouse', 'Villa', 'Unit', 
-    'Studio', 'Duplex', 'Penthouse', 'Terrace', 'Land'
+    'House', 'Apartment', 'Unit', 'Townhouse', 'Acreage', 'Land', 'Commercial', 'Penthouse'
   ];
 
   // Move-in timeline options
@@ -403,7 +402,7 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
           </p>
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-            {['Pool', 'Air Conditioning', 'Dishwasher', 'Garden', 'Balcony', 'Study', 'Fireplace', 'Solar Panels', 'Security System', 'Outdoor Entertainment', 'Ensuite', 'Walk-in Closet'].map((feature) => {
+            {['Pool', 'Dishwasher', 'Fireplace', 'Deck', 'Patio', 'Garden', 'Ducted Heating/Cooling', 'Washer/Dryer', 'Hardwood Floors', 'Carpet', 'Tile Floors', 'Granite Countertops', 'Stainless Steel Appliances', 'Walk-in Closet', 'Master Suite', 'Balcony', 'Study', 'Solar Panels', 'Security System', 'Outdoor Entertainment', 'Ensuite'].map((feature) => {
               const isSelected = preferences.preferred_features?.includes(feature);
               return (
                 <Button

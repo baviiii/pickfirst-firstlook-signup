@@ -87,32 +87,23 @@ async function checkPropertyAlertsAccess(
     }
 
     const subscriptionTier = profile.subscription_tier || 'free';
+    console.log(`Access check for user ${userId}: tier=${subscriptionTier}, alertType=${alertType}`);
     
-    // Off-market alerts are ONLY for premium users
+    // SIMPLIFIED LOGIC:
+    // - Regular property alerts: ALL USERS (free and premium)
+    // - Off-market alerts: PREMIUM ONLY
+    
     if (alertType === 'off_market') {
-      if (subscriptionTier !== 'premium') {
-        return false;
-      }
-      
-      // Check for off-market alerts feature
-      const { data: featureConfig } = await supabaseClient
-        .from('feature_configurations')
-        .select('premium_tier_enabled')
-        .eq('feature_key', 'property_alerts_unlimited')
-        .single();
-      
-      return featureConfig?.premium_tier_enabled || false;
+      // Off-market alerts require premium subscription
+      const hasAccess = subscriptionTier === 'premium';
+      console.log(`Off-market alert access: ${hasAccess} (requires premium, user has ${subscriptionTier})`);
+      return hasAccess;
     }
     
-    // On-market alerts available for premium users
-    if (alertType === 'on_market' && subscriptionTier === 'premium') {
-      const { data: featureConfig } = await supabaseClient
-        .from('feature_configurations')
-        .select('premium_tier_enabled')
-        .eq('feature_key', 'property_alerts_unlimited')
-        .single();
-      
-      return featureConfig?.premium_tier_enabled || false;
+    if (alertType === 'on_market') {
+      // Regular property alerts: available to ALL users
+      console.log(`On-market alert access: true (available to all users)`);
+      return true;
     }
 
     return false;
@@ -264,10 +255,15 @@ serve(async (req) => {
           const buyerEmail = profiles.email
           const buyerName = profiles.full_name || 'User'
 
+          console.log(`Checking buyer ${buyerId} (${buyerEmail}) with subscription: ${profiles.subscription_tier}`);
+
           // SECURITY: Check if buyer has access to this alert type
           const hasAccess = await checkPropertyAlertsAccess(supabaseClient, buyerId, job.alert_type);
+          console.log(`Access check result for buyer ${buyerId}: ${hasAccess}`);
+          
           if (!hasAccess) {
             accessDeniedCount++;
+            console.log(`Access denied for buyer ${buyerId}: ${job.alert_type} alerts not available for ${profiles.subscription_tier} tier`);
             await logFeatureAccessAttempt(supabaseClient, buyerId, 'edge_function_processing', false, {
               property_id: job.property_id,
               alert_type: job.alert_type,
@@ -388,16 +384,16 @@ function checkPropertyMatch(
   }
 
   // Extract bedrooms and bathrooms from preferred_areas (same as BuyerProfileService)
-  let preferredBedrooms = 2
-  let preferredBathrooms = 2
+  let preferredBedrooms = null // Default: any number of bedrooms
+  let preferredBathrooms = null // Default: any number of bathrooms
   let locationAreas: string[] = []
   
   if (preferences.preferred_areas) {
     const bedroomPref = preferences.preferred_areas.find(area => area.startsWith('bedrooms:'))
     const bathroomPref = preferences.preferred_areas.find(area => area.startsWith('bathrooms:'))
     
-    preferredBedrooms = bedroomPref ? parseInt(bedroomPref.split(':')[1]) : 2
-    preferredBathrooms = bathroomPref ? parseInt(bathroomPref.split(':')[1]) : 2
+    preferredBedrooms = bedroomPref ? parseInt(bedroomPref.split(':')[1]) : null
+    preferredBathrooms = bathroomPref ? parseInt(bathroomPref.split(':')[1]) : null
     
     // Filter out bedroom/bathroom preferences from areas
     locationAreas = preferences.preferred_areas.filter(area => 

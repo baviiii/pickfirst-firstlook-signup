@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import SimplePropertyFilters from '@/components/property/SimplePropertyFilters';
+import { formatPriceForDisplay } from '@/utils/priceUtils';
 import { EarlyAccessBadge } from '@/components/property/EarlyAccessBadge';
 
 type ViewMode = 'grid' | 'list';
@@ -222,7 +223,7 @@ const BrowsePropertiesSimple = () => {
     }
   };
 
-  const handleInquire = (property: PropertyListing) => {
+  const handleEnquire = (property: PropertyListing) => {
     if (property.status === 'sold') {
       toast.error('This property has been sold');
       return;
@@ -259,14 +260,6 @@ const BrowsePropertiesSimple = () => {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
 
   const PropertyCard = ({ listing }: { listing: PropertyListing }) => {
     const hasImages = listing.images && listing.images.length > 0;
@@ -275,7 +268,10 @@ const BrowsePropertiesSimple = () => {
     const isSold = listing.status === 'sold';
 
     return (
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl hover:shadow-yellow-400/20 transition-all duration-300 hover:scale-[1.02] overflow-hidden">
+      <Card 
+        className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl hover:shadow-yellow-400/20 transition-all duration-300 hover:scale-[1.02] overflow-hidden cursor-pointer"
+        onClick={() => navigate(`/property/${listing.id}`)}
+      >
         <div className="relative">
           {/* Property Image */}
           <div className="aspect-video overflow-hidden">
@@ -328,11 +324,11 @@ const BrowsePropertiesSimple = () => {
           {/* Price */}
           <div className="flex items-center justify-between mb-3">
             <h3 className={`text-2xl font-bold ${isSold ? 'text-gray-400 line-through' : 'text-yellow-400'}`}>
-              {formatPrice(listing.price)}
+              {formatPriceForDisplay(listing.price, listing.price_display)}
             </h3>
             {isSold && listing.sold_price && (
               <span className="text-green-400 font-semibold">
-                Sold: {formatPrice(listing.sold_price)}
+                Sold: {formatPriceForDisplay(listing.sold_price)}
               </span>
             )}
           </div>
@@ -375,7 +371,10 @@ const BrowsePropertiesSimple = () => {
           {/* Action Buttons */}
           <div className="flex gap-2">
             <Button
-              onClick={() => navigate(`/property/${listing.id}`)}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/property/${listing.id}`);
+              }}
               className="flex-1 bg-yellow-400 hover:bg-amber-500 text-black font-medium"
             >
               <Eye className="h-4 w-4 mr-2" />
@@ -384,7 +383,10 @@ const BrowsePropertiesSimple = () => {
             
             {profile?.role === 'buyer' && !isSold && (
               <Button
-                onClick={() => handleInquire(listing)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEnquire(listing);
+                }}
                 variant="outline"
                 className={`border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black ${
                   hasInquired ? 'bg-yellow-400/20' : ''
@@ -392,7 +394,7 @@ const BrowsePropertiesSimple = () => {
                 disabled={hasInquired}
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
-                {hasInquired ? 'Inquired' : 'Inquire'}
+                {hasInquired ? 'Enquired' : 'Enquire'}
               </Button>
             )}
           </div>
@@ -516,7 +518,7 @@ const BrowsePropertiesSimple = () => {
           <DialogContent className="bg-gray-900 border border-yellow-400/20">
             <DialogHeader>
               <DialogTitle className="text-white">
-                Inquire About Property
+                Enquire About Property
               </DialogTitle>
               <DialogDescription className="text-gray-300">
                 {selectedProperty && `Send a message about ${selectedProperty.title}`}

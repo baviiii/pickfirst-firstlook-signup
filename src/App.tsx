@@ -44,6 +44,7 @@ import SystemTestingPage from './pages/SystemTesting';
 import LoginHistoryManagementPage from './pages/LoginHistoryManagement';
 import OffMarketListings from './pages/OffMarketListings';
 import NotificationsPage from './pages/Notifications';
+import { RoleBasedLayout } from './components/layouts/RoleBasedLayout';
 
 const queryClient = new QueryClient();
 
@@ -84,14 +85,14 @@ const App = () => (
               <Route path="/signup" element={<Registration />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/about" element={<About />} />
-              <Route path="/browse-properties" element={<BrowsePropertiesPage />} />
-              <Route path="/property-map" element={<PropertyMapPage />} />
+              <Route path="/browse-properties" element={<RoleBasedLayout><BrowsePropertiesPage /></RoleBasedLayout>} />
+              <Route path="/property-map" element={<RoleBasedLayout><PropertyMapPage /></RoleBasedLayout>} />
               <Route path="/property/:id" element={<PropertyDetails />} />
               
               {/* Protected Routes - Authentication Required */}
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/profile-settings" element={<ProtectedRoute><ProfileSettingsPage /></ProtectedRoute>} />
-              <Route path="/subscription-management" element={<ProtectedRoute><SubscriptionManagementPage /></ProtectedRoute>} />
+              <Route path="/profile-settings" element={<ProtectedRoute><RoleBasedLayout><ProfileSettingsPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/subscription-management" element={<ProtectedRoute><RoleBasedLayout><SubscriptionManagementPage /></RoleBasedLayout></ProtectedRoute>} />
               
               {/* Admin Routes - Admin Role Required */}
               <Route path="/admin-properties" element={<ProtectedRoute requiredRole="super_admin"><AdminPropertyManagementPage /></ProtectedRoute>} />
@@ -106,22 +107,22 @@ const App = () => (
               <Route path="/login-history" element={<ProtectedRoute requiredRole="super_admin"><LoginHistoryManagementPage /></ProtectedRoute>} />
               
               {/* Agent Routes - Agent Role Required */}
-              <Route path="/my-clients" element={<ProtectedRoute requiredRole="agent"><MyClientsPage /></ProtectedRoute>} />
-              <Route path="/appointments" element={<ProtectedRoute requiredRole="agent"><AppointmentsPage /></ProtectedRoute>} />
-              <Route path="/agent-analytics" element={<ProtectedRoute requiredRole="agent"><AgentAnalyticsPage /></ProtectedRoute>} />
-              <Route path="/agent-messages" element={<ProtectedRoute requiredRole="agent"><AgentMessagesPage /></ProtectedRoute>} />
-              <Route path="/agent-leads" element={<ProtectedRoute requiredRole="agent"><AgentLeadsPage /></ProtectedRoute>} />
-              <Route path="/agent-profile" element={<ProtectedRoute requiredRole="agent"><AgentProfilePage /></ProtectedRoute>} />
-              <Route path="/my-listings" element={<ProtectedRoute requiredRole="agent"><MyListingsPage /></ProtectedRoute>} />
-              <Route path="/agent-notifications" element={<ProtectedRoute requiredRole="agent"><NotificationsPage /></ProtectedRoute>} />
+              <Route path="/my-clients" element={<ProtectedRoute requiredRole="agent"><RoleBasedLayout><MyClientsPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/appointments" element={<ProtectedRoute requiredRole="agent"><RoleBasedLayout><AppointmentsPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/agent-analytics" element={<ProtectedRoute requiredRole="agent"><RoleBasedLayout><AgentAnalyticsPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/agent-messages" element={<ProtectedRoute requiredRole="agent"><RoleBasedLayout><AgentMessagesPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/agent-leads" element={<ProtectedRoute requiredRole="agent"><RoleBasedLayout><AgentLeadsPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/agent-profile" element={<ProtectedRoute requiredRole="agent"><RoleBasedLayout><AgentProfilePage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/my-listings" element={<ProtectedRoute requiredRole="agent"><RoleBasedLayout><MyListingsPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/agent-notifications" element={<ProtectedRoute requiredRole="agent"><RoleBasedLayout><NotificationsPage /></RoleBasedLayout></ProtectedRoute>} />
               
               {/* Buyer Routes - Buyer Role Required */}
-              <Route path="/buyer-messages" element={<ProtectedRoute requiredRole="buyer"><BuyerMessagesPage /></ProtectedRoute>} />
-              <Route path="/saved-properties" element={<ProtectedRoute requiredRole="buyer"><SavedPropertiesPage /></ProtectedRoute>} />
-              <Route path="/search-filters" element={<ProtectedRoute requiredRole="buyer"><SearchFiltersPage /></ProtectedRoute>} />
-              <Route path="/buyer-account-settings" element={<ProtectedRoute requiredRole="buyer"><BuyerAccountSettingsPage /></ProtectedRoute>} />
-              <Route path="/off-market" element={<ProtectedRoute requiredRole="buyer"><OffMarketListings /></ProtectedRoute>} />
-              <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+              <Route path="/buyer-messages" element={<ProtectedRoute requiredRole="buyer"><RoleBasedLayout><BuyerMessagesPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/saved-properties" element={<ProtectedRoute requiredRole="buyer"><RoleBasedLayout><SavedPropertiesPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/search-filters" element={<ProtectedRoute requiredRole="buyer"><RoleBasedLayout><SearchFiltersPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/buyer-account-settings" element={<ProtectedRoute requiredRole="buyer"><RoleBasedLayout><BuyerAccountSettingsPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/off-market" element={<ProtectedRoute requiredRole="buyer"><RoleBasedLayout><OffMarketListings /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><RoleBasedLayout><NotificationsPage /></RoleBasedLayout></ProtectedRoute>} />
               
               {/* 404 Route */}
               <Route path="*" element={<NotFound />} />

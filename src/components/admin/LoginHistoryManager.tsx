@@ -298,9 +298,9 @@ export const LoginHistoryManager: React.FC = () => {
                           </div>
                         </div>
                         <div className="text-right text-sm">
-                          <div className="font-mono">{record.ip_address}</div>
+                          <div className="font-mono text-gray-800 dark:text-gray-200">{record.ip_address}</div>
                           {record.failure_reason && (
-                            <div className="text-red-600 text-xs mt-1">{record.failure_reason}</div>
+                            <div className="text-red-600 dark:text-red-400 text-xs mt-1">{record.failure_reason}</div>
                           )}
                         </div>
                       </div>
@@ -337,22 +337,22 @@ export const LoginHistoryManager: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   {suspiciousLogins.map((record) => (
-                    <div key={record.id} className="border border-orange-200 rounded-lg p-4 bg-orange-50">
+                    <div key={record.id} className="border border-orange-200 rounded-lg p-4 bg-orange-50 dark:bg-orange-950/20">
                       <div className="flex justify-between items-start">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4 text-orange-500" />
-                            <span className="font-medium">{record.email}</span>
+                            <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                            <span className="font-medium text-gray-900 dark:text-gray-100">{record.email}</span>
                             <Badge variant="destructive">Suspicious</Badge>
                           </div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-sm text-gray-700 dark:text-gray-300">
                             Multiple failed attempts from {record.ip_address}
                           </div>
-                          <div className="text-sm">
+                          <div className="text-sm text-gray-800 dark:text-gray-200">
                             Location: {getLocationString(record.location_info)}
                           </div>
                         </div>
-                        <div className="text-right text-sm">
+                        <div className="text-right text-sm text-gray-800 dark:text-gray-200">
                           <div>{new Date(record.created_at).toLocaleString()}</div>
                         </div>
                       </div>
