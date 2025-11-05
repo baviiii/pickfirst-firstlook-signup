@@ -23,6 +23,7 @@ interface SubscriptionContextType {
   canAccessOffMarketListings: () => boolean;
   canChatWithAgents: () => boolean;
   canScheduleAppointments: () => boolean;
+  canViewVendorDetails: () => boolean;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -212,7 +213,8 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
           'advanced_search': { free: false, basic: false, premium: true },
           'market_insights': { free: false, basic: false, premium: true },
           'priority_support': { free: false, basic: false, premium: true },
-          'schedule_appointments': { free: false, basic: false, premium: true }
+          'schedule_appointments': { free: false, basic: false, premium: true },
+          'vendor_details': { free: false, basic: false, premium: true }
         });
       }
     };
@@ -320,6 +322,10 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     return isFeatureEnabled('schedule_appointments');
   };
 
+  const canViewVendorDetails = (): boolean => {
+    return isFeatureEnabled('vendor_details');
+  };
+
   // Set up auth state listener
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -389,6 +395,7 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
         canAccessOffMarketListings,
         canChatWithAgents,
         canScheduleAppointments,
+        canViewVendorDetails,
       }}
     >
       {children}

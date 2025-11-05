@@ -38,7 +38,6 @@ DELETE FROM feature_configurations WHERE feature_key IN (
   
   -- Remove redundant premium features (consolidate)
   'exclusive_offmarket',
-  'vendor_details',
   'early_access_listings',
   'property_insights',
   'investor_filters',
@@ -110,7 +109,8 @@ WHERE feature_key NOT IN (
   'advanced_search',
   'market_insights', 
   'priority_support',
-  'schedule_appointments'
+  'schedule_appointments',
+  'vendor_details'
 );
 
 -- Verify the cleanup (this will show in the migration logs)

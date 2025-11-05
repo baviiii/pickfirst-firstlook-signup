@@ -31,7 +31,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { InquiryStatus } from '@/components/buyer/InquiryStatus';
-import { PageWrapper } from '@/components/ui/page-wrapper';
 import { VendorDetails } from '@/components/property/VendorDetails';
 import { useSubscription } from '@/hooks/useSubscription';
 import PropertyInsights from '@/components/property/PropertyInsights';
@@ -229,39 +228,45 @@ const PropertyDetailsComponent = () => {
 
   if (loading) {
     return (
-      <PageWrapper title="Property Details" showBackButton={false}>
+      <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mx-auto mb-4"></div>
             <p className="text-white">Loading property details...</p>
           </div>
         </div>
-      </PageWrapper>
+      </div>
     );
   }
 
   if (!property) {
     return (
-      <PageWrapper title="Property Details" showBackButton={false}>
+      <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <h2 className="text-xl mb-4 text-white">Property not found</h2>
-            <Button onClick={() => navigate('/browse-properties')}>
-              Browse Properties
+            <Button onClick={() => navigate('/browse-properties')} className="bg-yellow-400 hover:bg-amber-500 text-black">
+              Back to Browse
             </Button>
           </div>
         </div>
-      </PageWrapper>
+      </div>
     );
   }
 
   const hasImages = property.images && property.images.length > 0;
 
   return (
-    <PageWrapper 
-      title={property.title} 
-      showBackButton={true}
-    >
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Back Button */}
+      <Button
+        variant="ghost"
+        onClick={() => navigate(-1)}
+        className="text-gray-300 hover:text-pickfirst-yellow"
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back
+      </Button>
       <div className="space-y-6">
         {/* Action Buttons */}
         <div className="flex items-center justify-end gap-2">
@@ -686,7 +691,7 @@ const PropertyDetailsComponent = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </PageWrapper>
+    </div>
   );
 };
 

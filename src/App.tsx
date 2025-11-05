@@ -87,7 +87,7 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/browse-properties" element={<RoleBasedLayout><BrowsePropertiesPage /></RoleBasedLayout>} />
               <Route path="/property-map" element={<RoleBasedLayout><PropertyMapPage /></RoleBasedLayout>} />
-              <Route path="/property/:id" element={<PropertyDetails />} />
+              <Route path="/property/:id" element={<RoleBasedLayout><PropertyDetails /></RoleBasedLayout>} />
               
               {/* Protected Routes - Authentication Required */}
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
