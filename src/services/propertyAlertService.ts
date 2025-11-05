@@ -49,24 +49,21 @@ async function checkPropertyAlertsAccess(
 
     const subscriptionTier = profile.subscription_tier || 'free';
     
-    // Off-market alerts are ONLY for premium users
-    if (alertType === 'off_market' && subscriptionTier !== 'premium') {
-      return false;
-    }
+    // SIMPLIFIED LOGIC (matching edge function):
+    // - On-market property alerts: ALL USERS (free and premium)
+    // - Off-market alerts: PREMIUM ONLY
     
-    // Check for property alerts feature config
-    const { data: featureConfig, error } = await supabase
-      .from('feature_configurations')
-      .select('premium_tier_enabled')
-      .eq('feature_key', 'property_alerts_unlimited')
-      .single();
-
-    if (error || !featureConfig) {
-      console.error('Error checking property alerts feature config:', error);
+    if (alertType === 'off_market') {
+      // Off-market alerts require premium subscription
       return subscriptionTier === 'premium';
     }
     
-    return subscriptionTier === 'premium' && featureConfig.premium_tier_enabled;
+    if (alertType === 'on_market') {
+      // Regular property alerts: available to ALL users
+      return true;
+    }
+
+    return false;
   } catch (error) {
     console.error('Error in checkPropertyAlertsAccess:', error);
     return false;
@@ -584,24 +581,11 @@ export class PropertyAlertService {
   }
 
   /**
-   * Get alert history for a buyer - with feature access validation
+   * Get alert history for a buyer - ALL users can see their alert history
    */
   static async getBuyerAlertHistory(buyerId: string, limit: number = 20): Promise<PropertyAlert[]> {
     try {
-      // SECURITY: Premium users can see all alerts, others get empty
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('subscription_tier')
-        .eq('id', buyerId)
-        .single();
-
-      if (!profile || profile.subscription_tier !== 'premium') {
-        await logFeatureAccessAttempt(buyerId, 'alert_history_access', false, {
-          reason: 'insufficient_subscription_tier'
-        });
-        return [];
-      }
-
+      // ALL users can view their alert history (both free and premium)
       await logFeatureAccessAttempt(buyerId, 'alert_history_access', true);
 
       const { data, error } = await supabase

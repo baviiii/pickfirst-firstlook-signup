@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { FeatureGate } from '@/components/ui/FeatureGate';
 import { Bell, BellOff, Settings, Mail, MapPin, Home, DollarSign } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -166,8 +165,7 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
   // Only off-market alerts require premium subscription
 
   return (
-    <FeatureGate feature="property_alerts_unlimited">
-      <div className={`space-y-6 ${className}`}>
+    <div className={`space-y-6 ${className}`}>
         {/* Alert Settings */}
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
           <CardHeader>
@@ -342,7 +340,6 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
           </CardContent>
         </Card>
       </div>
-    </FeatureGate>
   );
 };
 

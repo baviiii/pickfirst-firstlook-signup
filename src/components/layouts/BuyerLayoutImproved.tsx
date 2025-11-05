@@ -187,9 +187,9 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
 
       {/* Sidebar - Hidden by default, slides in when opened */}
       <aside className={`${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:-translate-x-full'} 
-      w-72 transition-all duration-300 bg-gradient-to-b from-gray-900/95 to-black/95 backdrop-blur-xl border-r border-pickfirst-yellow/20 flex flex-col h-screen fixed top-0 z-40`}>
+        (sidebarOpen || mobileMenuOpen) ? 'translate-x-0' : '-translate-x-full'
+      } 
+      w-72 transition-all duration-300 bg-gradient-to-b from-gray-900/95 to-black/95 backdrop-blur-xl border-r border-pickfirst-yellow/20 flex flex-col h-screen fixed top-0 z-40 lg:z-40`}>
         
         {/* Sidebar Header */}
         <div className="p-4 sm:p-6 border-b border-pickfirst-yellow/20">
