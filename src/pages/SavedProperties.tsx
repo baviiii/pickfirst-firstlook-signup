@@ -28,8 +28,6 @@ import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { toast } from 'sonner';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { useSubscription } from '@/hooks/useSubscription';
-import { PageWrapper } from '@/components/ui/page-wrapper';
-import { BuyerLayoutImproved } from '@/components/layouts/BuyerLayoutImproved';
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'date-saved' | 'price-low' | 'price-high' | 'title';
@@ -416,173 +414,171 @@ const SavedPropertiesPageComponent = () => {
   };
 
   return (
-    <BuyerLayoutImproved>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black p-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                onClick={() => navigate(-1)}
-                className="text-yellow-400 hover:text-amber-500"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                  <Heart className="w-8 h-8 text-yellow-400" />
-                  Saved Properties
-                </h1>
-              </div>
+    <>
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate(-1)}
+              className="text-yellow-400 hover:text-amber-500"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+                <Heart className="w-8 h-8 text-yellow-400" />
+                Saved Properties
+              </h1>
             </div>
           </div>
+        </div>
 
-          <div className="space-y-6">
-            {/* Header Subtitle */}
-            <p className="text-gray-300">
-              {filteredProperties.length} of {savedProperties.length} properties
-              {getFavoritesLimit() !== -1 && (
-                <span className="ml-2 text-gray-400">
-                  (Limit: {getFavoritesLimit()})
-                </span>
-              )}
-            </p>
-            
-            {/* View Mode Toggle - Hidden if no properties */}
-            {savedProperties.length > 0 && (
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-2 bg-gray-800/50 rounded-lg p-1">
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    className={viewMode === 'grid' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
-                  >
-                    <Grid className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Grid</span>
-                  </Button>
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    className={viewMode === 'list' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
-                  >
-                    <List className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">List</span>
-                  </Button>
-                </div>
-              </div>
+        <div className="space-y-6">
+          {/* Header Subtitle */}
+          <p className="text-gray-300">
+            {filteredProperties.length} of {savedProperties.length} properties
+            {getFavoritesLimit() !== -1 && (
+              <span className="ml-2 text-gray-400">
+                (Limit: {getFavoritesLimit()})
+              </span>
             )}
-            
-            {/* Search and Controls - Only show if there are saved properties */}
-            {savedProperties.length > 0 && (
-              <div className="space-y-4">
-                {/* Search Bar */}
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                  <input
-                    type="text"
-                    placeholder="Search your saved properties..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-12 py-4 bg-gray-900/50 border border-yellow-400/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-transparent backdrop-blur-xl"
-                  />
-                  {searchTerm && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setSearchTerm('')}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-
-                {/* Sort Control */}
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as SortOption)}
-                      className="px-4 py-2 bg-gray-900/50 border border-yellow-400/20 rounded-lg text-white focus:ring-2 focus:ring-yellow-400/50 backdrop-blur-xl"
-                    >
-                      <option value="date-saved">Recently Saved</option>
-                      <option value="title">Property Name</option>
-                      <option value="price-low">Price: Low to High</option>
-                      <option value="price-high">Price: High to Low</option>
-                    </select>
-                  </div>
-                  
-                  {searchTerm && (
-                    <Button
-                      variant="ghost"
-                      onClick={() => setSearchTerm('')}
-                      className="text-gray-400 hover:text-white"
-                    >
-                      Clear Search
-                    </Button>
-                  )}
-                </div>
+          </p>
+          
+          {/* View Mode Toggle - Hidden if no properties */}
+          {savedProperties.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-2 bg-gray-800/50 rounded-lg p-1">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className={viewMode === 'grid' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
+                >
+                  <Grid className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">Grid</span>
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className={viewMode === 'list' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
+                >
+                  <List className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">List</span>
+                </Button>
               </div>
-            )}
-
-            {/* Properties Grid/List */}
-            <div className="space-y-6">
-              {loading ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-                    <p className="text-white">Loading your saved properties...</p>
-                  </div>
-                </div>
-              ) : savedProperties.length === 0 ? (
-                <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
-                  <CardContent className="text-center py-16">
-                    <Heart className="h-16 w-16 text-gray-500 mx-auto mb-6" />
-                    <h3 className="text-2xl font-bold text-white mb-4">No saved properties yet</h3>
-                    <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                      Start browsing properties and save the ones you love by clicking the heart icon
-                    </p>
-                    <Button 
-                      onClick={() => navigate('/browse-properties')}
-                      className="bg-yellow-400 hover:bg-amber-500 text-black font-medium px-6 py-3"
-                      size="lg"
-                    >
-                      <Search className="w-5 h-5 mr-2" />
-                      Browse Properties
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : filteredProperties.length === 0 ? (
-                <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
-                  <CardContent className="text-center py-16">
-                    <Search className="h-16 w-16 text-gray-500 mx-auto mb-6" />
-                    <h3 className="text-xl font-semibold text-white mb-4">No properties match your search</h3>
-                    <p className="text-gray-400 mb-6">Try adjusting your search terms</p>
-                    <Button 
-                      onClick={() => setSearchTerm('')}
-                      variant="outline" 
-                      className="text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10"
-                    >
-                      Clear Search
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className={
-                  viewMode === 'grid'
-                    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
-                    : 'space-y-6'
-                }>
-                  {filteredProperties.map(property => (
-                    <PropertyCard key={property.id} property={property} />
-                  ))}
-                </div>
-              )}
             </div>
+          )}
+          
+          {/* Search and Controls - Only show if there are saved properties */}
+          {savedProperties.length > 0 && (
+            <div className="space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <input
+                  type="text"
+                  placeholder="Search your saved properties..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-12 pr-12 py-4 bg-gray-900/50 border border-yellow-400/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-transparent backdrop-blur-xl"
+                />
+                {searchTerm && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
+              {/* Sort Control */}
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortOption)}
+                    className="px-4 py-2 bg-gray-900/50 border border-yellow-400/20 rounded-lg text-white focus:ring-2 focus:ring-yellow-400/50 backdrop-blur-xl"
+                  >
+                    <option value="date-saved">Recently Saved</option>
+                    <option value="title">Property Name</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                  </select>
+                </div>
+                
+                {searchTerm && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setSearchTerm('')}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    Clear Search
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Properties Grid/List */}
+          <div className="space-y-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+                  <p className="text-white">Loading your saved properties...</p>
+                </div>
+              </div>
+            ) : savedProperties.length === 0 ? (
+              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+                <CardContent className="text-center py-16">
+                  <Heart className="h-16 w-16 text-gray-500 mx-auto mb-6" />
+                  <h3 className="text-2xl font-bold text-white mb-4">No saved properties yet</h3>
+                  <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                    Start browsing properties and save the ones you love by clicking the heart icon
+                  </p>
+                  <Button 
+                    onClick={() => navigate('/browse-properties')}
+                    className="bg-yellow-400 hover:bg-amber-500 text-black font-medium px-6 py-3"
+                    size="lg"
+                  >
+                    <Search className="w-5 h-5 mr-2" />
+                    Browse Properties
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : filteredProperties.length === 0 ? (
+              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+                <CardContent className="text-center py-16">
+                  <Search className="h-16 w-16 text-gray-500 mx-auto mb-6" />
+                  <h3 className="text-xl font-semibold text-white mb-4">No properties match your search</h3>
+                  <p className="text-gray-400 mb-6">Try adjusting your search terms</p>
+                  <Button 
+                    onClick={() => setSearchTerm('')}
+                    variant="outline" 
+                    className="text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10"
+                  >
+                    Clear Search
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className={
+                viewMode === 'grid'
+                  ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+                  : 'space-y-6'
+              }>
+                {filteredProperties.map(property => (
+                  <PropertyCard key={property.id} property={property} />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -625,7 +621,7 @@ const SavedPropertiesPageComponent = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </BuyerLayoutImproved>
+    </>
   );
 };
 

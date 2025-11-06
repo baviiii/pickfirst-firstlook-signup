@@ -155,29 +155,29 @@ const MyListingsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black relative overflow-x-hidden">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-40 bg-black/70 backdrop-blur border-b border-pickfirst-yellow/20 flex items-center px-4 py-3 gap-4">
-        <Button variant="ghost" onClick={() => navigate('/dashboard')} className="text-white hover:text-pickfirst-yellow">
-          <ArrowLeft className="h-5 w-5 mr-2" />
-          Back to Dashboard
-        </Button>
-        <h1 className="text-2xl font-bold pickfirst-gradient-yellow-amber-text ml-2">My Property Listings</h1>
-      </div>
-
+    <>
       <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-8">
+        {/* Page Header */}
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" onClick={() => navigate('/dashboard')} className="text-yellow-400 hover:text-amber-500">
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-3xl font-bold text-white">My Property Listings</h1>
+        </div>
+
         {loadingListings ? (
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-pickfirst-yellow/20">
+          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-yellow-400/20">
             <CardContent className="py-12 text-center text-gray-300 text-lg">Loading your listings...</CardContent>
           </Card>
         ) : listings.length === 0 ? (
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-pickfirst-yellow/20">
+          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-yellow-400/20">
             <CardContent className="py-12 text-center text-gray-400 text-lg">You have no property listings yet.</CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map(listing => (
-              <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10 flex flex-col h-full">
+              <Card key={listing.id} className="bg-white/5 border border-yellow-400/10 flex flex-col h-full">
                 <CardHeader className="pb-2 border-b border-white/10">
                   <div className="aspect-video bg-gray-700 rounded-md mb-3 overflow-hidden">
                     {listing.images && listing.images.length > 0 ? (
@@ -196,7 +196,7 @@ const MyListingsPage = () => {
                       <span className="text-gray-500 text-sm">No Image</span>
                     </div>
                   </div>
-                  <CardTitle className="text-lg text-pickfirst-yellow mb-1">{listing.title}</CardTitle>
+                  <CardTitle className="text-lg text-yellow-400 mb-1">{listing.title}</CardTitle>
                   <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col justify-between py-4">
@@ -246,9 +246,9 @@ const MyListingsPage = () => {
 
       {/* View Details Modal */}
       <Dialog open={!!selectedListing} onOpenChange={() => setSelectedListing(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 border border-pickfirst-yellow/20">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 border border-yellow-400/20">
           <DialogHeader>
-            <DialogTitle className="text-pickfirst-yellow text-xl">{selectedListing?.title}</DialogTitle>
+            <DialogTitle className="text-yellow-400 text-xl">{selectedListing?.title}</DialogTitle>
           </DialogHeader>
           
           {selectedListing && (
@@ -297,7 +297,7 @@ const MyListingsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Basic Information</h3>
+                    <h3 className="text-lg font-semibold text-yellow-400 mb-2">Basic Information</h3>
                     <div className="space-y-2 text-gray-300">
                       <p><span className="text-gray-400">Address:</span> {selectedListing?.address}</p>
                       <p><span className="text-gray-400">City:</span> {selectedListing?.city}</p>
@@ -308,7 +308,7 @@ const MyListingsPage = () => {
                   </div>
                   
                   <div>
-                    <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Pricing & Details</h3>
+                    <h3 className="text-lg font-semibold text-yellow-400 mb-2">Pricing & Details</h3>
                     <div className="space-y-2 text-gray-300">
                       <p><span className="text-gray-400">Price:</span> <span className="text-white font-bold text-xl">${selectedListing?.price.toLocaleString()}</span></p>
                       {selectedListing?.bedrooms !== null && <p><span className="text-gray-400">Bedrooms:</span> {selectedListing.bedrooms}</p>}
@@ -322,7 +322,7 @@ const MyListingsPage = () => {
                 
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Status & Contact</h3>
+                    <h3 className="text-lg font-semibold text-yellow-400 mb-2">Status & Contact</h3>
                     <div className="space-y-2 text-gray-300">
                       <p><span className="text-gray-400">Status:</span> <span className={`font-semibold ${
                         selectedListing?.status === 'approved' ? 'text-green-400' :
@@ -341,7 +341,7 @@ const MyListingsPage = () => {
                   
                   {selectedListing?.features && selectedListing.features.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Features</h3>
+                      <h3 className="text-lg font-semibold text-yellow-400 mb-2">Features</h3>
                       <div className="flex flex-wrap gap-2">
                         {selectedListing.features.map((feature, index) => (
                           <span key={index} className="bg-blue-500/10 text-blue-400 px-2 py-1 rounded text-sm">
@@ -356,14 +356,14 @@ const MyListingsPage = () => {
               
               {selectedListing?.description && (
                 <div>
-                  <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Description</h3>
+                  <h3 className="text-lg font-semibold text-yellow-400 mb-2">Description</h3>
                   <p className="text-gray-300 leading-relaxed">{selectedListing.description}</p>
                 </div>
               )}
               
               {selectedListing?.showing_instructions && (
                 <div>
-                  <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Showing Instructions</h3>
+                  <h3 className="text-lg font-semibold text-yellow-400 mb-2">Showing Instructions</h3>
                   <p className="text-gray-300 leading-relaxed">{selectedListing.showing_instructions}</p>
                 </div>
               )}
@@ -374,9 +374,9 @@ const MyListingsPage = () => {
 
       {/* Edit Listing Modal */}
       <Dialog open={!!editingListing} onOpenChange={() => setEditingListing(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 border border-pickfirst-yellow/20">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 border border-yellow-400/20">
           <DialogHeader>
-            <DialogTitle className="text-pickfirst-yellow text-xl">Edit Listing: {editingListing?.title}</DialogTitle>
+            <DialogTitle className="text-yellow-400 text-xl">Edit Listing: {editingListing?.title}</DialogTitle>
           </DialogHeader>
           
           {editingListing && (
@@ -384,7 +384,7 @@ const MyListingsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Basic Information */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Basic Information</h3>
+                  <h3 className="text-lg font-semibold text-yellow-400 mb-2">Basic Information</h3>
                   
                   <div>
                     <Label htmlFor="title" className="text-gray-300">Title *</Label>
@@ -473,7 +473,7 @@ const MyListingsPage = () => {
                 
                 {/* Address Information */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Address</h3>
+                  <h3 className="text-lg font-semibold text-yellow-400 mb-2">Address</h3>
                   
                   <div>
                     <Label htmlFor="address" className="text-gray-300">Street Address *</Label>
@@ -569,7 +569,7 @@ const MyListingsPage = () => {
                 <Button 
                   onClick={handleUpdateListing} 
                   disabled={isUpdating}
-                  className="bg-pickfirst-yellow text-black hover:bg-pickfirst-yellow/90"
+                  className="bg-yellow-400 text-black hover:bg-yellow-400/90"
                 >
                   {isUpdating ? 'Updating...' : 'Update Listing'}
                 </Button>
@@ -588,9 +588,9 @@ const MyListingsPage = () => {
 
       {/* Mark as Sold Modal */}
       <Dialog open={!!soldListing} onOpenChange={() => setSoldListing(null)}>
-        <DialogContent className="max-w-md bg-gradient-to-br from-gray-900/95 to-black/95 border border-pickfirst-yellow/20">
+        <DialogContent className="max-w-md bg-gradient-to-br from-gray-900/95 to-black/95 border border-yellow-400/20">
           <DialogHeader>
-            <DialogTitle className="text-pickfirst-yellow text-xl">Mark Property as Sold</DialogTitle>
+            <DialogTitle className="text-yellow-400 text-xl">Mark Property as Sold</DialogTitle>
           </DialogHeader>
           
           {soldListing && (
@@ -659,7 +659,7 @@ const MyListingsPage = () => {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 };
 
