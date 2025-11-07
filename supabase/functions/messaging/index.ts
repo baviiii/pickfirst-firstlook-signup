@@ -368,7 +368,7 @@ serve(async (req) => {
                     conversationId: conversationId,
                     conversationSubject: conversation.subject || 'Property Inquiry',
                     platformName: 'PickFirst Real Estate',
-                    platformUrl: 'https://pickfirst.com.au'
+                    platformUrl: 'https://www.pickfirst.com.au'
                   }
                 })
               })

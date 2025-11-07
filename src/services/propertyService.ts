@@ -3,6 +3,8 @@ import { Tables } from '@/integrations/supabase/types';
 import { auditService } from './auditService';
 import { rateLimitService } from './rateLimitService';
 import PropertyAlertService from './propertyAlertService';
+import { EmailService } from './emailService';
+import { notificationService } from './notificationService';
 
 export type PropertyListing = Tables<'property_listings'>;
 export type PropertyFavorite = Tables<'property_favorites'>;
@@ -119,6 +121,27 @@ const validatePhone = (phone: string): boolean => {
 };
 
 export class PropertyService {
+  // Helper function to get admin emails
+  private static async getAdminEmails(): Promise<string[]> {
+    try {
+      const { data: admins, error } = await supabase
+        .from('profiles')
+        .select('email')
+        .in('role', ['super_admin', 'admin'])
+        .not('email', 'is', null);
+      
+      if (error) {
+        console.error('Error fetching admin emails:', error);
+        return [];
+      }
+      
+      return (admins || []).map(admin => admin.email).filter(Boolean) as string[];
+    } catch (error) {
+      console.error('Error getting admin emails:', error);
+      return [];
+    }
+  }
+
   // Upload images to Supabase Storage
   static async uploadImages(files: File[]): Promise<{ data: string[] | null; error: any }> {
     try {
@@ -377,7 +400,7 @@ export class PropertyService {
           }
         });
 
-        // Send email notification to agent about successful submission
+        // Send email notifications to agent and admins
         try {
           // Get agent profile for email
           const { data: agentProfile } = await supabase
@@ -386,8 +409,8 @@ export class PropertyService {
             .eq('id', user.id)
             .single();
 
+          // Send email to agent
           if (agentProfile?.email) {
-            // Send property listing submitted email
             await supabase.functions.invoke('send-email', {
               body: {
                 to: agentProfile.email,
@@ -398,15 +421,44 @@ export class PropertyService {
                   propertyAddress: `${data.address}, ${data.city}, ${data.state}`,
                   propertyPrice: data.price,
                   propertyType: data.property_type?.replace(/\b\w/g, (l: string) => l.toUpperCase()),
-                  submissionDate: new Date(data.created_at).toLocaleDateString(),
-                  dashboardUrl: typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : 'https://pickfirst.com.au/dashboard'
-                }
+                  submissionDate: new Date().toLocaleDateString(),
+                  dashboardUrl: 'https://www.pickfirst.com.au/dashboard',
+                  propertyUrl: `https://www.pickfirst.com.au/property/${data.id}`
+                },
+                subject: `Property Listing Submitted: ${data.title}`
               }
             });
           }
+
+          // Send email to all admins
+          const adminEmails = await this.getAdminEmails();
+          if (adminEmails.length > 0) {
+            const adminPromises = adminEmails.map(adminEmail =>
+              supabase.functions.invoke('send-email', {
+                body: {
+                  to: adminEmail,
+                  template: 'propertyListingSubmitted',
+                  data: {
+                    agentName: agentProfile?.full_name || 'Agent',
+                    agentEmail: agentProfile?.email || user.email || 'Unknown',
+                    propertyTitle: data.title,
+                    propertyAddress: `${data.address}, ${data.city}, ${data.state}`,
+                    propertyPrice: data.price,
+                    propertyType: data.property_type?.replace(/\b\w/g, (l: string) => l.toUpperCase()),
+                    submissionDate: new Date().toLocaleDateString(),
+                    dashboardUrl: 'https://www.pickfirst.com.au/admin/properties',
+                    propertyUrl: `https://www.pickfirst.com.au/property/${data.id}`,
+                    listingId: data.id
+                  },
+                  subject: `New Property Listing Submitted: ${data.title}`
+                }
+              })
+            );
+            await Promise.allSettled(adminPromises);
+          }
         } catch (emailError) {
-          console.error('Failed to send property submission email:', emailError);
-          // Don't fail the property creation if email fails
+          console.error('Failed to send property submission emails:', emailError);
+          // Don't fail the creation if email fails
         }
       } else if (error) {
         // Log property creation failure
@@ -643,6 +695,67 @@ export class PropertyService {
             image_count: data.images?.length || 0
           }
         });
+
+        // Send email notifications to agent and admins
+        try {
+          // Get agent profile for email
+          const { data: agentProfile } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', user.id)
+            .single();
+
+          // Send email to agent
+          if (agentProfile?.email) {
+            await supabase.functions.invoke('send-email', {
+              body: {
+                to: agentProfile.email,
+                template: 'propertyListingSubmitted',
+                data: {
+                  agentName: agentProfile.full_name || 'Agent',
+                  propertyTitle: data.title,
+                  propertyAddress: `${data.address}, ${data.city}, ${data.state}`,
+                  propertyPrice: data.price,
+                  propertyType: data.property_type?.replace(/\b\w/g, (l: string) => l.toUpperCase()),
+                  submissionDate: new Date().toLocaleDateString(),
+                  dashboardUrl: 'https://www.pickfirst.com.au/dashboard',
+                  propertyUrl: `https://www.pickfirst.com.au/property/${data.id}`
+                },
+                subject: `Property Listing Submitted: ${data.title}`
+              }
+            });
+          }
+
+          // Send email to all admins
+          const adminEmails = await this.getAdminEmails();
+          if (adminEmails.length > 0) {
+            const adminPromises = adminEmails.map(adminEmail =>
+              supabase.functions.invoke('send-email', {
+                body: {
+                  to: adminEmail,
+                  template: 'propertyListingSubmitted',
+                  data: {
+                    agentName: agentProfile?.full_name || 'Agent',
+                    agentEmail: agentProfile?.email || user.email || 'Unknown',
+                    propertyTitle: data.title,
+                    propertyAddress: `${data.address}, ${data.city}, ${data.state}`,
+                    propertyPrice: data.price,
+                    propertyType: data.property_type?.replace(/\b\w/g, (l: string) => l.toUpperCase()),
+                    submissionDate: new Date().toLocaleDateString(),
+                    dashboardUrl: 'https://www.pickfirst.com.au/admin/properties',
+                    propertyUrl: `https://www.pickfirst.com.au/property/${data.id}`,
+                    listingId: data.id
+                  },
+                  subject: `New Property Listing Submitted: ${data.title}`
+                }
+              })
+            );
+            await Promise.allSettled(adminPromises);
+          }
+        } catch (emailError) {
+          console.error('Failed to send property submission emails:', emailError);
+          // Don't fail the creation if email fails
+        }
       }
 
       return { data, error };
@@ -927,8 +1040,8 @@ export class PropertyService {
                 propertyImages: updatedListing.images || [],
                 approvalDate: new Date(updatedListing.approved_at!).toLocaleDateString(),
                 approvedBy: 'Admin Team',
-                propertyUrl: `${typeof window !== 'undefined' ? window.location.origin : 'https://pickfirst.com.au'}/property/${id}`,
-                dashboardUrl: `${typeof window !== 'undefined' ? window.location.origin : 'https://pickfirst.com.au'}/dashboard`
+                propertyUrl: `https://www.pickfirst.com.au/property/${id}`,
+                dashboardUrl: 'https://www.pickfirst.com.au/dashboard'
               }
             }
           });
@@ -1029,7 +1142,7 @@ export class PropertyService {
                 propertyAddress: `${updatedListing.address}, ${updatedListing.city}, ${updatedListing.state}`,
                 rejectionReason: reason,
                 reviewDate: new Date().toLocaleDateString(),
-                editUrl: `${typeof window !== 'undefined' ? window.location.origin : 'https://pickfirst.com.au'}/dashboard`
+                editUrl: 'https://www.pickfirst.com.au/dashboard'
               }
             }
           });
@@ -1179,27 +1292,8 @@ export class PropertyService {
       return { data: null, error: inquiryError };
     }
 
-    // Create conversation for this inquiry
-    try {
-      const { data: conversation, error: conversationError } = await supabase.functions.invoke('messaging', {
-        body: { 
-          action: 'createConversation',
-          agentId: property.agent_id,
-          clientId: user.id,
-          subject: `Property Inquiry: ${property.title}`,
-          inquiryId: inquiry.id,
-          propertyId: propertyId
-        }
-      });
-
-      if (conversationError) {
-        console.error('Failed to create conversation:', conversationError);
-        // Don't fail the inquiry if conversation creation fails
-      }
-    } catch (error) {
-      console.error('Error creating conversation:', error);
-      // Don't fail the inquiry if conversation creation fails
-    }
+    // DO NOT create conversation here - conversation will be created when agent opens/responds to the inquiry
+    // This prevents premature conversation creation and notification issues
 
     // Send email notification to agent about new inquiry
     try {
@@ -1207,6 +1301,35 @@ export class PropertyService {
     } catch (error) {
       console.error('Failed to send agent inquiry notification:', error);
       // Don't fail the inquiry if email notification fails
+    }
+
+    // Create in-app notification for agent about new inquiry
+    try {
+      // Get buyer name for notification
+      const { data: buyerProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+      const buyerName = buyerProfile?.full_name || 'A potential buyer';
+
+      await notificationService.createNotification(
+        property.agent_id,
+        'new_inquiry',
+        'New Property Inquiry',
+        `${buyerName} has inquired about "${property.title}"`,
+        '/agent-leads',
+        {
+          inquiry_id: inquiry.id,
+          property_id: propertyId,
+          buyer_id: user.id,
+          property_title: property.title
+        }
+      );
+    } catch (error) {
+      console.error('Failed to create agent inquiry notification:', error);
+      // Don't fail the inquiry if notification creation fails
     }
 
     return { data: inquiry, error: null };
@@ -1317,8 +1440,8 @@ export class PropertyService {
             buyerEmail: buyer.email,
             buyerPhone: buyer.phone || 'Not provided',
             inquiryMessage: inquiryMessage,
-            propertyUrl: `https://baviiii.github.io/pickfirst-firstlook-signup/property/${propertyId}`,
-            dashboardUrl: `https://baviiii.github.io/pickfirst-firstlook-signup/agent-leads`,
+            propertyUrl: `https://www.pickfirst.com.au/property/${propertyId}`,
+            dashboardUrl: 'https://www.pickfirst.com.au/agent-leads',
             platformName: 'PickFirst Real Estate'
           }
         }

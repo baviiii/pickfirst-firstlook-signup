@@ -24,7 +24,8 @@ import {
   ChevronRight,
   X,
   Clock,
-  User
+  User,
+  FileText
 } from 'lucide-react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { useAuth } from '@/hooks/useAuth';
@@ -181,7 +182,7 @@ const PropertyDetailsComponent = () => {
 
       if (error) throw error;
 
-      toast.success('Inquiry sent successfully! A conversation has been created. Check your messages to continue talking with the agent.');
+      toast.success('Inquiry sent successfully! The agent has been notified and will respond soon. You will receive a notification when they reply.');
       setIsInquiryDialogOpen(false);
       setInquiryMessage('');
       
@@ -469,6 +470,70 @@ const PropertyDetailsComponent = () => {
                         <span className="group-hover:text-yellow-400/90 transition-colors text-sm">
                           {feature}
                         </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Inspection Times */}
+            {property.showing_instructions && (
+              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+                <CardHeader>
+                  <CardTitle className="text-white text-lg flex items-center">
+                    <Calendar className="w-5 h-5 mr-2 text-yellow-400" />
+                    Open Inspection Times
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-gray-300 leading-relaxed whitespace-pre-line">
+                    {property.showing_instructions}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Floor Plans */}
+            {(property as any).floor_plans && Array.isArray((property as any).floor_plans) && (property as any).floor_plans.length > 0 && (
+              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+                <CardHeader>
+                  <CardTitle className="text-white text-lg flex items-center">
+                    <Home className="w-5 h-5 mr-2 text-yellow-400" />
+                    Floor Plans
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {(property as any).floor_plans.map((floorPlan: string, index: number) => (
+                      <div key={index} className="relative group">
+                        <a
+                          href={floorPlan}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block aspect-video bg-gray-800 rounded-lg overflow-hidden border-2 border-yellow-400/20 hover:border-yellow-400/60 transition-all"
+                        >
+                          {floorPlan.toLowerCase().endsWith('.pdf') ? (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                              <div className="text-center">
+                                <FileText className="w-12 h-12 mx-auto mb-2 text-yellow-400" />
+                                <p className="text-white text-sm font-medium">Floor Plan {index + 1}</p>
+                                <p className="text-gray-400 text-xs mt-1">Click to view PDF</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <img
+                              src={floorPlan}
+                              alt={`Floor Plan ${index + 1}`}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          )}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">
+                              View Full Size
+                            </span>
+                          </div>
+                        </a>
                       </div>
                     ))}
                   </div>

@@ -11,6 +11,7 @@ import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { PropertyService, CreatePropertyListingData } from '@/services/propertyService';
 import { googleMapsService } from '@/services/googleMapsService';
 import { InputSanitizer } from '@/utils/inputSanitization';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Loader2, Home, MapPin, DollarSign, Bed, Bath, Ruler, Phone, Mail, Upload, X, ImageIcon, CheckCircle, AlertCircle, Search, Clock, FileText, Handshake, Lightbulb, Sparkles } from 'lucide-react';
 
@@ -29,6 +30,7 @@ interface AddressSuggestion {
 }
 
 const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFormProps) => {
+  const { user, profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -45,6 +47,9 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
   const suggestionsRef = useRef<HTMLDivElement>(null);
   
   const [listingType, setListingType] = useState<'on-market' | 'off-market'>('on-market');
+  
+  // Pre-populate email from user profile
+  const initialEmail = user?.email || (profile as any)?.email || '';
   
   const [formData, setFormData] = useState<CreatePropertyListingData & {
     vendor_ownership_duration?: string;
@@ -66,7 +71,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
     state: '',
     zip_code: '',
     contact_phone: '',
-    contact_email: '',
+    contact_email: initialEmail,
     showing_instructions: '',
     features: [],
     images: [],
@@ -75,6 +80,14 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
     vendor_favorable_contracts: '',
     vendor_motivation: ''
   });
+
+  // Update email when user/profile loads
+  useEffect(() => {
+    if (user?.email || (profile as any)?.email) {
+      const email = user?.email || (profile as any)?.email;
+      setFormData(prev => ({ ...prev, contact_email: email }));
+    }
+  }, [user, profile]);
 
   const propertyTypes = [
     { value: 'house', label: 'House' },
@@ -502,6 +515,25 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
     // Validate required fields
     if (!formData.title || !formData.price || formData.price === 0 || !formData.address || !formData.city || !formData.state || !formData.zip_code) {
       toast.error('Please fill in all required fields (Title, Price, and Address)');
+      return;
+    }
+    
+    // Validate required email
+    if (!formData.contact_email || !formData.contact_email.trim()) {
+      toast.error('Contact email is required');
+      return;
+    }
+    
+    // Validate email format
+    const emailValidation = InputSanitizer.validateEmail(formData.contact_email);
+    if (!emailValidation.isValid) {
+      toast.error(emailValidation.error || 'Invalid email address');
+      return;
+    }
+    
+    // Validate required images
+    if (imageFiles.length === 0) {
+      toast.error('At least one property image is required');
       return;
     }
     
@@ -962,14 +994,14 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
           <div className="space-y-4">
             <Label className="text-white font-semibold flex items-center gap-2">
               <ImageIcon className="w-4 h-4 text-pickfirst-yellow" />
-              Property Images
+              Property Images *
             </Label>
             <div className="space-y-4">
               <Label htmlFor="images" className="cursor-pointer">
                 <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center hover:border-pickfirst-yellow/40 transition-colors">
                   <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-gray-400">Click to upload images (max 25)</p>
-                  <p className="text-xs text-gray-500 mt-1">JPG, PNG, GIF up to 5MB each</p>
+                  <p className="text-gray-400">Click to upload images (max 25) *</p>
+                  <p className="text-xs text-gray-500 mt-1">JPG, PNG, GIF up to 5MB each - At least one image required</p>
                 </div>
               </Label>
               <Input
@@ -979,6 +1011,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
                 accept="image/*"
                 onChange={handleImageUpload}
                 className="hidden"
+                required
               />
             </div>
 
@@ -1077,7 +1110,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
             <div className="space-y-2">
               <Label htmlFor="contact_email" className="text-white font-semibold flex items-center gap-2">
                 <Mail className="w-4 h-4 text-pickfirst-yellow" />
-                Contact Email
+                Contact Email *
               </Label>
               <Input
                 id="contact_email"
@@ -1086,7 +1119,13 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
                 onChange={(e) => handleInputChange('contact_email', e.target.value)}
                 placeholder="agent@example.com"
                 className="bg-white/5 border border-white/20 text-white"
+                required
               />
+              {(user?.email || (profile as any)?.email) && (
+                <p className="text-xs text-gray-400">
+                  Pre-filled from your profile. You can update it if needed.
+                </p>
+              )}
             </div>
           </div>
 

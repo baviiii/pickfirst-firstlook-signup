@@ -21,7 +21,7 @@ export class EmailService {
             name: userName || 'User',
             email: userEmail,
             platformName: 'PickFirst Real Estate',
-            platformUrl: 'https://pickfirst.com.au',
+            platformUrl: 'https://www.pickfirst.com.au',
             userId
           }
         }
@@ -241,7 +241,7 @@ export class EmailService {
           data: {
             name: userName || 'User',
             preferences, // Pass the full preferences object with values
-            dashboardUrl: 'https://pickfirst.com.au/dashboard'
+            dashboardUrl: 'https://www.pickfirst.com.au/dashboard'
           },
           subject: 'Your Property Preferences Have Been Updated'
         }
@@ -429,9 +429,9 @@ export class EmailService {
           template: 'passwordReset',
           data: {
             email: userEmail,
-            resetUrl: resetUrl || 'https://pickfirst.com.au/reset-password',
+            resetUrl: resetUrl || 'https://www.pickfirst.com.au/reset-password',
             platformName: 'PickFirst Real Estate',
-            platformUrl: 'https://pickfirst.com.au'
+            platformUrl: 'https://www.pickfirst.com.au'
           },
           subject: 'Reset Your Password - PickFirst Real Estate'
         }

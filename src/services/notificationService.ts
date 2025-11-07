@@ -10,6 +10,7 @@ export type NotificationType =
   | 'price_change'
   | 'property_sold'
   | 'inquiry_response'
+  | 'new_inquiry'
   | 'system';
 
 export interface Notification {
