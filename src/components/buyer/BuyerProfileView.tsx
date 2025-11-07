@@ -50,12 +50,11 @@ export const BuyerProfileView = ({ buyerId, isOpen, onClose, onStartConversation
     
     setLoading(true);
     try {
-      // Get basic profile information
+      // Get basic profile information from public view (bypasses RLS)
       const { data: profile, error: profileError } = await supabase
-        .from('profiles')
+        .from('buyer_public_profiles')
         .select('*')
         .eq('id', buyerId)
-        .eq('role', 'buyer')
         .single();
 
       if (profileError || !profile) {

@@ -11,6 +11,7 @@ import { analyticsService, AgentMetrics } from '@/services/analyticsService';
 import { AgentSpecialtyManager } from '@/components/agent/AgentSpecialtyManager';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { supabase } from '@/integrations/supabase/client';
+import { useCardNotifications } from '@/hooks/useCardNotifications';
 
 export const AgentDashboard = () => {
   const { profile } = useAuth();
@@ -18,6 +19,7 @@ export const AgentDashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [metrics, setMetrics] = useState<AgentMetrics | null>(null);
   const [loadingMetrics, setLoadingMetrics] = useState(true);
+  const { cardCounts, hasNewNotification, clearCardNotifications } = useCardNotifications();
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -51,14 +53,14 @@ export const AgentDashboard = () => {
   };
 
   const agentActions = [
-    { icon: PlusCircle, label: 'Add New Listing', description: 'Create a new property listing', color: 'bg-green-500/10 text-green-500', onClick: () => setShowModal(true) },
-    { icon: Home, label: 'My Listings', description: 'Manage your properties', color: 'bg-blue-500/10 text-blue-500', onClick: () => navigate('/my-listings') },
-    { icon: Users, label: 'My Clients', description: 'Manage client relationships', color: 'bg-purple-500/10 text-purple-500', onClick: () => navigate('/my-clients') },
-    { icon: Calendar, label: 'Appointments', description: 'View scheduled showings', color: 'bg-orange-500/10 text-orange-500', onClick: () => navigate('/appointments') },
-    { icon: BarChart3, label: 'Analytics', description: 'View performance metrics', color: 'bg-indigo-500/10 text-indigo-500', onClick: () => navigate('/agent-analytics') },
-    { icon: MessageSquare, label: 'Messages', description: 'Client communications', color: 'bg-pickfirst-yellow/10 text-pickfirst-yellow', onClick: () => navigate('/agent-messages') },
-    { icon: Phone, label: 'Leads', description: 'Follow up with prospects', color: 'bg-pink-500/10 text-pink-500', onClick: () => navigate('/agent-leads') },
-    { icon: Settings, label: 'Profile Settings', description: 'Update your profile', color: 'bg-gray-500/10 text-gray-500', onClick: () => navigate('/agent-profile') }
+    { icon: PlusCircle, label: 'Add New Listing', description: 'Create a new property listing', color: 'bg-green-500/10 text-green-500', onClick: () => setShowModal(true), cardType: null as any },
+    { icon: Home, label: 'My Listings', description: 'Manage your properties', color: 'bg-blue-500/10 text-blue-500', onClick: () => navigate('/my-listings'), cardType: 'listings' as const },
+    { icon: Users, label: 'My Clients', description: 'Manage client relationships', color: 'bg-purple-500/10 text-purple-500', onClick: () => navigate('/my-clients'), cardType: 'clients' as const },
+    { icon: Calendar, label: 'Appointments', description: 'View scheduled showings', color: 'bg-orange-500/10 text-orange-500', onClick: () => navigate('/appointments'), cardType: 'appointments' as const },
+    { icon: BarChart3, label: 'Analytics', description: 'View performance metrics', color: 'bg-indigo-500/10 text-indigo-500', onClick: () => navigate('/agent-analytics'), cardType: null as any },
+    { icon: MessageSquare, label: 'Messages', description: 'Client communications', color: 'bg-pickfirst-yellow/10 text-pickfirst-yellow', onClick: () => { clearCardNotifications('messages'); navigate('/agent-messages'); }, cardType: 'messages' as const },
+    { icon: Phone, label: 'Leads', description: 'Follow up with prospects', color: 'bg-pink-500/10 text-pink-500', onClick: () => navigate('/agent-leads'), cardType: 'leads' as const },
+    { icon: Settings, label: 'Profile Settings', description: 'Update your profile', color: 'bg-gray-500/10 text-gray-500', onClick: () => navigate('/agent-profile'), cardType: null as any }
   ];
 
   return (
@@ -82,18 +84,30 @@ export const AgentDashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {agentActions.map((action, index) => {
           const Icon = action.icon;
+          const notificationCount = action.cardType ? cardCounts[action.cardType] || 0 : 0;
+          const hasNew = action.cardType ? hasNewNotification(action.cardType) : false;
+          
           return (
             <Card
               key={index}
-              className={`hover:shadow-md transition-all bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105 cursor-pointer`}
+              className={`hover:shadow-md transition-all bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105 cursor-pointer relative ${
+                hasNew ? 'animate-pulse-border' : ''
+              }`}
               onClick={action.onClick}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${action.color}`}>
+                  <div className={`p-2 rounded-lg ${action.color} relative`}>
                     <Icon className="h-5 w-5" />
+                    {notificationCount > 0 && (
+                      <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold ${
+                        hasNew ? 'animate-bounce-scale' : ''
+                      }`}>
+                        {notificationCount > 99 ? '99+' : notificationCount}
+                      </span>
+                    )}
                   </div>
-                  <CardTitle className="text-sm text-white">{action.label}</CardTitle>
+                  <CardTitle className="text-sm text-white flex-1">{action.label}</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="pt-0">

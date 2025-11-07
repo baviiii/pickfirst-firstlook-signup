@@ -50,25 +50,11 @@ class EnhancedConversationService {
       const { data: { user } } = await supabase.auth.getUser();
       
       // Build the base query
+      // Note: We don't use foreign key relationships here because RLS blocks direct profile access
+      // Profiles will be loaded via public views in enhanceSingleConversation
       let query = supabase
         .from('conversations')
-        .select(`
-          *,
-          agent_profile:profiles!conversations_agent_id_fkey(
-            id,
-            full_name,
-            email,
-            phone,
-            company,
-            avatar_url
-          ),
-          client_profile:profiles!conversations_client_id_fkey(
-            full_name,
-            email,
-            phone,
-            avatar_url
-          )
-        `);
+        .select('*');
 
       // Apply user-specific filters
       if (user) {
@@ -292,16 +278,16 @@ class EnhancedConversationService {
     }
 
     try {
-      // Get profiles with error handling for each
+      // Get profiles with error handling for each - use public views to bypass RLS
       const [agentResult, clientResult] = await Promise.allSettled([
         supabase
-          .from('profiles')
+          .from('agent_public_profiles')
           .select('id, full_name, email, phone, company, avatar_url')
           .eq('id', conversation.agent_id)
           .maybeSingle(),
         supabase
-          .from('profiles')
-          .select('full_name, email, phone, avatar_url')
+          .from('buyer_public_profiles')
+          .select('id, full_name, email, phone, avatar_url')
           .eq('id', conversation.client_id)
           .maybeSingle()
       ]);

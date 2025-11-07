@@ -9,6 +9,7 @@ import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
 import { BuyerSubscriptionStatus } from '@/components/buyer/BuyerSubscriptionStatus';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useCardNotifications } from '@/hooks/useCardNotifications';
 import { 
   Search, 
   Heart, 
@@ -73,6 +74,7 @@ const BuyerDashboardComponent = () => {
   const { profile } = useAuth();
   const { subscribed, subscriptionTier, openCustomerPortal, isFeatureEnabled } = useSubscription();
   const navigate = useNavigate();
+  const { cardCounts, hasNewNotification, clearCardNotifications } = useCardNotifications();
   
   // State management
   const [listings, setListings] = useState<PropertyListing[]>([]);
@@ -192,7 +194,8 @@ const BuyerDashboardComponent = () => {
       label: 'Browse Properties', 
       description: 'Find your perfect home', 
       color: 'bg-blue-500/10 text-blue-500', 
-      onClick: () => navigate('/browse-properties') 
+      onClick: () => navigate('/browse-properties'),
+      cardType: 'properties' as const
     },
     { 
       icon: Star, 
@@ -200,42 +203,48 @@ const BuyerDashboardComponent = () => {
       description: subscriptionTier === 'premium' ? 'Exclusive agent listings' : 'Premium feature - upgrade to access', 
       color: 'bg-pickfirst-yellow/10 text-pickfirst-yellow', 
       onClick: () => subscriptionTier === 'premium' ? navigate('/off-market') : navigate('/pricing'),
-      premium: subscriptionTier !== 'premium'
+      premium: subscriptionTier !== 'premium',
+      cardType: null as any
     },
     { 
       icon: Heart, 
       label: 'Saved Properties', 
       description: 'View your favorite listings', 
       color: 'bg-red-500/10 text-red-500', 
-      onClick: () => navigate('/saved-properties') 
+      onClick: () => navigate('/saved-properties'),
+      cardType: 'favorites' as const
     },
     { 
       icon: MapPin, 
       label: 'Property Map', 
       description: 'Explore properties on map', 
       color: 'bg-green-500/10 text-green-500', 
-      onClick: () => navigate('/property-map') 
+      onClick: () => navigate('/property-map'),
+      cardType: 'properties' as const
     },
     { 
       icon: Filter, 
       label: 'Search Filters', 
       description: 'Set your preferences', 
       color: 'bg-purple-500/10 text-purple-500', 
-      onClick: () => navigate('/search-filters') 
+      onClick: () => navigate('/search-filters'),
+      cardType: 'alerts' as const
     },
     { 
       icon: MessageSquare, 
       label: 'Messages', 
       description: 'Chat with agents', 
       color: 'bg-pickfirst-yellow/10 text-pickfirst-yellow', 
-      onClick: () => navigate('/buyer-messages') 
+      onClick: () => { clearCardNotifications('messages'); navigate('/buyer-messages'); },
+      cardType: 'messages' as const
     },
     { 
       icon: Settings, 
       label: 'Account Settings', 
       description: 'Update your profile', 
       color: 'bg-gray-500/10 text-gray-500', 
-      onClick: () => navigate('/buyer-account-settings') 
+      onClick: () => navigate('/buyer-account-settings'),
+      cardType: null as any
     }
   ];
 
@@ -318,6 +327,8 @@ const BuyerDashboardComponent = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {buyerActions.map((action, index) => {
             const Icon = action.icon;
+            const notificationCount = action.cardType ? cardCounts[action.cardType] || 0 : 0;
+            const hasNew = action.cardType ? hasNewNotification(action.cardType) : false;
             
             // Show premium badge for premium actions if user is on free tier  
             const showPremiumBadge = (action as any).premium && subscriptionTier === 'free';
@@ -325,16 +336,25 @@ const BuyerDashboardComponent = () => {
             return (
               <Card 
                 key={index} 
-                className={`hover:shadow-md transition-all cursor-pointer bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105 ${
+                className={`hover:shadow-md transition-all cursor-pointer bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105 relative ${
                   showPremiumBadge ? 'opacity-75' : ''
+                } ${
+                  hasNew ? 'animate-pulse-border' : ''
                 }`}
                 onClick={action.onClick}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${action.color}`}>
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className={`p-2 rounded-lg ${action.color} relative`}>
                         <Icon className="h-5 w-5" />
+                        {notificationCount > 0 && (
+                          <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold ${
+                            hasNew ? 'animate-bounce-scale' : ''
+                          }`}>
+                            {notificationCount > 99 ? '99+' : notificationCount}
+                          </span>
+                        )}
                       </div>
                       <CardTitle className="text-base text-white">{action.label}</CardTitle>
                     </div>

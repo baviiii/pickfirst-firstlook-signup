@@ -10,6 +10,7 @@ import { NewUserSetupDialog } from '@/components/auth/NewUserSetupDialog';
 import { BuyerOnboardingModal } from '@/components/onboarding/BuyerOnboardingModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { useCardNotifications } from '@/hooks/useCardNotifications';
 import { 
   MessageSquare, 
   Heart, 
@@ -58,6 +59,7 @@ interface Appointment {
 const BuyerDashboardNewComponent = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { cardCounts, hasNewNotification, clearCardNotifications } = useCardNotifications();
   
   // State management
   const [listings, setListings] = useState<PropertyListing[]>([]);
@@ -226,8 +228,10 @@ const BuyerDashboardNewComponent = () => {
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card 
-              className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20 hover:border-blue-500/40 transition-all cursor-pointer"
-              onClick={() => navigate('/buyer-account-settings?tab=favorites')}
+              className={`bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20 hover:border-blue-500/40 transition-all cursor-pointer relative ${
+                hasNewNotification('inquiries') ? 'animate-pulse-border' : ''
+              }`}
+              onClick={() => { clearCardNotifications('inquiries'); navigate('/buyer-account-settings?tab=favorites'); }}
             >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -235,14 +239,25 @@ const BuyerDashboardNewComponent = () => {
                     <p className="text-sm text-gray-400">Inquiries Sent</p>
                     <p className="text-3xl font-bold text-blue-400">{loadingMetrics ? '...' : metrics?.totalInquiries || 0}</p>
                   </div>
-                  <MessageSquare className="h-10 w-10 text-blue-500/50" />
+                  <div className="relative">
+                    <MessageSquare className="h-10 w-10 text-blue-500/50" />
+                    {cardCounts.inquiries > 0 && (
+                      <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold ${
+                        hasNewNotification('inquiries') ? 'animate-bounce-scale' : ''
+                      }`}>
+                        {cardCounts.inquiries > 99 ? '99+' : cardCounts.inquiries}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card 
-              className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20 hover:border-red-500/40 transition-all cursor-pointer"
-              onClick={() => navigate('/saved-properties')}
+              className={`bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20 hover:border-red-500/40 transition-all cursor-pointer relative ${
+                hasNewNotification('favorites') ? 'animate-pulse-border' : ''
+              }`}
+              onClick={() => { clearCardNotifications('favorites'); navigate('/saved-properties'); }}
             >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -250,14 +265,25 @@ const BuyerDashboardNewComponent = () => {
                     <p className="text-sm text-gray-400">Saved Properties</p>
                     <p className="text-3xl font-bold text-red-400">{loadingMetrics ? '...' : metrics?.totalFavorites || 0}</p>
                   </div>
-                  <Heart className="h-10 w-10 text-red-500/50" />
+                  <div className="relative">
+                    <Heart className="h-10 w-10 text-red-500/50" />
+                    {cardCounts.favorites > 0 && (
+                      <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold ${
+                        hasNewNotification('favorites') ? 'animate-bounce-scale' : ''
+                      }`}>
+                        {cardCounts.favorites > 99 ? '99+' : cardCounts.favorites}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card 
-              className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20 hover:border-green-500/40 transition-all cursor-pointer"
-              onClick={() => navigate('/search-filters')}
+              className={`bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20 hover:border-green-500/40 transition-all cursor-pointer relative ${
+                hasNewNotification('alerts') ? 'animate-pulse-border' : ''
+              }`}
+              onClick={() => { clearCardNotifications('alerts'); navigate('/search-filters'); }}
             >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -265,14 +291,25 @@ const BuyerDashboardNewComponent = () => {
                     <p className="text-sm text-gray-400">Saved Searches</p>
                     <p className="text-3xl font-bold text-green-400">{loadingMetrics ? '...' : metrics?.savedSearches || 0}</p>
                   </div>
-                  <Filter className="h-10 w-10 text-green-500/50" />
+                  <div className="relative">
+                    <Filter className="h-10 w-10 text-green-500/50" />
+                    {cardCounts.alerts > 0 && (
+                      <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold ${
+                        hasNewNotification('alerts') ? 'animate-bounce-scale' : ''
+                      }`}>
+                        {cardCounts.alerts > 99 ? '99+' : cardCounts.alerts}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card 
-              className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20 hover:border-purple-500/40 transition-all cursor-pointer"
-              onClick={() => navigate('/buyer-messages')}
+              className={`bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20 hover:border-purple-500/40 transition-all cursor-pointer relative ${
+                hasNewNotification('messages') ? 'animate-pulse-border' : ''
+              }`}
+              onClick={() => { clearCardNotifications('messages'); navigate('/buyer-messages'); }}
             >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -280,7 +317,16 @@ const BuyerDashboardNewComponent = () => {
                     <p className="text-sm text-gray-400">Conversations</p>
                     <p className="text-3xl font-bold text-purple-400">{loadingMetrics ? '...' : metrics?.totalConversations || 0}</p>
                   </div>
-                  <MessageSquare className="h-10 w-10 text-purple-500/50" />
+                  <div className="relative">
+                    <MessageSquare className="h-10 w-10 text-purple-500/50" />
+                    {cardCounts.messages > 0 && (
+                      <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold ${
+                        hasNewNotification('messages') ? 'animate-bounce-scale' : ''
+                      }`}>
+                        {cardCounts.messages > 99 ? '99+' : cardCounts.messages}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

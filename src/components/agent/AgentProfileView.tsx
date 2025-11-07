@@ -51,12 +51,11 @@ export const AgentProfileView = ({ agentId, isOpen, onClose, onStartConversation
     
     setLoading(true);
     try {
-      // Get basic profile information
+      // Get basic profile information from public view (bypasses RLS)
       const { data: profile, error: profileError } = await supabase
-        .from('profiles')
+        .from('agent_public_profiles')
         .select('*')
         .eq('id', agentId)
-        .eq('role', 'agent')
         .single();
 
       if (profileError || !profile) {
