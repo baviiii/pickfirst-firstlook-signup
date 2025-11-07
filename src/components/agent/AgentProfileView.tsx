@@ -51,16 +51,30 @@ export const AgentProfileView = ({ agentId, isOpen, onClose, onStartConversation
     
     setLoading(true);
     try {
-      // Get basic profile information from public view (bypasses RLS)
-      const { data: profile, error: profileError } = await supabase
+      // Try to get profile from public view first
+      let profile = null;
+      
+      const { data: viewData, error: viewError } = await supabase
         .from('agent_public_profiles')
         .select('*')
         .eq('id', agentId)
         .single();
 
-      if (profileError || !profile) {
-        toast.error('Failed to load agent profile');
-        return;
+      if (viewError || !viewData) {
+        // Fallback: Use helper function that bypasses RLS
+        console.log('View query failed, trying helper function:', viewError);
+        const { data: functionData, error: functionError } = await supabase
+          .rpc('get_agent_public_profile', { agent_id: agentId });
+
+        if (functionError || !functionData || functionData.length === 0) {
+          console.error('Agent profile error:', functionError || viewError);
+          toast.error(`Failed to load agent profile: ${(functionError || viewError)?.message || 'Unknown error'}`);
+          setLoading(false);
+          return;
+        }
+        profile = functionData[0];
+      } else {
+        profile = viewData;
       }
 
       // Get agent statistics

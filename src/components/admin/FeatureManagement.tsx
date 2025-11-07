@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface FeatureConfig {
   id: string;
@@ -25,6 +26,7 @@ interface FeatureConfig {
 }
 
 export const FeatureManagement = () => {
+  const { refreshFeatures } = useSubscription();
   const [features, setFeatures] = useState<FeatureConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -157,7 +159,9 @@ export const FeatureManagement = () => {
         basic_tier_enabled: false,
         premium_tier_enabled: true
       });
-      fetchFeatures();
+      await fetchFeatures();
+      // Refresh feature configs for all users
+      await refreshFeatures();
     } catch (error) {
       console.error('Error saving feature:', error);
       toast.error('Failed to save feature configuration');
@@ -250,6 +254,8 @@ export const FeatureManagement = () => {
       toast.success(`${tier} tier access ${enabled ? 'enabled' : 'disabled'}`);
       // Refresh to ensure we have the latest data
       await fetchFeatures();
+      // Also refresh feature configs in subscription hook (triggers real-time update for all users)
+      await refreshFeatures();
     } catch (error: any) {
       console.error('Error updating feature access:', error);
       toast.error(`Failed to update feature access: ${error?.message || 'Unknown error'}`);
@@ -268,10 +274,26 @@ export const FeatureManagement = () => {
               Feature Gate Management
             </CardTitle>
             <CardDescription>
-              Control which features are available to different subscription tiers. Changes take effect immediately for all users.
+              Control which features are available to different subscription tiers. Changes take effect immediately for all users via real-time updates.
             </CardDescription>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                setLoading(true);
+                await fetchFeatures();
+                await refreshFeatures();
+                toast.success('Feature configurations refreshed');
+                setLoading(false);
+              }}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => {
                 setEditingFeature(null);

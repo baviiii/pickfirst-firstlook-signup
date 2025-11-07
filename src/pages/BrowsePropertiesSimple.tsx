@@ -248,7 +248,10 @@ const BrowsePropertiesSimple = () => {
 
       if (error) throw error;
 
-      toast.success('Inquiry sent successfully! Check your messages to continue the conversation.');
+      toast.success('Inquiry sent successfully!', {
+        description: 'The agent has been notified. A conversation will be opened when they respond. You\'ll receive a notification when the conversation starts.',
+        duration: 6000
+      });
       setIsInquiryDialogOpen(false);
       setInquiryMessage('');
       setSelectedProperty(null);

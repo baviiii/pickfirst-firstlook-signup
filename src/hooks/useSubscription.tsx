@@ -249,19 +249,23 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
         .from('feature_configurations')
         .select('feature_key, free_tier_enabled, basic_tier_enabled, premium_tier_enabled');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching feature configs:', error);
+        throw error;
+      }
       
       const configs: {[key: string]: {free: boolean, basic: boolean, premium: boolean}} = {};
       data?.forEach(config => {
         configs[config.feature_key] = {
-          free: config.free_tier_enabled,
+          free: config.free_tier_enabled || false,
           basic: config.basic_tier_enabled || false,
-          premium: config.premium_tier_enabled
+          premium: config.premium_tier_enabled || false
         };
       });
       setFeatureConfigs(configs);
     } catch (error) {
-      // Feature refresh failed silently
+      console.error('Feature refresh failed:', error);
+      // Feature refresh failed silently - use cached or default
     }
   }, []);
 

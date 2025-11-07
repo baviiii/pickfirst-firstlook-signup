@@ -182,7 +182,10 @@ const PropertyDetailsComponent = () => {
 
       if (error) throw error;
 
-      toast.success('Inquiry sent successfully! The agent has been notified and will respond soon. You will receive a notification when they reply.');
+      toast.success('Inquiry sent successfully!', {
+        description: 'The agent has been notified. A conversation will be opened when they respond. You\'ll receive a notification when the conversation starts.',
+        duration: 6000
+      });
       setIsInquiryDialogOpen(false);
       setInquiryMessage('');
       

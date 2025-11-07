@@ -348,14 +348,9 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
               }}
               variant="ghost"
               size="sm"
-              className="text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
+              className="text-pickfirst-yellow hover:bg-pickfirst-yellow/10 relative"
             >
               <Menu className="h-5 w-5" />
-              {totalNotifications > 0 && (
-                <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs min-w-[18px] h-4 flex items-center justify-center rounded-full">
-                  {totalNotifications > 9 ? '9+' : totalNotifications}
-                </Badge>
-              )}
             </Button>
 
             {/* Center: Search (desktop only) */}

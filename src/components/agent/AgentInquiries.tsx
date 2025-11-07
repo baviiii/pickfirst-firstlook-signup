@@ -324,6 +324,21 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
 
   return (
     <div className="space-y-6">
+      {/* Info Banner */}
+      <Card className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/30">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <MessageSquare className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <div className="text-white font-medium mb-1">Start Conversations with Buyers</div>
+              <div className="text-gray-300 text-sm">
+                Click "Start Chat" on any inquiry to open a conversation. Buyers will be notified when you start chatting with them.
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Statistics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-blue-500/20">
@@ -499,12 +514,11 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
                 
                 <Button
                   size="sm"
-                  variant="outline"
                   onClick={() => handleStartConversation(inquiry)}
                   className={`flex-1 ${
                     inquiry.conversation?.id 
-                      ? 'text-green-500 border-green-500/20 hover:bg-green-500/10' 
-                      : 'text-blue-500 border-blue-500/20 hover:bg-blue-500/10'
+                      ? 'bg-green-500/20 text-green-300 border-green-500/30 hover:bg-green-500/30' 
+                      : 'bg-blue-500/20 text-blue-300 border-blue-500/30 hover:bg-blue-500/30'
                   }`}
                 >
                   <MessageSquare className="h-4 w-4 mr-1" />
