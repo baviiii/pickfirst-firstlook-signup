@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { BuyerLayoutImproved } from './BuyerLayoutImproved';
 import { AgentLayoutSidebar } from './AgentLayoutSidebar';
+import { SuperAdminLayout } from './SuperAdminLayout';
 
 interface RoleBasedLayoutProps {
   children: ReactNode;
@@ -46,8 +47,7 @@ export const RoleBasedLayout = ({ children, fallbackLayout = 'none' }: RoleBased
     case 'agent':
       return <AgentLayoutSidebar>{children}</AgentLayoutSidebar>;
     case 'super_admin':
-      // For now, use agent layout for super admin, can be customized later
-      return <AgentLayoutSidebar>{children}</AgentLayoutSidebar>;
+      return <SuperAdminLayout>{children}</SuperAdminLayout>;
     default:
       // Default to buyer layout for authenticated users with unknown roles
       return <BuyerLayoutImproved>{children}</BuyerLayoutImproved>;

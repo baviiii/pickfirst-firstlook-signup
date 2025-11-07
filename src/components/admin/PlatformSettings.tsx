@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Settings, Mail, Bell, Shield, Database, Monitor, Globe, Cpu } from 'lucide-react';
 import { toast } from 'sonner';
+import { FeatureManagement } from './FeatureManagement';
 
 interface SystemSettings {
   siteName: string;
@@ -329,6 +330,11 @@ export const PlatformSettings = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Feature Gate Management */}
+      <div id="features" className="scroll-mt-6">
+        <FeatureManagement />
       </div>
 
       {/* System Status */}

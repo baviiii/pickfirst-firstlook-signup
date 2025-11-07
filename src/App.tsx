@@ -95,16 +95,16 @@ const App = () => (
               <Route path="/subscription-management" element={<ProtectedRoute><RoleBasedLayout><SubscriptionManagementPage /></RoleBasedLayout></ProtectedRoute>} />
               
               {/* Admin Routes - Admin Role Required */}
-              <Route path="/admin-properties" element={<ProtectedRoute requiredRole="super_admin"><AdminPropertyManagementPage /></ProtectedRoute>} />
-              <Route path="/admin-users" element={<ProtectedRoute requiredRole="super_admin"><AdminUserManagementPage /></ProtectedRoute>} />
-              <Route path="/database-management" element={<ProtectedRoute requiredRole="super_admin"><DatabaseManagementPage /></ProtectedRoute>} />
-              <Route path="/system-alerts" element={<ProtectedRoute requiredRole="super_admin"><SystemAlertsPage /></ProtectedRoute>} />
-              <Route path="/system-logs" element={<ProtectedRoute requiredRole="super_admin"><SystemLogsPage /></ProtectedRoute>} />
-              <Route path="/platform-settings" element={<ProtectedRoute requiredRole="super_admin"><PlatformSettingsPage /></ProtectedRoute>} />
-              <Route path="/security-permissions" element={<ProtectedRoute requiredRole="super_admin"><SecurityPermissionsPage /></ProtectedRoute>} />
-              <Route path="/platform-analytics" element={<ProtectedRoute requiredRole="super_admin"><PlatformAnalyticsPage /></ProtectedRoute>} />
-              <Route path="/system-testing" element={<ProtectedRoute requiredRole="super_admin"><SystemTestingPage /></ProtectedRoute>} />
-              <Route path="/login-history" element={<ProtectedRoute requiredRole="super_admin"><LoginHistoryManagementPage /></ProtectedRoute>} />
+              <Route path="/admin-properties" element={<ProtectedRoute requiredRole="super_admin"><RoleBasedLayout><AdminPropertyManagementPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/admin-users" element={<ProtectedRoute requiredRole="super_admin"><RoleBasedLayout><AdminUserManagementPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/database-management" element={<ProtectedRoute requiredRole="super_admin"><RoleBasedLayout><DatabaseManagementPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/system-alerts" element={<ProtectedRoute requiredRole="super_admin"><RoleBasedLayout><SystemAlertsPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/system-logs" element={<ProtectedRoute requiredRole="super_admin"><RoleBasedLayout><SystemLogsPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/platform-settings" element={<ProtectedRoute requiredRole="super_admin"><RoleBasedLayout><PlatformSettingsPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/security-permissions" element={<ProtectedRoute requiredRole="super_admin"><RoleBasedLayout><SecurityPermissionsPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/platform-analytics" element={<ProtectedRoute requiredRole="super_admin"><RoleBasedLayout><PlatformAnalyticsPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/system-testing" element={<ProtectedRoute requiredRole="super_admin"><RoleBasedLayout><SystemTestingPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/login-history" element={<ProtectedRoute requiredRole="super_admin"><RoleBasedLayout><LoginHistoryManagementPage /></RoleBasedLayout></ProtectedRoute>} />
               
               {/* Agent Routes - Agent Role Required */}
               <Route path="/my-clients" element={<ProtectedRoute requiredRole="agent"><RoleBasedLayout><MyClientsPage /></RoleBasedLayout></ProtectedRoute>} />

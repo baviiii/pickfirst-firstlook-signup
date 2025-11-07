@@ -196,25 +196,65 @@ export const FeatureManagement = () => {
   };
 
   const toggleFeatureAccess = async (featureId: string, tier: 'free' | 'basic' | 'premium', enabled: boolean) => {
+    // Optimistic update - update UI immediately
+    setFeatures(prevFeatures => 
+      prevFeatures.map(feature => 
+        feature.id === featureId
+          ? {
+              ...feature,
+              free_tier_enabled: tier === 'free' ? enabled : feature.free_tier_enabled,
+              basic_tier_enabled: tier === 'basic' ? enabled : feature.basic_tier_enabled,
+              premium_tier_enabled: tier === 'premium' ? enabled : feature.premium_tier_enabled,
+            }
+          : feature
+      )
+    );
+
     try {
+      // Verify user is super admin
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Authentication required');
+        // Revert optimistic update
+        await fetchFeatures();
+        return;
+      }
+
       const updateData = tier === 'free' 
         ? { free_tier_enabled: enabled }
         : tier === 'basic'
         ? { basic_tier_enabled: enabled }
         : { premium_tier_enabled: enabled };
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('feature_configurations')
         .update(updateData)
-        .eq('id', featureId);
+        .eq('id', featureId)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Feature update error:', error);
+        toast.error(`Failed to update: ${error.message || 'Permission denied'}`);
+        // Revert optimistic update on error
+        await fetchFeatures();
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        toast.error('Feature not found or update failed');
+        // Revert optimistic update
+        await fetchFeatures();
+        return;
+      }
       
       toast.success(`${tier} tier access ${enabled ? 'enabled' : 'disabled'}`);
-      fetchFeatures();
-    } catch (error) {
+      // Refresh to ensure we have the latest data
+      await fetchFeatures();
+    } catch (error: any) {
       console.error('Error updating feature access:', error);
-      toast.error('Failed to update feature access');
+      toast.error(`Failed to update feature access: ${error?.message || 'Unknown error'}`);
+      // Revert optimistic update on error
+      await fetchFeatures();
     }
   };
 
