@@ -110,33 +110,80 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
   }, [open, inquiry?.buyer_id, inquiry?.buyer?.email, profile?.id]);
 
   const handleConvertToClient = async () => {
-    // Try to get buyer email from inquiry object
-    let buyerEmail = inquiry?.buyer?.email;
+    if (!inquiry) {
+      toast.error('Inquiry not found');
+      return;
+    }
+
+    // Log inquiry structure for debugging
+    console.log('Converting inquiry to client. Inquiry data:', {
+      id: inquiry.id,
+      buyer_id: inquiry.buyer_id,
+      buyer: inquiry.buyer,
+      hasBuyerObject: !!inquiry.buyer,
+      buyerEmail: inquiry.buyer?.email
+    });
+
+    // Try multiple ways to get buyer email
+    let buyerEmail: string | undefined;
     
-    // If email is not in inquiry object, fetch it from the buyer_id
-    if (!buyerEmail && inquiry?.buyer_id) {
-      const { data: buyerProfile } = await supabase
-        .from('profiles')
-        .select('email, full_name')
-        .eq('id', inquiry.buyer_id)
-        .single();
-      
-      if (buyerProfile?.email) {
-        buyerEmail = buyerProfile.email;
-        // Update the inquiry object with buyer data for future use
-        if (inquiry) {
-          inquiry.buyer = {
-            ...inquiry.buyer,
-            email: buyerProfile.email,
-            full_name: buyerProfile.full_name || inquiry.buyer?.full_name || 'Unknown'
-          };
-        }
-      }
+    // Method 1: Try from inquiry.buyer.email
+    buyerEmail = inquiry.buyer?.email;
+    
+    // Method 2: Try from nested buyer object (different structure)
+    if (!buyerEmail && (inquiry as any)?.buyer) {
+      buyerEmail = (inquiry as any).buyer.email;
     }
     
+    // Method 3: ALWAYS fetch from buyer_id to ensure we have the latest email
+    // This is the most reliable method
+    if (inquiry.buyer_id) {
+      console.log('Fetching buyer email from buyer_id:', inquiry.buyer_id);
+      try {
+        const { data: buyerProfile, error: buyerError } = await supabase
+          .from('profiles')
+          .select('email, full_name')
+          .eq('id', inquiry.buyer_id)
+          .single();
+        
+        if (buyerError) {
+          console.error('Error fetching buyer profile:', buyerError);
+          toast.error(`Failed to fetch buyer information: ${buyerError.message}`);
+          return;
+        }
+        
+        if (buyerProfile?.email) {
+          buyerEmail = buyerProfile.email;
+          console.log('Successfully fetched buyer email:', buyerEmail);
+          // Update the inquiry object with buyer data for future use
+          if (inquiry) {
+            inquiry.buyer = {
+              ...inquiry.buyer,
+              email: buyerProfile.email,
+              full_name: buyerProfile.full_name || inquiry.buyer?.full_name || 'Unknown'
+            };
+          }
+        } else {
+          console.error('Buyer profile found but no email:', buyerProfile);
+        }
+      } catch (error) {
+        console.error('Exception fetching buyer profile:', error);
+        toast.error('Failed to fetch buyer information');
+        return;
+      }
+    } else {
+      console.error('No buyer_id found in inquiry:', inquiry);
+    }
+    
+    // Final check - if still no email, show detailed error
     if (!buyerEmail) {
-      toast.error('Buyer email not found. Please try refreshing the page.');
-      console.error('Buyer email not found for inquiry:', inquiry);
+      console.error('Buyer email not found. Inquiry details:', {
+        inquiryId: inquiry.id,
+        buyerId: inquiry.buyer_id,
+        buyer: inquiry.buyer,
+        fullInquiry: inquiry
+      });
+      toast.error('Buyer email not found. The buyer profile may be missing an email address.');
       return;
     }
 
