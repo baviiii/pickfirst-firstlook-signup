@@ -103,8 +103,8 @@ class AppointmentService {
       // Buyers: show only appointments for this client (by user id or email)
       const selectQuery = `
         *,
-        property:property_listings (id, title, address),
-        agent:profiles (id, full_name)
+        property:property_listings!appointments_property_id_fkey (id, title, address),
+        agent:profiles!appointments_agent_id_fkey (id, full_name)
       `;
       let data: AppointmentWithDetails[] | null = null;
       let error: any = null;
