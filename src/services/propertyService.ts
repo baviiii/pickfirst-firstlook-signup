@@ -1488,19 +1488,84 @@ export class PropertyService {
       return { data: null, error };
     }
 
+    // Get buyer and agent details for email
+    const { data: buyer } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', inquiry.buyer_id)
+      .single();
+
+    const { data: agent } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', (inquiry.property as any)?.agent_id)
+      .single();
+
+    const propertyTitle = (inquiry.property as any)?.title || 'the property';
+
     // If conversation exists, send the response as a message
     if (inquiry.conversation_id) {
       try {
         await messageService.sendMessage(inquiry.conversation_id, response);
+        // Email will be sent automatically by messaging function
       } catch (error) {
         console.error('Failed to send response as message:', error);
-        // Don't fail the response if message sending fails
+        // If message sending fails, send email directly
+        if (buyer?.email) {
+          try {
+            await supabase.functions.invoke('send-email', {
+              body: {
+                to: buyer.email,
+                template: 'messageNotification',
+                subject: `Agent Response - ${propertyTitle}`,
+                data: {
+                  recipientName: buyer.full_name || 'there',
+                  senderName: agent?.full_name || 'The agent',
+                  senderEmail: agent?.email || null,
+                  messageContent: response,
+                  messagePreview: response.substring(0, 200),
+                  conversationId: inquiry.conversation_id,
+                  conversationSubject: `Property Inquiry: ${propertyTitle}`,
+                  platformName: 'PickFirst Real Estate',
+                  platformUrl: 'https://www.pickfirst.com.au'
+                }
+              }
+            });
+          } catch (emailError) {
+            console.error('Failed to send email notification:', emailError);
+          }
+        }
+      }
+    } else {
+      // If no conversation exists, send email directly
+      if (buyer?.email) {
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              to: buyer.email,
+              template: 'messageNotification',
+              subject: `Agent Response - ${propertyTitle}`,
+              data: {
+                recipientName: buyer.full_name || 'there',
+                senderName: agent?.full_name || 'The agent',
+                senderEmail: agent?.email || null,
+                messageContent: response,
+                messagePreview: response.substring(0, 200),
+                conversationId: null,
+                conversationSubject: `Property Inquiry: ${propertyTitle}`,
+                platformName: 'PickFirst Real Estate',
+                platformUrl: 'https://www.pickfirst.com.au'
+              }
+            }
+          });
+        } catch (emailError) {
+          console.error('Failed to send email notification:', emailError);
+        }
       }
     }
 
     // Notify buyer that agent has responded
     try {
-      const propertyTitle = (inquiry.property as any)?.title || 'the property';
       await notificationService.createNotification(
         inquiry.buyer_id,
         'inquiry_response',
