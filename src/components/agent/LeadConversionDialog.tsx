@@ -140,31 +140,57 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
     if (inquiry.buyer_id) {
       console.log('Fetching buyer email from buyer_id:', inquiry.buyer_id);
       try {
-        const { data: buyerProfile, error: buyerError } = await supabase
-          .from('profiles')
+        // Preferred: use public profile view (bypasses RLS)
+        const { data: buyerProfile } = await supabase
+          .from('buyer_public_profiles')
           .select('email, full_name')
           .eq('id', inquiry.buyer_id)
-          .single();
-        
-        if (buyerError) {
-          console.error('Error fetching buyer profile:', buyerError);
-          toast.error(`Failed to fetch buyer information: ${buyerError.message}`);
-          return;
-        }
-        
+          .maybeSingle();
+
         if (buyerProfile?.email) {
           buyerEmail = buyerProfile.email;
-          console.log('Successfully fetched buyer email:', buyerEmail);
-          // Update the inquiry object with buyer data for future use
-          if (inquiry) {
+          inquiry.buyer = {
+            ...inquiry.buyer,
+            email: buyerProfile.email,
+            full_name: buyerProfile.full_name || inquiry.buyer?.full_name || 'Unknown'
+          };
+        }
+
+        // Fallback: RPC helper
+        if (!buyerEmail) {
+          const { data: rpcProfile } = await supabase
+            .rpc('get_buyer_public_profile', { buyer_id: inquiry.buyer_id });
+
+          if (rpcProfile && rpcProfile.length > 0 && rpcProfile[0].email) {
+            buyerEmail = rpcProfile[0].email;
             inquiry.buyer = {
               ...inquiry.buyer,
-              email: buyerProfile.email,
-              full_name: buyerProfile.full_name || inquiry.buyer?.full_name || 'Unknown'
+              email: rpcProfile[0].email,
+              full_name: rpcProfile[0].full_name || inquiry.buyer?.full_name || 'Unknown'
             };
           }
-        } else {
-          console.error('Buyer profile found but no email:', buyerProfile);
+        }
+
+        // Last resort: direct profiles table (may fail due to RLS)
+        if (!buyerEmail) {
+          const { data: directProfile, error: buyerError } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('id', inquiry.buyer_id)
+            .maybeSingle();
+
+          if (buyerError) {
+            console.error('Error fetching buyer profile:', buyerError);
+          }
+
+          if (directProfile?.email) {
+            buyerEmail = directProfile.email;
+            inquiry.buyer = {
+              ...inquiry.buyer,
+              email: directProfile.email,
+              full_name: directProfile.full_name || inquiry.buyer?.full_name || 'Unknown'
+            };
+          }
         }
       } catch (error) {
         console.error('Exception fetching buyer profile:', error);

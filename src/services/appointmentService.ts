@@ -434,8 +434,7 @@ class AppointmentService {
         .from('property_inquiries')
         .select(`
           *,
-          property_listings!property_inquiries_property_id_fkey(title, address),
-          buyer:profiles!property_inquiries_buyer_id_fkey(full_name, email, id)
+          property_listings!property_inquiries_property_id_fkey(title, address)
         `)
         .eq('id', inquiryId)
         .single();
@@ -450,24 +449,48 @@ class AppointmentService {
         return { data: null, error: { message: 'Inquiry not found' } };
       }
 
-      // Get buyer information - try from buyer object first, then fetch from buyer_id
-      let buyerEmail = (inquiry.buyer as any)?.email;
-      let buyerName = (inquiry.buyer as any)?.full_name;
-      
-      // If email not found, fetch from buyer_id
-      if (!buyerEmail && inquiry.buyer_id) {
+      // Get buyer information using public profile view (bypasses RLS)
+      let buyerEmail: string | undefined;
+      let buyerName: string | undefined;
+
+      if (inquiry.buyer_id) {
         const { data: buyerProfile } = await supabase
-          .from('profiles')
+          .from('buyer_public_profiles')
           .select('email, full_name')
           .eq('id', inquiry.buyer_id)
-          .single();
-        
+          .maybeSingle();
+
         if (buyerProfile) {
-          buyerEmail = buyerProfile.email;
-          buyerName = buyerProfile.full_name || buyerName;
+          buyerEmail = buyerProfile.email || undefined;
+          buyerName = buyerProfile.full_name || undefined;
+        }
+
+        // Fallback: use RPC helper if view didn't return data
+        if (!buyerEmail) {
+          const { data: rpcProfile } = await supabase
+            .rpc('get_buyer_public_profile', { buyer_id: inquiry.buyer_id });
+
+          if (rpcProfile && rpcProfile.length > 0) {
+            buyerEmail = rpcProfile[0].email || undefined;
+            buyerName = rpcProfile[0].full_name || buyerName;
+          }
+        }
+
+        // Final fallback: direct profiles table (may still be blocked by RLS)
+        if (!buyerEmail) {
+          const { data: directProfile } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('id', inquiry.buyer_id)
+            .maybeSingle();
+
+          if (directProfile) {
+            buyerEmail = directProfile.email || undefined;
+            buyerName = directProfile.full_name || buyerName;
+          }
         }
       }
-      
+
       if (!buyerEmail) {
         return { data: null, error: { message: 'Buyer email not found in inquiry' } };
       }
