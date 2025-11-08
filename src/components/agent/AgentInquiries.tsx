@@ -185,8 +185,8 @@ export const AgentInquiriesComponent = () => {
             // Fetch client data if buyer exists as a client
             const { data: client } = await supabase
               .from('clients')
-              .select('id, name, status')
-              .eq('id', inquiry.buyer_id)
+              .select('id, name, status, user_id')
+              .eq('user_id', inquiry.buyer_id)
               .eq('agent_id', profile.id)
               .maybeSingle();
 

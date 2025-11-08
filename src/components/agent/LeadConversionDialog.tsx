@@ -96,11 +96,11 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
       
       if (!buyerEmail) return;
       
-      const { data } = await supabase
+      const { data: existingClient } = await supabase
         .from('clients')
-        .select('id')
+        .select('id, name, status, email, user_id')
+        .eq('user_id', inquiry.buyer_id)
         .eq('agent_id', profile.id)
-        .eq('email', buyerEmail)
         .maybeSingle();
       const exists = !!data;
       setHasClient(exists);

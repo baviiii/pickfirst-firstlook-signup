@@ -87,6 +87,8 @@ class AppointmentService {
         .eq('id', user.id)
         .maybeSingle();
 
+      const userEmail = user.email?.toLowerCase() || profile?.email?.toLowerCase();
+
       // Agents: show all their agent-owned appointments
       if (profile?.role === 'agent') {
         const { data, error } = await supabase
@@ -107,8 +109,8 @@ class AppointmentService {
       let data: AppointmentWithDetails[] | null = null;
       let error: any = null;
 
-      if (profile?.email) {
-        const orExpr = `client_id.eq.${user.id},client_email.eq.${profile.email}`;
+      if (userEmail) {
+        const orExpr = `client_id.eq.${user.id},client_email.eq.${userEmail}`;
         const res = await supabase
           .from('appointments')
           .select(selectQuery)
@@ -129,11 +131,11 @@ class AppointmentService {
       }
 
       // Fallback: attempt email ilike if nothing returned and email present
-      if ((!data || data.length === 0) && profile?.email) {
+      if ((!data || data.length === 0) && userEmail) {
         const res2 = await supabase
           .from('appointments')
           .select(selectQuery)
-          .ilike('client_email', profile.email)
+          .ilike('client_email', userEmail)
           .order('date', { ascending: true })
           .order('time', { ascending: true });
         data = res2.data as any;
@@ -495,27 +497,30 @@ class AppointmentService {
         return { data: null, error: { message: 'Buyer email not found in inquiry' } };
       }
 
+      const normalizedBuyerEmail = buyerEmail.trim().toLowerCase();
+      const finalBuyerName = (buyerName || (inquiry as any)?.buyer?.full_name || 'Unknown').trim();
+
       // Check if the buyer exists in the clients table
       let clientId: string | null = null;
-      let clientName = buyerName || 'Unknown';
+      let clientName = finalBuyerName || 'Unknown';
       
       if (inquiry.buyer_id) {
         const { data: existingClient } = await supabase
           .from('clients')
-          .select('id, name')
-          .eq('id', inquiry.buyer_id)
+          .select('id, name, user_id')
+          .eq('user_id', inquiry.buyer_id)
           .eq('agent_id', user.id)
           .single();
         
         if (existingClient) {
           clientId = existingClient.id;
-          clientName = existingClient.name || buyerName || 'Unknown';
+          clientName = existingClient.name || finalBuyerName || 'Unknown';
         } else {
           // Client doesn't exist, create one automatically
           console.log('Buyer not found in clients table, creating client automatically...');
           
           const { data: newClient, error: clientError } = await clientService.createClientByEmail(
-            buyerEmail,
+            normalizedBuyerEmail,
             {
               status: 'lead', // Default status for leads converted to appointments
               notes: `Auto-created from property inquiry for ${(inquiry.property_listings as any)?.title || 'property'}`
@@ -527,7 +532,7 @@ class AppointmentService {
             // Continue without client_id - appointment can still be created
           } else if (newClient) {
             clientId = newClient.id;
-            clientName = newClient.name || buyerName || 'Unknown';
+            clientName = newClient.name || finalBuyerName || 'Unknown';
             console.log('Client created successfully:', newClient.id);
           }
         }
@@ -538,7 +543,7 @@ class AppointmentService {
         inquiry_id: inquiryId,
         client_id: clientId, // Set if client exists or was just created
         client_name: clientName,
-        client_email: buyerEmail,
+        client_email: normalizedBuyerEmail,
         property_id: inquiry.property_id,
         property_address: (inquiry.property_listings as any)?.address || '',
         appointment_type: appointmentData.appointment_type as any,

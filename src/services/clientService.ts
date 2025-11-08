@@ -362,7 +362,6 @@ class ClientService {
 
       // Create the client relationship
       const newClient: ClientInsert = {
-        id: finalUserProfile.id, // Use the user's profile ID as client ID
         agent_id: user.id,
         name: finalUserProfile.full_name || 'Unknown',
         email: finalUserProfile.email,
@@ -373,6 +372,7 @@ class ClientService {
         property_type: sanitizedPropertyType,
         rating: clientData.rating || 0,
         notes: sanitizedNotes,
+        user_id: finalUserProfile.id,
       };
 
       const { data, error } = await supabase
@@ -449,8 +449,8 @@ class ClientService {
         // Check if this user is already a client of the current agent
         const { data: existingClient } = await supabase
           .from('clients')
-          .select('id')
-          .eq('id', data.id)
+          .select('id, user_id')
+          .eq('user_id', data.id)
           .eq('agent_id', user.id)
           .single();
           
