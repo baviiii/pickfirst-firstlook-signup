@@ -124,8 +124,12 @@ export const AgentInquiriesComponent = () => {
       const allInquiries: ExtendedPropertyInquiry[] = [];
       
       for (const listing of myListings) {
-        const { data: propertyInquiries } = await PropertyService.getPropertyInquiries(listing.id);
-        if (propertyInquiries) {
+        const { data: propertyInquiries, error: inquiryError } = await PropertyService.getPropertyInquiries(listing.id);
+        if (inquiryError) {
+          console.error(`Error fetching inquiries for property ${listing.id}:`, inquiryError);
+          continue;
+        }
+        if (propertyInquiries && propertyInquiries.length > 0) {
           // For each inquiry, fetch related appointment and client data
           for (const inquiry of propertyInquiries) {
             const inquiryWithData: ExtendedPropertyInquiry = {
@@ -195,6 +199,7 @@ export const AgentInquiriesComponent = () => {
 
       // Sort by created_at descending
       allInquiries.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      console.log(`[AgentInquiries] Loaded ${allInquiries.length} inquiries from ${myListings.length} listings`);
       setInquiries(allInquiries);
     } catch (error) {
       toast.error('Failed to fetch inquiries');
