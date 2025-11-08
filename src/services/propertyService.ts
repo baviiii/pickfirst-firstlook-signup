@@ -1405,7 +1405,7 @@ export class PropertyService {
       .select(`
         *,
         buyer:profiles!property_inquiries_buyer_id_fkey(full_name, email),
-        conversation:conversations(id, subject, last_message_at)
+        conversation:conversations!property_inquiries_conversation_id_fkey(id, subject, last_message_at)
       `)
       .eq('property_id', propertyId)
       .order('created_at', { ascending: false });
