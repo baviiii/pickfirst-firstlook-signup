@@ -144,8 +144,9 @@ export const useCardNotifications = (): UseCardNotificationsReturn => {
 
   const hasNewNotification = (cardType: CardActionType): boolean => {
     // Check if there's a recent notification for this card type
-    // This is used for animation triggers
-    return (cardCounts[cardType] || 0) > 0;
+    // This is used for animation triggers - show animation if there are unread notifications
+    const count = cardCounts[cardType] || 0;
+    return count > 0;
   };
 
   const clearCardNotifications = async (cardType: CardActionType) => {

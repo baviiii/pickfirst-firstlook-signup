@@ -1400,17 +1400,81 @@ export class PropertyService {
 
   // Get inquiries for a specific property (agent only)
   static async getPropertyInquiries(propertyId: string): Promise<{ data: PropertyInquiry[] | null; error: any }> {
-    const { data, error } = await supabase
-      .from('property_inquiries')
-      .select(`
-        *,
-        buyer:profiles!property_inquiries_buyer_id_fkey(full_name, email),
-        conversation:conversations!property_inquiries_conversation_id_fkey(id, subject, last_message_at)
-      `)
-      .eq('property_id', propertyId)
-      .order('created_at', { ascending: false });
+    try {
+      // First get the inquiries
+      const { data: inquiries, error: inquiryError } = await supabase
+        .from('property_inquiries')
+        .select(`
+          *,
+          conversation:conversations!property_inquiries_conversation_id_fkey(id, subject, last_message_at)
+        `)
+        .eq('property_id', propertyId)
+        .order('created_at', { ascending: false });
 
-    return { data, error };
+      if (inquiryError) {
+        return { data: null, error: inquiryError };
+      }
+
+      if (!inquiries || inquiries.length === 0) {
+        return { data: [], error: null };
+      }
+
+      // Fetch buyer profiles using the public view to bypass RLS
+      const inquiriesWithBuyers = await Promise.all(
+        inquiries.map(async (inquiry) => {
+          let buyerData = null;
+          
+          // Try to get buyer from public profile view
+          const { data: buyerProfile } = await supabase
+            .from('buyer_public_profiles')
+            .select('id, full_name, email')
+            .eq('id', inquiry.buyer_id)
+            .maybeSingle();
+
+          if (buyerProfile) {
+            buyerData = {
+              full_name: buyerProfile.full_name || 'Unknown Buyer',
+              email: buyerProfile.email || ''
+            };
+          } else {
+            // Fallback: try RPC function
+            const { data: buyerFromRPC } = await supabase
+              .rpc('get_buyer_public_profile', { buyer_id: inquiry.buyer_id });
+            
+            if (buyerFromRPC && buyerFromRPC.length > 0) {
+              buyerData = {
+                full_name: buyerFromRPC[0].full_name || 'Unknown Buyer',
+                email: buyerFromRPC[0].email || ''
+              };
+            } else {
+              // Last resort: fetch directly from profiles (might fail due to RLS)
+              const { data: buyerDirect } = await supabase
+                .from('profiles')
+                .select('full_name, email')
+                .eq('id', inquiry.buyer_id)
+                .maybeSingle();
+              
+              if (buyerDirect) {
+                buyerData = {
+                  full_name: buyerDirect.full_name || 'Unknown Buyer',
+                  email: buyerDirect.email || ''
+                };
+              }
+            }
+          }
+
+          return {
+            ...inquiry,
+            buyer: buyerData || { full_name: 'Unknown Buyer', email: '' }
+          };
+        })
+      );
+
+      return { data: inquiriesWithBuyers, error: null };
+    } catch (error) {
+      console.error('Error fetching property inquiries:', error);
+      return { data: null, error };
+    }
   }
 
   // Get user's own inquiries
