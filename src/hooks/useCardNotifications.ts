@@ -30,6 +30,7 @@ const getNotificationToCardMap = (userRole: 'agent' | 'buyer' | 'super_admin' | 
   if (userRole === 'agent') {
     return {
       ...baseMap,
+      new_inquiry: 'leads', // Agents see new inquiries on "Leads" card
       new_listing: 'listings', // Agents see new listings on "My Listings" card
       price_change: 'listings',
       property_sold: 'listings',

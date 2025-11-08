@@ -59,7 +59,7 @@ export const AgentDashboard = () => {
     { icon: Calendar, label: 'Appointments', description: 'View scheduled showings', color: 'bg-orange-500/10 text-orange-500', onClick: () => navigate('/appointments'), cardType: 'appointments' as const },
     { icon: BarChart3, label: 'Analytics', description: 'View performance metrics', color: 'bg-indigo-500/10 text-indigo-500', onClick: () => navigate('/agent-analytics'), cardType: null as any },
     { icon: MessageSquare, label: 'Messages', description: 'Client communications', color: 'bg-pickfirst-yellow/10 text-pickfirst-yellow', onClick: () => { clearCardNotifications('messages'); navigate('/agent-messages'); }, cardType: 'messages' as const },
-    { icon: Phone, label: 'Leads', description: 'Follow up with prospects', color: 'bg-pink-500/10 text-pink-500', onClick: () => navigate('/agent-leads'), cardType: 'leads' as const },
+    { icon: Phone, label: 'Leads', description: 'Follow up with prospects', color: 'bg-pink-500/10 text-pink-500', onClick: () => { clearCardNotifications('leads'); navigate('/agent-leads'); }, cardType: 'leads' as const },
     { icon: Settings, label: 'Profile Settings', description: 'Update your profile', color: 'bg-gray-500/10 text-gray-500', onClick: () => navigate('/agent-profile'), cardType: null as any }
   ];
 

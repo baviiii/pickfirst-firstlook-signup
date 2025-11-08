@@ -13,12 +13,14 @@ import {
   Mail,
   Settings,
   Trash2,
-  CheckCheck
+  CheckCheck,
+  Phone
 } from 'lucide-react';
 import { notificationService, Notification, NotificationType } from '@/services/notificationService';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import { useCardNotifications } from '@/hooks/useCardNotifications';
 
 interface NotificationDropdownProps {
   unreadCount?: number;
@@ -29,9 +31,12 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(externalUnreadCount || 0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  // Use hook to get real-time unread count (includes all notifications)
+  const { totalUnread } = useCardNotifications();
+  // Use external count if provided, otherwise use hook count
+  const unreadCount = externalUnreadCount !== undefined ? externalUnreadCount : totalUnread;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -61,8 +66,8 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
   useEffect(() => {
     const channel = notificationService.subscribeToNotifications((newNotification) => {
       setNotifications(prev => [newNotification, ...prev]);
-      setUnreadCount(prev => prev + 1);
-      onUnreadCountChange?.(unreadCount + 1);
+      // Don't update unreadCount here - useCardNotifications hook handles it
+      onUnreadCountChange?.(totalUnread + 1);
       
       // Show toast for new notification
       toast.info(newNotification.title, {
@@ -77,7 +82,7 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
     return () => {
       channel.unsubscribe();
     };
-  }, [navigate, unreadCount, onUnreadCountChange]);
+  }, [navigate, totalUnread, onUnreadCountChange]);
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -86,12 +91,11 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
       
       if (realNotifications) {
         setNotifications(realNotifications);
+        // Don't update unreadCount here - useCardNotifications hook handles it
         const unread = realNotifications.filter(n => !n.read).length;
-        setUnreadCount(unread);
         onUnreadCountChange?.(unread);
       } else {
         setNotifications([]);
-        setUnreadCount(0);
         onUnreadCountChange?.(0);
       }
     } catch (error) {
@@ -109,8 +113,8 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
       setNotifications(prev => 
         prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
       );
-      setUnreadCount(prev => Math.max(0, prev - 1));
-      onUnreadCountChange?.(Math.max(0, unreadCount - 1));
+      // Don't update unreadCount here - useCardNotifications hook handles it
+      onUnreadCountChange?.(Math.max(0, totalUnread - 1));
     }
 
     // Navigate to link if provided
@@ -124,7 +128,7 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
     try {
       await notificationService.markAllAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      setUnreadCount(0);
+      // Don't update unreadCount here - useCardNotifications hook handles it
       onUnreadCountChange?.(0);
       toast.success('All notifications marked as read');
     } catch (error) {
@@ -154,6 +158,7 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
       price_change: <DollarSign className="h-4 w-4 text-orange-400" />,
       property_sold: <Home className="h-4 w-4 text-red-400" />,
       inquiry_response: <Mail className="h-4 w-4 text-purple-400" />,
+      new_inquiry: <Phone className="h-4 w-4 text-pink-400" />,
       system: <Settings className="h-4 w-4 text-gray-400" />
     };
     return iconMap[type] || <Bell className="h-4 w-4 text-gray-400" />;
@@ -170,6 +175,7 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
       price_change: 'bg-orange-500/10 border-orange-500/20',
       property_sold: 'bg-red-500/10 border-red-500/20',
       inquiry_response: 'bg-purple-500/10 border-purple-500/20',
+      new_inquiry: 'bg-pink-500/10 border-pink-500/20',
       system: 'bg-gray-500/10 border-gray-500/20'
     };
     return colorMap[type] || 'bg-gray-500/10 border-gray-500/20';

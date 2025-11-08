@@ -116,15 +116,29 @@ export const AgentInquiriesComponent = () => {
               inquiryWithData.appointment = appointment;
             }
 
-            // Fetch conversation data
-            const { data: conversation } = await supabase
-              .from('conversations')
-              .select('id, subject')
-              .eq('inquiry_id', inquiry.id)
-              .maybeSingle();
+            // Fetch conversation data - check both inquiry_id and conversation_id
+            const conversationId = (inquiry as any).conversation_id;
+            if (conversationId) {
+              const { data: conversation } = await supabase
+                .from('conversations')
+                .select('id, subject')
+                .eq('id', conversationId)
+                .maybeSingle();
 
-            if (conversation) {
-              inquiryWithData.conversation = conversation;
+              if (conversation) {
+                inquiryWithData.conversation = conversation;
+              }
+            } else {
+              // Fallback: check by inquiry_id (for old inquiries)
+              const { data: conversation } = await supabase
+                .from('conversations')
+                .select('id, subject')
+                .eq('inquiry_id', inquiry.id)
+                .maybeSingle();
+
+              if (conversation) {
+                inquiryWithData.conversation = conversation;
+              }
             }
 
             // Fetch client data if buyer exists as a client
@@ -389,8 +403,16 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
 
       {/* Inquiries List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {inquiries.map((inquiry) => (
-          <Card key={inquiry.id} className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 hover:shadow-lg hover:shadow-pickfirst-yellow/10 transition-all">
+        {inquiries.map((inquiry) => {
+          // Check if inquiry is new/unviewed
+          const isNew = !(inquiry as any).viewed_at && !inquiry.agent_response;
+          return (
+          <Card 
+            key={inquiry.id} 
+            className={`bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 hover:shadow-lg hover:shadow-pickfirst-yellow/10 transition-all ${
+              isNew ? 'animate-pulse-border border-yellow-400/50' : ''
+            }`}
+          >
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -589,15 +611,20 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
                 )}
                 
                 {!inquiry.agent_response && !inquiry.client && !inquiry.appointment && (
-                  <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-500/10 p-2 rounded">
+                  <div className={`flex items-center gap-2 text-xs p-2 rounded ${
+                    isNew 
+                      ? 'text-yellow-400 bg-yellow-500/20 animate-pulse' 
+                      : 'text-gray-400 bg-gray-500/10'
+                  }`}>
                     <Clock className="h-3 w-3" />
-                    New inquiry - awaiting response
+                    {isNew ? '🆕 New inquiry - awaiting response' : 'New inquiry - awaiting response'}
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
-        ))}
+        );
+        })}
       </div>
 
       {/* Response Dialog */}
