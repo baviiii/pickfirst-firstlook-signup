@@ -70,23 +70,73 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
   // Check if this buyer is already a client for this agent
   useEffect(() => {
     const checkExistingClient = async () => {
-      if (!open || !inquiry?.buyer?.email || !profile?.id) return;
+      if (!open || !profile?.id) return;
+      
+      // Get buyer email - try from inquiry object first, then fetch if needed
+      let buyerEmail = inquiry?.buyer?.email;
+      
+      if (!buyerEmail && inquiry?.buyer_id) {
+        const { data: buyerProfile } = await supabase
+          .from('profiles')
+          .select('email, full_name')
+          .eq('id', inquiry.buyer_id)
+          .single();
+        
+        buyerEmail = buyerProfile?.email;
+        
+        // Update inquiry object if we fetched the email
+        if (buyerEmail && inquiry) {
+          inquiry.buyer = {
+            ...inquiry.buyer,
+            email: buyerEmail,
+            full_name: buyerProfile?.full_name || inquiry.buyer?.full_name || 'Unknown'
+          };
+        }
+      }
+      
+      if (!buyerEmail) return;
+      
       const { data } = await supabase
         .from('clients')
         .select('id')
         .eq('agent_id', profile.id)
-        .eq('email', inquiry.buyer.email)
+        .eq('email', buyerEmail)
         .maybeSingle();
       const exists = !!data;
       setHasClient(exists);
       if (exists) setActiveTab('appointment');
     };
     checkExistingClient();
-  }, [open, inquiry?.buyer?.email, profile?.id]);
+  }, [open, inquiry?.buyer_id, inquiry?.buyer?.email, profile?.id]);
 
   const handleConvertToClient = async () => {
-    if (!inquiry?.buyer?.email) {
-      toast.error('Buyer email not found');
+    // Try to get buyer email from inquiry object
+    let buyerEmail = inquiry?.buyer?.email;
+    
+    // If email is not in inquiry object, fetch it from the buyer_id
+    if (!buyerEmail && inquiry?.buyer_id) {
+      const { data: buyerProfile } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', inquiry.buyer_id)
+        .single();
+      
+      if (buyerProfile?.email) {
+        buyerEmail = buyerProfile.email;
+        // Update the inquiry object with buyer data for future use
+        if (inquiry) {
+          inquiry.buyer = {
+            ...inquiry.buyer,
+            email: buyerProfile.email,
+            full_name: buyerProfile.full_name || inquiry.buyer?.full_name || 'Unknown'
+          };
+        }
+      }
+    }
+    
+    if (!buyerEmail) {
+      toast.error('Buyer email not found. Please try refreshing the page.');
+      console.error('Buyer email not found for inquiry:', inquiry);
       return;
     }
 
@@ -98,7 +148,7 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
       const formattedPhone = phoneDigits ? `+${codeDigits}${phoneDigits}` : undefined;
 
       const { data, error } = await clientService.createClientByEmail(
-        inquiry.buyer.email,
+        buyerEmail,
         {
           phone: formattedPhone,
           status: clientData.status,

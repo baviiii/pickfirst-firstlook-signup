@@ -134,6 +134,8 @@ export const AgentInquiriesComponent = () => {
           for (const inquiry of propertyInquiries) {
             const inquiryWithData: ExtendedPropertyInquiry = {
               ...inquiry,
+              // Explicitly preserve buyer data from the query
+              buyer: (inquiry as any).buyer || undefined,
               property: {
                 title: listing.title,
                 address: listing.address,
@@ -398,9 +400,9 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
           <div className="flex items-start gap-3">
             <MessageSquare className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <div className="text-white font-medium mb-1">Start Conversations with Buyers</div>
+              <div className="text-white font-medium mb-1">Unified Messaging System</div>
               <div className="text-gray-300 text-sm">
-                Click "Start Chat" on any inquiry to open a conversation. Buyers will be notified when you start chatting with them.
+                Conversations are automatically created when buyers inquire. Click "Open Chat" to view and respond to the conversation. All messages are synced between Leads and Messages pages.
               </div>
             </div>
           </div>
@@ -592,13 +594,13 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
                   size="sm"
                   onClick={() => handleStartConversation(inquiry)}
                   className={`flex-1 ${
-                    inquiry.conversation?.id 
+                    inquiry.conversation?.id || (inquiry as any).conversation_id
                       ? 'bg-green-500/20 text-green-300 border-green-500/30 hover:bg-green-500/30' 
                       : 'bg-blue-500/20 text-blue-300 border-blue-500/30 hover:bg-blue-500/30'
                   }`}
                 >
                   <MessageSquare className="h-4 w-4 mr-1" />
-                  {inquiry.conversation?.id ? 'Open Chat' : 'Start Chat'}
+                  Open Chat
                 </Button>
                 
                 {!inquiry.appointment && (

@@ -433,13 +433,19 @@ class AppointmentService {
         .from('property_inquiries')
         .select(`
           *,
-          property_listings!inner(title, address),
-          profiles!inner(full_name, email, id)
+          property_listings!property_inquiries_property_id_fkey(title, address),
+          buyer:profiles!property_inquiries_buyer_id_fkey(full_name, email, id)
         `)
         .eq('id', inquiryId)
         .single();
 
-      if (inquiryError || !inquiry) {
+      if (inquiryError) {
+        console.error('Error fetching inquiry:', inquiryError);
+        return { data: null, error: { message: inquiryError.message || 'Inquiry not found' } };
+      }
+
+      if (!inquiry) {
+        console.error('Inquiry not found for ID:', inquiryId);
         return { data: null, error: { message: 'Inquiry not found' } };
       }
 
@@ -461,10 +467,10 @@ class AppointmentService {
         agent_id: user.id,
         inquiry_id: inquiryId,
         client_id: clientId, // Only set if client exists in clients table
-        client_name: inquiry.profiles.full_name || 'Unknown',
-        client_email: inquiry.profiles.email,
+        client_name: (inquiry.buyer as any)?.full_name || 'Unknown',
+        client_email: (inquiry.buyer as any)?.email || '',
         property_id: inquiry.property_id,
-        property_address: inquiry.property_listings.address,
+        property_address: (inquiry.property_listings as any)?.address || '',
         appointment_type: appointmentData.appointment_type as any,
         date: appointmentData.date,
         time: appointmentData.time,
