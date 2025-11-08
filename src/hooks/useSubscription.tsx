@@ -24,6 +24,11 @@ interface SubscriptionContextType {
   canChatWithAgents: () => boolean;
   canScheduleAppointments: () => boolean;
   canViewVendorDetails: () => boolean;
+  canAccessEarlyAccessListings: () => boolean;
+  canUsePropertyInsights: () => boolean;
+  canUseInvestorFilters: () => boolean;
+  canUsePersonalizedAlerts: () => boolean;
+  canUseInstantNotifications: () => boolean;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -195,26 +200,39 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
         });
         setFeatureConfigs(configs);
       } catch (error) {
-        // CLEAN, SIMPLIFIED FEATURE GATES
+        // ACTUAL FEATURES FROM DATABASE - Only features that exist in feature_configurations table
         setFeatureConfigs({
           // === CORE FEATURES (All Users) ===
           'browse_properties': { free: true, basic: true, premium: true },
+          'browse_listings': { free: true, basic: true, premium: true }, // Alias
           'basic_search': { free: true, basic: true, premium: true },
           'save_searches': { free: true, basic: true, premium: true },
-          'property_alerts': { free: true, basic: true, premium: true }, // All users get alerts
-          'agent_messaging': { free: true, basic: true, premium: true }, // All users can message
+          'property_alerts': { free: true, basic: true, premium: true },
+          'agent_messaging': { free: true, basic: true, premium: true },
           
           // === LIMITED FEATURES (Free users get limited, Premium gets unlimited) ===
           'favorites': { free: true, basic: true, premium: true }, // Free: 10, Premium: unlimited
           'property_comparison': { free: true, basic: true, premium: true }, // Free: 2, Premium: unlimited
+          'property_comparison_basic': { free: true, basic: true, premium: true },
+          'property_comparison_unlimited': { free: false, basic: false, premium: true },
           
           // === PREMIUM ONLY FEATURES ===
           'off_market_properties': { free: false, basic: false, premium: true },
+          'exclusive_offmarket': { free: false, basic: false, premium: true }, // Alias
           'advanced_search': { free: false, basic: false, premium: true },
-          'market_insights': { free: false, basic: false, premium: true },
+          'advanced_search_filters': { free: false, basic: true, premium: true },
+          'market_insights': { free: false, basic: true, premium: true },
           'priority_support': { free: false, basic: false, premium: true },
           'schedule_appointments': { free: false, basic: false, premium: true },
-          'vendor_details': { free: false, basic: false, premium: true }
+          'vendor_details': { free: false, basic: false, premium: true },
+          'early_access_listings': { free: false, basic: true, premium: true },
+          'property_insights': { free: false, basic: true, premium: true },
+          'investor_filters': { free: false, basic: true, premium: true },
+          
+          // Legacy/alias features for backward compatibility
+          'personalized_property_notifications': { free: false, basic: false, premium: true }, // Used in BuyerAccountSettings
+          'direct_chat_agents': { free: true, basic: true, premium: true }, // Alias for agent_messaging
+          'unlimited_favorites': { free: false, basic: false, premium: true } // Legacy alias
         });
       }
     };
@@ -284,7 +302,8 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
 
   // SIMPLIFIED HELPER FUNCTIONS
   const canUseFavorites = (): boolean => {
-    return isFeatureEnabled('favorites');
+    // Check both 'favorites' and 'favorites_basic' for compatibility
+    return isFeatureEnabled('favorites') || isFeatureEnabled('favorites_basic');
   };
 
   const getFavoritesLimit = (): number => {
@@ -293,7 +312,8 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
   };
 
   const canUseAdvancedSearch = (): boolean => {
-    return isFeatureEnabled('advanced_search');
+    // Check both 'advanced_search' and 'advanced_search_filters' for compatibility
+    return isFeatureEnabled('advanced_search') || isFeatureEnabled('advanced_search_filters');
   };
 
   const canUseMarketInsights = (): boolean => {
@@ -301,6 +321,8 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
   };
 
   const getPropertyComparisonLimit = (): number => {
+    // Check if unlimited comparison is enabled
+    if (isFeatureEnabled('property_comparison_unlimited')) return -1; // Unlimited
     if (subscriptionTier === 'premium') return -1; // Unlimited for premium
     return 2; // 2 for free users
   };
@@ -315,11 +337,13 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
   };
 
   const canAccessOffMarketListings = (): boolean => {
-    return isFeatureEnabled('off_market_properties');
+    // Check both 'exclusive_offmarket' and 'off_market_properties' for compatibility
+    return isFeatureEnabled('exclusive_offmarket') || isFeatureEnabled('off_market_properties');
   };
 
   const canChatWithAgents = (): boolean => {
-    return isFeatureEnabled('agent_messaging'); // All users can message
+    // Check both 'agent_messaging' and 'direct_chat_agents' for compatibility
+    return isFeatureEnabled('agent_messaging') || isFeatureEnabled('direct_chat_agents');
   };
 
   const canScheduleAppointments = (): boolean => {
@@ -328,6 +352,27 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
 
   const canViewVendorDetails = (): boolean => {
     return isFeatureEnabled('vendor_details');
+  };
+
+  const canAccessEarlyAccessListings = (): boolean => {
+    return isFeatureEnabled('early_access_listings');
+  };
+
+  const canUsePropertyInsights = (): boolean => {
+    return isFeatureEnabled('property_insights') || isFeatureEnabled('market_insights');
+  };
+
+  const canUseInvestorFilters = (): boolean => {
+    return isFeatureEnabled('investor_filters');
+  };
+
+  const canUsePersonalizedAlerts = (): boolean => {
+    // Check both 'personalized_alerts' and 'personalized_property_notifications' for compatibility
+    return isFeatureEnabled('personalized_alerts') || isFeatureEnabled('personalized_property_notifications');
+  };
+
+  const canUseInstantNotifications = (): boolean => {
+    return isFeatureEnabled('instant_notifications');
   };
 
   // Set up auth state listener
@@ -400,6 +445,11 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
         canChatWithAgents,
         canScheduleAppointments,
         canViewVendorDetails,
+        canAccessEarlyAccessListings,
+        canUsePropertyInsights,
+        canUseInvestorFilters,
+        canUsePersonalizedAlerts,
+        canUseInstantNotifications,
       }}
     >
       {children}
