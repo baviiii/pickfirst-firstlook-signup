@@ -294,92 +294,93 @@ export const FeatureManagement = () => {
               Refresh
             </Button>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => {
-                setEditingFeature(null);
-                setFormData({
-                  feature_key: '',
-                  feature_name: '',
-                  description: '',
-                  free_tier_enabled: false,
-                  basic_tier_enabled: false,
-                  premium_tier_enabled: true
-                });
-              }}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Feature
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingFeature ? 'Edit Feature' : 'Add New Feature'}
-                </DialogTitle>
-                <DialogDescription>
-                  Configure feature access for different subscription tiers
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="feature_key">Feature Key</Label>
-                  <Input
-                    id="feature_key"
-                    value={formData.feature_key}
-                    onChange={(e) => setFormData({ ...formData, feature_key: e.target.value })}
-                    placeholder="e.g., advanced_search"
-                    disabled={!!editingFeature}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="feature_name">Feature Name</Label>
-                  <Input
-                    id="feature_name"
-                    value={formData.feature_name}
-                    onChange={(e) => setFormData({ ...formData, feature_name: e.target.value })}
-                    placeholder="e.g., Advanced Search"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Feature description..."
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="free_tier"
-                    checked={formData.free_tier_enabled}
-                    onCheckedChange={(checked) => setFormData({ ...formData, free_tier_enabled: checked })}
-                  />
-                  <Label htmlFor="free_tier">Enable for Free Tier</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="basic_tier"
-                    checked={formData.basic_tier_enabled}
-                    onCheckedChange={(checked) => setFormData({ ...formData, basic_tier_enabled: checked })}
-                  />
-                  <Label htmlFor="basic_tier">Enable for Basic Tier</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="premium_tier"
-                    checked={formData.premium_tier_enabled}
-                    onCheckedChange={(checked) => setFormData({ ...formData, premium_tier_enabled: checked })}
-                  />
-                  <Label htmlFor="premium_tier">Enable for Premium Tier</Label>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button onClick={handleSave}>
-                  {editingFeature ? 'Update' : 'Create'} Feature
+              <DialogTrigger asChild>
+                <Button onClick={() => {
+                  setEditingFeature(null);
+                  setFormData({
+                    feature_key: '',
+                    feature_name: '',
+                    description: '',
+                    free_tier_enabled: false,
+                    basic_tier_enabled: false,
+                    premium_tier_enabled: true
+                  });
+                }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Feature
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingFeature ? 'Edit Feature' : 'Add New Feature'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Configure feature access for different subscription tiers
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="feature_key">Feature Key</Label>
+                    <Input
+                      id="feature_key"
+                      value={formData.feature_key}
+                      onChange={(e) => setFormData({ ...formData, feature_key: e.target.value })}
+                      placeholder="e.g., advanced_search"
+                      disabled={!!editingFeature}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="feature_name">Feature Name</Label>
+                    <Input
+                      id="feature_name"
+                      value={formData.feature_name}
+                      onChange={(e) => setFormData({ ...formData, feature_name: e.target.value })}
+                      placeholder="e.g., Advanced Search"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Feature description..."
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="free_tier"
+                      checked={formData.free_tier_enabled}
+                      onCheckedChange={(checked) => setFormData({ ...formData, free_tier_enabled: checked })}
+                    />
+                    <Label htmlFor="free_tier">Enable for Free Tier</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="basic_tier"
+                      checked={formData.basic_tier_enabled}
+                      onCheckedChange={(checked) => setFormData({ ...formData, basic_tier_enabled: checked })}
+                    />
+                    <Label htmlFor="basic_tier">Enable for Basic Tier</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="premium_tier"
+                      checked={formData.premium_tier_enabled}
+                      onCheckedChange={(checked) => setFormData({ ...formData, premium_tier_enabled: checked })}
+                    />
+                    <Label htmlFor="premium_tier">Enable for Premium Tier</Label>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button onClick={handleSave}>
+                    {editingFeature ? 'Update' : 'Create'} Feature
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
