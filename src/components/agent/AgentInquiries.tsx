@@ -72,7 +72,42 @@ export const AgentInquiriesComponent = () => {
 
   useEffect(() => {
     fetchInquiries();
-  }, []);
+    
+    // Subscribe to real-time updates for new inquiries
+    const channel = supabase
+      .channel('property_inquiries_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'property_inquiries'
+        },
+        (payload) => {
+          console.log('New inquiry received:', payload.new);
+          // Refresh inquiries when a new one is created
+          fetchInquiries();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'property_inquiries'
+        },
+        (payload) => {
+          console.log('Inquiry updated:', payload.new);
+          // Refresh inquiries when one is updated
+          fetchInquiries();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [profile]);
 
   const fetchInquiries = async () => {
     if (!profile) return;

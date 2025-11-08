@@ -86,8 +86,13 @@ export const useCardNotifications = (): UseCardNotificationsReturn => {
             if (cardType) {
               counts[cardType] = (counts[cardType] || 0) + 1;
             }
+            // Debug log for new_inquiry notifications
+            if (notif.type === 'new_inquiry') {
+              console.log(`[CardNotifications] Found new_inquiry notification, mapping to card: "${cardType}"`);
+            }
           }
         });
+        console.log(`[CardNotifications] Initial card counts:`, counts);
         setCardCounts(counts);
       }
     };
@@ -110,13 +115,18 @@ export const useCardNotifications = (): UseCardNotificationsReturn => {
         });
       }, 3000);
 
+      // Get fresh mapping in case userRole changed
+      const currentMap = getNotificationToCardMap(userRole);
       // Map notification to card type
-      const cardType = notificationToCardMap[newNotification.type];
+      const cardType = currentMap[newNotification.type];
       if (cardType) {
+        console.log(`[CardNotifications] Mapping notification type "${newNotification.type}" to card "${cardType}"`);
         setCardCounts(prev => ({
           ...prev,
           [cardType]: (prev[cardType] || 0) + 1,
         }));
+      } else {
+        console.log(`[CardNotifications] No card mapping for notification type "${newNotification.type}"`);
       }
     });
 
