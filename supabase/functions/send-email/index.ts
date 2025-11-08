@@ -412,6 +412,94 @@ PickFirst Real Estate Team`,
     `
   }),
 
+  clientInvite: (data: any) => ({
+    subject: `${data.agentName || 'Your agent'} invited you to join PickFirst Properties`,
+    text: `Hello ${data.recipientName || 'there'}!
+
+${data.agentName || 'Your agent'} has added you as a client and would like to invite you to join our property platform.
+
+Why join?
+- Browse exclusive property listings
+- Save and track your favorite properties
+- Direct messaging with your agent
+- Get personalized property recommendations
+- Schedule property viewings
+
+Accept your invitation and create your account:
+${data.signupUrl || 'https://pickfirst.com.au/auth?signup=true'}
+
+This invitation will link your account with ${data.agentName || 'your agent'}'s client records, making it easier to manage your property search journey.
+
+If you didn't expect this invitation, you can safely ignore this email.
+
+Questions? Contact your agent ${data.agentName || ''} directly.
+
+© 2025 PickFirst Properties. All rights reserved.`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        ${commonStyles}
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+          ${getEmailHeader()}
+          <div class="mobile-padding" style="padding: 40px 30px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <div style="font-size: 64px; margin-bottom: 20px;">🏡</div>
+              <h1 class="mobile-heading" style="color: ${BRAND_COLORS.secondary}; margin: 0;">
+                Welcome to PickFirst Properties!
+              </h1>
+            </div>
+            
+            <p style="color: ${BRAND_COLORS.text}; font-size: 16px; margin-bottom: 25px;">
+              Hello ${data.recipientName || 'there'}!
+            </p>
+            
+            <p style="color: ${BRAND_COLORS.text}; font-size: 16px; margin-bottom: 25px;">
+              ${data.agentName || 'Your agent'} has added you as a client and would like to invite you to join our property platform.
+            </p>
+            
+            <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
+              <h2 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 20px;">Why join?</h2>
+              <ul style="margin: 0; padding-left: 20px; color: ${BRAND_COLORS.text}; line-height: 1.8;">
+                <li style="margin-bottom: 10px;">Browse exclusive property listings</li>
+                <li style="margin-bottom: 10px;">Save and track your favorite properties</li>
+                <li style="margin-bottom: 10px;">Direct messaging with your agent</li>
+                <li style="margin-bottom: 10px;">Get personalized property recommendations</li>
+                <li style="margin-bottom: 10px;">Schedule property viewings</li>
+              </ul>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              ${getButton(data.signupUrl || 'https://pickfirst.com.au/auth?signup=true', 'Accept Invitation & Create Account')}
+            </div>
+            
+            <p style="color: ${BRAND_COLORS.textLight}; font-size: 14px; margin: 20px 0;">
+              This invitation will link your account with ${data.agentName || 'your agent'}'s client records, making it easier to manage your property search journey.
+            </p>
+            
+            <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 30px 0; border-left: 4px solid ${BRAND_COLORS.warning};">
+              <p style="margin: 0; color: ${BRAND_COLORS.text}; font-size: 14px;">
+                If you didn't expect this invitation, you can safely ignore this email.
+              </p>
+            </div>
+            
+            <div style="background: ${BRAND_COLORS.lightBg}; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid ${BRAND_COLORS.primary};">
+              <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
+                Questions? Contact your agent ${data.agentName || ''} directly.
+              </p>
+            </div>
+          </div>
+          ${getEmailFooter()}
+        </div>
+      </body>
+      </html>
+    `
+  }),
+
   passwordReset: (data: any) => ({
     subject: 'Password Reset Request - PickFirst Real Estate',
     text: `Password Reset Request
@@ -1643,7 +1731,8 @@ const handler = async (req: Request) => {
       'subscriptionUpgrade', 'subscriptionExpiry', 'profileUpdate',
       'subscriptionWelcome', 'subscriptionChanged', 'subscriptionCancelled',
       'propertyAlert', 'agentInquiryNotification', // Added for inbox delivery
-      'propertyListingSubmitted', 'propertyListingApproved', 'propertyListingRejected' // Property workflow emails
+      'propertyListingSubmitted', 'propertyListingApproved', 'propertyListingRejected', // Property workflow emails
+      'clientInvite' // Client invitation emails
     ];
     
     const isTransactional = transactionalTemplates.includes(template);

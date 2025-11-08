@@ -5,6 +5,7 @@ import { auditService } from './auditService';
 import { CalendarService } from './calendarService';
 import { EmailService } from './emailService';
 import { notificationService } from './notificationService';
+import { clientService } from './clientService';
 
 export type Appointment = Tables<'appointments'>;
 export type AppointmentInsert = TablesInsert<'appointments'>;
@@ -449,26 +450,72 @@ class AppointmentService {
         return { data: null, error: { message: 'Inquiry not found' } };
       }
 
+      // Get buyer information - try from buyer object first, then fetch from buyer_id
+      let buyerEmail = (inquiry.buyer as any)?.email;
+      let buyerName = (inquiry.buyer as any)?.full_name;
+      
+      // If email not found, fetch from buyer_id
+      if (!buyerEmail && inquiry.buyer_id) {
+        const { data: buyerProfile } = await supabase
+          .from('profiles')
+          .select('email, full_name')
+          .eq('id', inquiry.buyer_id)
+          .single();
+        
+        if (buyerProfile) {
+          buyerEmail = buyerProfile.email;
+          buyerName = buyerProfile.full_name || buyerName;
+        }
+      }
+      
+      if (!buyerEmail) {
+        return { data: null, error: { message: 'Buyer email not found in inquiry' } };
+      }
+
       // Check if the buyer exists in the clients table
       let clientId: string | null = null;
+      let clientName = buyerName || 'Unknown';
+      
       if (inquiry.buyer_id) {
         const { data: existingClient } = await supabase
           .from('clients')
-          .select('id')
+          .select('id, name')
           .eq('id', inquiry.buyer_id)
+          .eq('agent_id', user.id)
           .single();
         
         if (existingClient) {
           clientId = existingClient.id;
+          clientName = existingClient.name || buyerName || 'Unknown';
+        } else {
+          // Client doesn't exist, create one automatically
+          console.log('Buyer not found in clients table, creating client automatically...');
+          
+          const { data: newClient, error: clientError } = await clientService.createClientByEmail(
+            buyerEmail,
+            {
+              status: 'lead', // Default status for leads converted to appointments
+              notes: `Auto-created from property inquiry for ${(inquiry.property_listings as any)?.title || 'property'}`
+            }
+          );
+          
+          if (clientError) {
+            console.error('Error creating client automatically:', clientError);
+            // Continue without client_id - appointment can still be created
+          } else if (newClient) {
+            clientId = newClient.id;
+            clientName = newClient.name || buyerName || 'Unknown';
+            console.log('Client created successfully:', newClient.id);
+          }
         }
       }
 
       const newAppointment: AppointmentInsert = {
         agent_id: user.id,
         inquiry_id: inquiryId,
-        client_id: clientId, // Only set if client exists in clients table
-        client_name: (inquiry.buyer as any)?.full_name || 'Unknown',
-        client_email: (inquiry.buyer as any)?.email || '',
+        client_id: clientId, // Set if client exists or was just created
+        client_name: clientName,
+        client_email: buyerEmail,
         property_id: inquiry.property_id,
         property_address: (inquiry.property_listings as any)?.address || '',
         appointment_type: appointmentData.appointment_type as any,

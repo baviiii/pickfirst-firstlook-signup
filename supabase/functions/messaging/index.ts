@@ -342,14 +342,18 @@ serve(async (req) => {
           // Send email notification to the recipient
           try {
             const isAgentSending = conversation.agent_id === user.id
-            const conversationWithProfiles = conversation as any
+            // Use conversationWithProfiles that already has agent and client profiles loaded
             const recipient = isAgentSending ? conversationWithProfiles.client : conversationWithProfiles.agent
             const sender = isAgentSending ? conversationWithProfiles.agent : conversationWithProfiles.client
             const senderName = data.sender_profile?.full_name || 'Someone'
 
+            if (!recipient?.email) {
+              console.warn('Recipient email not found. Recipient:', recipient, 'Conversation:', conversationWithProfiles)
+            }
+
             if (recipient?.email) {
               // Asynchronously call the send-email function
-              fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
+              const emailResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
@@ -372,10 +376,16 @@ serve(async (req) => {
                   }
                 })
               })
-              console.log('Email notification queued for:', recipient.email)
+              
+              if (!emailResponse.ok) {
+                const errorText = await emailResponse.text()
+                console.error('Email service returned error:', emailResponse.status, errorText)
+              } else {
+                console.log('Email notification sent successfully to:', recipient.email)
+              }
             }
           } catch (emailError) {
-            console.error('Failed to queue email notification:', emailError)
+            console.error('Failed to send email notification:', emailError)
             // Do not block message sending if email fails
           }
 
