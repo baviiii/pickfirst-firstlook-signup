@@ -155,10 +155,11 @@ export class BuyerProfileService extends ProfileService {
           updated_fields: Object.keys(preferences)
         });
 
+        // Removed property alert setup confirmation email (was sending fake property image)
         // If property alerts are enabled and search criteria changed, send confirmation
-        if (preferences.property_alerts && this.hasSearchCriteriaChanged(preferences)) {
-          await this.sendPropertyAlertSetupConfirmation(userId);
-        }
+        // if (preferences.property_alerts && this.hasSearchCriteriaChanged(preferences)) {
+        //   await this.sendPropertyAlertSetupConfirmation(userId);
+        // }
 
         // Send preferences updated email if email notifications enabled
         try {
