@@ -155,7 +155,9 @@ export const AgentInquiriesComponent = () => {
     }
   };
 
-  const handleRespondToInquiry = (inquiry: ExtendedPropertyInquiry) => {
+  const handleRespondToInquiry = async (inquiry: ExtendedPropertyInquiry) => {
+    // Mark inquiry as viewed when agent opens it
+    await PropertyService.markInquiryAsViewed(inquiry.id);
     setSelectedInquiry(inquiry);
     setIsResponseDialogOpen(true);
   };
@@ -191,9 +193,15 @@ export const AgentInquiriesComponent = () => {
 const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
   if (!profile || !inquiry.buyer_id) return;
 
+  // Mark inquiry as viewed when agent opens conversation
+  await PropertyService.markInquiryAsViewed(inquiry.id);
+
+  // Check if conversation_id exists on the inquiry (from immediate creation)
+  const conversationId = (inquiry as any).conversation_id || inquiry.conversation?.id;
+
   // If a conversation already exists, navigate to it
-  if (inquiry.conversation?.id) {
-    navigate(`/agent-messages/`);
+  if (conversationId) {
+    navigate(`/agent-messages?conversation=${conversationId}`);
     return;
   }
 
@@ -211,13 +219,19 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
     });
 
     if (conversation?.id && !error) {
+      // Update inquiry with conversation_id
+      await supabase
+        .from('property_inquiries')
+        .update({ conversation_id: conversation.id })
+        .eq('id', inquiry.id);
+
       toast.success('Conversation started! Redirecting to messages...');
-      navigate(`/agent-messages/`);
+      navigate(`/agent-messages?conversation=${conversation.id}`);
     } else {
       // Check for existing conversation in case of a race condition
       const existing = error?.details?.existing;
       if (existing) {
-        navigate(`/agent-messages/`);
+        navigate(`/agent-messages?conversation=${existing.id || conversationId}`);
       } else {
         toast.error(error?.details?.message || 'Failed to start conversation');
       }

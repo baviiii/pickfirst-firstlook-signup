@@ -15,9 +15,9 @@ RETURNS TABLE (
   location text,
   website text,
   created_at timestamptz
-) 
-LANGUAGE plpgsql 
-SECURITY DEFINER 
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
@@ -35,11 +35,11 @@ BEGIN
     p.created_at
   FROM profiles p
   WHERE p.id = agent_id
-    AND EXISTS (
-      SELECT 1 FROM user_roles ur 
-      WHERE ur.user_id = p.id 
-      AND ur.role = 'agent'::app_role
-    );
+  AND EXISTS (
+    SELECT 1 FROM user_roles ur 
+    WHERE ur.user_id = p.id 
+    AND ur.role = 'agent'::app_role
+  );
 END;
 $$;
 
@@ -54,9 +54,9 @@ RETURNS TABLE (
   avatar_url text,
   location text,
   created_at timestamptz
-) 
-LANGUAGE plpgsql 
-SECURITY DEFINER 
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
@@ -72,16 +72,16 @@ BEGIN
     p.created_at
   FROM profiles p
   WHERE p.id = buyer_id
-    AND EXISTS (
-      SELECT 1 FROM user_roles ur 
-      WHERE ur.user_id = p.id 
-      AND ur.role = 'buyer'::app_role
-    );
+  AND EXISTS (
+    SELECT 1 FROM user_roles ur 
+    WHERE ur.user_id = p.id 
+    AND ur.role = 'buyer'::app_role
+  );
 END;
 $$;
 
--- Ensure agent_public_profiles is accessible to all authenticated users (including buyers)
-DROP VIEW IF EXISTS public.agent_public_profiles CASCADE;
+-- Ensure agent_public_profiles view exists and is properly configured
+DROP VIEW IF EXISTS public.agent_public_profiles;
 
 CREATE VIEW public.agent_public_profiles 
 WITH (security_barrier = true) AS
@@ -103,12 +103,8 @@ WHERE EXISTS (
   AND ur.role = 'agent'::app_role
 );
 
--- Grant access to all authenticated users (buyers need to see agents in messages)
-GRANT SELECT ON public.agent_public_profiles TO authenticated;
-GRANT SELECT ON public.agent_public_profiles TO anon;
-
--- Ensure buyer_public_profiles is accessible to authenticated users (agents need to see buyers)
-DROP VIEW IF EXISTS public.buyer_public_profiles CASCADE;
+-- Ensure buyer_public_profiles view exists and is properly configured
+DROP VIEW IF EXISTS public.buyer_public_profiles;
 
 CREATE VIEW public.buyer_public_profiles 
 WITH (security_barrier = true) AS
@@ -128,7 +124,9 @@ WHERE EXISTS (
   AND ur.role = 'buyer'::app_role
 );
 
--- Grant access to authenticated users (agents need to see buyers in messages)
+-- Grant access to views
+GRANT SELECT ON public.agent_public_profiles TO anon;
+GRANT SELECT ON public.agent_public_profiles TO authenticated;
 GRANT SELECT ON public.buyer_public_profiles TO authenticated;
 
 -- Grant execute on helper functions
@@ -136,8 +134,7 @@ GRANT EXECUTE ON FUNCTION public.get_agent_public_profile(uuid) TO authenticated
 GRANT EXECUTE ON FUNCTION public.get_buyer_public_profile(uuid) TO authenticated;
 
 -- Add comments
-COMMENT ON VIEW public.agent_public_profiles IS 'Public agent profiles accessible to all users for messaging';
-COMMENT ON VIEW public.buyer_public_profiles IS 'Public buyer profiles accessible to agents for messaging';
+COMMENT ON VIEW public.agent_public_profiles IS 'Public agent profiles viewable by all users for messaging';
+COMMENT ON VIEW public.buyer_public_profiles IS 'Public buyer profiles for agents to view when in conversations';
 COMMENT ON FUNCTION public.get_agent_public_profile(uuid) IS 'Helper function to get agent profile bypassing RLS';
 COMMENT ON FUNCTION public.get_buyer_public_profile(uuid) IS 'Helper function to get buyer profile bypassing RLS';
-

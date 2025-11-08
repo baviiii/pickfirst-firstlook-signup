@@ -180,18 +180,42 @@ const PropertyDetailsComponent = () => {
         inquiryMessage.trim()
       );
 
-      if (error) throw error;
+      if (error) {
+        // Check if this is a duplicate inquiry with a conversation link
+        if ((error as any).conversationLink) {
+          toast.error('You have already inquired about this property', {
+            description: 'You can continue the conversation in your messages.',
+            duration: 6000,
+            action: {
+              label: 'View Conversation',
+              onClick: () => window.location.href = (error as any).conversationLink
+            }
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
 
       toast.success('Inquiry sent successfully!', {
-        description: 'The agent has been notified. A conversation will be opened when they respond. You\'ll receive a notification when the conversation starts.',
-        duration: 6000
+        description: data?.conversation_id 
+          ? 'A conversation has been created. You can view it in your messages.'
+          : 'The agent has been notified and will respond soon. You\'ll receive a notification when they respond.',
+        duration: 6000,
+        ...(data?.conversation_id && {
+          action: {
+            label: 'View Conversation',
+            onClick: () => window.location.href = `/buyer-messages?conversation=${data.conversation_id}`
+          }
+        })
       });
       setIsInquiryDialogOpen(false);
       setInquiryMessage('');
       
       checkExistingInquiry();
     } catch (error) {
-      toast.error('Failed to send inquiry');
+      console.error('Error submitting inquiry:', error);
+      toast.error('Failed to send inquiry. Please try again.');
     } finally {
       setSubmittingInquiry(false);
     }

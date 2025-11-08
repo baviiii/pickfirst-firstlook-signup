@@ -5,6 +5,7 @@ import { rateLimitService } from './rateLimitService';
 import PropertyAlertService from './propertyAlertService';
 import { EmailService } from './emailService';
 import { notificationService } from './notificationService';
+import { messageService } from './messageService';
 
 export type PropertyListing = Tables<'property_listings'>;
 export type PropertyFavorite = Tables<'property_favorites'>;
@@ -1241,7 +1242,7 @@ export class PropertyService {
 
     const { data, error } = await supabase
       .from('property_inquiries')
-      .select('*')
+      .select('*, conversation_id')
       .eq('property_id', propertyId)
       .eq('buyer_id', user.id)
       .maybeSingle();
@@ -1259,13 +1260,21 @@ export class PropertyService {
     // Check if user has already inquired (this will be caught by the unique constraint, but we can provide a better error message)
     const { data: existingInquiry } = await this.hasInquired(propertyId);
     if (existingInquiry) {
-      return { data: null, error: new Error('You have already inquired about this property. You can continue the conversation in your messages.') };
+      // Get the conversation ID if it exists
+      const conversationLink = existingInquiry.conversation_id 
+        ? `/buyer-messages?conversation=${existingInquiry.conversation_id}`
+        : '/buyer-messages';
+      
+      const error = new Error('You have already inquired about this property.') as any;
+      error.conversationId = existingInquiry.conversation_id;
+      error.conversationLink = conversationLink;
+      return { data: null, error };
     }
 
     // Get property details to find the agent
     const { data: property, error: propertyError } = await supabase
       .from('property_listings')
-      .select('agent_id, title')
+      .select('agent_id, title, address')
       .eq('id', propertyId)
       .single();
 
@@ -1273,27 +1282,49 @@ export class PropertyService {
       return { data: null, error: { message: 'Property not found' } };
     }
 
-    // Create the inquiry
+    // Create the inquiry first (without conversation_id)
     const { data: inquiry, error: inquiryError } = await supabase
       .from('property_inquiries')
       .insert({
         property_id: propertyId,
         buyer_id: user.id,
         message,
-        contact_preference: contactPreference
+        contact_preference: contactPreference,
+        status: 'pending'
       })
-      .select(`
-        *,
-        conversation:conversations(id, subject)
-      `)
+      .select()
       .single();
 
     if (inquiryError) {
       return { data: null, error: inquiryError };
     }
 
-    // DO NOT create conversation here - conversation will be created when agent opens/responds to the inquiry
-    // This prevents premature conversation creation and notification issues
+    // Create conversation immediately with the inquiry message
+    let conversationId: string | null = null;
+    try {
+      // Create conversation using the messaging service
+      conversationId = await messageService.getOrCreateConversation(
+        property.agent_id, // clientId is actually agentId when buyer creates conversation
+        `Property Inquiry: ${property.title}`,
+        inquiry.id,
+        propertyId
+      );
+
+      if (conversationId) {
+        // Update inquiry with conversation_id
+        await supabase
+          .from('property_inquiries')
+          .update({ conversation_id: conversationId })
+          .eq('id', inquiry.id);
+
+        // Send the initial inquiry message as the first message in the conversation
+        const inquiryMessage = `I'm interested in this property:\n\n${property.title}\n${property.address}\n\n${message.trim()}`;
+        await messageService.sendMessage(conversationId, inquiryMessage);
+      }
+    } catch (error) {
+      console.error('Failed to create conversation for inquiry:', error);
+      // Don't fail the inquiry if conversation creation fails - it can be created later
+    }
 
     // Send email notification to agent about new inquiry
     try {
@@ -1319,17 +1350,49 @@ export class PropertyService {
         'new_inquiry',
         'New Property Inquiry',
         `${buyerName} has inquired about "${property.title}"`,
-        '/agent-leads',
+        conversationId ? `/agent-messages?conversation=${conversationId}` : '/agent-leads',
         {
           inquiry_id: inquiry.id,
           property_id: propertyId,
           buyer_id: user.id,
-          property_title: property.title
+          property_title: property.title,
+          conversation_id: conversationId
         }
       );
     } catch (error) {
       console.error('Failed to create agent inquiry notification:', error);
       // Don't fail the inquiry if notification creation fails
+    }
+
+    // Send confirmation notification to buyer
+    try {
+      await notificationService.createNotification(
+        user.id,
+        'inquiry_response',
+        'Inquiry Received',
+        `Your inquiry about "${property.title}" has been received. The agent will respond soon.`,
+        conversationId ? `/buyer-messages?conversation=${conversationId}` : '/buyer-messages',
+        {
+          inquiry_id: inquiry.id,
+          property_id: propertyId,
+          property_title: property.title,
+          conversation_id: conversationId
+        }
+      );
+    } catch (error) {
+      console.error('Failed to create buyer confirmation notification:', error);
+      // Don't fail the inquiry if notification creation fails
+    }
+
+    // Return inquiry with conversation_id if it was created
+    if (conversationId) {
+      const { data: updatedInquiry } = await supabase
+        .from('property_inquiries')
+        .select('*')
+        .eq('id', inquiry.id)
+        .single();
+      
+      return { data: updatedInquiry || inquiry, error: null };
     }
 
     return { data: inquiry, error: null };
@@ -1341,7 +1404,8 @@ export class PropertyService {
       .from('property_inquiries')
       .select(`
         *,
-        buyer:profiles!property_inquiries_buyer_id_fkey(full_name, email)
+        buyer:profiles!property_inquiries_buyer_id_fkey(full_name, email),
+        conversation:conversations(id, subject, last_message_at)
       `)
       .eq('property_id', propertyId)
       .order('created_at', { ascending: false });
@@ -1360,7 +1424,8 @@ export class PropertyService {
       .from('property_inquiries')
       .select(`
         *,
-        property:property_listings(title, address)
+        property:property_listings(title, address),
+        conversation:conversations(id, subject, last_message_at)
       `)
       .eq('buyer_id', user.id)
       .order('created_at', { ascending: false });
@@ -1368,19 +1433,93 @@ export class PropertyService {
     return { data, error };
   }
 
+  // Mark inquiry as viewed (agent only)
+  static async markInquiryAsViewed(inquiryId: string): Promise<{ error: any }> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { error: new Error('User not authenticated') };
+    }
+
+    // Check if already viewed
+    const { data: inquiry } = await supabase
+      .from('property_inquiries')
+      .select('viewed_at')
+      .eq('id', inquiryId)
+      .single();
+
+    if (inquiry?.viewed_at) {
+      return { error: null }; // Already viewed
+    }
+
+    const { error } = await supabase
+      .from('property_inquiries')
+      .update({ viewed_at: new Date().toISOString() })
+      .eq('id', inquiryId);
+
+    return { error };
+  }
+
   // Respond to an inquiry (agent only)
   static async respondToInquiry(inquiryId: string, response: string): Promise<{ data: PropertyInquiry | null; error: any }> {
+    // Get inquiry details first
+    const { data: inquiry, error: inquiryFetchError } = await supabase
+      .from('property_inquiries')
+      .select('*, property:property_listings(title, agent_id)')
+      .eq('id', inquiryId)
+      .single();
+
+    if (inquiryFetchError || !inquiry) {
+      return { data: null, error: inquiryFetchError || new Error('Inquiry not found') };
+    }
+
+    // Update inquiry status
     const { data, error } = await supabase
       .from('property_inquiries')
       .update({
         agent_response: response,
-        responded_at: new Date().toISOString()
+        responded_at: new Date().toISOString(),
+        status: 'responded'
       })
       .eq('id', inquiryId)
       .select()
       .single();
 
-    return { data, error };
+    if (error) {
+      return { data: null, error };
+    }
+
+    // If conversation exists, send the response as a message
+    if (inquiry.conversation_id) {
+      try {
+        await messageService.sendMessage(inquiry.conversation_id, response);
+      } catch (error) {
+        console.error('Failed to send response as message:', error);
+        // Don't fail the response if message sending fails
+      }
+    }
+
+    // Notify buyer that agent has responded
+    try {
+      const propertyTitle = (inquiry.property as any)?.title || 'the property';
+      await notificationService.createNotification(
+        inquiry.buyer_id,
+        'inquiry_response',
+        'Agent Responded',
+        `The agent has responded to your inquiry about "${propertyTitle}"`,
+        inquiry.conversation_id ? `/buyer-messages?conversation=${inquiry.conversation_id}` : '/buyer-messages',
+        {
+          inquiry_id: inquiryId,
+          property_id: inquiry.property_id,
+          property_title: propertyTitle,
+          conversation_id: inquiry.conversation_id
+        }
+      );
+    } catch (error) {
+      console.error('Failed to notify buyer of response:', error);
+      // Don't fail the response if notification fails
+    }
+
+    return { data, error: null };
   }
 
   // Send email notification to agent about new property inquiry
