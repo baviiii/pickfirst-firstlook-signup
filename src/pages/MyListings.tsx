@@ -155,7 +155,9 @@ const MyListingsPage = () => {
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col justify-between py-4">
                   <div>
-                    <div className="text-white font-bold text-xl mb-2">${listing.price.toLocaleString()}</div>
+                    <div className="text-white font-bold text-xl mb-2">
+                      {PropertyService.getDisplayPrice(listing)}
+                    </div>
                     <div className="text-gray-400 text-sm mb-2">{listing.property_type.replace(/\b\w/g, l => l.toUpperCase())}</div>
                     <div className="flex flex-wrap gap-2 mb-2">
                       {listing.bedrooms !== null && <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded">{listing.bedrooms} Bed</span>}
@@ -264,7 +266,12 @@ const MyListingsPage = () => {
                   <div>
                     <h3 className="text-lg font-semibold text-yellow-400 mb-2">Pricing & Details</h3>
                     <div className="space-y-2 text-gray-300">
-                      <p><span className="text-gray-400">Price:</span> <span className="text-white font-bold text-xl">${selectedListing?.price.toLocaleString()}</span></p>
+                      <p>
+                        <span className="text-gray-400">Price:</span>{' '}
+                        <span className="text-white font-bold text-xl">
+                          {PropertyService.getDisplayPrice(selectedListing)}
+                        </span>
+                      </p>
                       {selectedListing?.bedrooms !== null && <p><span className="text-gray-400">Bedrooms:</span> {selectedListing.bedrooms}</p>}
                       {selectedListing?.bathrooms !== null && <p><span className="text-gray-400">Bathrooms:</span> {selectedListing.bathrooms}</p>}
                       {selectedListing?.square_feet !== null && <p><span className="text-gray-400">Square Feet:</span> {selectedListing.square_feet.toLocaleString()}</p>}

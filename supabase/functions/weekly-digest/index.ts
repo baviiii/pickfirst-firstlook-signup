@@ -157,6 +157,9 @@ async function getFeaturedProperties(supabaseClient, weekStart, weekEnd) {
         id,
         title,
         price,
+        price_display,
+        status,
+        sold_price,
         city,
         state,
         property_type,
@@ -291,7 +294,19 @@ async function sendWeeklyDigestEmail(supabaseClient, digest, userEmail, userName
 
     const propertiesHtml = Array.isArray(digest.featured_properties) && digest.featured_properties.length > 0
       ? digest.featured_properties.map((property) => {
-          const priceDisplay = formatNumber(property.price);
+          const isSold = property.status === 'sold' && property.sold_price && Number(property.sold_price) > 0;
+          let priceDisplay = 'Contact Agent';
+
+          if (isSold) {
+            const soldFormatted = formatNumber(property.sold_price);
+            priceDisplay = soldFormatted !== 'N/A' ? `Sold: $${soldFormatted}` : 'Sold';
+          } else if (typeof property.price_display === 'string' && property.price_display.trim().length > 0) {
+            priceDisplay = property.price_display.trim();
+          } else if (property.price && Number(property.price) > 0) {
+            const formatted = formatNumber(property.price);
+            priceDisplay = formatted !== 'N/A' ? `$${formatted}` : 'Contact Agent';
+          }
+
           const bedsDisplay = property.bedrooms ?? 'N/A';
           const bathsDisplay = property.bathrooms ?? 'N/A';
           const areaDisplay = formatNumber(property.square_feet);
@@ -303,7 +318,7 @@ async function sendWeeklyDigestEmail(supabaseClient, digest, userEmail, userName
             <div class="property-card">
               ${imageHtml}
               <div class="property-content">
-                <div class="property-price">$${priceDisplay}</div>
+                <div class="property-price">${priceDisplay}</div>
                 <div class="property-address">${property.city || ''}${property.state ? `, ${property.state}` : ''}</div>
                 <div class="property-features">
                   <span class="feature">🛏️ ${bedsDisplay} bed</span>

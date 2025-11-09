@@ -157,6 +157,13 @@ export default function SystemTestingDashboard() {
           result = await EmailService.sendPropertyAlert(trimmedRecipient, data.name, {
             title: data.title || 'Test Property',
             price: data.price || 500000,
+            priceDisplay: data.priceDisplay || data.priceText || (
+              typeof data.price === 'string'
+                ? data.price
+                : data.price
+                  ? `$${Number(data.price).toLocaleString()}`
+                  : 'Contact Agent'
+            ),
             location: data.location || 'Test Location',
             propertyType: data.propertyType || 'House',
             bedrooms: data.bedrooms || 3,

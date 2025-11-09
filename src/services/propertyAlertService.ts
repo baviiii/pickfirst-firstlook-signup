@@ -6,6 +6,24 @@ import { Database } from '@/integrations/supabase/types';
 
 type PropertyListing = Database['public']['Tables']['property_listings']['Row'];
 
+const getPropertyPriceDisplay = (property: PropertyListing): string => {
+  const status = property.status?.toLowerCase();
+  if ((status === 'sold' || status === 'completed') && property.sold_price && property.sold_price > 0) {
+    return `Sold: $${property.sold_price.toLocaleString()}`;
+  }
+
+  const display = typeof property.price_display === 'string' ? property.price_display.trim() : '';
+  if (display) {
+    return display;
+  }
+
+  if (property.price && property.price > 0) {
+    return `$${property.price.toLocaleString()}`;
+  }
+
+  return 'Contact Agent';
+};
+
 export interface PropertyAlert {
   id: string;
   buyer_id: string;
@@ -464,7 +482,8 @@ export class PropertyAlertService {
           match.buyerName,
           {
             title: match.property.title,
-            price: parseFloat(match.property.price.toString()),
+            price: match.property.price && match.property.price > 0 ? match.property.price : null,
+            priceDisplay: getPropertyPriceDisplay(match.property),
             location: `${match.property.city}, ${match.property.state}`,
             propertyType: match.property.property_type,
             bedrooms: match.property.bedrooms || 0,
@@ -478,7 +497,8 @@ export class PropertyAlertService {
           match.buyerName,
           {
             title: match.property.title,
-            price: parseFloat(match.property.price.toString()),
+            price: match.property.price && match.property.price > 0 ? match.property.price : null,
+            priceDisplay: getPropertyPriceDisplay(match.property),
             location: `${match.property.city}, ${match.property.state}`,
             propertyType: match.property.property_type,
             bedrooms: match.property.bedrooms || 0,

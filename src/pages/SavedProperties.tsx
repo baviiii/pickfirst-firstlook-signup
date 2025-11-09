@@ -149,6 +149,23 @@ const SavedPropertiesPageComponent = () => {
 
   const PropertyCard = ({ property }: { property: PropertyListing }) => {
     const hasImages = property.images && property.images.length > 0;
+    const isSold = property.status === 'sold' && !!property.sold_price && property.sold_price > 0;
+    const displayPrice = PropertyService.getDisplayPrice(property);
+    const originalPriceText = (() => {
+      if (property.price_display && property.price_display.trim().length > 0) {
+        return property.price_display.trim();
+      }
+      if (property.price && property.price > 0) {
+        return `$${property.price.toLocaleString()}`;
+      }
+      return null;
+    })();
+    const rentalSuffix =
+      property.property_type === 'weekly'
+        ? '/week'
+        : property.property_type === 'monthly'
+          ? '/month'
+          : '';
 
     if (viewMode === 'list') {
       return (
@@ -200,18 +217,20 @@ const SavedPropertiesPageComponent = () => {
                 
                 <div className="flex items-center justify-between">
                   <div className="text-2xl font-bold text-yellow-400">
-                    {property.status === 'sold' && property.sold_price ? (
+                    {isSold && originalPriceText ? (
                       <>
-                        <span className="text-lg text-gray-400 line-through">${property.price.toLocaleString()}</span>
+                        <span className="text-lg text-gray-400 line-through">{originalPriceText}</span>
                         <br />
-                        <span className="text-red-400">Sold: ${property.sold_price.toLocaleString()}</span>
+                        <span className="text-red-400">{displayPrice}</span>
                       </>
                     ) : (
                       <>
-                        ${property.price.toLocaleString()}
-                        <span className="text-sm font-normal text-yellow-400/70 ml-1">
-                          {property.property_type === 'weekly' ? '/week' : property.property_type === 'monthly' ? '/month' : ''}
-                        </span>
+                        {displayPrice}
+                        {rentalSuffix && (
+                          <span className="text-sm font-normal text-yellow-400/70 ml-1">
+                            {rentalSuffix}
+                          </span>
+                        )}
                       </>
                     )}
                   </div>
@@ -345,18 +364,20 @@ const SavedPropertiesPageComponent = () => {
             
             <div className="flex items-center justify-between">
               <div className="text-xl font-bold text-yellow-400">
-                {property.status === 'sold' && property.sold_price ? (
+                {isSold && originalPriceText ? (
                   <>
-                    <span className="text-sm text-gray-400 line-through">${property.price.toLocaleString()}</span>
+                    <span className="text-sm text-gray-400 line-through">{originalPriceText}</span>
                     <br />
-                    <span className="text-red-400">Sold: ${property.sold_price.toLocaleString()}</span>
+                    <span className="text-red-400">{displayPrice}</span>
                   </>
                 ) : (
                   <>
-                    ${property.price.toLocaleString()}
-                    <span className="text-xs font-normal text-yellow-400/70 ml-1">
-                      {property.property_type === 'weekly' ? '/wk' : property.property_type === 'monthly' ? '/mo' : ''}
-                    </span>
+                    {displayPrice}
+                    {rentalSuffix && (
+                      <span className="text-xs font-normal text-yellow-400/70 ml-1">
+                        {rentalSuffix === '/month' ? '/mo' : rentalSuffix === '/week' ? '/wk' : rentalSuffix}
+                      </span>
+                    )}
                   </>
                 )}
               </div>

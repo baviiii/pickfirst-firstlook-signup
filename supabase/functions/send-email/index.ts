@@ -103,6 +103,13 @@ const getPropertyCard = (property: any) => {
   // Get the first image from images array or use the image property
   const imageUrl = property.images?.[0] || property.image || '';
   
+  const priceDisplay =
+    typeof property.priceDisplay === 'string' && property.priceDisplay.trim().length > 0
+      ? property.priceDisplay.trim()
+      : typeof property.price === 'number' && property.price > 0
+        ? `$${property.price.toLocaleString()}`
+        : property.priceText || 'Contact for price';
+
   return `
   <div style="background: white; border-radius: 16px; overflow: hidden; margin: 25px 0; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
     ${imageUrl ? `
@@ -117,7 +124,7 @@ const getPropertyCard = (property: any) => {
     ` : ''}
     <div style="padding: 28px;">
       <div style="font-size: 28px; font-weight: 700; color: #1a202c; margin-bottom: 12px;">
-        ${property.price ? `$${property.price.toLocaleString()}` : property.priceText || 'Contact for price'}
+        ${priceDisplay}
       </div>
       <div style="font-size: 18px; color: #4a5568; margin-bottom: 16px; font-weight: 500;">
         ${property.location}
@@ -552,7 +559,11 @@ Hi ${data.name},
 We found a property that matches your search criteria:
 
 Property: ${data.propertyTitle}
-Price: ${data.price ? `$${data.price.toLocaleString()}` : 'Contact for price'}
+Price: ${typeof data.priceDisplay === 'string' && data.priceDisplay.trim().length > 0
+  ? data.priceDisplay.trim()
+  : data.price
+    ? `$${data.price.toLocaleString()}`
+    : 'Contact for price'}
 Location: ${data.location}
 Bedrooms: ${data.bedrooms || 'N/A'}
 Bathrooms: ${data.bathrooms || 'N/A'}
@@ -610,6 +621,7 @@ PickFirst Real Estate Team`,
             ${getPropertyCard({
               title: data.propertyTitle,
               price: data.price,
+              priceDisplay: data.priceDisplay,
               location: data.location,
               bedrooms: data.bedrooms,
               bathrooms: data.bathrooms,
@@ -671,6 +683,7 @@ PickFirst Real Estate Team`,
             ${data.matches?.map((match: any) => getPropertyCard({
               title: match.title,
               price: match.price,
+              priceDisplay: match.priceDisplay,
               location: `${match.city}, ${match.state}`,
               bedrooms: match.bedrooms,
               bathrooms: match.bathrooms,

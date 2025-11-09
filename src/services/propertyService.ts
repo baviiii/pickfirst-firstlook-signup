@@ -134,11 +134,6 @@ export class PropertyService {
       return 'Contact Agent';
     }
 
-    const display = typeof listing.price_display === 'string' ? listing.price_display.trim() : '';
-    if (display) {
-      return display;
-    }
-
     const parseNumeric = (value?: number | string | null): number | null => {
       if (value === null || value === undefined) return null;
       const numeric = typeof value === 'string' ? parseFloat(value) : value;
@@ -148,6 +143,11 @@ export class PropertyService {
     const soldPrice = parseNumeric(listing.sold_price);
     if ((listing.status === 'sold' || listing.status === 'completed') && soldPrice && soldPrice > 0) {
       return `Sold: $${soldPrice.toLocaleString()}`;
+    }
+
+    const display = typeof listing.price_display === 'string' ? listing.price_display.trim() : '';
+    if (display) {
+      return display;
     }
 
     const numericPrice = parseNumeric(listing.price);

@@ -20,6 +20,7 @@ import { ipDetectionService } from '@/services/ipDetectionService';
 import { useSubscription } from '@/hooks/useSubscription';
 import { FeatureGate } from '@/components/ui/FeatureGate';
 import { PageWrapper } from '@/components/ui/page-wrapper';
+import { PropertyService } from '@/services/propertyService';
 
 const BuyerAccountSettingsPage = () => {
   const navigate = useNavigate();
@@ -744,34 +745,51 @@ const BuyerAccountSettingsPage = () => {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {favoriteProperties.map((property: any) => (
-                        <div key={property.id} className="bg-gray-800/50 p-4 rounded-lg">
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="text-white font-medium">{property.title}</h4>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleToggleFavorite(property.id)}
-                              className="text-red-400 hover:text-red-300"
-                            >
-                              <Heart className="h-4 w-4 fill-current" />
-                            </Button>
-                          </div>
-                          <p className="text-gray-300">{property.address}</p>
-                          <p className="text-gray-300">{property.city}, {property.state}</p>
-                          <p className="text-primary font-bold text-lg">${property.price?.toLocaleString()}</p>
-                          <div className="flex justify-between items-center mt-4">
-                            <div className="flex gap-2">
-                              <Badge variant="secondary">{property.bedrooms} bed</Badge>
-                              <Badge variant="secondary">{property.bathrooms} bath</Badge>
-                              <Badge variant="secondary">{property.square_feet} sqft</Badge>
+                      {favoriteProperties.map((property: any) => {
+                        const priceDisplay = PropertyService.getDisplayPrice(property);
+                        const rentalSuffix =
+                          property.status === 'sold'
+                            ? ''
+                            : property.property_type === 'weekly'
+                              ? '/week'
+                              : property.property_type === 'monthly'
+                                ? '/month'
+                                : '';
+
+                        return (
+                          <div key={property.id} className="bg-gray-800/50 p-4 rounded-lg">
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="text-white font-medium">{property.title}</h4>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleToggleFavorite(property.id)}
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                <Heart className="h-4 w-4 fill-current" />
+                              </Button>
                             </div>
-                            <Button size="sm" variant="outline" className="text-white border-white/20">
-                              View Details
-                            </Button>
+                            <p className="text-gray-300">{property.address}</p>
+                            <p className="text-gray-300">{property.city}, {property.state}</p>
+                            <p className="text-primary font-bold text-lg">
+                              {priceDisplay}
+                              {rentalSuffix && (
+                                <span className="text-sm font-normal text-primary/70 ml-1">{rentalSuffix}</span>
+                              )}
+                            </p>
+                            <div className="flex justify-between items-center mt-4">
+                              <div className="flex gap-2">
+                                <Badge variant="secondary">{property.bedrooms} bed</Badge>
+                                <Badge variant="secondary">{property.bathrooms} bath</Badge>
+                                <Badge variant="secondary">{property.square_feet} sqft</Badge>
+                              </div>
+                              <Button size="sm" variant="outline" className="text-white border-white/20">
+                                View Details
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>

@@ -39,7 +39,8 @@ export class EmailService {
     userName: string, 
     propertyData: {
       title: string;
-      price: number;
+      price?: number | null;
+      priceDisplay?: string;
       location: string;
       propertyType: string;
       bedrooms: number;
@@ -55,7 +56,8 @@ export class EmailService {
           data: {
             name: userName,
             propertyTitle: propertyData.title,
-            price: propertyData.price,
+            price: propertyData.price ?? null,
+            priceDisplay: propertyData.priceDisplay,
             location: propertyData.location,
             propertyType: propertyData.propertyType,
             bedrooms: propertyData.bedrooms,
@@ -78,7 +80,8 @@ export class EmailService {
     userName: string, 
     propertyData: {
       title: string;
-      price: number;
+      price?: number | null;
+      priceDisplay?: string;
       location: string;
       propertyType: string;
       bedrooms: number;
@@ -94,7 +97,8 @@ export class EmailService {
           data: {
             name: userName,
             propertyTitle: propertyData.title,
-            price: propertyData.price,
+            price: propertyData.price ?? null,
+            priceDisplay: propertyData.priceDisplay,
             location: propertyData.location,
             propertyType: propertyData.propertyType,
             bedrooms: propertyData.bedrooms,

@@ -3,6 +3,31 @@ import { Tables, TablesInsert } from '@/integrations/supabase/types';
 import { rateLimitService } from './rateLimitService';
 import { auditService } from './auditService';
 
+const formatPropertyPrice = (property?: {
+  price?: number | null;
+  price_display?: string | null;
+  status?: string | null;
+  sold_price?: number | null;
+}): string => {
+  if (!property) return 'Contact Agent';
+
+  const status = property.status?.toLowerCase();
+  if (status === 'sold' && property.sold_price && property.sold_price > 0) {
+    return `Sold: $${property.sold_price.toLocaleString()}`;
+  }
+
+  const display = typeof property.price_display === 'string' ? property.price_display.trim() : '';
+  if (display) {
+    return display;
+  }
+
+  if (property.price && property.price > 0) {
+    return `$${property.price.toLocaleString()}`;
+  }
+
+  return 'Contact Agent';
+};
+
 export interface EnhancedConversation extends Tables<'conversations'> {
   agent_profile?: {
     id: string;
@@ -21,7 +46,10 @@ export interface EnhancedConversation extends Tables<'conversations'> {
   property?: {
     id: string;
     title: string;
-    price: number;
+    price: number | null;
+    price_display?: string | null;
+    status?: string | null;
+    sold_price?: number | null;
     address: string;
     images?: string[];
   };
@@ -235,7 +263,7 @@ class EnhancedConversationService {
    */
   getConversationSubtitle(conversation: EnhancedConversation): string {
     if (conversation.property) {
-      return `${conversation.property.address} • $${conversation.property.price.toLocaleString()}`;
+      return `${conversation.property.address} • ${formatPropertyPrice(conversation.property)}`;
     }
 
     if (conversation.inquiry) {
@@ -357,7 +385,7 @@ class EnhancedConversationService {
     if (propertyId) {
       const { data: property } = await supabase
         .from('property_listings')
-        .select('id, title, price, address, images')
+        .select('id, title, price, price_display, status, sold_price, address, images')
         .eq('id', propertyId)
         .single();
       

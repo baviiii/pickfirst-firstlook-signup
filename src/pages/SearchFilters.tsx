@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Search, Zap, TrendingUp, Lock, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { PropertyListing } from '@/services/propertyService';
+import { PropertyService, PropertyListing } from '@/services/propertyService';
 import ProductionFilterSystem from '@/components/property/ProductionFilterSystem';
 import { FilterResult } from '@/services/filterService';
 import PropertyInsights from '@/components/property/PropertyInsights';
@@ -31,6 +31,14 @@ const EnhancedSearchFiltersPage = () => {
 
   const PropertyCard = ({ property, showInsights }: { property: PropertyListing; showInsights?: boolean }) => {
     const isExpanded = expandedPropertyId === property.id;
+    const displayPrice = PropertyService.getDisplayPrice(property);
+    const rentalSuffix =
+      property.property_type === 'weekly'
+        ? '/week'
+        : property.property_type === 'monthly'
+          ? '/month'
+          : '';
+    const showRentalSuffix = rentalSuffix && property.status !== 'sold';
     
     return (
       <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 hover:border-yellow-400/40 transition-all duration-300">
@@ -62,7 +70,10 @@ const EnhancedSearchFiltersPage = () => {
             <p className="text-yellow-400/80 text-sm line-clamp-1">{property.address}, {property.city}</p>
             <div className="flex items-center justify-between pt-2">
               <div className="text-xl font-bold text-yellow-400">
-                ${property.price.toLocaleString()}
+                {displayPrice}
+                {showRentalSuffix && (
+                  <span className="text-sm font-normal text-yellow-400/70 ml-1">{rentalSuffix}</span>
+                )}
               </div>
               <div className="flex items-center gap-2 text-xs text-gray-300">
                 {property.bedrooms && <span>{property.bedrooms} bed</span>}

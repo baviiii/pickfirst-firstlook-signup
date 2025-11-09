@@ -145,12 +145,22 @@ export const FavoritesManager: React.FC<FavoritesManagerProps> = ({ className })
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {favorites.map((property) => (
-                <Card 
-                  key={property.id}
-                  className="group cursor-pointer hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/50 bg-card/50 backdrop-blur-sm"
-                  onClick={() => handleViewProperty(property.id)}
-                >
+              {favorites.map((property) => {
+                const displayPrice = PropertyService.getDisplayPrice(property);
+                const rentalSuffix =
+                  property.property_type === 'weekly'
+                    ? '/week'
+                    : property.property_type === 'monthly'
+                      ? '/month'
+                      : '';
+                const showRentalSuffix = rentalSuffix && property.status !== 'sold';
+
+                return (
+                  <Card 
+                    key={property.id}
+                    className="group cursor-pointer hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/50 bg-card/50 backdrop-blur-sm"
+                    onClick={() => handleViewProperty(property.id)}
+                  >
                   <CardHeader className="p-0 relative">
                     <div className="aspect-video bg-muted rounded-t-md overflow-hidden relative">
                       {property.images && property.images.length > 0 ? (
@@ -188,7 +198,10 @@ export const FavoritesManager: React.FC<FavoritesManagerProps> = ({ className })
                           {property.title}
                         </CardTitle>
                         <div className="text-primary font-bold text-lg">
-                          ${property.price.toLocaleString()}
+                          {displayPrice}
+                          {showRentalSuffix && (
+                            <span className="text-xs font-normal text-primary/70 ml-1">{rentalSuffix}</span>
+                          )}
                         </div>
                       </div>
                       <CardDescription className="text-muted-foreground text-sm line-clamp-1 mb-3">
@@ -219,8 +232,9 @@ export const FavoritesManager: React.FC<FavoritesManagerProps> = ({ className })
                       </div>
                     </div>
                   </CardHeader>
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
           )}
         </CardContent>

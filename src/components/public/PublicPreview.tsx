@@ -84,8 +84,16 @@ const PublicPreview = ({ onSignUpClick, onSignInClick }: PublicPreviewProps) => 
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockProperties.map((property, index) => (
-            <Card key={property.id} className="group bg-black/40 backdrop-blur-lg border border-yellow-400/20 hover:border-yellow-400/40 transition-all duration-300 hover:shadow-xl hover:shadow-yellow-400/20 overflow-hidden">
+          {mockProperties.map((property, index) => {
+            const priceDisplay =
+              typeof (property as any).price_display === 'string' && (property as any).price_display.trim().length > 0
+                ? (property as any).price_display.trim()
+                : property.price
+                  ? `$${property.price.toLocaleString()}`
+                  : 'Contact Agent';
+
+            return (
+              <Card key={property.id} className="group bg-black/40 backdrop-blur-lg border border-yellow-400/20 hover:border-yellow-400/40 transition-all duration-300 hover:shadow-xl hover:shadow-yellow-400/20 overflow-hidden">
               <div className="relative">
                 <div className="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/10 to-amber-500/10"></div>
@@ -126,7 +134,7 @@ const PublicPreview = ({ onSignUpClick, onSignInClick }: PublicPreviewProps) => 
                   <div className="flex items-center gap-1">
                     <DollarSign className="h-4 w-4 text-yellow-400" />
                     <span className="text-lg font-bold text-yellow-400">
-                      ${property.price.toLocaleString()}
+                      {priceDisplay}
                     </span>
                   </div>
                 </div>
@@ -150,7 +158,8 @@ const PublicPreview = ({ onSignUpClick, onSignInClick }: PublicPreviewProps) => 
                 </Button>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       </div>
 

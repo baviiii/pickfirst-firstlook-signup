@@ -454,7 +454,9 @@ const BuyerDashboardComponent = () => {
                       <div className="p-4">
                         <div className="flex justify-between items-start mb-2">
                           <CardTitle className="text-lg text-pickfirst-yellow line-clamp-1">{listing.title}</CardTitle>
-                          <div className="text-white font-bold text-lg">${listing.price.toLocaleString()}</div>
+                          <div className="text-white font-bold text-lg">
+                            {PropertyService.getDisplayPrice(listing)}
+                          </div>
                         </div>
                         <CardDescription className="text-gray-300 text-sm line-clamp-1">
                           {listing.address}, {listing.city}, {listing.state}

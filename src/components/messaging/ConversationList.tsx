@@ -7,6 +7,7 @@ import { Search, MessageCircle, MapPin, Calendar, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { PropertyService } from '@/services/propertyService';
 
 interface ConversationWithDetails {
   id: string;
@@ -35,7 +36,10 @@ interface ConversationWithDetails {
     id: string;
     title: string;
     address: string;
-    price?: number;
+    price?: number | null;
+    price_display?: string | null;
+    status?: string | null;
+    sold_price?: number | null;
   } | null;
   last_message?: {
     content: string;
@@ -172,7 +176,8 @@ export const ConversationList = ({ onSelectConversation, selectedConversationId 
       : conversation.agent_profile;
     
     if (conversation.property) {
-      return `$${conversation.property.price.toLocaleString()} • ${otherUser?.full_name || otherUser?.email}`;
+      const priceDisplay = PropertyService.getDisplayPrice(conversation.property);
+      return `${priceDisplay} • ${otherUser?.full_name || otherUser?.email}`;
     }
     
     return otherUser?.full_name || otherUser?.email || 'Unknown User';

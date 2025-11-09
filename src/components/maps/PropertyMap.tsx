@@ -21,6 +21,7 @@ import { loadGoogleMapsAPI, getGoogleMapsAPIKey } from '@/utils/googleMapsLoader
 import { toast } from "sonner";
 import { Tables } from '@/integrations/supabase/types';
 import { MapAnalyticsService, AreaAnalytics } from '@/services/mapAnalyticsService';
+import { PropertyService } from '@/services/propertyService';
 
 // Use real database types
 type PropertyListing = Tables<'property_listings'>;
@@ -236,13 +237,17 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
     }
 
     // Calculate price ranges for color coding
-    const prices = validProperties.map(p => p.price);
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
+    const pricedProperties = validProperties.filter(p => typeof p.price === 'number' && p.price > 0);
+    const priceValues = pricedProperties.length > 0 ? pricedProperties.map(p => p.price!) : [0];
+    const minPrice = Math.min(...priceValues);
+    const maxPrice = Math.max(...priceValues);
     const priceRange = maxPrice - minPrice;
 
-    const getPriceColor = (price: number) => {
-      const ratio = (price - minPrice) / priceRange;
+    const getPriceColor = (price?: number | null) => {
+      if (!price || price <= 0 || !Number.isFinite(price) || priceRange <= 0) {
+        return '#6b7280';
+      }
+      const ratio = (price - minPrice) / (priceRange || 1);
       if (ratio > 0.7) return '#ef4444'; // High - Red
       if (ratio > 0.4) return '#f59e0b'; // Medium - Yellow
       return '#10b981'; // Low - Green
@@ -250,8 +255,9 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
 
     validProperties.forEach((property, index) => {
       const isSelected = selectedPropertyId === property.id;
-      const priceColor = getPriceColor(property.price);
-      const priceK = Math.round(property.price / 1000);
+      const numericPrice = property.price && property.price > 0 ? property.price : null;
+      const priceColor = getPriceColor(numericPrice);
+      const priceBadgeText = numericPrice ? `$${Math.round(numericPrice / 1000)}K` : 'N/A';
       
       // Advanced marker with animations and effects
       const marker = new window.google.maps.Marker({
@@ -284,7 +290,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
               <circle cx="30" cy="30" r="19" fill="rgba(0,0,0,0.8)"/>
               <circle cx="30" cy="30" r="16" fill="${priceColor}"/>
               
-              <text x="30" y="26" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="8" font-weight="bold">$${priceK}K</text>
+              <text x="30" y="26" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="8" font-weight="bold">${priceBadgeText}</text>
               <text x="30" y="36" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="6">${property.property_type?.substring(0,4) || 'HOME'}</text>
               
               ${isSelected ? '<circle cx="30" cy="30" r="22" fill="none" stroke="#fbbf24" stroke-width="2" opacity="0.8"/>' : ''}
@@ -320,6 +326,19 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
         ? property.images[0] 
         : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=250&fit=crop';
 
+      const propertyDisplayPrice = PropertyService.getDisplayPrice(property);
+      const rentalSuffix =
+        property.status === 'sold'
+          ? ''
+          : property.property_type === 'weekly'
+            ? '/week'
+            : property.property_type === 'monthly'
+              ? '/month'
+              : '';
+      const priceDisplayHtml = rentalSuffix
+        ? `${propertyDisplayPrice}<span class="text-base font-normal text-gray-500 ml-1">${rentalSuffix}</span>`
+        : propertyDisplayPrice;
+
       const infoWindow = new window.google.maps.InfoWindow({
         content: `
           <div class="property-info-window max-w-sm bg-white rounded-xl overflow-hidden shadow-2xl border border-gray-200">
@@ -351,7 +370,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
 
               <!-- Price -->
               <div class="mb-3">
-                <span class="text-2xl font-bold text-gray-900">${formatPrice(property.price)}</span>
+                <span class="text-2xl font-bold text-gray-900">${priceDisplayHtml}</span>
               </div>
               
               <!-- Property Details -->

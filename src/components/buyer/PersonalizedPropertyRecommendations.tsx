@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { BuyerProfileService } from '@/services/buyerProfileService';
 import { FilterService, AdvancedPropertyFilters, PropertyListingWithFuzzyMatch } from '@/services/filterService';
+import { PropertyService } from '@/services/propertyService';
 import { 
   Home, 
   MapPin, 
@@ -509,7 +510,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                           {property.title}
                         </CardTitle>
                         <div className="text-primary font-bold text-sm sm:text-base whitespace-nowrap">
-                          ${property.price.toLocaleString()}
+                          {PropertyService.getDisplayPrice(property)}
                         </div>
                       </div>
                       

@@ -122,11 +122,12 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
   };
 
   const getComparisonValue = (property: PropertyListing, field: keyof PropertyListing) => {
+    if (field === 'price') {
+      return PropertyService.getDisplayPrice(property);
+    }
+
     const value = property[field];
     if (value === null || value === undefined) return 'N/A';
-    if (typeof value === 'number' && field === 'price') {
-      return `$${value.toLocaleString()}`;
-    }
     if (typeof value === 'number') {
       return value.toLocaleString();
     }
@@ -134,10 +135,14 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
   };
 
   const getBestValue = (field: keyof PropertyListing, isHigherBetter: boolean = false) => {
-    const values = selectedProperties
+    let values = selectedProperties
       .map(p => p[field])
       .filter(v => v !== null && v !== undefined && typeof v === 'number') as number[];
-    
+
+    if (field === 'price') {
+      values = values.filter(v => v > 0);
+    }
+
     if (values.length === 0) return null;
     return isHigherBetter ? Math.max(...values) : Math.min(...values);
   };
@@ -145,6 +150,7 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
   const isHighlighted = (property: PropertyListing, field: keyof PropertyListing, isHigherBetter: boolean = false) => {
     const value = property[field];
     if (typeof value !== 'number') return false;
+    if (field === 'price' && value <= 0) return false;
     const bestValue = getBestValue(field, isHigherBetter);
     return bestValue !== null && value === bestValue;
   };
@@ -185,36 +191,39 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
                 
                 {searchTerm && searchResults.length > 0 && (
                   <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-                    {searchResults.map((property) => (
-                      <div
-                        key={property.id}
-                        className="p-2 hover:bg-muted cursor-pointer flex items-center gap-2"
-                        onClick={() => addPropertyToComparison(property)}
-                      >
-                        <div className="flex-shrink-0 w-10 h-10 bg-muted rounded overflow-hidden">
-                          {property.images?.[0] ? (
-                            <img 
-                              src={property.images[0]} 
-                              alt={property.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-muted">
-                              <Home className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          )}
+                    {searchResults.map((property) => {
+                      const priceDisplay = PropertyService.getDisplayPrice(property);
+                      return (
+                        <div
+                          key={property.id}
+                          className="p-2 hover:bg-muted cursor-pointer flex items-center gap-2"
+                          onClick={() => addPropertyToComparison(property)}
+                        >
+                          <div className="flex-shrink-0 w-10 h-10 bg-muted rounded overflow-hidden">
+                            {property.images?.[0] ? (
+                              <img 
+                                src={property.images[0]} 
+                                alt={property.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-muted">
+                                <Home className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{property.title}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {property.address}, {property.city}
+                            </p>
+                            <p className="text-xs font-semibold text-primary">
+                              {priceDisplay}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{property.title}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {property.address}, {property.city}
-                          </p>
-                          <p className="text-xs font-semibold text-primary">
-                            ${property.price?.toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
                 
