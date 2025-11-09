@@ -7,10 +7,10 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, Edit, Eye, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import { PropertyListingForm } from '@/components/property/PropertyListingForm';
 
 const MyListingsPage = () => {
   const [listings, setListings] = useState<PropertyListing[]>([]);
@@ -19,20 +19,19 @@ const MyListingsPage = () => {
   const [editingListing, setEditingListing] = useState<PropertyListing | null>(null);
   const [soldListing, setSoldListing] = useState<PropertyListing | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [editForm, setEditForm] = useState<any>({});
   const [soldForm, setSoldForm] = useState<any>({});
   const [isUpdating, setIsUpdating] = useState(false);
   const [clients, setClients] = useState<any[]>([]);
   const navigate = useNavigate();
 
+  const refreshListings = async () => {
+    const { data } = await PropertyService.getMyListings();
+    setListings(data || []);
+  };
+
   useEffect(() => {
-    const fetchListings = async () => {
-      setLoadingListings(true);
-      const { data } = await PropertyService.getMyListings();
-      setListings(data || []);
-      setLoadingListings(false);
-    };
-    fetchListings();
+    setLoadingListings(true);
+    refreshListings().finally(() => setLoadingListings(false));
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -53,52 +52,6 @@ const MyListingsPage = () => {
 
   const handleEditListing = (listing: PropertyListing) => {
     setEditingListing(listing);
-    setEditForm({
-      title: listing.title,
-      description: listing.description || '',
-      property_type: listing.property_type,
-      price: listing.price,
-      bedrooms: listing.bedrooms || '',
-      bathrooms: listing.bathrooms || '',
-      square_feet: listing.square_feet || '',
-      lot_size: listing.lot_size || '',
-      year_built: listing.year_built || '',
-      address: listing.address,
-      city: listing.city,
-      state: listing.state,
-      zip_code: listing.zip_code,
-      contact_phone: listing.contact_phone || '',
-      contact_email: listing.contact_email || '',
-      showing_instructions: listing.showing_instructions || '',
-      features: listing.features || []
-    });
-  };
-
-  const handleUpdateListing = async () => {
-    if (!editingListing) return;
-    
-    setIsUpdating(true);
-    const { error } = await PropertyService.updateListing(editingListing.id, {
-      ...editForm,
-      bedrooms: editForm.bedrooms ? parseInt(editForm.bedrooms) : null,
-      bathrooms: editForm.bathrooms ? parseInt(editForm.bathrooms) : null,
-      square_feet: editForm.square_feet ? parseInt(editForm.square_feet) : null,
-      lot_size: editForm.lot_size ? parseInt(editForm.lot_size) : null,
-      year_built: editForm.year_built ? parseInt(editForm.year_built) : null,
-      price: parseFloat(editForm.price)
-    });
-    
-    setIsUpdating(false);
-    
-    if (error) {
-      toast.error(error.message || 'Failed to update listing');
-    } else {
-      toast.success('Listing updated successfully!');
-      setEditingListing(null);
-      // Refresh listings
-      const { data } = await PropertyService.getMyListings();
-      setListings(data || []);
-    }
   };
 
   const handleMarkAsSold = (listing: PropertyListing) => {
@@ -123,22 +76,23 @@ const MyListingsPage = () => {
     if (!soldListing) return;
     
     setIsUpdating(true);
-    const { error } = await PropertyService.updateListing(soldListing.id, {
-      status: 'sold',
-      sold_price: parseFloat(soldForm.sold_price),
-      sold_date: soldForm.sold_date,
-      sold_to_client_id: soldForm.sold_to_client_id === 'none' ? null : soldForm.sold_to_client_id || null
-    });
-    
-    setIsUpdating(false);
-    
-    if (error) {
-      toast.error(error.message || 'Failed to mark as sold');
-    } else {
-      toast.success('Property marked as sold!');
-      setSoldListing(null);
-      const { data } = await PropertyService.getMyListings();
-      setListings(data || []);
+    try {
+      const { error } = await PropertyService.updateListing(soldListing.id, {
+        status: 'sold',
+        sold_price: parseFloat(soldForm.sold_price),
+        sold_date: soldForm.sold_date,
+        sold_to_client_id: soldForm.sold_to_client_id === 'none' ? null : soldForm.sold_to_client_id || null
+      });
+      
+      if (error) {
+        toast.error(error.message || 'Failed to mark as sold');
+      } else {
+        toast.success('Property marked as sold!');
+        setSoldListing(null);
+        await refreshListings();
+      }
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -374,213 +328,24 @@ const MyListingsPage = () => {
 
       {/* Edit Listing Modal */}
       <Dialog open={!!editingListing} onOpenChange={() => setEditingListing(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 border border-yellow-400/20">
-          <DialogHeader>
-            <DialogTitle className="text-yellow-400 text-xl">Edit Listing: {editingListing?.title}</DialogTitle>
+        <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 border border-yellow-400/20 p-0">
+          <DialogHeader className="px-6 pt-6 pb-0">
+            <DialogTitle className="text-yellow-400 text-xl">
+              {editingListing ? `Edit Listing: ${editingListing.title}` : 'Edit Listing'}
+            </DialogTitle>
           </DialogHeader>
           
           {editingListing && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Basic Information */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-yellow-400 mb-2">Basic Information</h3>
-                  
-                  <div>
-                    <Label htmlFor="title" className="text-gray-300">Title *</Label>
-                    <Input
-                      id="title"
-                      value={editForm.title || ''}
-                      onChange={(e) => setEditForm({...editForm, title: e.target.value})}
-                      className="bg-gray-800 border-gray-700 text-white"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="property_type" className="text-gray-300">Property Type *</Label>
-                    <Select value={editForm.property_type} onValueChange={(value) => setEditForm({...editForm, property_type: value})}>
-                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                        <SelectValue placeholder="Select property type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="house">House</SelectItem>
-                        <SelectItem value="apartment">Apartment</SelectItem>
-                        <SelectItem value="condo">Condo</SelectItem>
-                        <SelectItem value="townhouse">Townhouse</SelectItem>
-                        <SelectItem value="land">Land</SelectItem>
-                        <SelectItem value="commercial">Commercial</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="price" className="text-gray-300">Price *</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      value={editForm.price || ''}
-                      onChange={(e) => setEditForm({...editForm, price: e.target.value})}
-                      className="bg-gray-800 border-gray-700 text-white"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="bedrooms" className="text-gray-300">Bedrooms</Label>
-                      <Input
-                        id="bedrooms"
-                        type="number"
-                        value={editForm.bedrooms || ''}
-                        onChange={(e) => setEditForm({...editForm, bedrooms: e.target.value})}
-                        className="bg-gray-800 border-gray-700 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="bathrooms" className="text-gray-300">Bathrooms</Label>
-                      <Input
-                        id="bathrooms"
-                        type="number"
-                        value={editForm.bathrooms || ''}
-                        onChange={(e) => setEditForm({...editForm, bathrooms: e.target.value})}
-                        className="bg-gray-800 border-gray-700 text-white"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="square_feet" className="text-gray-300">Square Feet</Label>
-                      <Input
-                        id="square_feet"
-                        type="number"
-                        value={editForm.square_feet || ''}
-                        onChange={(e) => setEditForm({...editForm, square_feet: e.target.value})}
-                        className="bg-gray-800 border-gray-700 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="year_built" className="text-gray-300">Year Built</Label>
-                      <Input
-                        id="year_built"
-                        type="number"
-                        value={editForm.year_built || ''}
-                        onChange={(e) => setEditForm({...editForm, year_built: e.target.value})}
-                        className="bg-gray-800 border-gray-700 text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Address Information */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-yellow-400 mb-2">Address</h3>
-                  
-                  <div>
-                    <Label htmlFor="address" className="text-gray-300">Street Address *</Label>
-                    <Input
-                      id="address"
-                      value={editForm.address || ''}
-                      onChange={(e) => setEditForm({...editForm, address: e.target.value})}
-                      className="bg-gray-800 border-gray-700 text-white"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="city" className="text-gray-300">City *</Label>
-                      <Input
-                        id="city"
-                        value={editForm.city || ''}
-                        onChange={(e) => setEditForm({...editForm, city: e.target.value})}
-                        className="bg-gray-800 border-gray-700 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="state" className="text-gray-300">State *</Label>
-                      <Input
-                        id="state"
-                        value={editForm.state || ''}
-                        onChange={(e) => setEditForm({...editForm, state: e.target.value})}
-                        className="bg-gray-800 border-gray-700 text-white"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="zip_code" className="text-gray-300">ZIP Code *</Label>
-                    <Input
-                      id="zip_code"
-                      value={editForm.zip_code || ''}
-                      onChange={(e) => setEditForm({...editForm, zip_code: e.target.value})}
-                      className="bg-gray-800 border-gray-700 text-white"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="contact_phone" className="text-gray-300">Contact Phone</Label>
-                      <Input
-                        id="contact_phone"
-                        value={editForm.contact_phone || ''}
-                        onChange={(e) => setEditForm({...editForm, contact_phone: e.target.value})}
-                        className="bg-gray-800 border-gray-700 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="contact_email" className="text-gray-300">Contact Email</Label>
-                      <Input
-                        id="contact_email"
-                        type="email"
-                        value={editForm.contact_email || ''}
-                        onChange={(e) => setEditForm({...editForm, contact_email: e.target.value})}
-                        className="bg-gray-800 border-gray-700 text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Description */}
-              <div>
-                <Label htmlFor="description" className="text-gray-300">Description</Label>
-                <Textarea
-                  id="description"
-                  value={editForm.description || ''}
-                  onChange={(e) => setEditForm({...editForm, description: e.target.value})}
-                  className="bg-gray-800 border-gray-700 text-white min-h-[100px]"
-                  placeholder="Describe your property..."
-                />
-              </div>
-              
-              {/* Showing Instructions */}
-              <div>
-                <Label htmlFor="showing_instructions" className="text-gray-300">Showing Instructions</Label>
-                <Textarea
-                  id="showing_instructions"
-                  value={editForm.showing_instructions || ''}
-                  onChange={(e) => setEditForm({...editForm, showing_instructions: e.target.value})}
-                  className="bg-gray-800 border-gray-700 text-white"
-                  placeholder="Special instructions for showing this property..."
-                />
-              </div>
-              
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-4 border-t border-gray-700">
-                <Button 
-                  onClick={handleUpdateListing} 
-                  disabled={isUpdating}
-                  className="bg-yellow-400 text-black hover:bg-yellow-400/90"
-                >
-                  {isUpdating ? 'Updating...' : 'Update Listing'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setEditingListing(null)}
-                  className="text-gray-300 border-gray-600 hover:bg-gray-800"
-                >
-                  Cancel
-                </Button>
-              </div>
+            <div className="p-6">
+              <PropertyListingForm
+                mode="edit"
+                listing={editingListing}
+                onCancel={() => setEditingListing(null)}
+                onSuccess={async () => {
+                  await refreshListings();
+                  setEditingListing(null);
+                }}
+              />
             </div>
           )}
         </DialogContent>

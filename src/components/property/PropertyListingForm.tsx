@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { LocationAutocomplete } from '@/components/ui/LocationAutocomplete';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
-import { PropertyService, CreatePropertyListingData } from '@/services/propertyService';
+import { PropertyService, CreatePropertyListingData, PropertyListing } from '@/services/propertyService';
 import { googleMapsService } from '@/services/googleMapsService';
 import { InputSanitizer } from '@/utils/inputSanitization';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,6 +18,8 @@ import { Loader2, Home, MapPin, DollarSign, Bed, Bath, Ruler, Phone, Mail, Uploa
 interface PropertyListingFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
+  mode?: 'create' | 'edit';
+  listing?: PropertyListing | null;
 }
 
 interface AddressSuggestion {
@@ -29,7 +31,7 @@ interface AddressSuggestion {
   };
 }
 
-const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFormProps) => {
+const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', listing = null }: PropertyListingFormProps) => {
   const { user, profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -47,6 +49,10 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
   const suggestionsRef = useRef<HTMLDivElement>(null);
   
   const [listingType, setListingType] = useState<'on-market' | 'off-market'>('on-market');
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [existingFloorPlans, setExistingFloorPlans] = useState<string[]>([]);
+  const [originalShowingInstructions, setOriginalShowingInstructions] = useState<string>('');
+  const isEditMode = mode === 'edit' && !!listing;
   
   // Pre-populate email from user profile
   const initialEmail = user?.email || (profile as any)?.email || '';
@@ -83,11 +89,64 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
 
   // Update email when user/profile loads
   useEffect(() => {
-    if (user?.email || (profile as any)?.email) {
+    if (!isEditMode && (user?.email || (profile as any)?.email)) {
       const email = user?.email || (profile as any)?.email;
       setFormData(prev => ({ ...prev, contact_email: email }));
     }
-  }, [user, profile]);
+  }, [user, profile, isEditMode]);
+
+  useEffect(() => {
+    if (isEditMode && listing) {
+      setFormData({
+        title: listing.title || '',
+        description: listing.description || '',
+        property_type: listing.property_type || 'house',
+        price: listing.price || 0,
+        bedrooms: listing.bedrooms ?? undefined,
+        bathrooms: listing.bathrooms ?? undefined,
+        square_feet: listing.square_feet ?? undefined,
+        lot_size: listing.lot_size ?? undefined,
+        year_built: listing.year_built ?? undefined,
+        address: listing.address || '',
+        city: listing.city || '',
+        state: listing.state || '',
+        zip_code: listing.zip_code || '',
+        contact_phone: listing.contact_phone || '',
+        contact_email: listing.contact_email || '',
+        showing_instructions: listing.showing_instructions || '',
+        features: listing.features || [],
+        images: listing.images || [],
+        floor_plans: listing.floor_plans || [],
+        vendor_ownership_duration: listing.vendor_ownership_duration || '',
+        vendor_special_conditions: listing.vendor_special_conditions || '',
+        vendor_favorable_contracts: listing.vendor_favorable_contracts || '',
+        vendor_motivation: listing.vendor_motivation || ''
+      });
+
+      setListingType(listing.listing_source === 'agent_posted' ? 'off-market' : 'on-market');
+      setExistingImages(listing.images || []);
+      setExistingFloorPlans(listing.floor_plans || []);
+
+      if (listing.latitude !== null && listing.latitude !== undefined && listing.longitude !== null && listing.longitude !== undefined) {
+        setCoordinates({ lat: listing.latitude, lng: listing.longitude });
+        setGeocodingStatus('success');
+      } else {
+        setCoordinates(null);
+        setGeocodingStatus('idle');
+      }
+
+      setOriginalShowingInstructions(listing.showing_instructions || '');
+      setOpenInspections([]);
+      setImageFiles([]);
+      setImagePreviews([]);
+      setFloorPlanFiles([]);
+      setFloorPlanPreviews([]);
+    } else if (!isEditMode) {
+      setExistingImages([]);
+      setExistingFloorPlans([]);
+      setOriginalShowingInstructions('');
+    }
+  }, [isEditMode, listing]);
 
   const propertyTypes = [
     { value: 'house', label: 'House' },
@@ -311,11 +370,15 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
     });
   };
 
-  const removeImage = (index: number) => {
+  const removeNewImage = (index: number) => {
     const newFiles = imageFiles.filter((_, i) => i !== index);
     const newPreviews = imagePreviews.filter((_, i) => i !== index);
     setImageFiles(newFiles);
     setImagePreviews(newPreviews);
+  };
+
+  const removeExistingImage = (index: number) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleFloorPlanUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -340,11 +403,15 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
     });
   };
 
-  const removeFloorPlan = (index: number) => {
+  const removeNewFloorPlan = (index: number) => {
     const newFiles = floorPlanFiles.filter((_, i) => i !== index);
     const newPreviews = floorPlanPreviews.filter((_, i) => i !== index);
     setFloorPlanFiles(newFiles);
     setFloorPlanPreviews(newPreviews);
+  };
+
+  const removeExistingFloorPlan = (index: number) => {
+    setExistingFloorPlans(prev => prev.filter((_, i) => i !== index));
   };
 
   const addOpenInspection = () => {
@@ -352,6 +419,10 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
     tomorrow.setDate(tomorrow.getDate() + 1);
     const dateStr = tomorrow.toISOString().split('T')[0];
     
+    if (originalShowingInstructions) {
+      setOriginalShowingInstructions('');
+    }
+
     setOpenInspections(prev => [...prev, {
       date: dateStr,
       startTime: '10:00',
@@ -531,14 +602,19 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
       return;
     }
     
-    // Validate required images
-    if (imageFiles.length === 0) {
+    const totalImages = (existingImages?.length || 0) + imageFiles.length;
+    if ((!isEditMode && imageFiles.length === 0) || (isEditMode && totalImages === 0)) {
       toast.error('At least one property image is required');
       return;
     }
     
-    // Check if we have coordinates
-    if (!coordinates) {
+    const effectiveCoordinates = coordinates ?? (
+      isEditMode && listing && listing.latitude !== null && listing.latitude !== undefined && listing.longitude !== null && listing.longitude !== undefined
+        ? { lat: listing.latitude, lng: listing.longitude }
+        : null
+    );
+    
+    if (!effectiveCoordinates) {
       toast.error('Please ensure the address is valid and coordinates are found');
       return;
     }
@@ -580,40 +656,92 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
       }
       
       // Add coordinates, listing source, and formatted open inspections to the form data
-      const listingDataWithCoordinates = {
+      const resolvedListingSource = isEditMode
+        ? (listing?.listing_source || (listingType === 'off-market' ? 'agent_posted' : 'external_feed'))
+        : listingType === 'off-market'
+          ? 'agent_posted'
+          : 'external_feed';
+
+      const formattedInspections = openInspections.length > 0
+        ? formatOpenInspectionsForSubmission()
+        : (isEditMode ? originalShowingInstructions : sanitizedFormData.showing_instructions);
+
+      const listingDataWithCoordinates: any = {
         ...sanitizedFormData,
-        latitude: coordinates.lat,
-        longitude: coordinates.lng,
-        listing_source: listingType === 'off-market' ? 'agent_posted' : 'external_feed',
-        showing_instructions: formatOpenInspectionsForSubmission(),
+        latitude: effectiveCoordinates.lat,
+        longitude: effectiveCoordinates.lng,
+        listing_source: resolvedListingSource,
+        showing_instructions: formattedInspections,
         vendor_ownership_duration: sanitizedFormData.vendor_ownership_duration?.trim() || null,
         vendor_special_conditions: sanitizedFormData.vendor_special_conditions || null,
         vendor_favorable_contracts: sanitizedFormData.vendor_favorable_contracts || null,
         vendor_motivation: sanitizedFormData.vendor_motivation || null
       };
       
-      let result;
-      
-      if (imageFiles.length > 0) {
-        // Use the new method with image upload
-        const { images, ...listingDataWithoutImages } = listingDataWithCoordinates;
-        result = await PropertyService.createListingWithImages(
-          listingDataWithoutImages,
-          imageFiles,
-          floorPlanFiles
-        );
+      if (isEditMode && listing) {
+        let uploadedImageUrls: string[] = [];
+        if (imageFiles.length > 0) {
+          const { data: uploaded, error: uploadError } = await PropertyService.uploadImages(imageFiles);
+          if (uploadError || !uploaded) {
+            toast.error(uploadError?.message || 'Failed to upload new images');
+            setLoading(false);
+            return;
+          }
+          uploadedImageUrls = uploaded;
+        }
+
+        let uploadedFloorPlans: string[] = [];
+        if (floorPlanFiles.length > 0) {
+          const { data: uploadedPlans, error: floorError } = await PropertyService.uploadFloorPlans(floorPlanFiles);
+          if (floorError || !uploadedPlans) {
+            toast.error(floorError?.message || 'Failed to upload floor plans');
+            setLoading(false);
+            return;
+          }
+          uploadedFloorPlans = uploadedPlans;
+        }
+
+        const finalImages = [...(existingImages || []), ...uploadedImageUrls];
+        const finalFloorPlans = [...(existingFloorPlans || []), ...uploadedFloorPlans];
+
+        listingDataWithCoordinates.images = finalImages;
+        listingDataWithCoordinates.floor_plans = finalFloorPlans;
+
+        const { error } = await PropertyService.updateListing(listing.id, listingDataWithCoordinates);
+
+        if (error) {
+          toast.error(error.message || 'Failed to update listing');
+        } else {
+          toast.success('Property listing updated successfully!');
+          setExistingImages(finalImages);
+          setExistingFloorPlans(finalFloorPlans);
+          setImageFiles([]);
+          setImagePreviews([]);
+          setFloorPlanFiles([]);
+          setFloorPlanPreviews([]);
+          onSuccess?.();
+        }
       } else {
-        // Use the regular method without images
-        result = await PropertyService.createListing(listingDataWithCoordinates);
-      }
-      
-      if (result.error) {
-        toast.error(result.error.message || 'Failed to create listing');
-      } else {
-        toast.success('Property listing created successfully! It will be reviewed by our team.');
-        setFloorPlanFiles([]);
-        setFloorPlanPreviews([]);
-        onSuccess?.();
+        let creationResult;
+        if (imageFiles.length > 0) {
+          const { images, ...listingDataWithoutImages } = listingDataWithCoordinates;
+          creationResult = await PropertyService.createListingWithImages(
+            listingDataWithoutImages,
+            imageFiles,
+            floorPlanFiles
+          );
+        } else {
+          creationResult = await PropertyService.createListing(listingDataWithCoordinates);
+        }
+        
+        if (creationResult.error) {
+          toast.error(creationResult.error.message || 'Failed to create listing');
+        } else {
+          toast.success('Property listing created successfully! It will be reviewed by our team.');
+          setFloorPlanFiles([]);
+          setFloorPlanPreviews([]);
+          onSuccess?.();
+        }
       }
     } catch (error) {
       toast.error('An unexpected error occurred');
@@ -627,10 +755,12 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-white flex items-center gap-2">
           <Home className="w-6 h-6 text-pickfirst-yellow" />
-          Add New Property Listing
+          {isEditMode ? 'Update Property Listing' : 'Add New Property Listing'}
         </CardTitle>
         <CardDescription className="text-gray-300">
-          Create a new property listing for potential buyers to discover
+          {isEditMode
+            ? 'Update your property details to keep buyers informed'
+            : 'Create a new property listing for potential buyers to discover'}
         </CardDescription>
       </CardHeader>
       
@@ -997,14 +1127,16 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
           <div className="space-y-4">
             <Label className="text-white font-semibold flex items-center gap-2">
               <ImageIcon className="w-4 h-4 text-pickfirst-yellow" />
-              Property Images *
+              Property Images {isEditMode ? '' : '*'}
             </Label>
             <div className="space-y-4">
               <Label htmlFor="images" className="cursor-pointer">
                 <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center hover:border-pickfirst-yellow/40 transition-colors">
                   <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-gray-400">Click to upload images (max 25) *</p>
-                  <p className="text-xs text-gray-500 mt-1">JPG, PNG, GIF up to 5MB each - At least one image required</p>
+                  <p className="text-gray-400">Click to upload images (max 25){!isEditMode && ' *'}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    JPG, PNG, GIF up to 5MB each - At least one image required
+                  </p>
                 </div>
               </Label>
               <Input
@@ -1014,9 +1146,35 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
                 accept="image/*"
                 onChange={handleImageUpload}
                 className="hidden"
-                required
+                required={!isEditMode || existingImages.length === 0}
               />
             </div>
+
+            {isEditMode && existingImages.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-300 font-medium">Current Images</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {existingImages.map((imageUrl, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={imageUrl}
+                        alt={`Existing ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border border-white/20"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                        onClick={() => removeExistingImage(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Image Previews */}
             {imagePreviews.length > 0 && (
@@ -1033,7 +1191,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
                       variant="destructive"
                       size="sm"
                       className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                      onClick={() => removeImage(index)}
+                      onClick={() => removeNewImage(index)}
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -1067,22 +1225,65 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
               />
             </div>
 
+            {isEditMode && existingFloorPlans.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-300 font-medium">Current Floor Plans</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {existingFloorPlans.map((planUrl, index) => (
+                    <div key={index} className="relative">
+                      {planUrl.toLowerCase().includes('.pdf') ? (
+                        <div className="w-full h-32 flex flex-col items-center justify-center rounded-lg border border-white/20 bg-black/60 text-white">
+                          <FileText className="h-8 w-8 mb-2 text-yellow-400" />
+                          <span className="text-xs">PDF Floor Plan {index + 1}</span>
+                        </div>
+                      ) : (
+                        <img
+                          src={planUrl}
+                          alt={`Existing Floor Plan ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border border-white/20"
+                        />
+                      )}
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                        onClick={() => removeExistingFloorPlan(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                      <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                        Floor Plan {index + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Floor Plan Previews */}
             {floorPlanPreviews.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {floorPlanPreviews.map((preview, index) => (
                   <div key={index} className="relative">
-                    <img
-                      src={preview}
-                      alt={`Floor Plan ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg border border-white/20"
-                    />
+                    {floorPlanFiles[index]?.type === 'application/pdf' ? (
+                      <div className="w-full h-32 flex flex-col items-center justify-center rounded-lg border border-white/20 bg-black/60 text-white">
+                        <FileText className="h-8 w-8 mb-2 text-yellow-400" />
+                        <span className="text-xs">PDF Floor Plan {index + 1}</span>
+                      </div>
+                    ) : (
+                      <img
+                        src={preview}
+                        alt={`Floor Plan ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg border border-white/20"
+                      />
+                    )}
                     <Button
                       type="button"
                       variant="destructive"
                       size="sm"
                       className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                      onClick={() => removeFloorPlan(index)}
+                      onClick={() => removeNewFloorPlan(index)}
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -1243,6 +1444,20 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
                 </div>
               </div>
             )}
+
+            {isEditMode && originalShowingInstructions && openInspections.length === 0 && (
+              <div className="p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                <Label className="text-blue-300 text-sm font-medium mb-2 block">
+                  Existing Inspection Notes
+                </Label>
+                <div className="text-blue-200 text-sm whitespace-pre-line">
+                  {originalShowingInstructions}
+                </div>
+                <p className="text-xs text-blue-200/80 mt-2">
+                  Add or modify inspections above to replace these existing notes.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Vendor Details - Optional */}
@@ -1336,7 +1551,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
               className="bg-pickfirst-yellow text-black hover:bg-pickfirst-yellow/90"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Listing
+              {isEditMode ? 'Save Changes' : 'Create Listing'}
             </Button>
           </div>
         </form>

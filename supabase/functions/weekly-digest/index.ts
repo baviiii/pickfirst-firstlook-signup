@@ -207,8 +207,8 @@ async function getUserStats(supabaseClient: any, weekStart: string, weekEnd: str
     // Active users (users who logged in within last 7 days)
     const { data: activeUsers, error: activeError } = await supabaseClient
       .from('profiles')
-      .select('id', { count: 'exact' })
-      .gte('last_sign_in_at', weekStart);
+      .select('id, last_login_at')
+      .gte('updated_at', weekStart);
 
     if (activeError) throw activeError;
 
@@ -333,16 +333,16 @@ async function generateMarketInsights(supabaseClient: any, weekStart: string, we
     // Demand trend (based on user activity)
     const { data: currentActivity, error: actCurrentError } = await supabaseClient
       .from('profiles')
-      .select('id', { count: 'exact' })
-      .gte('last_sign_in_at', weekStart);
+      .select('id')
+      .gte('updated_at', weekStart);
 
     if (actCurrentError) throw actCurrentError;
 
     const { data: previousActivity, error: actPreviousError } = await supabaseClient
       .from('profiles')
-      .select('id', { count: 'exact' })
-      .gte('last_sign_in_at', twoWeeksAgo)
-      .lt('last_sign_in_at', weekStart);
+      .select('id')
+      .gte('updated_at', twoWeeksAgo)
+      .lt('updated_at', weekStart);
 
     if (actPreviousError) throw actPreviousError;
 
@@ -552,6 +552,8 @@ async function sendWeeklyDigestEmail(
     `;
 
     // Call the send-email Edge Function
+    const subject = `🏠 PickFirst Weekly Digest - ${digest.week_start} to ${digest.week_end}`;
+
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
       method: 'POST',
       headers: {
@@ -560,9 +562,13 @@ async function sendWeeklyDigestEmail(
       },
       body: JSON.stringify({
         to: userEmail,
-        subject: `🏠 PickFirst Weekly Digest - ${digest.week_start} to ${digest.week_end}`,
-        html: emailHtml,
-        template: 'weeklyDigest'
+        subject,
+        template: 'weeklyDigest',
+        data: {
+          html: emailHtml,
+          subject,
+          text: `Your PickFirst weekly digest covering ${digest.week_start} to ${digest.week_end} is ready.`
+        }
       })
     });
 

@@ -1699,6 +1699,24 @@ PickFirst Real Estate Team`,
       </div>
     `
   })
+,
+  weeklyDigest: (data: any) => ({
+    subject: data.subject || `PickFirst Weekly Digest`,
+    text: data.text || `Your PickFirst weekly digest is ready.`,
+    html: data.html || `
+      <div style="font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:40px;background:#f7fafc;">
+        <div style="max-width:680px;margin:0 auto;background:#ffffff;border-radius:16px;padding:40px;text-align:center;">
+          <h1 style="color:#1a202c;margin-bottom:16px;">Your Weekly Property Digest</h1>
+          <p style="color:#4a5568;">We couldn't load the full content of this digest. Please log in to view the latest properties.</p>
+          <div style="margin-top:32px;">
+            <a href="https://pickfirst.com.au/login" style="display:inline-block;background:#FFCC00;color:#1a1a1a;padding:14px 32px;border-radius:8px;font-weight:600;text-decoration:none;">
+              View Properties
+            </a>
+          </div>
+        </div>
+      </div>
+    `
+  })
 };
 
 const handler = async (req: Request) => {
