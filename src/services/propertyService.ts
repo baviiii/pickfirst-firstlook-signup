@@ -78,6 +78,7 @@ export interface CreatePropertyListingData {
   longitude?: number | undefined;
   features?: string[];
   images?: string[];
+  floor_plans?: string[];
   contact_phone?: string;
   contact_email?: string;
   showing_instructions?: string;
@@ -205,6 +206,62 @@ export class PropertyService {
     }
   }
 
+  // Upload floor plans (images or PDFs) to Supabase Storage
+  static async uploadFloorPlans(files: File[]): Promise<{ data: string[] | null; error: any }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { data: null, error: new Error('User not authenticated') };
+      }
+
+      const uploadedUrls: string[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        if (file.size > 20 * 1024 * 1024) {
+          return {
+            data: null,
+            error: new Error(`File ${file.name} is too large. Maximum size is 20MB.`)
+          };
+        }
+
+        const validTypes = ['image/', 'application/pdf'];
+        if (!validTypes.some(type => file.type.startsWith(type))) {
+          return {
+            data: null,
+            error: new Error(`File ${file.name} must be an image or PDF.`)
+          };
+        }
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}-${i}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('property-floorplans')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error('Floor plan upload error:', uploadError);
+          return { data: null, error: uploadError };
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('property-floorplans')
+          .getPublicUrl(fileName);
+
+        uploadedUrls.push(urlData.publicUrl);
+      }
+
+      return { data: uploadedUrls, error: null };
+    } catch (error) {
+      console.error('Error uploading floor plans:', error);
+      return { data: null, error };
+    }
+  }
+
   // Delete images from Supabase Storage
   static async deleteImages(imageUrls: string[]): Promise<{ error: any }> {
     try {
@@ -233,8 +290,9 @@ export class PropertyService {
 
   // Create a new property listing with image upload
   static async createListingWithImages(
-    listingData: Omit<CreatePropertyListingData, 'images'>, 
-    imageFiles: File[]
+    listingData: Omit<CreatePropertyListingData, 'images'>,
+    imageFiles: File[],
+    floorPlanFiles: File[] = []
   ): Promise<{ data: PropertyListing | null; error: any }> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -355,13 +413,37 @@ export class PropertyService {
         }
       });
 
-      // Sanitize inputs and convert price
+      // Upload floor plans (optional)
+      let floorPlanUrls: string[] = [];
+      if (floorPlanFiles.length > 0) {
+        const { data: uploadedFloorPlans, error: floorPlanError } = await this.uploadFloorPlans(floorPlanFiles);
+        if (floorPlanError) {
+          await auditService.log(user.id, 'IMAGE_UPLOAD_FAILED', 'property_listings', {
+            newValues: {
+              error: floorPlanError.message || 'Unknown floor plan upload error',
+              floorPlanCount: floorPlanFiles.length
+            }
+          });
+          return { data: null, error: floorPlanError };
+        }
+
+        floorPlanUrls = uploadedFloorPlans || [];
+
+        await auditService.log(user.id, 'IMAGE_UPLOAD_SUCCESS', 'property_listings', {
+          newValues: {
+            message: 'floor plans uploaded successfully for property creation',
+            floorPlanCount: floorPlanUrls.length,
+            uploadedUrls: floorPlanUrls
+          }
+        });
+      }
+
       const sanitizedData = {
         ...listingData,
         title: sanitizeInput(listingData.title),
         description: listingData.description ? sanitizeInput(listingData.description) : undefined,
-        price: numericPrice, // Use parsed numeric price for database
-        price_display: typeof listingData.price === 'string' ? listingData.price : undefined, // Store original text
+        price: numericPrice,
+        price_display: typeof listingData.price === 'string' ? listingData.price : undefined,
         address: sanitizeInput(listingData.address),
         city: sanitizeInput(listingData.city),
         state: sanitizeInput(listingData.state),
@@ -369,16 +451,21 @@ export class PropertyService {
         contact_phone: listingData.contact_phone ? sanitizeInput(listingData.contact_phone) : undefined,
         contact_email: listingData.contact_email ? sanitizeInput(listingData.contact_email) : undefined,
         showing_instructions: listingData.showing_instructions ? sanitizeInput(listingData.showing_instructions) : undefined,
+        vendor_ownership_duration: listingData.vendor_ownership_duration?.trim() || null,
+        vendor_special_conditions: listingData.vendor_special_conditions || null,
+        vendor_favorable_contracts: listingData.vendor_favorable_contracts || null,
+        vendor_motivation: listingData.vendor_motivation || null
       };
 
-      // Create listing with uploaded image URLs
+      // Create listing with uploaded image & floor plan URLs
       const { data, error } = await supabase
         .from('property_listings')
         .insert({
           ...sanitizedData,
           agent_id: user.id,
           status: 'pending',
-          images: imageUrls || []
+          images: imageUrls || [],
+          floor_plans: floorPlanUrls
         })
         .select()
         .single();
@@ -466,7 +553,7 @@ export class PropertyService {
         await auditService.log(user.id, 'CREATE_FAILED', 'property_listings', {
           newValues: {
             error: error.message || 'Unknown database error',
-            title: sanitizedData.title,
+            title: listingData.title,
             imageCount: imageUrls?.length || 0
           }
         });
@@ -669,6 +756,11 @@ export class PropertyService {
         contact_phone: listingData.contact_phone ? sanitizeInput(listingData.contact_phone) : undefined,
         contact_email: listingData.contact_email ? sanitizeInput(listingData.contact_email) : undefined,
         showing_instructions: listingData.showing_instructions ? sanitizeInput(listingData.showing_instructions) : undefined,
+        vendor_ownership_duration: listingData.vendor_ownership_duration?.trim() || null,
+        vendor_special_conditions: listingData.vendor_special_conditions || null,
+        vendor_favorable_contracts: listingData.vendor_favorable_contracts || null,
+        vendor_motivation: listingData.vendor_motivation || null,
+        floor_plans: listingData.floor_plans || []
       };
 
       const { data, error } = await supabase
@@ -879,10 +971,7 @@ export class PropertyService {
   static async getListingById(id: string): Promise<{ data: PropertyListing | null; error: any }> {
     const { data, error } = await supabase
       .from('property_listings')
-      .select(`
-        *,
-        agent:profiles!property_listings_agent_id_fkey(full_name, email)
-      `)
+      .select('*')
       .eq('id', id)
       .single();
 
@@ -1752,10 +1841,9 @@ export class PropertyService {
   static async getAgentDetails(agentId: string): Promise<{ data: any | null; error: any }> {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('agent_public_profiles')
         .select('id, full_name, email, phone, bio, company, location, avatar_url')
         .eq('id', agentId)
-        .eq('role', 'agent')
         .single();
 
       if (error) throw error;

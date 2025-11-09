@@ -64,6 +64,37 @@ interface WeeklyDigest {
   };
 }
 
+interface UserPreferenceSnapshot {
+  email_notifications?: boolean | null;
+  new_listings?: boolean | null;
+  preferred_areas?: string[] | null;
+  property_type_preferences?: string[] | null;
+  min_budget?: number | null;
+  max_budget?: number | null;
+}
+
+function parseBudgetRange(range?: string | null): { min?: number; max?: number } {
+  if (!range) return {};
+
+  const cleaned = range.replace(/\s/g, '');
+  const parts = cleaned.split(/[-–—]/);
+
+  const parseValue = (value: string): number | undefined => {
+    const numeric = parseInt(value.replace(/[^0-9]/g, ''), 10);
+    return isNaN(numeric) ? undefined : numeric;
+  };
+
+  if (parts.length === 2) {
+    return {
+      min: parseValue(parts[0]),
+      max: parseValue(parts[1])
+    };
+  }
+
+  const single = parseValue(parts[0]);
+  return single ? { min: single } : {};
+}
+
 /**
  * Get property statistics for the week
  */
@@ -233,8 +264,8 @@ async function getFeaturedProperties(supabaseClient: any, weekStart: string, wee
 
     if (error) throw error;
 
-    // Return all properties from the week, limited to reasonable number for email
-    return (weeklyProperties || []).slice(0, 12);
+    // Return the full list for the week (limit to 50 to keep payload reasonable)
+    return (weeklyProperties || []).slice(0, 50);
   } catch (error) {
     console.error('Error getting weekly properties:', error);
     throw error;
@@ -333,10 +364,54 @@ async function generateMarketInsights(supabaseClient: any, weekStart: string, we
   }
 }
 
+function filterPropertiesForUser(
+  properties: Array<WeeklyDigest['featured_properties'][number]>,
+  preferences?: UserPreferenceSnapshot | null
+): Array<WeeklyDigest['featured_properties'][number]> {
+  if (!preferences) {
+    return properties.slice(0, 12);
+  }
+
+  const minBudget = typeof preferences.min_budget === 'number' ? preferences.min_budget : undefined;
+  const maxBudget = typeof preferences.max_budget === 'number' ? preferences.max_budget : undefined;
+  const preferredAreas = Array.isArray(preferences.preferred_areas) ? preferences.preferred_areas : [];
+  const preferredTypes = Array.isArray(preferences.property_type_preferences) ? preferences.property_type_preferences : [];
+
+  const filtered = properties.filter((property) => {
+    const matchesBudget = (
+      (minBudget === undefined || property.price >= minBudget) &&
+      (maxBudget === undefined || property.price <= maxBudget)
+    );
+
+    const matchesArea = preferredAreas.length === 0 || preferredAreas.some((area) => {
+      const normalizedArea = area.trim().toLowerCase();
+      const propertyArea = `${property.city}, ${property.state}`.toLowerCase();
+      return propertyArea.includes(normalizedArea);
+    });
+
+    const matchesType = preferredTypes.length === 0 || preferredTypes.includes(property.property_type);
+
+    return matchesBudget && matchesArea && matchesType;
+  });
+
+  if (filtered.length > 0) {
+    return filtered.slice(0, 12);
+  }
+
+  // Fallback: show top properties from the week even if they don't match preferences
+  return properties.slice(0, 8);
+}
+
 /**
  * Send weekly digest email to users
  */
-async function sendWeeklyDigestEmail(supabaseClient: any, digest: WeeklyDigest, userEmail: string, userName: string): Promise<void> {
+async function sendWeeklyDigestEmail(
+  supabaseClient: any,
+  digest: WeeklyDigest,
+  userEmail: string,
+  userName: string,
+  properties: Array<WeeklyDigest['featured_properties'][number]>
+): Promise<void> {
   try {
     const emailHtml = `
       <!DOCTYPE html>
@@ -444,7 +519,7 @@ async function sendWeeklyDigestEmail(supabaseClient: any, digest: WeeklyDigest, 
             
             <div class="properties-section">
               <h2 class="section-title">🏠 New Properties This Week</h2>
-              ${digest.featured_properties.length > 0 ? digest.featured_properties.map(property => `
+              ${properties.length > 0 ? properties.map(property => `
                 <div class="property-card">
                   ${property.images?.[0] ? `
                     <img src="${property.images[0]}" alt="${property.title}" class="property-image" />
@@ -462,7 +537,7 @@ async function sendWeeklyDigestEmail(supabaseClient: any, digest: WeeklyDigest, 
                     </a>
                   </div>
                 </div>
-              `).join('') : '<p style="text-align: center; color: #718096; padding: 40px;">No new properties this week. Check back soon!</p>'}
+              `).join('') : '<p style="text-align: center; color: #718096; padding: 40px;">No new properties matched your preferences this week. Check back soon!</p>'}
             </div>
             
             <div class="footer">
@@ -543,12 +618,12 @@ serve(async (req) => {
     }
 
     // Determine who to send to
-    let usersToSend: Array<{ email: string; full_name: string }> = []
+    let usersToSend: Array<{ id: string; email: string; full_name: string | null }> = []
 
     if (send_to_all_users) {
       const { data: allUsers, error: usersError } = await supabaseClient
         .from('profiles')
-        .select('email, full_name')
+        .select('id, email, full_name')
         .eq('role', 'buyer')
         .not('email', 'is', null)
 
@@ -557,7 +632,7 @@ serve(async (req) => {
     } else if (user_id) {
       const { data: user, error: userError } = await supabaseClient
         .from('profiles')
-        .select('email, full_name')
+        .select('id, email, full_name')
         .eq('id', user_id)
         .single()
 
@@ -571,7 +646,34 @@ serve(async (req) => {
 
     for (const user of usersToSend) {
       try {
-        await sendWeeklyDigestEmail(supabaseClient, digest, user.email, user.full_name || 'User')
+        const { data: preferences } = await supabaseClient
+          .from('user_preferences')
+          .select('email_notifications, new_listings, preferred_areas, property_type_preferences, budget_range')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        const masterOptOut = preferences?.email_notifications === false;
+        const digestOptOut = preferences?.new_listings === false;
+
+        if (masterOptOut || digestOptOut) {
+          console.log(`Skipping weekly digest for ${user.email} due to notification preferences`)
+          continue;
+        }
+
+        const { min: minBudget, max: maxBudget } = parseBudgetRange(preferences?.budget_range);
+
+        const preferenceSnapshot: UserPreferenceSnapshot = {
+          email_notifications: preferences?.email_notifications,
+          new_listings: preferences?.new_listings,
+          preferred_areas: preferences?.preferred_areas,
+          property_type_preferences: preferences?.property_type_preferences,
+          min_budget: minBudget ?? null,
+          max_budget: maxBudget ?? null
+        };
+
+        const propertiesForUser = filterPropertiesForUser(digest.featured_properties, preferenceSnapshot);
+
+        await sendWeeklyDigestEmail(supabaseClient, digest, user.email, user.full_name || 'User', propertiesForUser)
         emailsSent++
       } catch (error) {
         console.error(`Failed to send digest to ${user.email}:`, error)

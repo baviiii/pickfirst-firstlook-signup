@@ -599,7 +599,8 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
         const { images, ...listingDataWithoutImages } = listingDataWithCoordinates;
         result = await PropertyService.createListingWithImages(
           listingDataWithoutImages,
-          imageFiles
+          imageFiles,
+          floorPlanFiles
         );
       } else {
         // Use the regular method without images
@@ -610,6 +611,8 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel }: PropertyListingFo
         toast.error(result.error.message || 'Failed to create listing');
       } else {
         toast.success('Property listing created successfully! It will be reviewed by our team.');
+        setFloorPlanFiles([]);
+        setFloorPlanPreviews([]);
         onSuccess?.();
       }
     } catch (error) {

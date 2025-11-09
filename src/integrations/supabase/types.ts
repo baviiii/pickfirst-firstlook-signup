@@ -1116,6 +1116,7 @@ export type Database = {
           description: string | null
           early_access_until: string | null
           features: string[] | null
+          floor_plans: string[] | null
           garages: number | null
           id: string
           images: string[] | null
@@ -1157,6 +1158,7 @@ export type Database = {
           description?: string | null
           early_access_until?: string | null
           features?: string[] | null
+          floor_plans?: string[] | null
           garages?: number | null
           id?: string
           images?: string[] | null
@@ -1198,6 +1200,7 @@ export type Database = {
           description?: string | null
           early_access_until?: string | null
           features?: string[] | null
+          floor_plans?: string[] | null
           garages?: number | null
           id?: string
           images?: string[] | null
