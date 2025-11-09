@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
