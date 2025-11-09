@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Dispatch, SetStateAction } from 'react';
 import { notificationService, Notification, NotificationType } from '@/services/notificationService';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -55,6 +55,7 @@ interface UseCardNotificationsReturn {
   hasNewNotification: (cardType: CardActionType) => boolean;
   clearCardNotifications: (cardType: CardActionType) => void;
   totalUnread: number;
+  setTotalUnread: Dispatch<SetStateAction<number>>;
 }
 
 export const useCardNotifications = (): UseCardNotificationsReturn => {
@@ -182,6 +183,7 @@ export const useCardNotifications = (): UseCardNotificationsReturn => {
     hasNewNotification,
     clearCardNotifications,
     totalUnread,
+    setTotalUnread,
   };
 };
 

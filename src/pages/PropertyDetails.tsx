@@ -55,6 +55,20 @@ const PropertyDetailsComponent = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [agentDetails, setAgentDetails] = useState<any>(null);
   const [loadingAgent, setLoadingAgent] = useState(false);
+  const displayPrice = property ? PropertyService.getDisplayPrice(property) : '';
+  const numericSoldPrice = property?.sold_price !== undefined && property?.sold_price !== null
+    ? (typeof property.sold_price === 'string' ? parseFloat(property.sold_price) : property.sold_price)
+    : null;
+  const numericOriginalPrice = property?.price !== undefined && property?.price !== null
+    ? (typeof property.price === 'string' ? parseFloat(property.price) : property.price)
+    : null;
+  const hasSoldPrice = property?.status === 'sold' && numericSoldPrice !== null && Number.isFinite(numericSoldPrice) && (numericSoldPrice as number) > 0;
+  const priceSuffix = property && ['weekly', 'monthly'].includes((property.property_type || '').toLowerCase())
+    ? (property.property_type.toLowerCase() === 'weekly' ? '/week' : '/month')
+    : '';
+  const propertySquareFeet = property
+    ? (typeof property.square_feet === 'string' ? parseFloat(property.square_feet) : property.square_feet)
+    : null;
 
   useEffect(() => {
     if (id) {
@@ -425,11 +439,19 @@ const PropertyDetailsComponent = () => {
                 {/* Price and Stats */}
                 <div className="bg-yellow-400/5 p-4 rounded-lg border border-yellow-400/20">
                   <div className="text-3xl font-bold text-yellow-400 mb-3">
-                    {property.status === 'sold' && property.sold_price ? (
+                    {hasSoldPrice ? (
                       <>
-                        <span className="text-xl text-gray-400 line-through">${property.price?.toLocaleString()}</span>
-                        <br />
-                        <span className="text-red-400">Sold: ${property.sold_price.toLocaleString()}</span>
+                        {numericOriginalPrice && Number.isFinite(numericOriginalPrice) && (numericOriginalPrice as number) > 0 && (
+                          <>
+                            <span className="text-xl text-gray-400 line-through">
+                              {`$${(numericOriginalPrice as number).toLocaleString()}`}
+                            </span>
+                            <br />
+                          </>
+                        )}
+                        <span className="text-red-400">
+                          Sold: ${ (numericSoldPrice as number).toLocaleString() }
+                        </span>
                         {property.sold_date && (
                           <div className="text-sm text-gray-400 mt-1">
                             Sold on {new Date(property.sold_date).toLocaleDateString()}
@@ -438,10 +460,12 @@ const PropertyDetailsComponent = () => {
                       </>
                     ) : (
                       <>
-                        ${property.price?.toLocaleString()}
-                        <span className="text-lg font-normal text-yellow-400/70 ml-1">
-                          {property.property_type === 'weekly' ? '/week' : property.property_type === 'monthly' ? '/month' : ''}
-                        </span>
+                        <span>{displayPrice || 'Contact Agent'}</span>
+                        {priceSuffix && displayPrice.startsWith('$') && (
+                          <span className="text-lg font-normal text-yellow-400/70 ml-1">
+                            {priceSuffix}
+                          </span>
+                        )}
                       </>
                     )}
                   </div>
@@ -460,10 +484,10 @@ const PropertyDetailsComponent = () => {
                         <span className="text-gray-300">{property.bathrooms} Bath{property.bathrooms !== 1 ? 's' : ''}</span>
                       </div>
                     )}
-                    {property.square_feet !== null && (
+                    {propertySquareFeet !== null && propertySquareFeet !== undefined && !Number.isNaN(propertySquareFeet) && (
                       <div className="flex items-center gap-2">
                         <Square className="w-5 h-5 text-yellow-400" />
-                        <span className="text-gray-300">{property.square_feet.toLocaleString()} sq ft</span>
+                        <span className="text-gray-300">{propertySquareFeet.toLocaleString()} sq ft</span>
                       </div>
                     )}
                   </div>

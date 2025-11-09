@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
@@ -22,10 +22,6 @@ import {
   Star
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { messageService } from '@/services/messageService';
-import { appointmentService } from '@/services/appointmentService';
-import PropertyAlertService from '@/services/propertyAlertService';
-import { PropertyService } from '@/services/propertyService';
 
 interface BuyerLayoutProps {
   children: ReactNode;
@@ -39,60 +35,11 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
   // State management - Start with sidebar closed for cleaner look
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [unreadMessages, setUnreadMessages] = useState(0);
-  const [pendingAppointments, setPendingAppointments] = useState(0);
-  const [newPropertyAlerts, setNewPropertyAlerts] = useState(0);
-  const [recentProperties, setRecentProperties] = useState(0);
-  
-  // Calculate total notifications
-  const totalNotifications = unreadMessages + pendingAppointments + newPropertyAlerts + recentProperties;
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
-
-  // Fetch notifications on component mount
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const [messageStats, appointmentsResult, propertyAlerts, listingsResult] = await Promise.all([
-          messageService.getConversationStats().catch(() => ({ total: 0, unread: 0 })),
-          appointmentService.getMyAppointments().catch(() => ({ data: [], error: null })),
-          profile?.id ? PropertyAlertService.getBuyerAlertHistory(profile.id).catch(() => []) : Promise.resolve([]),
-          PropertyService.getApprovedListings().catch(() => ({ data: [], error: null }))
-        ]);
-        
-        setUnreadMessages(messageStats.unread || 0);
-        
-        // Count pending appointments
-        const pending = (appointmentsResult.data || []).filter(
-          appt => ['scheduled', 'confirmed'].includes(appt.status)
-        ).length;
-        setPendingAppointments(pending);
-        
-        // Count new property alerts from last 7 days
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        const newAlerts = (propertyAlerts || []).filter(
-          alert => new Date(alert.created_at) > sevenDaysAgo
-        ).length;
-        setNewPropertyAlerts(newAlerts);
-        
-        // Count recent properties (last 3 days)
-        const threeDaysAgo = new Date();
-        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-        const recent = (listingsResult.data || []).filter(
-          listing => new Date(listing.created_at || '') > threeDaysAgo
-        ).length;
-        setRecentProperties(recent);
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
-      }
-    };
-
-    fetchNotifications();
-  }, [profile]);
 
   // Get subscription badge
   const getSubscriptionBadge = () => {
@@ -360,10 +307,7 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
 
             {/* Right: Notifications & Profile */}
             <div className="flex items-center gap-3">
-              <NotificationDropdown 
-                unreadCount={totalNotifications}
-                onUnreadCountChange={() => {}}
-              />
+              <NotificationDropdown />
 
               <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/5 border border-pickfirst-yellow/20">
                 <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-gradient-to-br from-pickfirst-yellow to-amber-600 flex items-center justify-center text-black font-bold text-sm">

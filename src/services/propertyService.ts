@@ -123,6 +123,41 @@ const validatePhone = (phone: string): boolean => {
 };
 
 export class PropertyService {
+  // Helper to format listing price for display (supports textual overrides)
+  static getDisplayPrice(listing: Partial<PropertyListing> & {
+    price_display?: string | null;
+    price?: number | string | null;
+    sold_price?: number | string | null;
+    status?: string | null;
+  } = {}): string {
+    if (!listing) {
+      return 'Contact Agent';
+    }
+
+    const display = typeof listing.price_display === 'string' ? listing.price_display.trim() : '';
+    if (display) {
+      return display;
+    }
+
+    const parseNumeric = (value?: number | string | null): number | null => {
+      if (value === null || value === undefined) return null;
+      const numeric = typeof value === 'string' ? parseFloat(value) : value;
+      return Number.isFinite(numeric) ? numeric : null;
+    };
+
+    const soldPrice = parseNumeric(listing.sold_price);
+    if ((listing.status === 'sold' || listing.status === 'completed') && soldPrice && soldPrice > 0) {
+      return `Sold: $${soldPrice.toLocaleString()}`;
+    }
+
+    const numericPrice = parseNumeric(listing.price);
+    if (numericPrice && numericPrice > 0) {
+      return `$${numericPrice.toLocaleString()}`;
+    }
+
+    return 'Contact Agent';
+  }
+
   // Helper function to get admin emails
   private static async getAdminEmails(): Promise<string[]> {
     try {
@@ -508,6 +543,7 @@ export class PropertyService {
                   propertyTitle: data.title,
                   propertyAddress: `${data.address}, ${data.city}, ${data.state}`,
                   propertyPrice: data.price,
+                  propertyPriceDisplay: PropertyService.getDisplayPrice(data),
                   propertyType: data.property_type?.replace(/\b\w/g, (l: string) => l.toUpperCase()),
                   submissionDate: new Date().toLocaleDateString(),
                   dashboardUrl: 'https://www.pickfirst.com.au/dashboard',
@@ -531,7 +567,8 @@ export class PropertyService {
                     agentEmail: agentProfile?.email || user.email || 'Unknown',
                     propertyTitle: data.title,
                     propertyAddress: `${data.address}, ${data.city}, ${data.state}`,
-                    propertyPrice: data.price,
+                  propertyPrice: data.price,
+                  propertyPriceDisplay: PropertyService.getDisplayPrice(data),
                     propertyType: data.property_type?.replace(/\b\w/g, (l: string) => l.toUpperCase()),
                     submissionDate: new Date().toLocaleDateString(),
                     dashboardUrl: 'https://www.pickfirst.com.au/admin/properties',
@@ -809,6 +846,7 @@ export class PropertyService {
                   propertyTitle: data.title,
                   propertyAddress: `${data.address}, ${data.city}, ${data.state}`,
                   propertyPrice: data.price,
+                  propertyPriceDisplay: PropertyService.getDisplayPrice(data),
                   propertyType: data.property_type?.replace(/\b\w/g, (l: string) => l.toUpperCase()),
                   submissionDate: new Date().toLocaleDateString(),
                   dashboardUrl: 'https://www.pickfirst.com.au/dashboard',
@@ -832,7 +870,8 @@ export class PropertyService {
                     agentEmail: agentProfile?.email || user.email || 'Unknown',
                     propertyTitle: data.title,
                     propertyAddress: `${data.address}, ${data.city}, ${data.state}`,
-                    propertyPrice: data.price,
+                  propertyPrice: data.price,
+                  propertyPriceDisplay: PropertyService.getDisplayPrice(data),
                     propertyType: data.property_type?.replace(/\b\w/g, (l: string) => l.toUpperCase()),
                     submissionDate: new Date().toLocaleDateString(),
                     dashboardUrl: 'https://www.pickfirst.com.au/admin/properties',
@@ -906,38 +945,87 @@ export class PropertyService {
   }
 
   // Get all approved listings (for buyers)
-  static async getApprovedListings(filters?: PropertyFilters): Promise<{ data: PropertyListing[] | null; error: any }> {
-    let query = supabase
-      .from('property_listings')
-      .select('*')
-      .eq('status', 'approved');
+  static async getApprovedListings(
+    filters?: PropertyFilters,
+    options?: { includeOffMarket?: boolean }
+  ): Promise<{ data: PropertyListing[] | null; error: any }> {
+    try {
+      let query = supabase
+        .from('property_listings')
+        .select('*')
+        .eq('status', 'approved');
 
-    if (filters) {
-      if (filters.property_type && filters.property_type.length > 0) {
-        query = query.in('property_type', filters.property_type);
+      if (filters) {
+        if (filters.property_type && filters.property_type.length > 0) {
+          query = query.in('property_type', filters.property_type);
+        }
+        if (filters.min_price) {
+          query = query.gte('price', filters.min_price);
+        }
+        if (filters.max_price) {
+          query = query.lte('price', filters.max_price);
+        }
+        if (filters.bedrooms) {
+          query = query.gte('bedrooms', filters.bedrooms);
+        }
+        if (filters.bathrooms) {
+          query = query.gte('bathrooms', filters.bathrooms);
+        }
+        if (filters.city) {
+          query = query.ilike('city', `%${filters.city}%`);
+        }
+        if (filters.state) {
+          query = query.ilike('state', `%${filters.state}%`);
+        }
       }
-      if (filters.min_price) {
-        query = query.gte('price', filters.min_price);
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) {
+        return { data: null, error };
       }
-      if (filters.max_price) {
-        query = query.lte('price', filters.max_price);
+
+      let filteredData = data || [];
+
+      if (!options?.includeOffMarket) {
+        let hideOffMarket = true;
+
+        try {
+          const { data: authData } = await supabase.auth.getUser();
+          const user = authData?.user;
+
+          if (user) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('role, subscription_tier')
+              .eq('id', user.id)
+              .single();
+
+            const role = profile?.role || null;
+            const tier = (profile?.subscription_tier || '').toLowerCase();
+
+            if (role === 'agent' || role === 'super_admin') {
+              hideOffMarket = false;
+            } else if (role === 'buyer') {
+              hideOffMarket = !(tier && tier !== 'free');
+            }
+          }
+        } catch (authError) {
+          console.warn('Failed to determine user role for property visibility:', authError);
+          hideOffMarket = true;
+        }
+
+        if (hideOffMarket) {
+          filteredData = filteredData.filter(
+            listing => (listing as any).listing_source !== 'agent_posted'
+          );
+        }
       }
-      if (filters.bedrooms) {
-        query = query.gte('bedrooms', filters.bedrooms);
-      }
-      if (filters.bathrooms) {
-        query = query.gte('bathrooms', filters.bathrooms);
-      }
-      if (filters.city) {
-        query = query.ilike('city', `%${filters.city}%`);
-      }
-      if (filters.state) {
-        query = query.ilike('state', `%${filters.state}%`);
-      }
+
+      return { data: filteredData, error: null };
+    } catch (error) {
+      console.error('Error fetching approved listings:', error);
+      return { data: null, error };
     }
-
-    const { data, error } = await query.order('created_at', { ascending: false });
-    return { data, error };
   }
 
   // Get all listings (for admins)
@@ -1126,6 +1214,7 @@ export class PropertyService {
                 propertyTitle: updatedListing.title,
                 propertyAddress: `${updatedListing.address}, ${updatedListing.city}, ${updatedListing.state}`,
                 propertyPrice: updatedListing.price,
+                propertyPriceDisplay: PropertyService.getDisplayPrice(updatedListing),
                 propertyType: updatedListing.property_type?.replace(/\b\w/g, (l: string) => l.toUpperCase()),
                 propertyImages: updatedListing.images || [],
                 approvalDate: new Date(updatedListing.approved_at!).toLocaleDateString(),
@@ -1791,7 +1880,7 @@ export class PropertyService {
             agentName: agent.full_name || 'Agent',
             propertyTitle: property.title,
             propertyAddress: `${property.address}, ${property.city}, ${property.state}`,
-            propertyPrice: `$${property.price.toLocaleString()}`,
+            propertyPrice: PropertyService.getDisplayPrice(property),
             propertyImage: property.images && property.images.length > 0 ? property.images[0] : null,
             buyerName: buyer.full_name || 'A potential buyer',
             buyerEmail: buyer.email,

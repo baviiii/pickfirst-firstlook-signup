@@ -340,6 +340,24 @@ const BrowsePropertiesPageComponent = () => {
     const hasImages = listing.images && listing.images.length > 0;
     const isFavorited = favorites.has(listing.id);
     const hasInquired = inquiredProperties.has(listing.id);
+    const priceDisplay = PropertyService.getDisplayPrice(listing);
+    const isOffMarket = (listing as any).listing_source === 'agent_posted';
+    const numericSoldPrice = typeof listing.sold_price === 'string' ? parseFloat(listing.sold_price) : listing.sold_price;
+    const hasSoldPrice = Number.isFinite(numericSoldPrice) && (numericSoldPrice ?? 0) > 0;
+    const numericListPrice = typeof listing.price === 'string' ? parseFloat(listing.price) : listing.price;
+    const statusLabel = (() => {
+      if (listing.status === 'sold') return 'Sold';
+      if (listing.status === 'pending') return 'Pending Approval';
+      if (listing.status === 'rejected') return 'Rejected';
+      if (listing.status === 'approved' || listing.status === 'available') return isOffMarket ? 'Available' : 'Available';
+      return listing.status?.replace(/_/g, ' ') || 'Status';
+    })();
+    const statusClass = (() => {
+      if (listing.status === 'sold') return 'bg-red-500/90 hover:bg-red-500 text-white';
+      if (listing.status === 'pending') return 'bg-yellow-400/90 hover:bg-yellow-400 text-black';
+      if (listing.status === 'rejected') return 'bg-gray-500/80 hover:bg-gray-500 text-white';
+      return 'bg-green-500/90 hover:bg-green-500 text-white';
+    })();
 
     if (viewMode === 'list') {
       return (
@@ -373,6 +391,11 @@ const BrowsePropertiesPageComponent = () => {
                     <MapPin className="w-4 h-4 mr-1" />
                     <span className="text-sm">{listing.address}, {listing.city}, {listing.state}</span>
                   </div>
+                  {isOffMarket && (
+                    <Badge className="bg-pink-500/20 text-pink-300 border border-pink-500/40 text-xs">
+                      Off-Market Exclusive
+                    </Badge>
+                  )}
                 </div>
                 <Button
                   variant="ghost"
@@ -386,19 +409,19 @@ const BrowsePropertiesPageComponent = () => {
               
               <div className="flex items-center gap-6 mb-4">
                 <div className="text-2xl font-bold text-yellow-400">
-                  {listing.status === 'sold' && listing.sold_price ? (
-                    <>
-                      <span className="text-lg text-gray-400 line-through">${listing.price.toLocaleString()}</span>
-                      <br />
-                      <span className="text-red-400">Sold: ${listing.sold_price.toLocaleString()}</span>
-                    </>
-                  ) : (
-                    <>
-                      ${listing.price.toLocaleString()}
-                      <span className="text-sm font-normal text-yellow-400/70 ml-1">
-                        {listing.property_type === 'weekly' ? '/week' : listing.property_type === 'monthly' ? '/month' : ''}
+                  {listing.status === 'sold' && hasSoldPrice ? (
+                    <div className="space-y-1">
+                      {Number.isFinite(numericListPrice) && (numericListPrice ?? 0) > 0 && (
+                        <span className="text-lg text-gray-400 line-through">
+                          {`$${(numericListPrice as number).toLocaleString()}`}
+                        </span>
+                      )}
+                      <span className="text-red-400 font-semibold">
+                        Sold: ${ (numericSoldPrice as number).toLocaleString() }
                       </span>
-                    </>
+                    </div>
+                  ) : (
+                    <span>{priceDisplay}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-4 text-sm">
@@ -501,17 +524,16 @@ const BrowsePropertiesPageComponent = () => {
             <Camera className="w-12 h-12 text-gray-500" />
           </div>
           
-          {/* Status Badge */}
-          <div className="absolute top-3 left-3">
-            <Badge className={`font-medium ${
-              listing.status === 'sold' 
-                ? 'bg-red-500/90 hover:bg-red-500 text-white' 
-                : listing.status === 'available' 
-                  ? 'bg-green-500/90 hover:bg-green-500 text-white'
-                  : 'bg-yellow-400/90 hover:bg-yellow-400 text-black'
-            }`}>
-              {listing.status === 'sold' ? 'SOLD' : listing.status === 'available' ? 'Available' : 'Under Contract'}
+          {/* Status & Off-Market Badges */}
+          <div className="absolute top-3 left-3 flex flex-col gap-2">
+            <Badge className={`font-medium ${statusClass}`}>
+              {statusLabel.toUpperCase()}
             </Badge>
+            {isOffMarket && (
+              <Badge className="font-medium bg-pink-500/80 hover:bg-pink-500 text-white">
+                OFF-MARKET
+              </Badge>
+            )}
           </div>
           
           {/* Favorite Button */}
@@ -546,19 +568,19 @@ const BrowsePropertiesPageComponent = () => {
             
             <div className="flex items-center justify-between">
               <div className="text-xl font-bold text-yellow-400">
-                {listing.status === 'sold' && listing.sold_price ? (
-                  <>
-                    <span className="text-sm text-gray-400 line-through">${listing.price.toLocaleString()}</span>
-                    <br />
-                    <span className="text-red-400">Sold: ${listing.sold_price.toLocaleString()}</span>
-                  </>
-                ) : (
-                  <>
-                    ${listing.price.toLocaleString()}
-                    <span className="text-xs font-normal text-yellow-400/70 ml-1">
-                      {listing.property_type === 'weekly' ? '/wk' : listing.property_type === 'monthly' ? '/mo' : ''}
+                {listing.status === 'sold' && hasSoldPrice ? (
+                  <div className="space-y-1">
+                    {Number.isFinite(numericListPrice) && (numericListPrice ?? 0) > 0 && (
+                      <span className="text-sm text-gray-400 line-through">
+                        {`$${(numericListPrice as number).toLocaleString()}`}
+                      </span>
+                    )}
+                    <span className="text-red-400 font-semibold">
+                      Sold: ${ (numericSoldPrice as number).toLocaleString() }
                     </span>
-                  </>
+                  </div>
+                ) : (
+                  <span>{priceDisplay}</span>
                 )}
               </div>
               <div className="flex items-center gap-3 text-xs">

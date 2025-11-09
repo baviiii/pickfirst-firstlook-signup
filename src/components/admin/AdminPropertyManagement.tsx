@@ -15,6 +15,13 @@ const AdminPropertyManagementComponent = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
+  const selectedListingPriceDisplay = selectedListing ? PropertyService.getDisplayPrice(selectedListing) : '';
+  const selectedListingIsOffMarket = selectedListing ? ((selectedListing as any).listing_source === 'agent_posted') : false;
+  const selectedListingSquareFeet = selectedListing
+    ? (typeof selectedListing.square_feet === 'string'
+      ? parseFloat(selectedListing.square_feet)
+      : selectedListing.square_feet)
+    : null;
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -185,7 +192,13 @@ const AdminPropertyManagementComponent = () => {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {listings.map(listing => (
+            {listings.map(listing => {
+              const displayPrice = PropertyService.getDisplayPrice(listing);
+              const isOffMarket = (listing as any).listing_source === 'agent_posted';
+              const numericBedrooms = typeof listing.bedrooms === 'string' ? parseFloat(listing.bedrooms) : listing.bedrooms;
+              const numericBathrooms = typeof listing.bathrooms === 'string' ? parseFloat(listing.bathrooms) : listing.bathrooms;
+              const numericSquareFeet = typeof listing.square_feet === 'string' ? parseFloat(listing.square_feet) : listing.square_feet;
+              return (
               <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10 flex flex-col h-full">
                 <CardHeader className="pb-2 border-b border-white/10">
                   <div className="aspect-video bg-gray-700 rounded-md mb-3 overflow-hidden relative">
@@ -240,17 +253,43 @@ const AdminPropertyManagementComponent = () => {
                       </div>
                     </div>
                   </div>
-                  <CardTitle className="text-lg text-pickfirst-yellow mb-1">{listing.title}</CardTitle>
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-lg text-pickfirst-yellow mb-1">{listing.title}</CardTitle>
+                    <div className="flex flex-col items-end gap-2">
+                      <Badge className={`text-xs ${
+                        listing.status === 'approved' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
+                        listing.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' :
+                        listing.status === 'rejected' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
+                        'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                      }`}>
+                        {listing.status?.replace(/_/g, ' ').toUpperCase()}
+                      </Badge>
+                      {isOffMarket && (
+                        <Badge className="text-xs bg-pink-500/20 text-pink-300 border border-pink-500/30">
+                          OFF-MARKET
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
                   <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col justify-between py-4">
                   <div>
-                    <div className="text-white font-bold text-xl mb-2">${listing.price.toLocaleString()}</div>
+                    <div className="text-white font-bold text-xl mb-2">{displayPrice}</div>
                     <div className="text-gray-400 text-sm mb-2">{listing.property_type.replace(/\b\w/g, l => l.toUpperCase())}</div>
                     <div className="flex flex-wrap gap-2 mb-2">
-                      {listing.bedrooms !== null && <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded">{listing.bedrooms} Bed</span>}
-                      {listing.bathrooms !== null && <span className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded">{listing.bathrooms} Bath</span>}
-                      {listing.square_feet !== null && <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded">{listing.square_feet} Sq Ft</span>}
+                      {numericBedrooms !== null && numericBedrooms !== undefined && !Number.isNaN(numericBedrooms) && (
+                        <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded">{numericBedrooms} Bed</span>
+                      )}
+                      {numericBathrooms !== null && numericBathrooms !== undefined && !Number.isNaN(numericBathrooms) && (
+                        <span className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded">{numericBathrooms} Bath</span>
+                      )}
+                      {numericSquareFeet !== null && numericSquareFeet !== undefined && !Number.isNaN(numericSquareFeet) && (
+                        <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded">{numericSquareFeet.toLocaleString()} Sq Ft</span>
+                      )}
+                      <span className="bg-gray-500/10 text-gray-300 px-2 py-1 rounded">
+                        {isOffMarket ? 'Off-Market' : 'On-Market'}
+                      </span>
                     </div>
                     <div className="text-xs text-gray-400 mb-2">
                       Status: <span className={
@@ -309,7 +348,8 @@ const AdminPropertyManagementComponent = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>
@@ -318,7 +358,14 @@ const AdminPropertyManagementComponent = () => {
       <Dialog open={!!selectedListing} onOpenChange={() => setSelectedListing(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 border border-pickfirst-yellow/20">
           <DialogHeader>
-            <DialogTitle className="text-pickfirst-yellow text-xl">{selectedListing?.title}</DialogTitle>
+            <div className="flex items-center justify-between gap-3">
+              <DialogTitle className="text-pickfirst-yellow text-xl">{selectedListing?.title}</DialogTitle>
+              {selectedListingIsOffMarket && (
+                <Badge className="text-xs bg-pink-500/20 text-pink-300 border border-pink-500/30">
+                  OFF-MARKET
+                </Badge>
+              )}
+            </div>
           </DialogHeader>
           
           {selectedListing && (
@@ -406,10 +453,13 @@ const AdminPropertyManagementComponent = () => {
                   <div>
                     <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Pricing & Details</h3>
                     <div className="space-y-2 text-gray-300">
-                      <p><span className="text-gray-400">Price:</span> <span className="text-white font-bold text-xl">${selectedListing.price.toLocaleString()}</span></p>
+                      <p><span className="text-gray-400">Price:</span> <span className="text-white font-bold text-xl">{selectedListingPriceDisplay || 'Contact Agent'}</span></p>
+                      <p><span className="text-gray-400">Listing Type:</span> {selectedListingIsOffMarket ? 'Off-Market (Agent Posted)' : 'Public Feed'}</p>
                       {selectedListing.bedrooms !== null && <p><span className="text-gray-400">Bedrooms:</span> {selectedListing.bedrooms}</p>}
                       {selectedListing.bathrooms !== null && <p><span className="text-gray-400">Bathrooms:</span> {selectedListing.bathrooms}</p>}
-                      {selectedListing.square_feet !== null && <p><span className="text-gray-400">Square Feet:</span> {selectedListing.square_feet.toLocaleString()}</p>}
+                      {selectedListingSquareFeet !== null && selectedListingSquareFeet !== undefined && !Number.isNaN(selectedListingSquareFeet) && (
+                        <p><span className="text-gray-400">Square Feet:</span> {selectedListingSquareFeet.toLocaleString()}</p>
+                      )}
                       {selectedListing.lot_size !== null && <p><span className="text-gray-400">Lot Size:</span> {selectedListing.lot_size.toLocaleString()} sq ft</p>}
                       {selectedListing.year_built !== null && <p><span className="text-gray-400">Year Built:</span> {selectedListing.year_built}</p>}
                     </div>
@@ -453,6 +503,26 @@ const AdminPropertyManagementComponent = () => {
                 <div>
                   <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Description</h3>
                   <p className="text-gray-300 leading-relaxed">{selectedListing.description}</p>
+                </div>
+              )}
+
+              {(selectedListing.vendor_ownership_duration || selectedListing.vendor_special_conditions || selectedListing.vendor_favorable_contracts || selectedListing.vendor_motivation) && (
+                <div>
+                  <h3 className="text-lg font-semibold text-pickfirst-yellow mb-2">Vendor Insights</h3>
+                  <div className="space-y-1 text-gray-300 text-sm">
+                    {selectedListing.vendor_ownership_duration && (
+                      <p><span className="text-gray-400">Ownership Duration:</span> {selectedListing.vendor_ownership_duration}</p>
+                    )}
+                    {selectedListing.vendor_special_conditions && (
+                      <p><span className="text-gray-400">Special Conditions:</span> {selectedListing.vendor_special_conditions}</p>
+                    )}
+                    {selectedListing.vendor_favorable_contracts && (
+                      <p><span className="text-gray-400">Favorable Contract Terms:</span> {selectedListing.vendor_favorable_contracts}</p>
+                    )}
+                    {selectedListing.vendor_motivation && (
+                      <p><span className="text-gray-400">Vendor Motivation:</span> {selectedListing.vendor_motivation}</p>
+                    )}
+                  </div>
                 </div>
               )}
               

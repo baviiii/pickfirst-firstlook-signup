@@ -47,7 +47,7 @@ const OffMarketListings = () => {
     setLoading(true);
     try {
       // Fetch only agent-posted listings (off-market)
-      const { data } = await PropertyService.getApprovedListings();
+      const { data } = await PropertyService.getApprovedListings(undefined, { includeOffMarket: true });
       const offMarketOnly = data?.filter(listing => 
         (listing as any).listing_source === 'agent_posted'
       ) || [];
@@ -214,6 +214,9 @@ const OffMarketListings = () => {
             {listings.map((listing) => {
               const hasImages = listing.images && listing.images.length > 0;
               const isFavorited = favorites.has(listing.id);
+              const displayPrice = PropertyService.getDisplayPrice(listing);
+              const numericBedrooms = typeof listing.bedrooms === 'string' ? parseFloat(listing.bedrooms) : listing.bedrooms;
+              const numericBathrooms = typeof listing.bathrooms === 'string' ? parseFloat(listing.bathrooms) : listing.bathrooms;
 
               return (
                 <Card 
@@ -255,19 +258,19 @@ const OffMarketListings = () => {
                     
                     <div className="flex items-center justify-between mb-4">
                       <div className="text-2xl font-bold text-yellow-400">
-                        ${listing.price.toLocaleString()}
+                    {displayPrice}
                       </div>
                       <div className="flex items-center gap-3 text-sm">
-                        {listing.bedrooms !== null && (
+                    {numericBedrooms !== null && numericBedrooms !== undefined && !Number.isNaN(numericBedrooms) && (
                           <div className="flex items-center gap-1">
                             <Bed className="w-4 h-4 text-yellow-400" />
-                            <span className="text-gray-300">{listing.bedrooms}</span>
+                        <span className="text-gray-300">{numericBedrooms}</span>
                           </div>
                         )}
-                        {listing.bathrooms !== null && (
+                    {numericBathrooms !== null && numericBathrooms !== undefined && !Number.isNaN(numericBathrooms) && (
                           <div className="flex items-center gap-1">
                             <Bath className="w-4 h-4 text-yellow-400" />
-                            <span className="text-gray-300">{listing.bathrooms}</span>
+                        <span className="text-gray-300">{numericBathrooms}</span>
                           </div>
                         )}
                       </div>

@@ -1,148 +1,64 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-interface WeeklyDigestData {
-  digest_type: string;
-  send_to_all_users: boolean;
-  user_id?: string;
-}
-
-interface PropertyStats {
-  total_properties: number;
-  new_properties_this_week: number;
-  average_price: number;
-  price_range: {
-    min: number;
-    max: number;
-  };
-  popular_areas: Array<{
-    area: string;
-    count: number;
-  }>;
-  property_types: Array<{
-    type: string;
-    count: number;
-  }>;
-}
-
-interface UserStats {
-  total_users: number;
-  new_users_this_week: number;
-  active_users: number;
-  subscription_breakdown: {
-    free: number;
-    premium: number;
-  };
-}
-
-interface WeeklyDigest {
-  week_start: string;
-  week_end: string;
-  property_stats: PropertyStats;
-  user_stats: UserStats;
-  featured_properties: Array<{
-    id: string;
-    title: string;
-    price: number;
-    city: string;
-    state: string;
-    property_type: string;
-    bedrooms: number;
-    bathrooms: number;
-    square_feet: number;
-    images?: string[];
-  }>;
-  market_insights: {
-    price_trend: 'up' | 'down' | 'stable';
-    inventory_trend: 'up' | 'down' | 'stable';
-    demand_trend: 'up' | 'down' | 'stable';
-  };
-}
-
-interface UserPreferenceSnapshot {
-  email_notifications?: boolean | null;
-  new_listings?: boolean | null;
-  preferred_areas?: string[] | null;
-  property_type_preferences?: string[] | null;
-  min_budget?: number | null;
-  max_budget?: number | null;
-}
-
-function parseBudgetRange(range?: string | null): { min?: number; max?: number } {
-  if (!range) return {};
-
-  const cleaned = range.replace(/\s/g, '');
-  const parts = cleaned.split(/[-–—]/);
-
-  const parseValue = (value: string): number | undefined => {
-    const numeric = parseInt(value.replace(/[^0-9]/g, ''), 10);
-    return isNaN(numeric) ? undefined : numeric;
-  };
-
-  if (parts.length === 2) {
-    return {
-      min: parseValue(parts[0]),
-      max: parseValue(parts[1])
-    };
-  }
-
-  const single = parseValue(parts[0]);
-  return single ? { min: single } : {};
-}
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+};
 
 /**
  * Get property statistics for the week
+ * Returns: total properties, new properties this week, average price, price range,
+ * popular areas, and property type breakdown
  */
-async function getPropertyStats(supabaseClient: any, weekStart: string, weekEnd: string): Promise<PropertyStats> {
+async function getPropertyStats(supabaseClient, weekStart, weekEnd) {
   try {
-    // Total properties
+    // Total approved properties in the system
     const { data: totalProperties, error: totalError } = await supabaseClient
       .from('property_listings')
       .select('id', { count: 'exact' })
       .eq('status', 'approved');
-
+    
     if (totalError) throw totalError;
 
-    // New properties this week
+    // New properties added this week
     const { data: newProperties, error: newError } = await supabaseClient
       .from('property_listings')
       .select('id', { count: 'exact' })
       .eq('status', 'approved')
       .gte('created_at', weekStart)
       .lte('created_at', weekEnd);
-
+    
     if (newError) throw newError;
 
-    // Average price and price range
+    // Get all property prices to calculate average and range
     const { data: priceData, error: priceError } = await supabaseClient
       .from('property_listings')
       .select('price')
       .eq('status', 'approved');
-
+    
     if (priceError) throw priceError;
 
-    const prices = priceData?.map((p: { price: number }) => p.price).filter((p: number) => p > 0) || [];
-    const averagePrice = prices.length > 0 ? prices.reduce((a: number, b: number) => a + b, 0) / prices.length : 0;
+    const prices = priceData?.map(p => p.price).filter(p => p > 0) || [];
+    const averagePrice = prices.length > 0 
+      ? prices.reduce((a, b) => a + b, 0) / prices.length 
+      : 0;
+    
     const priceRange = {
       min: prices.length > 0 ? Math.min(...prices) : 0,
       max: prices.length > 0 ? Math.max(...prices) : 0
     };
 
-    // Popular areas
+    // Calculate popular areas (top 5 cities with most properties)
     const { data: areaData, error: areaError } = await supabaseClient
       .from('property_listings')
       .select('city, state')
       .eq('status', 'approved');
-
+    
     if (areaError) throw areaError;
 
-    const areaCounts: { [key: string]: number } = {};
-    areaData?.forEach((property: { city: string; state: string }) => {
+    const areaCounts = {};
+    areaData?.forEach(property => {
       const area = `${property.city}, ${property.state}`;
       areaCounts[area] = (areaCounts[area] || 0) + 1;
     });
@@ -152,16 +68,16 @@ async function getPropertyStats(supabaseClient: any, weekStart: string, weekEnd:
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    // Property types
+    // Property type breakdown (house, apartment, condo, etc.)
     const { data: typeData, error: typeError } = await supabaseClient
       .from('property_listings')
       .select('property_type')
       .eq('status', 'approved');
-
+    
     if (typeError) throw typeError;
 
-    const typeCounts: { [key: string]: number } = {};
-    typeData?.forEach((property: { property_type: string }) => {
+    const typeCounts = {};
+    typeData?.forEach(property => {
       typeCounts[property.property_type] = (typeCounts[property.property_type] || 0) + 1;
     });
 
@@ -185,49 +101,41 @@ async function getPropertyStats(supabaseClient: any, weekStart: string, weekEnd:
 
 /**
  * Get user statistics for the week
+ * Returns: total users, new users this week, subscription breakdown
  */
-async function getUserStats(supabaseClient: any, weekStart: string, weekEnd: string): Promise<UserStats> {
+async function getUserStats(supabaseClient, weekStart, weekEnd) {
   try {
-    // Total users
+    // Total registered users
     const { data: totalUsers, error: totalError } = await supabaseClient
       .from('profiles')
       .select('id', { count: 'exact' });
-
+    
     if (totalError) throw totalError;
 
-    // New users this week
+    // New users who registered this week
     const { data: newUsers, error: newError } = await supabaseClient
       .from('profiles')
       .select('id', { count: 'exact' })
       .gte('created_at', weekStart)
       .lte('created_at', weekEnd);
-
+    
     if (newError) throw newError;
 
-    // Active users (users who logged in within last 7 days)
-    const { data: activeUsers, error: activeError } = await supabaseClient
-      .from('profiles')
-      .select('id, last_login_at')
-      .gte('updated_at', weekStart);
-
-    if (activeError) throw activeError;
-
-    // Subscription breakdown
+    // Subscription tier breakdown
     const { data: subscriptionData, error: subError } = await supabaseClient
       .from('profiles')
       .select('subscription_tier');
-
+    
     if (subError) throw subError;
 
     const subscriptionBreakdown = {
-      free: subscriptionData?.filter((p: { subscription_tier: string | null }) => p.subscription_tier === 'free' || !p.subscription_tier).length || 0,
-      premium: subscriptionData?.filter((p: { subscription_tier: string }) => p.subscription_tier === 'premium').length || 0
+      free: subscriptionData?.filter(p => p.subscription_tier === 'free' || !p.subscription_tier).length || 0,
+      premium: subscriptionData?.filter(p => p.subscription_tier === 'premium').length || 0
     };
 
     return {
       total_users: totalUsers?.length || 0,
       new_users_this_week: newUsers?.length || 0,
-      active_users: activeUsers?.length || 0,
       subscription_breakdown: subscriptionBreakdown
     };
   } catch (error) {
@@ -237,11 +145,12 @@ async function getUserStats(supabaseClient: any, weekStart: string, weekEnd: str
 }
 
 /**
- * Get featured properties for the week - ALL NEW PROPERTIES
+ * Get all new properties from this week for the digest
+ * Returns up to 12 newest properties with full details
  */
-async function getFeaturedProperties(supabaseClient: any, weekStart: string, weekEnd: string): Promise<Array<any>> {
+async function getFeaturedProperties(supabaseClient, weekStart, weekEnd) {
   try {
-    // Get ALL new properties from this week, not just featured
+    // Get ALL new properties from this week
     const { data: weeklyProperties, error } = await supabaseClient
       .from('property_listings')
       .select(`
@@ -261,11 +170,11 @@ async function getFeaturedProperties(supabaseClient: any, weekStart: string, wee
       .gte('created_at', weekStart)
       .lte('created_at', weekEnd)
       .order('created_at', { ascending: false });
-
+    
     if (error) throw error;
 
-    // Return the full list for the week (limit to 50 to keep payload reasonable)
-    return (weeklyProperties || []).slice(0, 50);
+    // Return up to 12 properties for the email
+    return (weeklyProperties || []).slice(0, 12);
   } catch (error) {
     console.error('Error getting weekly properties:', error);
     throw error;
@@ -273,146 +182,143 @@ async function getFeaturedProperties(supabaseClient: any, weekStart: string, wee
 }
 
 /**
- * Generate market insights based on recent data
+ * Generate market insights by comparing this week to previous week
+ * Analyzes: price trends and inventory trends
  */
-async function generateMarketInsights(supabaseClient: any, weekStart: string, weekEnd: string): Promise<any> {
+async function generateMarketInsights(supabaseClient, weekStart, weekEnd) {
   try {
-    // Get price data for last 2 weeks to compare
+    // Calculate date for 2 weeks ago to compare previous week
     const twoWeeksAgo = new Date(new Date(weekStart).getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
-    
-    // Current week prices
+
+    // Current week average price
     const { data: currentPrices, error: currentError } = await supabaseClient
       .from('property_listings')
       .select('price')
       .eq('status', 'approved')
       .gte('created_at', weekStart)
       .lte('created_at', weekEnd);
-
+    
     if (currentError) throw currentError;
 
-    // Previous week prices
+    // Previous week average price
     const { data: previousPrices, error: previousError } = await supabaseClient
       .from('property_listings')
       .select('price')
       .eq('status', 'approved')
       .gte('created_at', twoWeeksAgo)
       .lt('created_at', weekStart);
-
+    
     if (previousError) throw previousError;
 
-    const currentAvg = currentPrices?.length > 0 ? 
-      currentPrices.reduce((sum: number, p: { price: number }) => sum + p.price, 0) / currentPrices.length : 0;
-    const previousAvg = previousPrices?.length > 0 ? 
-      previousPrices.reduce((sum: number, p: { price: number }) => sum + p.price, 0) / previousPrices.length : 0;
+    const currentAvg = currentPrices?.length > 0 
+      ? currentPrices.reduce((sum, p) => sum + p.price, 0) / currentPrices.length 
+      : 0;
+    
+    const previousAvg = previousPrices?.length > 0 
+      ? previousPrices.reduce((sum, p) => sum + p.price, 0) / previousPrices.length 
+      : 0;
 
-    const priceTrend = currentAvg > previousAvg * 1.05 ? 'up' : 
-                      currentAvg < previousAvg * 0.95 ? 'down' : 'stable';
+    // Determine price trend: up (>5% increase), down (>5% decrease), or stable
+    const priceTrend = currentAvg > previousAvg * 1.05 
+      ? 'up' 
+      : currentAvg < previousAvg * 0.95 
+        ? 'down' 
+        : 'stable';
 
-    // Inventory trend (new properties vs previous week)
+    // Current week inventory (number of new listings)
     const { data: currentInventory, error: invCurrentError } = await supabaseClient
       .from('property_listings')
       .select('id', { count: 'exact' })
       .eq('status', 'approved')
       .gte('created_at', weekStart)
       .lte('created_at', weekEnd);
-
+    
     if (invCurrentError) throw invCurrentError;
 
+    // Previous week inventory
     const { data: previousInventory, error: invPreviousError } = await supabaseClient
       .from('property_listings')
       .select('id', { count: 'exact' })
       .eq('status', 'approved')
       .gte('created_at', twoWeeksAgo)
       .lt('created_at', weekStart);
-
+    
     if (invPreviousError) throw invPreviousError;
 
-    const inventoryTrend = (currentInventory?.length || 0) > (previousInventory?.length || 0) * 1.1 ? 'up' :
-                          (currentInventory?.length || 0) < (previousInventory?.length || 0) * 0.9 ? 'down' : 'stable';
-
-    // Demand trend (based on user activity)
-    const { data: currentActivity, error: actCurrentError } = await supabaseClient
-      .from('profiles')
-      .select('id')
-      .gte('updated_at', weekStart);
-
-    if (actCurrentError) throw actCurrentError;
-
-    const { data: previousActivity, error: actPreviousError } = await supabaseClient
-      .from('profiles')
-      .select('id')
-      .gte('updated_at', twoWeeksAgo)
-      .lt('updated_at', weekStart);
-
-    if (actPreviousError) throw actPreviousError;
-
-    const demandTrend = (currentActivity?.length || 0) > (previousActivity?.length || 0) * 1.1 ? 'up' :
-                       (currentActivity?.length || 0) < (previousActivity?.length || 0) * 0.9 ? 'down' : 'stable';
+    // Determine inventory trend: up (>10% increase), down (>10% decrease), or stable
+    const inventoryTrend = (currentInventory?.length || 0) > (previousInventory?.length || 0) * 1.1 
+      ? 'up' 
+      : (currentInventory?.length || 0) < (previousInventory?.length || 0) * 0.9 
+        ? 'down' 
+        : 'stable';
 
     return {
       price_trend: priceTrend,
-      inventory_trend: inventoryTrend,
-      demand_trend: demandTrend
+      inventory_trend: inventoryTrend
     };
   } catch (error) {
     console.error('Error generating market insights:', error);
     return {
       price_trend: 'stable',
-      inventory_trend: 'stable',
-      demand_trend: 'stable'
+      inventory_trend: 'stable'
     };
   }
 }
 
-function filterPropertiesForUser(
-  properties: Array<WeeklyDigest['featured_properties'][number]>,
-  preferences?: UserPreferenceSnapshot | null
-): Array<WeeklyDigest['featured_properties'][number]> {
-  if (!preferences) {
-    return properties.slice(0, 12);
-  }
-
-  const minBudget = typeof preferences.min_budget === 'number' ? preferences.min_budget : undefined;
-  const maxBudget = typeof preferences.max_budget === 'number' ? preferences.max_budget : undefined;
-  const preferredAreas = Array.isArray(preferences.preferred_areas) ? preferences.preferred_areas : [];
-  const preferredTypes = Array.isArray(preferences.property_type_preferences) ? preferences.property_type_preferences : [];
-
-  const filtered = properties.filter((property) => {
-    const matchesBudget = (
-      (minBudget === undefined || property.price >= minBudget) &&
-      (maxBudget === undefined || property.price <= maxBudget)
-    );
-
-    const matchesArea = preferredAreas.length === 0 || preferredAreas.some((area) => {
-      const normalizedArea = area.trim().toLowerCase();
-      const propertyArea = `${property.city}, ${property.state}`.toLowerCase();
-      return propertyArea.includes(normalizedArea);
-    });
-
-    const matchesType = preferredTypes.length === 0 || preferredTypes.includes(property.property_type);
-
-    return matchesBudget && matchesArea && matchesType;
-  });
-
-  if (filtered.length > 0) {
-    return filtered.slice(0, 12);
-  }
-
-  // Fallback: show top properties from the week even if they don't match preferences
-  return properties.slice(0, 8);
-}
-
 /**
- * Send weekly digest email to users
+ * Send the weekly digest email to a user
+ * Creates a beautifully formatted HTML email with all digest data
  */
-async function sendWeeklyDigestEmail(
-  supabaseClient: any,
-  digest: WeeklyDigest,
-  userEmail: string,
-  userName: string,
-  properties: Array<WeeklyDigest['featured_properties'][number]>
-): Promise<void> {
+async function sendWeeklyDigestEmail(supabaseClient, digest, userEmail, userName) {
   try {
+    const formatNumber = (value) => {
+      if (typeof value === 'number' && isFinite(value)) {
+        return value.toLocaleString();
+      }
+      if (typeof value === 'string' && value.trim().length > 0) {
+        const parsed = Number(value);
+        if (!Number.isNaN(parsed)) {
+          return parsed.toLocaleString();
+        }
+      }
+      return 'N/A';
+    };
+
+    const formatCount = (value) => (typeof value === 'number' && isFinite(value)) ? value : 0;
+    const averagePriceDisplay = formatNumber(digest.property_stats?.average_price);
+    const newPropertiesCount = formatCount(digest.property_stats?.new_properties_this_week);
+    const totalPropertiesCount = formatNumber(digest.property_stats?.total_properties);
+
+    const propertiesHtml = Array.isArray(digest.featured_properties) && digest.featured_properties.length > 0
+      ? digest.featured_properties.map((property) => {
+          const priceDisplay = formatNumber(property.price);
+          const bedsDisplay = property.bedrooms ?? 'N/A';
+          const bathsDisplay = property.bathrooms ?? 'N/A';
+          const areaDisplay = formatNumber(property.square_feet);
+          const imageHtml = property.images?.[0]
+            ? `<img src="${property.images[0]}" alt="${property.title || 'Property'}" class="property-image" />`
+            : '';
+
+          return `
+            <div class="property-card">
+              ${imageHtml}
+              <div class="property-content">
+                <div class="property-price">$${priceDisplay}</div>
+                <div class="property-address">${property.city || ''}${property.state ? `, ${property.state}` : ''}</div>
+                <div class="property-features">
+                  <span class="feature">🛏️ ${bedsDisplay} bed</span>
+                  <span class="feature">🛁 ${bathsDisplay} bath</span>
+                  <span class="feature">📐 ${areaDisplay} sq ft</span>
+                </div>                <a href="${Deno.env.get('SITE_URL') || 'https://pickfirst.com.au'}/property/${property.id}" class="view-button">
+
+                  View Property
+                </a>
+              </div>
+            </div>
+          `;
+        }).join('')
+      : '<p style="text-align: center; color: #718096; padding: 40px;">No new properties this week. Check back soon!</p>';
+
     const emailHtml = `
       <!DOCTYPE html>
       <html>
@@ -426,7 +332,7 @@ async function sendWeeklyDigestEmail(
           .email-wrapper { background: #f7fafc; padding: 40px 20px; }
           .container { max-width: 680px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.08); }
           .header { background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 50px 40px; text-align: center; }
-          .logo { width: 60px; height: 60px; background: #FFCC00; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; color: #1a1a1a; margin-bottom: 20px; }
+          .logo { width: 160px; height: auto; display: block; margin: 0 auto 20px; }
           .header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
           .header .subtitle { font-size: 16px; opacity: 0.9; }
           .stats-section { padding: 40px; background: linear-gradient(to bottom, #fff 0%, #f8f9fa 100%); }
@@ -467,7 +373,7 @@ async function sendWeeklyDigestEmail(
         <div class="email-wrapper">
           <div class="container">
             <div class="header">
-              <div class="logo">P</div>
+              <img src="https://pickfirst.com.au/logo.jpg" alt="PickFirst Logo" class="logo">
               <h1>Your Weekly Property Digest</h1>
               <p class="subtitle">${digest.week_start} - ${digest.week_end}</p>
             </div>
@@ -476,25 +382,20 @@ async function sendWeeklyDigestEmail(
               <h2 style="font-size: 20px; margin-bottom: 8px;">Hello ${userName}!</h2>
               <p style="color: #718096;">Here's what's happening in the property market this week</p>
             
-            <div class="stats-grid">
-              <div class="stat-card">
-                <div class="stat-number">${digest.property_stats.new_properties_this_week}</div>
-                <div class="stat-label">New Properties This Week</div>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-number">${newPropertiesCount}</div>
+                  <div class="stat-label">New Properties This Week</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-number">$${averagePriceDisplay}</div>
+                  <div class="stat-label">Average Property Price</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-number">${totalPropertiesCount}</div>
+                  <div class="stat-label">Total Active Listings</div>
+                </div>
               </div>
-              <div class="stat-card">
-                <div class="stat-number">$${digest.property_stats.average_price.toLocaleString()}</div>
-                <div class="stat-label">Average Property Price</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-number">${digest.user_stats.new_users_this_week}</div>
-                <div class="stat-label">New Users This Week</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-number">${digest.user_stats.active_users}</div>
-                <div class="stat-label">Active Users</div>
-              </div>
-            </div>
-            
             </div>
             
             <div class="insights-section">
@@ -504,45 +405,21 @@ async function sendWeeklyDigestEmail(
                   ${digest.market_insights.price_trend}
                 </span>
               </p>
-              <p style="margin-bottom: 12px; font-size: 15px;"><strong>Inventory:</strong> 
+              <p style="font-size: 15px;"><strong>New Listings:</strong> 
                 <span class="trend trend-${digest.market_insights.inventory_trend}">
                   ${digest.market_insights.inventory_trend}
                 </span>
               </p>
-              <p style="font-size: 15px;"><strong>Demand:</strong> 
-                <span class="trend trend-${digest.market_insights.demand_trend}">
-                  ${digest.market_insights.demand_trend}
-                </span>
-              </p>
             </div>
-            
             
             <div class="properties-section">
               <h2 class="section-title">🏠 New Properties This Week</h2>
-              ${properties.length > 0 ? properties.map(property => `
-                <div class="property-card">
-                  ${property.images?.[0] ? `
-                    <img src="${property.images[0]}" alt="${property.title}" class="property-image" />
-                  ` : ''}
-                  <div class="property-content">
-                    <div class="property-price">$${property.price.toLocaleString()}</div>
-                    <div class="property-address">${property.city}, ${property.state}</div>
-                    <div class="property-features">
-                      <span class="feature">🛏️ ${property.bedrooms} bed</span>
-                      <span class="feature">🛁 ${property.bathrooms} bath</span>
-                      <span class="feature">📐 ${property.square_feet.toLocaleString()} sq ft</span>
-                    </div>
-                    <a href="https://baviiii.github.io/pickfirst-firstlook-signup/property/${property.id}" class="view-button">
-                      View Property
-                    </a>
-                  </div>
-                </div>
-              `).join('') : '<p style="text-align: center; color: #718096; padding: 40px;">No new properties matched your preferences this week. Check back soon!</p>'}
+              ${propertiesHtml}
             </div>
             
             <div class="footer">
               <p style="font-size: 16px; margin-bottom: 16px;">Thank you for using PickFirst! 🏠</p>
-              <a href="https://pickfirst.com" class="footer-link">Visit pickfirst.com</a>
+              <a href="https://pickfirst.com.au" class="footer-link">Visit pickfirst.com.au</a>
               <p class="footer-text">You're receiving this because you signed up for weekly property updates.</p>
             </div>
           </div>
@@ -554,11 +431,17 @@ async function sendWeeklyDigestEmail(
     // Call the send-email Edge Function
     const subject = `🏠 PickFirst Weekly Digest - ${digest.week_start} to ${digest.week_end}`;
 
+    console.log('Preparing weekly digest email', {
+      userEmail,
+      propertyCount: digest.featured_properties.length,
+      htmlLength: emailHtml.length
+    });
+
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         to: userEmail,
@@ -567,13 +450,15 @@ async function sendWeeklyDigestEmail(
         data: {
           html: emailHtml,
           subject,
-          text: `Your PickFirst weekly digest covering ${digest.week_start} to ${digest.week_end} is ready.`
+          text: `Your weekly PickFirst digest covering ${digest.week_start} to ${digest.week_end}.`
         }
       })
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to send email: ${response.statusText}`);
+      const errorText = await response.text().catch(() => '');
+      console.error(`Send email edge function returned ${response.status} for ${userEmail}:`, errorText);
+      throw new Error(`Failed to send email: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
     }
 
     console.log(`Weekly digest sent to ${userEmail}`);
@@ -583,128 +468,120 @@ async function sendWeeklyDigestEmail(
   }
 }
 
+/**
+ * MAIN HANDLER
+ * This is the entry point for the Edge Function
+ * Generates and sends weekly property digest emails
+ */
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    // Initialize Supabase client with service role key (admin access)
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    );
 
-    const { digest_type, send_to_all_users, user_id } = await req.json() as WeeklyDigestData
+    // Parse request body
+    const { digest_type, send_to_all_users, user_id } = await req.json();
 
-    // Calculate week range
-    const now = new Date()
-    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay())
-    const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
-    
-    const weekStartStr = weekStart.toISOString().split('T')[0]
-    const weekEndStr = weekEnd.toISOString().split('T')[0]
+    // Calculate rolling 7-day window (inclusive of today)
+    const now = new Date();
+    const weekEnd = new Date(now);
+    weekEnd.setUTCHours(23, 59, 59, 999);
+    const weekStart = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+    weekStart.setUTCHours(0, 0, 0, 0);
 
-    console.log(`Generating weekly digest for ${weekStartStr} to ${weekEndStr}`)
+    const weekStartISO = weekStart.toISOString();
+    const weekEndISO = weekEnd.toISOString();
+    const weekStartStr = weekStartISO.split('T')[0];
+    const weekEndStr = weekEndISO.split('T')[0];
 
-    // Get all digest data
+    console.log(`Generating weekly digest for ${weekStartStr} to ${weekEndStr}`);
+
+    // Fetch all digest data in parallel for efficiency
     const [propertyStats, userStats, featuredProperties, marketInsights] = await Promise.all([
-      getPropertyStats(supabaseClient, weekStartStr, weekEndStr),
-      getUserStats(supabaseClient, weekStartStr, weekEndStr),
-      getFeaturedProperties(supabaseClient, weekStartStr, weekEndStr),
-      generateMarketInsights(supabaseClient, weekStartStr, weekEndStr)
-    ])
+      getPropertyStats(supabaseClient, weekStartISO, weekEndISO),
+      getUserStats(supabaseClient, weekStartISO, weekEndISO),
+      getFeaturedProperties(supabaseClient, weekStartISO, weekEndISO),
+      generateMarketInsights(supabaseClient, weekStartISO, weekEndISO)
+    ]);
 
-    const digest: WeeklyDigest = {
+    // Compile digest data
+    const digest = {
       week_start: weekStartStr,
       week_end: weekEndStr,
       property_stats: propertyStats,
       user_stats: userStats,
       featured_properties: featuredProperties,
       market_insights: marketInsights
-    }
+    };
 
-    // Determine who to send to
-    let usersToSend: Array<{ id: string; email: string; full_name: string | null }> = []
-
+    // Determine recipient list
+    let usersToSend = [];
+    
     if (send_to_all_users) {
+      // Send to all buyers with email addresses
       const { data: allUsers, error: usersError } = await supabaseClient
         .from('profiles')
-        .select('id, email, full_name')
+        .select('email, full_name')
         .eq('role', 'buyer')
-        .not('email', 'is', null)
-
-      if (usersError) throw usersError
-      usersToSend = allUsers || []
+        .not('email', 'is', null);
+      
+      if (usersError) throw usersError;
+      usersToSend = allUsers || [];
     } else if (user_id) {
+      // Send to specific user
       const { data: user, error: userError } = await supabaseClient
         .from('profiles')
-        .select('id, email, full_name')
+        .select('email, full_name')
         .eq('id', user_id)
-        .single()
-
-      if (userError) throw userError
-      if (user) usersToSend = [user]
+        .single();
+      
+      if (userError) throw userError;
+      if (user) usersToSend = [user];
     }
 
-    // Send emails
-    let emailsSent = 0
-    let emailsFailed = 0
+    // Send emails to all recipients
+    let emailsSent = 0;
+    let emailsFailed = 0;
 
     for (const user of usersToSend) {
       try {
-        const { data: preferences } = await supabaseClient
-          .from('user_preferences')
-          .select('email_notifications, new_listings, preferred_areas, property_type_preferences, budget_range')
-          .eq('user_id', user.id)
-          .maybeSingle()
-
-        const masterOptOut = preferences?.email_notifications === false;
-        const digestOptOut = preferences?.new_listings === false;
-
-        if (masterOptOut || digestOptOut) {
-          console.log(`Skipping weekly digest for ${user.email} due to notification preferences`)
-          continue;
-        }
-
-        const { min: minBudget, max: maxBudget } = parseBudgetRange(preferences?.budget_range);
-
-        const preferenceSnapshot: UserPreferenceSnapshot = {
-          email_notifications: preferences?.email_notifications,
-          new_listings: preferences?.new_listings,
-          preferred_areas: preferences?.preferred_areas,
-          property_type_preferences: preferences?.property_type_preferences,
-          min_budget: minBudget ?? null,
-          max_budget: maxBudget ?? null
-        };
-
-        const propertiesForUser = filterPropertiesForUser(digest.featured_properties, preferenceSnapshot);
-
-        await sendWeeklyDigestEmail(supabaseClient, digest, user.email, user.full_name || 'User', propertiesForUser)
-        emailsSent++
+        await sendWeeklyDigestEmail(
+          supabaseClient,
+          digest,
+          user.email,
+          user.full_name || 'User'
+        );
+        emailsSent++;
       } catch (error) {
-        console.error(`Failed to send digest to ${user.email}:`, error)
-        emailsFailed++
+        console.error(`Failed to send digest to ${user.email}:`, error);
+        emailsFailed++;
       }
     }
 
-    // Log the digest generation
-    await supabaseClient
-      .from('audit_logs')
-      .insert({
-        user_id: null,
-        table_name: 'weekly_digest',
-        action: 'digest_generated',
-        new_values: {
-          digest_type,
-          week_start: weekStartStr,
-          week_end: weekEndStr,
-          emails_sent: emailsSent,
-          emails_failed: emailsFailed,
-          total_users: usersToSend.length,
-          timestamp: new Date().toISOString()
-        }
-      })
+    // Log digest generation for audit trail
+    await supabaseClient.from('audit_logs').insert({
+      user_id: null,
+      table_name: 'weekly_digest',
+      action: 'digest_generated',
+      new_values: {
+        digest_type,
+        week_start: weekStartStr,
+        week_end: weekEndStr,
+        emails_sent: emailsSent,
+        emails_failed: emailsFailed,
+        total_users: usersToSend.length,
+        timestamp: new Date().toISOString()
+      }
+    });
 
+    // Return success response
     return new Response(
       JSON.stringify({
         success: true,
@@ -724,17 +601,17 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    )
-
+    );
   } catch (error) {
-    console.error('Weekly digest generation error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Weekly digest generation error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
     return new Response(
       JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    )
+    );
   }
-})
+});

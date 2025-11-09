@@ -34,7 +34,7 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   // Use hook to get real-time unread count (includes all notifications)
-  const { totalUnread } = useCardNotifications();
+  const { totalUnread, setTotalUnread } = useCardNotifications();
   // Use external count if provided, otherwise use hook count
   const unreadCount = externalUnreadCount !== undefined ? externalUnreadCount : totalUnread;
 
@@ -66,8 +66,11 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
   useEffect(() => {
     const channel = notificationService.subscribeToNotifications((newNotification) => {
       setNotifications(prev => [newNotification, ...prev]);
-      // Don't update unreadCount here - useCardNotifications hook handles it
-      onUnreadCountChange?.(totalUnread + 1);
+      setTotalUnread(prev => {
+        const next = prev + 1;
+        onUnreadCountChange?.(next);
+        return next;
+      });
       
       // Show toast for new notification
       toast.info(newNotification.title, {
@@ -82,7 +85,7 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
     return () => {
       channel.unsubscribe();
     };
-  }, [navigate, totalUnread, onUnreadCountChange]);
+  }, [navigate, onUnreadCountChange, setTotalUnread]);
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -91,8 +94,8 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
       
       if (realNotifications) {
         setNotifications(realNotifications);
-        // Don't update unreadCount here - useCardNotifications hook handles it
         const unread = realNotifications.filter(n => !n.read).length;
+        setTotalUnread(unread);
         onUnreadCountChange?.(unread);
       } else {
         setNotifications([]);
@@ -113,8 +116,11 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
       setNotifications(prev => 
         prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
       );
-      // Don't update unreadCount here - useCardNotifications hook handles it
-      onUnreadCountChange?.(Math.max(0, totalUnread - 1));
+      setTotalUnread(prev => {
+        const next = Math.max(0, prev - 1);
+        onUnreadCountChange?.(next);
+        return next;
+      });
     }
 
     // Navigate to link if provided
@@ -128,7 +134,7 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
     try {
       await notificationService.markAllAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      // Don't update unreadCount here - useCardNotifications hook handles it
+      setTotalUnread(0);
       onUnreadCountChange?.(0);
       toast.success('All notifications marked as read');
     } catch (error) {

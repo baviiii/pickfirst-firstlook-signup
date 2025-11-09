@@ -1538,9 +1538,18 @@ PickFirst Real Estate Team`,
   }),
 
   // Property Listing Workflow Email Templates
-  propertyListingSubmitted: (data: any) => ({
-    subject: `Property Listing Submitted: ${data.propertyTitle}`,
-    html: `
+  propertyListingSubmitted: (data: any) => {
+    const formattedPrice =
+      data?.propertyPriceDisplay ??
+      (typeof data?.propertyPrice === 'number'
+        ? `$${data.propertyPrice.toLocaleString()}`
+        : (typeof data?.propertyPrice === 'string' && data.propertyPrice.trim().length > 0
+          ? data.propertyPrice
+          : 'Contact Agent'));
+
+    return ({
+      subject: `Property Listing Submitted: ${data.propertyTitle}`,
+      html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
@@ -1555,7 +1564,7 @@ PickFirst Real Estate Team`,
             <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 18px;">📋 Property Details</h3>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Title:</strong> ${data.propertyTitle}</p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Address:</strong> ${data.propertyAddress}</p>
-            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Price:</strong> $${data.propertyPrice?.toLocaleString()}</p>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Price:</strong> ${formattedPrice}</p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Type:</strong> ${data.propertyType}</p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Submitted:</strong> ${data.submissionDate}</p>
           </div>
@@ -1585,11 +1594,21 @@ PickFirst Real Estate Team`,
         ${getEmailFooter()}
       </div>
     `
-  }),
+    });
+  },
 
-  propertyListingApproved: (data: any) => ({
-    subject: `🎉 Property Approved: ${data.propertyTitle} is Now Live!`,
-    html: `
+  propertyListingApproved: (data: any) => {
+    const formattedPrice =
+      data?.propertyPriceDisplay ??
+      (typeof data?.propertyPrice === 'number'
+        ? `$${data.propertyPrice.toLocaleString()}`
+        : (typeof data?.propertyPrice === 'string' && data.propertyPrice.trim().length > 0
+          ? data.propertyPrice
+          : 'Contact Agent'));
+
+    return ({
+      subject: `🎉 Property Approved: ${data.propertyTitle} is Now Live!`,
+      html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
@@ -1611,7 +1630,7 @@ PickFirst Real Estate Team`,
             <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 18px;">🏠 Your Live Property</h3>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Title:</strong> ${data.propertyTitle}</p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Address:</strong> ${data.propertyAddress}</p>
-            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Price:</strong> $${data.propertyPrice?.toLocaleString()}</p>
+            <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Price:</strong> ${formattedPrice}</p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Type:</strong> ${data.propertyType}</p>
             ${data.propertyImages && data.propertyImages.length > 0 ? `
               <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Images:</strong> ${data.propertyImages.length} photos uploaded</p>
@@ -1644,7 +1663,8 @@ PickFirst Real Estate Team`,
         ${getEmailFooter()}
       </div>
     `
-  }),
+    });
+  },
 
   propertyListingRejected: (data: any) => ({
     subject: `Property Listing Requires Updates: ${data.propertyTitle}`,
@@ -1700,10 +1720,12 @@ PickFirst Real Estate Team`,
     `
   })
 ,
-  weeklyDigest: (data: any) => ({
-    subject: data.subject || `PickFirst Weekly Digest`,
-    text: data.text || `Your PickFirst weekly digest is ready.`,
-    html: data.html || `
+  weeklyDigest: (incomingData: any = {}) => {
+    const data = incomingData || {};
+    return {
+      subject: data.subject || `PickFirst Weekly Digest`,
+      text: data.text || `Your PickFirst weekly digest is ready.`,
+      html: data.html || `
       <div style="font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:40px;background:#f7fafc;">
         <div style="max-width:680px;margin:0 auto;background:#ffffff;border-radius:16px;padding:40px;text-align:center;">
           <h1 style="color:#1a202c;margin-bottom:16px;">Your Weekly Property Digest</h1>
@@ -1716,7 +1738,8 @@ PickFirst Real Estate Team`,
         </div>
       </div>
     `
-  })
+    };
+  }
 };
 
 const handler = async (req: Request) => {
@@ -1735,6 +1758,15 @@ const handler = async (req: Request) => {
 
     const templateFunction = templates[template as keyof typeof templates];
     const emailContent = templateFunction(data);
+
+    if (template === 'weeklyDigest') {
+      console.log('weeklyDigest template payload:', {
+        hasDataHtml: Boolean(data?.html),
+        htmlLength: data?.html?.length || 0,
+        subject: data?.subject,
+        textLength: data?.text?.length || 0
+      });
+    }
 
     // Create a simple text version for better deliverability
     const textContent = (emailContent as any).text || emailContent.subject;
@@ -1804,6 +1836,14 @@ const handler = async (req: Request) => {
       emailConfig.reply_to = ['info@pickfirst.com.au'];
     }
     
+    if (template === 'weeklyDigest') {
+      console.log('weeklyDigest emailConfig stats:', {
+        htmlLength: emailConfig.html?.length || 0,
+        textLength: emailConfig.text?.length || 0,
+        subject: emailConfig.subject
+      });
+    }
+
     const { error } = await resend.emails.send(emailConfig);
 
     if (error) {
