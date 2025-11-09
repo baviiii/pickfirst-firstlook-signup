@@ -18,6 +18,7 @@ import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 interface Client {
   id: string;
+  user_id: string | null;
   name: string;
   email: string;
   phone: string;
@@ -46,7 +47,7 @@ interface AppointmentFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  preselectedContact?: { id: string; type: 'client' | 'lead'; name: string; phone: string; email: string };
+  preselectedContact?: { id: string; user_id?: string | null; type: 'client' | 'lead'; name: string; phone: string; email: string };
 }
 
 export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact }: AppointmentFormProps) => {
@@ -56,7 +57,7 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
   const [leads, setLeads] = useState<Lead[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedContact, setSelectedContact] = useState<{ id: string; type: 'client' | 'lead'; name: string; phone: string; email: string } | null>(preselectedContact || null);
+  const [selectedContact, setSelectedContact] = useState<{ id: string; user_id?: string | null; type: 'client' | 'lead'; name: string; phone: string; email: string } | null>(preselectedContact || null);
   const [showContactSelector, setShowContactSelector] = useState(!preselectedContact);
   
   const [formData, setFormData] = useState({
@@ -97,7 +98,7 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
       const [clientsResult, propertiesResult] = await Promise.all([
         supabase
           .from('clients')
-          .select('id, name, email, phone, status')
+          .select('id, user_id, name, email, phone, status')
           .eq('agent_id', user.id)
           .order('created_at', { ascending: false })
           .limit(100),
@@ -114,6 +115,7 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
 
       setClients((clientsResult.data || []).map(client => ({
         id: client.id,
+        user_id: client.user_id,
         name: client.name || 'Unknown Client',
         email: client.email,
         phone: client.phone || '',
@@ -132,7 +134,7 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
     }
   };
 
-  const handleContactSelect = (contact: { id: string; type: 'client' | 'lead'; name: string; phone: string; email: string }) => {
+  const handleContactSelect = (contact: { id: string; user_id?: string | null; type: 'client' | 'lead'; name: string; phone: string; email: string }) => {
     setSelectedContact(contact);
     setShowContactSelector(false);
     
@@ -174,7 +176,7 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
     try {
       const appointmentData = {
         agent_id: user?.id,
-        client_id: selectedContact.type === 'client' ? selectedContact.id : null,
+        client_id: selectedContact.type === 'client' ? selectedContact.user_id || null : null,
         inquiry_id: selectedContact.type === 'lead' ? selectedContact.id : null,
         client_name: selectedContact.name,
         client_phone: selectedContact.phone,
@@ -194,7 +196,7 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
         .from('appointments')
         .insert([{
           agent_id: user?.id,
-          client_id: selectedContact.type === 'client' ? selectedContact.id : null,
+          client_id: selectedContact.type === 'client' ? selectedContact.user_id || null : null,
           client_name: selectedContact.name,
           client_phone: selectedContact.phone,
           client_email: selectedContact.email,

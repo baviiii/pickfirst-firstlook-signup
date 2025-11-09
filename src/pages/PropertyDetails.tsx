@@ -25,7 +25,8 @@ import {
   X,
   Clock,
   User,
-  FileText
+  FileText,
+  Shield
 } from 'lucide-react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { useAuth } from '@/hooks/useAuth';
@@ -40,7 +41,7 @@ const PropertyDetailsComponent = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const { canViewVendorDetails } = useSubscription();
+  const { canViewVendorDetails, isFeatureEnabled } = useSubscription();
   
   const [property, setProperty] = useState<PropertyListing | null>(null);
   const [loading, setLoading] = useState(true);
@@ -283,6 +284,8 @@ const PropertyDetailsComponent = () => {
   }
 
   const hasImages = property.images && property.images.length > 0;
+  const floorPlans = Array.isArray((property as any).floor_plans) ? (property as any).floor_plans as string[] : [];
+  const hasFloorPlans = floorPlans.length > 0;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -627,6 +630,11 @@ const PropertyDetailsComponent = () => {
                         </div>
                       )}
                     </div>
+                    {agentDetails.email && agentDetails.phone && (
+                      <p className="text-xs text-gray-500">
+                        Prefer email or phone? Reach out using whichever suits you best.
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -643,7 +651,7 @@ const PropertyDetailsComponent = () => {
             )}
 
             {/* Vendor Details - Premium Feature */}
-            {canViewVendorDetails() && (
+            {canViewVendorDetails() ? (
               <VendorDetails
                 propertyId={property.id}
                 ownershipDuration={(property as any).vendor_ownership_duration}
@@ -651,7 +659,26 @@ const PropertyDetailsComponent = () => {
                 favorableContracts={(property as any).vendor_favorable_contracts}
                 motivation={(property as any).vendor_motivation}
               />
-            )}
+            ) : ((property as any).vendor_ownership_duration || (property as any).vendor_special_conditions) ? (
+              <>
+                <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-white text-lg flex items-center">
+                      <Shield className="w-5 h-5 mr-2 text-yellow-400" />
+                      Vendor Insights (Premium)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm text-gray-300">
+                    <p>Get access to ownership duration, motivation, and special conditions for this property.</p>
+                    {!isFeatureEnabled('vendor_details') && (
+                      <div className="text-xs text-gray-400">
+                        Upgrade your plan to unlock detailed vendor insights and negotiate with confidence.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            ) : null}
           </div>
 
           {/* Action Panel - Sticky on desktop */}
@@ -671,6 +698,16 @@ const PropertyDetailsComponent = () => {
                         Submitted {new Date(existingInquiry.createdAt).toLocaleDateString()}
                       </p>
                     </div>
+                    {hasFloorPlans && (
+                      <Button 
+                        variant="outline"
+                        className="w-full border-yellow-400/40 text-yellow-400 hover:bg-yellow-400/10 hover:text-yellow-200"
+                        onClick={() => window.open(floorPlans[0], '_blank', 'noopener')}
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        View Floor Plan
+                      </Button>
+                    )}
                     <p className="text-gray-300 text-sm">
                       Check your messages to continue the conversation with the agent.
                     </p>
@@ -688,9 +725,29 @@ const PropertyDetailsComponent = () => {
                         </p>
                       )}
                     </div>
+                    {hasFloorPlans && (
+                      <Button 
+                        variant="outline"
+                        className="w-full border-yellow-400/40 text-yellow-400 hover:bg-yellow-400/10 hover:text-yellow-200"
+                        onClick={() => window.open(floorPlans[0], '_blank', 'noopener')}
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        View Floor Plan
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-3">
+                    {hasFloorPlans && (
+                      <Button 
+                        variant="outline"
+                        className="w-full border-yellow-400/40 text-yellow-400 hover:bg-yellow-400/10 hover:text-yellow-200"
+                        onClick={() => window.open(floorPlans[0], '_blank', 'noopener')}
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        View Floor Plan
+                      </Button>
+                    )}
                     <Button 
                       onClick={handleEnquire}
                       className="w-full bg-yellow-400 hover:bg-amber-500 text-black font-medium py-4 text-base transition-all duration-300 hover:scale-[1.02] shadow-lg"

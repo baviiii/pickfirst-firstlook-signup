@@ -1029,33 +1029,39 @@ export type Database = {
           buyer_id: string
           contact_preference: string | null
           created_at: string | null
+          conversation_id: string | null
           id: string
           message: string
           property_id: string
           responded_at: string | null
           status: string | null
+          viewed_at: string | null
         }
         Insert: {
           agent_response?: string | null
           buyer_id: string
           contact_preference?: string | null
           created_at?: string | null
+          conversation_id?: string | null
           id?: string
           message: string
           property_id: string
           responded_at?: string | null
           status?: string | null
+          viewed_at?: string | null
         }
         Update: {
           agent_response?: string | null
           buyer_id?: string
           contact_preference?: string | null
           created_at?: string | null
+          conversation_id?: string | null
           id?: string
           message?: string
           property_id?: string
           responded_at?: string | null
           status?: string | null
+          viewed_at?: string | null
         }
         Relationships: [
           {
@@ -1084,6 +1090,13 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "property_listings_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_inquiries_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
         ]
@@ -1670,6 +1683,39 @@ export type Database = {
         }
         Relationships: []
       }
+      buyer_public_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          location: string | null
+          phone: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          location?: string | null
+          phone?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          location?: string | null
+          phone?: string | null
+        }
+        Relationships: []
+      }
       property_listings_public: {
         Row: {
           address: string | null
@@ -1854,6 +1900,34 @@ export type Database = {
           row_count: number
           table_name: string
           table_size: string
+        }[]
+      }
+      get_agent_public_profile: {
+        Args: { agent_id: string }
+        Returns: {
+          id: string
+          full_name: string | null
+          email: string | null
+          phone: string | null
+          bio: string | null
+          company: string | null
+          avatar_url: string | null
+          location: string | null
+          website: string | null
+          created_at: string | null
+        }[]
+      }
+      get_buyer_public_profile: {
+        Args: { buyer_id: string }
+        Returns: {
+          id: string
+          full_name: string | null
+          email: string | null
+          phone: string | null
+          bio: string | null
+          avatar_url: string | null
+          location: string | null
+          created_at: string | null
         }[]
       }
       get_pending_alert_jobs: {

@@ -501,7 +501,7 @@ class AppointmentService {
       const finalBuyerName = (buyerName || (inquiry as any)?.buyer?.full_name || 'Unknown').trim();
 
       // Check if the buyer exists in the clients table
-      let clientId: string | null = null;
+      let clientProfileId: string | null = null;
       let clientName = finalBuyerName || 'Unknown';
       
       if (inquiry.buyer_id) {
@@ -513,8 +513,8 @@ class AppointmentService {
           .single();
         
         if (existingClient) {
-          clientId = existingClient.id;
           clientName = existingClient.name || finalBuyerName || 'Unknown';
+          clientProfileId = existingClient.user_id || null;
         } else {
           // Client doesn't exist, create one automatically
           console.log('Buyer not found in clients table, creating client automatically...');
@@ -531,8 +531,8 @@ class AppointmentService {
             console.error('Error creating client automatically:', clientError);
             // Continue without client_id - appointment can still be created
           } else if (newClient) {
-            clientId = newClient.id;
             clientName = newClient.name || finalBuyerName || 'Unknown';
+            clientProfileId = newClient.user_id || null;
             console.log('Client created successfully:', newClient.id);
           }
         }
@@ -541,7 +541,7 @@ class AppointmentService {
       const newAppointment: AppointmentInsert = {
         agent_id: user.id,
         inquiry_id: inquiryId,
-        client_id: clientId, // Set if client exists or was just created
+        client_id: clientProfileId, // Only set when linked to existing buyer profile
         client_name: clientName,
         client_email: normalizedBuyerEmail,
         property_id: inquiry.property_id,
