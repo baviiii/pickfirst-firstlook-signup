@@ -4,31 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { 
-  Settings, 
-  Maximize2, 
-  Minimize2, 
   Search, 
   MapPin, 
   Loader2, 
   RefreshCw, 
-  ZoomIn, 
-  ZoomOut,
   Home,
   DollarSign,
   Bed,
   Bath,
   Square,
-  TrendingUp,
-  TrendingDown,
-  BarChart3,
-  Target,
-  Filter,
-  Eye,
-  MousePointer2,
-  Zap,
-  Star,
-  Calendar,
-  Users,
   ArrowLeft
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -71,7 +55,6 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
   const heatmapRef = useRef<any>(null);
   
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSearching, setIsSearching] = useState(false);
@@ -82,11 +65,10 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [areaAnalytics, setAreaAnalytics] = useState<AreaAnalytics | null>(null);
-  const [analyticsMode, setAnalyticsMode] = useState(false);
+  const analyticsMode = false;
   const [cursorMode, setCursorMode] = useState<'normal' | 'analytics'>('normal');
   const [mapStyle, setMapStyle] = useState<'satellite' | 'roadmap' | 'terrain'>('roadmap');
   const [showPriceRanges, setShowPriceRanges] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [selectedAreaAnalytics, setSelectedAreaAnalytics] = useState<AreaAnalytics | null>(null);
   const [analyticsView, setAnalyticsView] = useState<'overall' | 'area'>('overall');
   const isMobile = useIsMobile();
@@ -543,10 +525,6 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
   };
 
   // Toggle fullscreen
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
-
   // Refresh map
   const refreshMap = () => {
     if (mapRef.current) {
@@ -601,7 +579,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
 
 
   return (
-    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50' : ''} ${className}`}>
+    <div className={`relative ${className}`}>
       {/* Simple Header Controls */}
       {showControls && (
         <div className="flex items-center justify-between mb-4">
@@ -615,30 +593,6 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
               <ArrowLeft className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Back to Dashboard</span>
               <span className="sm:hidden">Back</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowSettings(!showSettings)}
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-            >
-              <Settings className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAnalyticsMode(!analyticsMode)}
-              className={`${analyticsMode ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}
-            >
-              <BarChart3 className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleFullscreen}
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-            >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </Button>
           </div>
           

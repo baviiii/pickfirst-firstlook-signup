@@ -185,32 +185,55 @@ export const SuperAdminDashboard = () => {
             <div className="text-gray-400">No pending property listings.</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {pendingListings.map(listing => (
-                <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10">
-                  <CardHeader>
-                    <CardTitle className="text-lg text-pickfirst-yellow">{listing.title}</CardTitle>
-                    <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-white font-bold text-xl mb-2">${listing.price.toLocaleString()}</div>
-                    <div className="text-gray-400 text-sm mb-2">{listing.property_type.replace(/\b\w/g, l => l.toUpperCase())}</div>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {listing.bedrooms !== null && <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded">{listing.bedrooms} Bed</span>}
-                      {listing.bathrooms !== null && <span className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded">{listing.bathrooms} Bath</span>}
-                      {listing.square_feet !== null && <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded">{listing.square_feet} Sq Ft</span>}
-                    </div>
-                    <div className="text-xs text-gray-400 mb-2">Status: <span className="text-yellow-400">Pending</span></div>
-                    <div className="flex gap-2 mt-2">
-                      <Button size="sm" className="bg-green-500 text-white hover:bg-green-600" onClick={() => handleApprove(listing.id)}>
-                        Approve
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-500/10" onClick={() => handleReject(listing.id)}>
-                        Reject
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {pendingListings.map(listing => {
+                const displayPrice = PropertyService.getDisplayPrice(listing);
+                const isOffMarket = (listing as any).listing_source === 'agent_posted';
+                const numericBedrooms = typeof listing.bedrooms === 'string' ? parseFloat(listing.bedrooms) : listing.bedrooms;
+                const numericBathrooms = typeof listing.bathrooms === 'string' ? parseFloat(listing.bathrooms) : listing.bathrooms;
+                const numericSquareFeet = typeof listing.square_feet === 'string' ? parseFloat(listing.square_feet) : listing.square_feet;
+                
+                return (
+                  <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10">
+                    <CardHeader className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <CardTitle className="text-lg text-pickfirst-yellow">{listing.title}</CardTitle>
+                          <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
+                        </div>
+                        {isOffMarket && (
+                          <Badge className="text-xs bg-pink-500/20 text-pink-300 border border-pink-500/30">
+                            OFF-MARKET
+                          </Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-white font-bold text-xl mb-2">{displayPrice}</div>
+                      <div className="text-gray-400 text-sm mb-2">{listing.property_type.replace(/\b\w/g, l => l.toUpperCase())}</div>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {numericBedrooms !== null && numericBedrooms !== undefined && !Number.isNaN(numericBedrooms) && (
+                          <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded">{numericBedrooms} Bed</span>
+                        )}
+                        {numericBathrooms !== null && numericBathrooms !== undefined && !Number.isNaN(numericBathrooms) && (
+                          <span className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded">{numericBathrooms} Bath</span>
+                        )}
+                        {numericSquareFeet !== null && numericSquareFeet !== undefined && !Number.isNaN(numericSquareFeet) && (
+                          <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded">{numericSquareFeet.toLocaleString()} Sq Ft</span>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-400 mb-2">Status: <span className="text-yellow-400">Pending</span></div>
+                      <div className="flex gap-2 mt-2">
+                        <Button size="sm" className="bg-green-500 text-white hover:bg-green-600" onClick={() => handleApprove(listing.id)}>
+                          Approve
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-500/10" onClick={() => handleReject(listing.id)}>
+                          Reject
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -258,17 +281,34 @@ export const SuperAdminDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {listings.map(listing => (
                   <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10">
-                    <CardHeader>
-                      <CardTitle className="text-lg text-pickfirst-yellow">{listing.title}</CardTitle>
-                      <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
+                    <CardHeader className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <CardTitle className="text-lg text-pickfirst-yellow">{listing.title}</CardTitle>
+                          <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
+                        </div>
+                        {(listing as any).listing_source === 'agent_posted' && (
+                          <Badge className="text-xs bg-pink-500/20 text-pink-300 border border-pink-500/30">
+                            OFF-MARKET
+                          </Badge>
+                        )}
+                      </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-white font-bold text-xl mb-2">${listing.price.toLocaleString()}</div>
+                      <div className="text-white font-bold text-xl mb-2">
+                        {PropertyService.getDisplayPrice(listing)}
+                      </div>
                       <div className="text-gray-400 text-sm mb-2">{listing.property_type.replace(/\b\w/g, l => l.toUpperCase())}</div>
                       <div className="flex flex-wrap gap-2 mb-2">
-                        {listing.bedrooms !== null && <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded">{listing.bedrooms} Bed</span>}
-                        {listing.bathrooms !== null && <span className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded">{listing.bathrooms} Bath</span>}
-                        {listing.square_feet !== null && <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded">{listing.square_feet} Sq Ft</span>}
+                        {listing.bedrooms !== null && (
+                          <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded">{listing.bedrooms} Bed</span>
+                        )}
+                        {listing.bathrooms !== null && (
+                          <span className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded">{listing.bathrooms} Bath</span>
+                        )}
+                        {listing.square_feet !== null && (
+                          <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded">{listing.square_feet} Sq Ft</span>
+                        )}
                       </div>
                       <div className="text-xs text-gray-400 mb-2">Status: <span className={
                         listing.status === 'approved' ? 'text-green-400' :

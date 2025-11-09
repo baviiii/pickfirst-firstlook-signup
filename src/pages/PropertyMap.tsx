@@ -4,6 +4,7 @@ import { MapAnalyticsService } from '@/services/mapAnalyticsService';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { Tables } from '@/integrations/supabase/types';
+import { useSubscription } from '@/hooks/useSubscription';
 
 type PropertyListing = Tables<'property_listings'>;
 
@@ -11,6 +12,7 @@ const PropertyMapPage = () => {
   const [properties, setProperties] = useState<PropertyListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { canAccessOffMarketListings } = useSubscription();
 
   // Fetch real properties from the database
   const fetchProperties = async () => {
@@ -82,27 +84,37 @@ const PropertyMapPage = () => {
     );
   }
 
+  const hasOffMarketAccess = canAccessOffMarketListings();
+  const visibleProperties = hasOffMarketAccess
+    ? properties
+    : properties.filter(property => (property as any).listing_source !== 'agent_posted');
+
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
         <h1 className="text-3xl font-bold text-white mb-2">Property Map</h1>
         <p className="text-gray-300 max-w-2xl mx-auto">
-          {properties.length > 0 
-            ? `Explore ${properties.length} properties in your area with our interactive map. Search for locations, view property details, and find your perfect home.`
+          {visibleProperties.length > 0 
+            ? `Explore ${visibleProperties.length} properties in your area with our interactive map. Search for locations, view property details, and find your perfect home.`
             : 'No properties are currently available in the system. Check back later or contact an agent to add new listings.'
           }
         </p>
-        {properties.length > 0 && (
+        {visibleProperties.length > 0 && (
           <div className="mt-4 inline-flex items-center px-4 py-2 bg-pickfirst-yellow/20 text-pickfirst-yellow rounded-full text-sm border border-pickfirst-yellow/30">
             <span className="w-2 h-2 bg-pickfirst-yellow rounded-full mr-2"></span>
-            {properties.length} {properties.length === 1 ? 'property' : 'properties'} available
+            {visibleProperties.length} {visibleProperties.length === 1 ? 'property' : 'properties'} available
+          </div>
+        )}
+        {!hasOffMarketAccess && (
+          <div className="mt-4 inline-flex items-center px-4 py-2 bg-pink-500/10 text-pink-300 rounded-full text-sm border border-pink-500/40">
+            Premium tip: upgrade to access exclusive off-market listings on the map.
           </div>
         )}
       </div>
 
       {/* Property Map Component */}
       <PropertyMap
-        properties={properties}
+        properties={visibleProperties}
         onPropertySelect={handlePropertySelect}
         showControls={true}
         className="w-full"
