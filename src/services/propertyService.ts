@@ -161,18 +161,14 @@ export class PropertyService {
   // Helper function to get admin emails
   private static async getAdminEmails(): Promise<string[]> {
     try {
-      const { data: admins, error } = await supabase
-        .from('profiles')
-        .select('email')
-        .in('role', ['super_admin', 'admin'])
-        .not('email', 'is', null);
-      
+      const { data, error } = await supabase.rpc('get_admin_notification_emails');
+
       if (error) {
         console.error('Error fetching admin emails:', error);
         return [];
       }
-      
-      return (admins || []).map(admin => admin.email).filter(Boolean) as string[];
+
+      return (data || []).map(row => row.email).filter(Boolean) as string[];
     } catch (error) {
       console.error('Error getting admin emails:', error);
       return [];

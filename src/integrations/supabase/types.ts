@@ -810,6 +810,7 @@ export type Database = {
           full_name: string | null
           id: string
           location: string | null
+          monthly_revenue_goal: number | null
           phone: string | null
           role: string
           stripe_customer_id: string | null
@@ -830,6 +831,7 @@ export type Database = {
           full_name?: string | null
           id: string
           location?: string | null
+          monthly_revenue_goal?: number | null
           phone?: string | null
           role?: string
           stripe_customer_id?: string | null
@@ -850,6 +852,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           location?: string | null
+          monthly_revenue_goal?: number | null
           phone?: string | null
           role?: string
           stripe_customer_id?: string | null
@@ -1261,14 +1264,7 @@ export type Database = {
             foreignKeyName: "property_listings_sold_to_client_id_fkey"
             columns: ["sold_to_client_id"]
             isOneToOne: false
-            referencedRelation: "agent_public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "property_listings_sold_to_client_id_fkey"
-            columns: ["sold_to_client_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -1575,6 +1571,7 @@ export type Database = {
           monthly_inquiries: number | null
           monthly_revenue: number | null
           monthly_sales: number | null
+          monthly_revenue_goal: number | null
           total_appointments: number | null
           total_clients: number | null
           total_inquiries: number | null
@@ -1903,6 +1900,12 @@ export type Database = {
           row_count: number
           table_name: string
           table_size: string
+        }[]
+      }
+      get_admin_notification_emails: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          email: string | null
         }[]
       }
       get_agent_public_profile: {

@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -12,10 +14,11 @@ import {
   Eye, 
   Calendar,
   Download,
-  RefreshCw
+  RefreshCw,
+  Pencil
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
-import { analyticsService, AnalyticsService } from '@/services/analyticsService';
+import { AnalyticsService } from '@/services/analyticsService';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -31,6 +34,9 @@ export const AgentAnalytics = () => {
   const [clientSourceData, setClientSourceData] = useState<any[]>([]);
   const [propertyTypeData, setPropertyTypeData] = useState<any[]>([]);
   const [weeklyActivity, setWeeklyActivity] = useState<any[]>([]);
+  const [isRevenueGoalDialogOpen, setIsRevenueGoalDialogOpen] = useState(false);
+  const [revenueGoalInput, setRevenueGoalInput] = useState('');
+  const [savingRevenueGoal, setSavingRevenueGoal] = useState(false);
 
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
@@ -96,11 +102,48 @@ export const AgentAnalytics = () => {
     fetchAnalyticsData();
   }, [user?.id, timeRange]);
 
+  useEffect(() => {
+    if (analytics?.monthly_revenue_goal !== undefined && analytics?.monthly_revenue_goal !== null) {
+      setRevenueGoalInput(String(Math.round(analytics.monthly_revenue_goal)));
+    }
+  }, [analytics?.monthly_revenue_goal]);
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchAnalyticsData();
     setIsRefreshing(false);
     toast.success('Analytics refreshed');
+  };
+
+  const revenueGoal = analytics?.monthly_revenue_goal ?? 60000;
+  const safeRevenueGoal = revenueGoal > 0 ? revenueGoal : 1;
+  const handleOpenRevenueGoalDialog = () => {
+    setRevenueGoalInput(String(Math.round(revenueGoal)));
+    setIsRevenueGoalDialogOpen(true);
+  };
+
+  const handleSaveRevenueGoal = async () => {
+    const parsedGoal = Number(String(revenueGoalInput).replace(/,/g, '').trim());
+    if (Number.isNaN(parsedGoal) || parsedGoal <= 0) {
+      toast.error('Please enter a valid revenue goal greater than zero.');
+      return;
+    }
+
+    setSavingRevenueGoal(true);
+    const { error, data } = await AnalyticsService.updateMonthlyRevenueGoal(parsedGoal);
+    setSavingRevenueGoal(false);
+
+    if (error) {
+      console.error('Failed to update revenue goal:', error);
+      toast.error('Failed to update revenue goal.');
+      return;
+    }
+
+    const updatedGoal = data?.monthly_revenue_goal ?? parsedGoal;
+    setAnalytics((prev: any) => (prev ? { ...prev, monthly_revenue_goal: updatedGoal } : prev));
+    setRevenueGoalInput(String(Math.round(updatedGoal)));
+    setIsRevenueGoalDialogOpen(false);
+    toast.success('Revenue goal updated.');
   };
 
   const handleExport = () => {
@@ -380,18 +423,62 @@ export const AgentAnalytics = () => {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Revenue Goal</span>
-                <span>${(analytics?.monthly_revenue || 0).toLocaleString()}/$60K</span>
+                <div className="flex items-center gap-2">
+                  <span>
+                    ${(analytics?.monthly_revenue || 0).toLocaleString()}/
+                    ${Math.round(revenueGoal).toLocaleString()}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={handleOpenRevenueGoalDialog}
+                    aria-label="Edit revenue goal"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               <div className="w-full bg-secondary/20 rounded-full h-2">
                 <div 
                   className="bg-accent h-2 rounded-full" 
-                  style={{ width: `${Math.min(((analytics?.monthly_revenue || 0) / 60000) * 100, 100)}%` }}
+                  style={{ width: `${Math.min(((analytics?.monthly_revenue || 0) / safeRevenueGoal) * 100, 100)}%` }}
                 ></div>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={isRevenueGoalDialogOpen} onOpenChange={setIsRevenueGoalDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Monthly Revenue Goal</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Enter the revenue target you want to reach this month.
+              </p>
+              <Input
+                type="number"
+                min={0}
+                value={revenueGoalInput}
+                onChange={(event) => setRevenueGoalInput(event.target.value)}
+                placeholder="60000"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRevenueGoalDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveRevenueGoal} disabled={savingRevenueGoal}>
+              {savingRevenueGoal ? 'Saving...' : 'Save Goal'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

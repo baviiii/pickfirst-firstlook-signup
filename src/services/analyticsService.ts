@@ -55,6 +55,7 @@ export interface AgentAnalytics {
   monthly_appointments: number;
   total_inquiries: number;
   monthly_inquiries: number;
+  monthly_revenue_goal: number;
 }
 
 export interface MonthlyPerformance {
@@ -332,6 +333,29 @@ class AnalyticsService {
       return { data, error: null };
     } catch (error) {
       console.error('Error fetching agent analytics:', error);
+      return { data: null, error };
+    }
+  }
+
+  static async updateMonthlyRevenueGoal(goal: number): Promise<{ data: { monthly_revenue_goal: number } | null; error: any }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { data: null, error: new Error('User not authenticated') };
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ monthly_revenue_goal: goal })
+        .eq('id', user.id)
+        .select('monthly_revenue_goal')
+        .single();
+
+      if (error) throw error;
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error updating monthly revenue goal:', error);
       return { data: null, error };
     }
   }

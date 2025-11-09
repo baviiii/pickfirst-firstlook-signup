@@ -292,28 +292,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // Check if user exists with this email
-      const { data: profiles, error: checkError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('email', emailValidation.sanitizedValue!)
-        .limit(1);
-
-      if (checkError || !profiles || profiles.length === 0) {
-        const notFoundError = new Error('No account found with this email address. Please check your email or sign up.');
-        setError(prev => ({ ...prev, forgotPassword: notFoundError }));
-        
-        // Log failed attempt
-        await ipTrackingService.logLoginActivity({
-          email: emailValidation.sanitizedValue!,
-          login_type: 'password_reset',
-          success: false,
-          failure_reason: 'Account not found'
-        });
-        
-        return { error: notFoundError };
-      }
-
       const redirectUrl = `${window.location.origin}/reset-password`;
       
       const { error } = await supabase.auth.resetPasswordForEmail(emailValidation.sanitizedValue!, {
@@ -340,8 +318,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }, 1000);
       }
       
-      setError(prev => ({ ...prev, forgotPassword: error }));
-      return { error };
+      if (error) {
+        const normalizedMessage = error.message?.toLowerCase() || '';
+        const accountNotFound = normalizedMessage.includes('user') && normalizedMessage.includes('not') && normalizedMessage.includes('found');
+        const finalError = accountNotFound
+          ? new Error('No account found with this email address. Please check your email or sign up.')
+          : error;
+        setError(prev => ({ ...prev, forgotPassword: finalError }));
+        return { error: finalError };
+      }
+
+      setError(prev => ({ ...prev, forgotPassword: null }));
+      return { error: null };
     } catch (error) {
       // Log forgot password attempt
       await ipTrackingService.logLoginActivity({
