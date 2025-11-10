@@ -28,6 +28,9 @@ interface AuthContextType {
   refetchProfile: () => Promise<void>;
   forgotPassword: (email: string) => Promise<{ error: any }>;
   resetPassword: (password: string) => Promise<{ error: any }>;
+  isRecoverySession: boolean;
+  startRecoverySession: () => void;
+  completeRecoverySession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,6 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     forgotPassword: null,
     resetPassword: null,
   });
+  const [isRecoverySession, setIsRecoverySession] = useState(false);
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -225,6 +229,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       await supabase.auth.signOut();
       clearAuthTokens(); // Clear any remaining tokens
+      setIsRecoverySession(false);
       
       // Clear session storage to allow welcome toast on next login
       sessionStorage.removeItem('hasShownWelcome');
@@ -239,6 +244,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       clearAuthTokens(); // Clear tokens even if signout fails
       sessionStorage.removeItem('hasShownWelcome'); // Clear welcome flag even on error
+      setIsRecoverySession(false);
       
       // Log failed signout attempt
       await ipTrackingService.logLoginActivity({
@@ -305,18 +311,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         success: !error,
         failure_reason: error?.message
       });
-      
-      // Send custom password reset email for better branding
-      if (!error) {
-        setTimeout(async () => {
-          try {
-            const { EmailService } = await import('@/services/emailService');
-            await EmailService.sendPasswordResetEmail(emailValidation.sanitizedValue!);
-          } catch (emailError) {
-            // Email sending failed silently
-          }
-        }, 1000);
-      }
       
       if (error) {
         const normalizedMessage = error.message?.toLowerCase() || '';
@@ -413,9 +407,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         ]);
 
-      // Invalidate all active sessions except current one
-      await supabase.auth.signOut({ scope: 'others' });
-
       // Log successful password reset
       await auditService.log(user?.id, 'UPDATE', 'authentication', {
         recordId: user?.id,
@@ -426,10 +417,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         ipAddress: await getClientIP(),
       });
 
-      // Invalidate all refresh tokens for the user
-      if (user?.id) {
-        await supabase.auth.admin.signOut(user.id);
-      }
+      // Sign out of the current recovery session so the user must re-authenticate
+      await supabase.auth.signOut();
 
       setError(prev => ({ ...prev, resetPassword: null }));
       return { error: null };
@@ -453,6 +442,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         error: error instanceof Error ? error : new Error('Failed to reset password') 
       };
     }
+  };
+
+  const startRecoverySession = () => {
+    setIsRecoverySession(true);
+  };
+
+  const completeRecoverySession = async () => {
+    setIsRecoverySession(false);
+    await signOut();
   };
 
   async function hashPassword(password: string): Promise<string> {
@@ -493,7 +491,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       updateProfile,
       refetchProfile,
       forgotPassword,
-      resetPassword
+      resetPassword,
+      isRecoverySession,
+      startRecoverySession,
+      completeRecoverySession
     }}>
       {children}
     </AuthContext.Provider>

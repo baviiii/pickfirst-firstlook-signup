@@ -1,5 +1,5 @@
 import { ReactNode, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
@@ -14,11 +14,17 @@ export const ProtectedRoute = ({
   requiredRole,
   fallbackPath = '/auth' 
 }: ProtectedRouteProps) => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, isRecoverySession } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!loading) {
+      if (isRecoverySession && location.pathname !== '/reset-password') {
+        navigate('/reset-password', { replace: true });
+        return;
+      }
+
       // If no user is authenticated, redirect to auth page
       if (!user) {
         navigate(fallbackPath, { replace: true });
@@ -45,7 +51,7 @@ export const ProtectedRoute = ({
         }
       }
     }
-  }, [user, profile, loading, navigate, requiredRole, fallbackPath]);
+  }, [user, profile, loading, navigate, requiredRole, fallbackPath, isRecoverySession, location.pathname]);
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -61,12 +67,14 @@ export const ProtectedRoute = ({
 
   // If not authenticated, show loading (redirect will happen in useEffect)
   // NEVER render the protected content for unauthenticated users
-  if (!user) {
+  if (!user || isRecoverySession) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-black">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-pickfirst-yellow mx-auto mb-4" />
-          <p className="text-white/70">Redirecting...</p>
+          <p className="text-white/70">
+            {isRecoverySession ? 'Finishing password reset...' : 'Redirecting...'}
+          </p>
         </div>
       </div>
     );

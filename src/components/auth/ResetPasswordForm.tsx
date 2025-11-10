@@ -13,7 +13,7 @@ import { auditService } from '@/services/auditService';
 import { rateLimitService } from '@/services/rateLimitService';
 
 export const ResetPasswordForm = () => {
-  const { resetPassword, user } = useAuth();
+  const { resetPassword, user, startRecoverySession, completeRecoverySession } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -27,6 +27,8 @@ export const ResetPasswordForm = () => {
     confirmPassword: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [recoverySessionActive, setRecoverySessionActive] = useState(false);
+  const [hasCompletedReset, setHasCompletedReset] = useState(false);
 
   // Validate password strength
   const validatePasswordStrength = useCallback((password: string) => {
@@ -77,6 +79,8 @@ export const ResetPasswordForm = () => {
 
         setHasValidToken(true);
         setValidatingToken(false);
+        startRecoverySession();
+        setRecoverySessionActive(true);
       } catch (error) {
         console.error('Token validation error:', error);
         setHasValidToken(false);
@@ -161,6 +165,10 @@ export const ResetPasswordForm = () => {
       // Clear sensitive data from state
       setFormData({ password: '', confirmPassword: '' });
       
+      await completeRecoverySession();
+      setRecoverySessionActive(false);
+      setHasCompletedReset(true);
+
       // Redirect to login after a short delay
       setTimeout(() => {
         navigate('/auth');
@@ -200,6 +208,14 @@ export const ResetPasswordForm = () => {
     if (passwordScore <= 3) return 'Strong';
     return 'Very Strong';
   };
+
+  useEffect(() => {
+    return () => {
+      if (recoverySessionActive && !hasCompletedReset) {
+        void completeRecoverySession();
+      }
+    };
+  }, [recoverySessionActive, hasCompletedReset, completeRecoverySession]);
 
   // Show loading state while validating token
   if (validatingToken) {
