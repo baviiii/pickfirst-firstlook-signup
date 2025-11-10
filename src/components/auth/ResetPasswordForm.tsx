@@ -7,13 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Lock, Eye, EyeOff, ShieldAlert } from 'lucide-react';
+import { Loader2, Eye, EyeOff, ShieldAlert } from 'lucide-react';
 import { InputSanitizer } from '@/utils/inputSanitization';
 import { auditService } from '@/services/auditService';
 import { rateLimitService } from '@/services/rateLimitService';
 
 export const ResetPasswordForm = () => {
-  const { resetPassword, user, startRecoverySession, completeRecoverySession } = useAuth();
+  const { resetPassword, user, toggleRecoverySession } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -22,13 +22,15 @@ export const ResetPasswordForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordScore, setPasswordScore] = useState(0);
+  const [recoveryTokens, setRecoveryTokens] = useState<{
+    accessToken: string;
+    refreshToken: string;
+  } | null>(null);
   const [formData, setFormData] = useState({
     password: '',
     confirmPassword: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [recoverySessionActive, setRecoverySessionActive] = useState(false);
-  const [hasCompletedReset, setHasCompletedReset] = useState(false);
 
   // Validate password strength
   const validatePasswordStrength = useCallback((password: string) => {
@@ -68,19 +70,19 @@ export const ResetPasswordForm = () => {
       }
 
       try {
-        const { data, error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken
-        });
+        const { data, error } = await supabase.auth.getUser(accessToken);
 
-        if (error || !data.session) {
-          throw error || new Error('Unable to establish session for password reset');
+        if (error || !data.user) {
+          throw error || new Error('Unable to validate recovery token');
         }
+
+        setRecoveryTokens({
+          accessToken,
+          refreshToken,
+        });
 
         setHasValidToken(true);
         setValidatingToken(false);
-        startRecoverySession();
-        setRecoverySessionActive(true);
       } catch (error) {
         console.error('Token validation error:', error);
         setHasValidToken(false);
@@ -131,6 +133,11 @@ export const ResetPasswordForm = () => {
     e.preventDefault();
     
     if (!validateForm()) return;
+
+    if (!recoveryTokens) {
+      toast.error('Recovery link is invalid or has expired. Please request a new one.');
+      return;
+    }
     
     // Check rate limit
     const rateLimitResult = await rateLimitService.checkRateLimit(
@@ -148,6 +155,17 @@ export const ResetPasswordForm = () => {
     setLoading(true);
     
     try {
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: recoveryTokens.accessToken,
+        refresh_token: recoveryTokens.refreshToken,
+      });
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      toggleRecoverySession(true);
+
       const { error } = await resetPassword(formData.password);
       
       if (error) {
@@ -164,15 +182,9 @@ export const ResetPasswordForm = () => {
       
       // Clear sensitive data from state
       setFormData({ password: '', confirmPassword: '' });
-      
-      await completeRecoverySession();
-      setRecoverySessionActive(false);
-      setHasCompletedReset(true);
-
-      // Redirect to login after a short delay
-      setTimeout(() => {
-        navigate('/auth');
-      }, 2000);
+      setRecoveryTokens(null);
+      toggleRecoverySession(false);
+      navigate('/auth', { replace: true });
       
     } catch (error: any) {
       console.error('Error resetting password:', error);
@@ -185,6 +197,8 @@ export const ResetPasswordForm = () => {
           ipAddress: await getClientIP()
         }
       });
+      toggleRecoverySession(false);
+      await supabase.auth.signOut().catch(() => {});
       
       toast.error(error.message || 'Failed to reset password. Please try again.', {
         icon: <ShieldAlert className="w-5 h-5" />
@@ -208,14 +222,6 @@ export const ResetPasswordForm = () => {
     if (passwordScore <= 3) return 'Strong';
     return 'Very Strong';
   };
-
-  useEffect(() => {
-    return () => {
-      if (recoverySessionActive && !hasCompletedReset) {
-        void completeRecoverySession();
-      }
-    };
-  }, [recoverySessionActive, hasCompletedReset, completeRecoverySession]);
 
   // Show loading state while validating token
   if (validatingToken) {

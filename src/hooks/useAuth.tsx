@@ -29,8 +29,7 @@ interface AuthContextType {
   forgotPassword: (email: string) => Promise<{ error: any }>;
   resetPassword: (password: string) => Promise<{ error: any }>;
   isRecoverySession: boolean;
-  startRecoverySession: () => void;
-  completeRecoverySession: () => Promise<void>;
+  toggleRecoverySession: (active: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -417,9 +416,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         ipAddress: await getClientIP(),
       });
 
-      // Sign out of the current recovery session so the user must re-authenticate
+      // End the recovery session so tokens cannot be reused / user is not auto logged-in
       await supabase.auth.signOut();
-
+      toggleRecoverySession(false);
       setError(prev => ({ ...prev, resetPassword: null }));
       return { error: null };
 
@@ -444,13 +443,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const startRecoverySession = () => {
-    setIsRecoverySession(true);
-  };
-
-  const completeRecoverySession = async () => {
-    setIsRecoverySession(false);
-    await signOut();
+  const toggleRecoverySession = (active: boolean) => {
+    setIsRecoverySession(active);
   };
 
   async function hashPassword(password: string): Promise<string> {
@@ -493,8 +487,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       forgotPassword,
       resetPassword,
       isRecoverySession,
-      startRecoverySession,
-      completeRecoverySession
+      toggleRecoverySession
     }}>
       {children}
     </AuthContext.Provider>
