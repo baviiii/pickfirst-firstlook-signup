@@ -87,7 +87,13 @@ export const ForgotPasswordForm = () => {
   if (emailSent) {
     return (
       <Card className="w-full max-w-md bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl shadow-pickfirst-yellow/10">
-        <CardHeader className="text-center">
+      <CardHeader className="text-center space-y-3">
+        <img
+          src="https://pickfirst.com.au/logo.jpg"
+          alt="PickFirst Real Estate"
+          className="mx-auto h-16 w-auto drop-shadow-lg"
+          loading="lazy"
+        />
           <div className="mx-auto w-16 h-16 bg-pickfirst-yellow/20 rounded-full flex items-center justify-center mb-4">
             <Mail className="w-8 h-8 text-pickfirst-yellow" />
           </div>
@@ -125,7 +131,13 @@ export const ForgotPasswordForm = () => {
 
   return (
     <Card className="w-full max-w-md bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl shadow-pickfirst-yellow/10">
-      <CardHeader className="text-center">
+      <CardHeader className="text-center space-y-3">
+        <img
+          src="https://pickfirst.com.au/logo.jpg"
+          alt="PickFirst Real Estate"
+          className="mx-auto h-16 w-auto drop-shadow-lg"
+          loading="lazy"
+        />
         <CardTitle className="text-2xl font-bold text-white">
           Reset Password
         </CardTitle>

@@ -137,7 +137,13 @@ export const AuthForm = () => {
 
   return (
     <Card className="w-full max-w-md bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl shadow-pickfirst-yellow/10 hover:shadow-pickfirst-yellow/20 transition-all duration-500 hover:scale-[1.02]">
-      <CardHeader className="text-center">
+      <CardHeader className="text-center space-y-3">
+        <img
+          src="https://pickfirst.com.au/logo.jpg"
+          alt="PickFirst Real Estate"
+          className="mx-auto h-16 w-auto drop-shadow-lg"
+          loading="lazy"
+        />
         <CardTitle className="text-3xl font-bold pickfirst-gradient-yellow-amber-text">
           PickFirst
         </CardTitle>

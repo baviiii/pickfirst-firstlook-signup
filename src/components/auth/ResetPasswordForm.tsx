@@ -66,18 +66,15 @@ export const ResetPasswordForm = () => {
       }
 
       try {
-        // Verify the reset token with Supabase
-        const { error } = await supabase.auth.verifyOtp({
-          token: accessToken,
-          type: 'recovery',
-          token_hash: accessToken
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
         });
 
-        if (error) {
-          throw error;
+        if (error || !data.session) {
+          throw error || new Error('Unable to establish session for password reset');
         }
-        
-        // Token is valid!
+
         setHasValidToken(true);
         setValidatingToken(false);
       } catch (error) {
@@ -208,7 +205,13 @@ export const ResetPasswordForm = () => {
   if (validatingToken) {
     return (
       <Card className="w-full max-w-md mx-auto">
-        <CardHeader className="space-y-1">
+        <CardHeader className="space-y-3 text-center">
+          <img
+            src="https://pickfirst.com.au/logo.jpg"
+            alt="PickFirst Real Estate"
+            className="mx-auto h-16 w-auto drop-shadow-lg"
+            loading="lazy"
+          />
           <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
           <CardDescription>
             Validating your reset link...
@@ -226,8 +229,14 @@ export const ResetPasswordForm = () => {
   if (!hasValidToken) {
     return (
       <Card className="w-full max-w-md mx-auto border-red-200">
-        <CardHeader className="space-y-1">
-          <div className="flex items-center gap-2">
+        <CardHeader className="space-y-3 text-center">
+          <img
+            src="https://pickfirst.com.au/logo.jpg"
+            alt="PickFirst Real Estate"
+            className="mx-auto h-16 w-auto drop-shadow-lg"
+            loading="lazy"
+          />
+          <div className="flex items-center gap-2 justify-center">
             <ShieldAlert className="h-6 w-6 text-red-500" />
             <CardTitle className="text-2xl font-bold text-red-600">Invalid Reset Link</CardTitle>
           </div>
@@ -279,7 +288,13 @@ export const ResetPasswordForm = () => {
   // Show the reset password form only if token is valid
   return (
     <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="space-y-1">
+      <CardHeader className="space-y-3 text-center">
+        <img
+          src="https://pickfirst.com.au/logo.jpg"
+          alt="PickFirst Real Estate"
+          className="mx-auto h-16 w-auto drop-shadow-lg"
+          loading="lazy"
+        />
         <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
         <CardDescription>
           Enter your new password below.
