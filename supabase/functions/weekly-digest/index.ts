@@ -443,8 +443,8 @@ async function sendWeeklyDigestEmail(supabaseClient, digest, userEmail, userName
       </html>
     `;
 
-    // Call the send-email Edge Function
     const subject = `🏠 PickFirst Weekly Digest - ${digest.week_start} to ${digest.week_end}`;
+    const textContent = `Your weekly PickFirst digest covering ${digest.week_start} to ${digest.week_end}.`;
 
     console.log('Preparing weekly digest email', {
       userEmail,
@@ -452,31 +452,25 @@ async function sendWeeklyDigestEmail(supabaseClient, digest, userEmail, userName
       htmlLength: emailHtml.length
     });
 
-    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        to: userEmail,
+    const { error: queueError } = await supabaseClient
+      .from('email_queue')
+      .insert({
+        email: userEmail,
         subject,
         template: 'weeklyDigest',
-        data: {
+        payload: {
           html: emailHtml,
           subject,
-          text: `Your weekly PickFirst digest covering ${digest.week_start} to ${digest.week_end}.`
+          text: textContent
         }
-      })
-    });
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      console.error(`Send email edge function returned ${response.status} for ${userEmail}:`, errorText);
-      throw new Error(`Failed to send email: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
+    if (queueError) {
+      console.error(`Failed to queue weekly digest for ${userEmail}:`, queueError);
+      throw queueError;
     }
 
-    console.log(`Weekly digest sent to ${userEmail}`);
+    console.log(`Weekly digest queued for ${userEmail}`);
   } catch (error) {
     console.error(`Error sending weekly digest to ${userEmail}:`, error);
     throw error;

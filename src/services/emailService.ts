@@ -8,6 +8,29 @@ export interface EmailTemplate {
 }
 
 export class EmailService {
+  static async queueEmail(params: {
+    to: string;
+    template: string;
+    subject?: string;
+    data?: Record<string, any>;
+    sendAt?: Date;
+  }): Promise<void> {
+    try {
+      await supabase
+        .from('email_queue')
+        .insert({
+          email: params.to,
+          template: params.template,
+          subject: params.subject ?? null,
+          payload: params.data ?? {},
+          scheduled_for: params.sendAt ? params.sendAt.toISOString() : undefined
+        });
+    } catch (error) {
+      console.error('Error queuing email:', error);
+      throw error;
+    }
+  }
+
   /**
    * Send welcome email to new user
    */
@@ -48,28 +71,22 @@ export class EmailService {
       propertyUrl?: string;
     }
   ): Promise<void> {
-    try {
-      await supabase.functions.invoke('send-email', {
-        body: {
-          to: userEmail,
-          template: 'propertyAlert',
-          data: {
-            name: userName,
-            propertyTitle: propertyData.title,
-            price: propertyData.price ?? null,
-            priceDisplay: propertyData.priceDisplay,
-            location: propertyData.location,
-            propertyType: propertyData.propertyType,
-            bedrooms: propertyData.bedrooms,
-            bathrooms: propertyData.bathrooms,
-            propertyUrl: propertyData.propertyUrl
-          },
-          subject: `🏠 New Property Alert: ${propertyData.title}`
-        }
-      });
-    } catch (error) {
-      console.error('Error sending property alert email:', error);
-    }
+    await this.queueEmail({
+      to: userEmail,
+      template: 'propertyAlert',
+      subject: `🏠 New Property Alert: ${propertyData.title}`,
+      data: {
+        name: userName,
+        propertyTitle: propertyData.title,
+        price: propertyData.price ?? null,
+        priceDisplay: propertyData.priceDisplay,
+        location: propertyData.location,
+        propertyType: propertyData.propertyType,
+        bedrooms: propertyData.bedrooms,
+        bathrooms: propertyData.bathrooms,
+        propertyUrl: propertyData.propertyUrl
+      }
+    });
   }
 
   /**
@@ -89,29 +106,23 @@ export class EmailService {
       propertyUrl?: string;
     }
   ): Promise<void> {
-    try {
-      await supabase.functions.invoke('send-email', {
-        body: {
-          to: userEmail,
-          template: 'offMarketPropertyAlert',
-          data: {
-            name: userName,
-            propertyTitle: propertyData.title,
-            price: propertyData.price ?? null,
-            priceDisplay: propertyData.priceDisplay,
-            location: propertyData.location,
-            propertyType: propertyData.propertyType,
-            bedrooms: propertyData.bedrooms,
-            bathrooms: propertyData.bathrooms,
-            propertyUrl: propertyData.propertyUrl,
-            isOffMarket: true
-          },
-          subject: `🔐 Exclusive Off-Market Property: ${propertyData.title}`
-        }
-      });
-    } catch (error) {
-      console.error('Error sending off-market property alert email:', error);
-    }
+    await this.queueEmail({
+      to: userEmail,
+      template: 'offMarketPropertyAlert',
+      subject: `🔐 Exclusive Off-Market Property: ${propertyData.title}`,
+      data: {
+        name: userName,
+        propertyTitle: propertyData.title,
+        price: propertyData.price ?? null,
+        priceDisplay: propertyData.priceDisplay,
+        location: propertyData.location,
+        propertyType: propertyData.propertyType,
+        bedrooms: propertyData.bedrooms,
+        bathrooms: propertyData.bathrooms,
+        propertyUrl: propertyData.propertyUrl,
+        isOffMarket: true
+      }
+    });
   }
 
   /**

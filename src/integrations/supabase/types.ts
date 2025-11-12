@@ -800,6 +800,48 @@ export type Database = {
         }
         Relationships: []
       }
+      email_queue: {
+        Row: {
+          attempts: number
+          created_at: string | null
+          email: string
+          error_message: string | null
+          id: string
+          payload: Json | null
+          scheduled_for: string | null
+          status: string
+          subject: string | null
+          template: string
+          updated_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string | null
+          email: string
+          error_message?: string | null
+          id?: string
+          payload?: Json | null
+          scheduled_for?: string | null
+          status?: string
+          subject?: string | null
+          template: string
+          updated_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string | null
+          email?: string
+          error_message?: string | null
+          id?: string
+          payload?: Json | null
+          scheduled_for?: string | null
+          status?: string
+          subject?: string | null
+          template?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
