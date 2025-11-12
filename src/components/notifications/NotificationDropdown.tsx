@@ -31,12 +31,31 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   // Use hook to get real-time unread count (includes all notifications)
   const { totalUnread, setTotalUnread } = useCardNotifications();
   // Use external count if provided, otherwise use hook count
   const unreadCount = externalUnreadCount !== undefined ? externalUnreadCount : totalUnread;
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 640px)');
+
+    const updateMatch = (event: MediaQueryListEvent | MediaQueryList) => {
+      setIsMobile(event.matches);
+    };
+
+    updateMatch(mediaQuery);
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', updateMatch);
+      return () => mediaQuery.removeEventListener('change', updateMatch);
+    } else {
+      mediaQuery.addListener(updateMatch);
+      return () => mediaQuery.removeListener(updateMatch);
+    }
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -192,8 +211,10 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
       {/* Bell Button */}
       <Button
         variant="ghost"
-        size="sm"
-        className="relative text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
+        size="icon"
+        className={`relative text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-colors ${
+          isOpen ? 'text-pickfirst-yellow' : ''
+        } h-10 w-10 rounded-full sm:h-auto sm:w-auto sm:rounded-lg`}
         onClick={() => setIsOpen(!isOpen)}
         title={`${unreadCount} notification${unreadCount !== 1 ? 's' : ''}`}
       >
@@ -207,7 +228,14 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
 
       {/* Dropdown Panel */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] bg-gradient-to-b from-gray-900/98 to-black/98 backdrop-blur-xl border border-pickfirst-yellow/20 rounded-xl shadow-2xl z-50 overflow-hidden">
+        <div
+          className={`${
+            isMobile
+              ? 'fixed inset-x-4 top-16 z-50 w-auto mx-auto'
+              : 'absolute right-0 mt-2 w-96'
+          } max-w-[calc(100vw-2rem)] bg-gradient-to-b from-gray-900/98 to-black/98 backdrop-blur-xl border border-pickfirst-yellow/20 rounded-xl shadow-2xl overflow-hidden`}
+          style={isMobile ? { maxHeight: '75vh' } : {}}
+        >
           {/* Header */}
           <div className="p-4 border-b border-pickfirst-yellow/20 bg-gradient-to-r from-pickfirst-yellow/5 to-transparent">
             <div className="flex items-center justify-between">

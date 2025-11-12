@@ -808,9 +808,11 @@ export type Database = {
           created_at: string | null
           email: string
           full_name: string | null
+          has_completed_onboarding: boolean | null
           id: string
           location: string | null
           monthly_revenue_goal: number | null
+          onboarding_completed_at: string | null
           phone: string | null
           role: string
           stripe_customer_id: string | null
@@ -829,9 +831,11 @@ export type Database = {
           created_at?: string | null
           email: string
           full_name?: string | null
+          has_completed_onboarding?: boolean | null
           id: string
           location?: string | null
           monthly_revenue_goal?: number | null
+          onboarding_completed_at?: string | null
           phone?: string | null
           role?: string
           stripe_customer_id?: string | null
@@ -850,9 +854,11 @@ export type Database = {
           created_at?: string | null
           email?: string
           full_name?: string | null
+          has_completed_onboarding?: boolean | null
           id?: string
           location?: string | null
           monthly_revenue_goal?: number | null
+          onboarding_completed_at?: string | null
           phone?: string | null
           role?: string
           stripe_customer_id?: string | null

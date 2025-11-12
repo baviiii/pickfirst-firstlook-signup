@@ -5,42 +5,57 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Settings, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const NewUserSetupDialog = () => {
   const [open, setOpen] = useState(false);
-  const { profile } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
+  const { profile, refetchProfile } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkNewUser = async () => {
-      if (!profile?.id) return;
-      
-      // Check if we've shown this dialog before
-      const hasSeenSetup = sessionStorage.getItem('hasSeenSetup');
-      if (hasSeenSetup) return;
+    if (!profile?.id) return;
+    if (profile.has_completed_onboarding) {
+      setOpen(false);
+      return;
+    }
 
-      // Check if user has preferences set up
-      const { data: preferences } = await supabase
-        .from('user_preferences')
-        .select('id')
-        .eq('user_id', profile.id)
-        .single();
-
-      if (!preferences) {
-        setOpen(true);
-        sessionStorage.setItem('hasSeenSetup', 'true');
-      }
-    };
-
-    checkNewUser();
+    setOpen(true);
   }, [profile]);
 
-  const handleSetupNow = () => {
+  const markOnboardingComplete = async () => {
+    if (!profile?.id) return;
+    setSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          has_completed_onboarding: true,
+          onboarding_completed_at: new Date().toISOString(),
+        })
+        .eq('id', profile.id);
+
+      if (error) {
+        throw error;
+      }
+
+      await refetchProfile();
+    } catch (error) {
+      console.error('Error updating onboarding status:', error);
+      toast.error('Could not update onboarding status. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSetupNow = async () => {
+    await markOnboardingComplete();
     setOpen(false);
     navigate('/buyer-account-settings?tab=search');
   };
 
-  const handleLater = () => {
+  const handleLater = async () => {
+    await markOnboardingComplete();
     setOpen(false);
   };
 
@@ -87,12 +102,14 @@ export const NewUserSetupDialog = () => {
             variant="outline"
             onClick={handleLater}
             className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800"
+            disabled={submitting}
           >
             I'll Do This Later
           </Button>
           <Button
             onClick={handleSetupNow}
             className="flex-1 bg-pickfirst-yellow text-black hover:bg-pickfirst-amber font-medium"
+            disabled={submitting}
           >
             Set Up Now
           </Button>
