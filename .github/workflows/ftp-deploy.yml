@@ -28,23 +28,22 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
       
-      # METHOD 1: Try with increased timeout and ftps-legacy (RECOMMENDED TO TRY FIRST)
-      - name: Deploy to VentraIP via FTP (Method 1)
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps-legacy
-          port: 21
-          timeout: 300000
-          local-dir: ./dist/
-          server-dir: /
-          state-name: .ftp-deploy-sync-state-pickfirst.json
-          exclude: |
-            **/.git*
-            **/.github/**
-            **/node_modules/**
-            **/*.map
-            **/.DS_Store
-            **/Thumbs.db
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+      
+      - name: Deploy via lftp
+        run: |
+          lftp -c "
+          set ssl:verify-certificate no;
+          set ftp:ssl-allow yes;
+          set ftp:ssl-protect-data yes;
+          set ftp:ssl-force no;
+          set net:timeout 300;
+          set net:max-retries 3;
+          set net:reconnect-interval-base 5;
+          open -u ${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_SERVER }};
+          mirror -Rev ./dist/ / --ignore-time --parallel=2 --exclude .git/ --exclude node_modules/ --exclude .DS_Store --exclude Thumbs.db;
+          bye;
+          "
+        env:
+          LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
