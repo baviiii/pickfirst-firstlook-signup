@@ -54,7 +54,7 @@ jobs:
 
           # ⚠️ Use this only if you want a full overwrite occasionally
           # Otherwise, comment it out for much faster and safer incremental uploads
-          dangerous-clean-slate: true
+         # dangerous-clean-slate: true
 
           state-name: .ftp-deploy-sync-state-pickfirst.json
 
