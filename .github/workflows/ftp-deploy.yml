@@ -28,20 +28,21 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
       
-      - name: Install lftp
-        run: sudo apt-get update && sudo apt-get install -y lftp
-      
-      - name: Deploy via lftp (Plain FTP - Fast)
-        env:
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-        run: |
-          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" -e "
-          set ftp:ssl-allow no;
-          set net:timeout 30;
-          set net:max-retries 2;
-          set ftp:passive-mode on;
-          mirror -Rev ./dist/ / --verbose --parallel=4 --no-perms --exclude .git/ --exclude node_modules/;
-          bye;
-          " "$FTP_SERVER"
+      - name: Deploy via Plain FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./dist/
+          server-dir: /
+          state-name: .ftp-deploy-sync-state-pickfirst.json
+          exclude: |
+            **/.git*
+            **/.github/**
+            **/node_modules/**
+            **/*.map
+            **/.DS_Store
+            **/Thumbs.db
