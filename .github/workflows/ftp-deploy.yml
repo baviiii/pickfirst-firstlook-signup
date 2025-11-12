@@ -22,7 +22,7 @@ jobs:
         run: npm ci
 
       - name: Update browserslist database
-        run: npm update caniuse-lite
+        run: npx update-browserslist-db@latest
 
       - name: Build
         run: npm run build
@@ -31,25 +31,34 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
 
-      - name: Deploy to FTP server
+      - name: Deploy to VentraIP via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          port: ${{ secrets.FTP_PORT }}
+
+          # VentraIP usually supports FTPS on port 21
           protocol: ftps
-      
+          port: 21
+
+          # Passive mode prevents control socket timeout issues
+          passive: true
+
+          # Increase timeout for slower servers (in ms)
+          timeout: 120000
+
+          # Deploy from the dist folder
           local-dir: ./dist/
           server-dir: /
-          
-          # Cleanly replace the remote contents with this build
-          dangerous-clean-slate: true
-          
-          # Keep a named state file for efficient diffs across runs
+
+          # ⚠️ Use this only if you want a full overwrite occasionally
+          # Otherwise, comment it out for much faster and safer incremental uploads
+           dangerous-clean-slate: true
+
           state-name: .ftp-deploy-sync-state-pickfirst.json
-          
-          # Don't touch server control dirs, caches, or temporary files
+
+          # Ignore unneeded files
           exclude: |
             **/.git*
             **/.github/**
