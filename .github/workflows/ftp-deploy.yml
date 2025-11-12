@@ -22,7 +22,7 @@ jobs:
         run: npm ci
 
       - name: Update browserslist database
-        run: npx update-browserslist-db@latest
+        run: npx browserslist@latest --update-db
 
       - name: Build
         run: npm run build
