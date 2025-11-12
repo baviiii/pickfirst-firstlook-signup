@@ -11,54 +11,36 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-
+      
       - name: Install dependencies
         run: npm ci
-
-      # - name: Update browserslist database
-      #   run: npx browserslist@latest --update-db
-
+      
       - name: Build
         run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
-
-      - name: Deploy to VentraIP via FTP
+      
+      # METHOD 1: Try with increased timeout and ftps-legacy (RECOMMENDED TO TRY FIRST)
+      - name: Deploy to VentraIP via FTP (Method 1)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-
-          # VentraIP usually supports FTPS on port 21
-          protocol: ftps
+          protocol: ftps-legacy
           port: 21
-
-          # Passive mode prevents control socket timeout issues
-          passive: true
-
-          # Increase timeout for slower servers (in ms)
-          timeout: 120000
-
-          # Deploy from the dist folder
+          timeout: 300000
           local-dir: ./dist/
           server-dir: /
-
-          # ⚠️ Use this only if you want a full overwrite occasionally
-          # Otherwise, comment it out for much faster and safer incremental uploads
-         # dangerous-clean-slate: true
-
           state-name: .ftp-deploy-sync-state-pickfirst.json
-
-          # Ignore unneeded files
           exclude: |
             **/.git*
             **/.github/**
