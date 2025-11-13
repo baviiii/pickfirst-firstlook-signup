@@ -175,13 +175,24 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
           {/* Price Range */}
           <div>
           <Label className="text-gray-300 mb-4 block text-sm">
-            Price Range: ${(filters.priceMin || 0).toLocaleString()} - ${(filters.priceMax || 1000000).toLocaleString()}
+            {filters.priceMin !== undefined || filters.priceMax !== undefined
+              ? `Price Range: $${(filters.priceMin || 0).toLocaleString()} - $${(filters.priceMax || 1000000).toLocaleString()}`
+              : 'Price Range: Not Set'}
           </Label>
           <Slider
-            value={[filters.priceMin || 0, filters.priceMax || 1000000]}
+            value={filters.priceMin !== undefined || filters.priceMax !== undefined 
+              ? [filters.priceMin || 0, filters.priceMax || 1000000]
+              : [0, 1000000]}
             onValueChange={([min, max]) => {
-              handleFilterChange('priceMin', min);
-              handleFilterChange('priceMax', max);
+              // Only set filters if user actually moved the slider (not at defaults)
+              if (min > 0 || max < 1000000) {
+                handleFilterChange('priceMin', min > 0 ? min : undefined);
+                handleFilterChange('priceMax', max < 1000000 ? max : undefined);
+              } else {
+                // Reset to empty if back at defaults
+                handleFilterChange('priceMin', undefined);
+                handleFilterChange('priceMax', undefined);
+              }
             }}
             max={1000000}
             min={0}
@@ -193,9 +204,13 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
               <Label className="text-gray-300 mb-1 block text-xs">Min Price</Label>
               <Input
                 type="number"
-                placeholder="0"
-                value={filters.priceMin || ''}
-                onChange={(e) => handleFilterChange('priceMin', e.target.value ? parseInt(e.target.value) : undefined)}
+                placeholder="No minimum"
+                value={filters.priceMin !== undefined ? filters.priceMin : ''}
+                onChange={(e) => {
+                  const value = e.target.value ? parseInt(e.target.value) : undefined;
+                  // Only set if > 0, otherwise clear
+                  handleFilterChange('priceMin', value && value > 0 ? value : undefined);
+                }}
                 className="bg-gray-800/50 border-gray-700 text-white text-sm"
               />
             </div>
@@ -203,9 +218,13 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
               <Label className="text-gray-300 mb-1 block text-xs">Max Price</Label>
               <Input
                 type="number"
-                placeholder="1000000"
-                value={filters.priceMax || ''}
-                onChange={(e) => handleFilterChange('priceMax', e.target.value ? parseInt(e.target.value) : undefined)}
+                placeholder="No maximum"
+                value={filters.priceMax !== undefined ? filters.priceMax : ''}
+                onChange={(e) => {
+                  const value = e.target.value ? parseInt(e.target.value) : undefined;
+                  // Only set if < 1000000 (not default), otherwise clear
+                  handleFilterChange('priceMax', value && value < 1000000 ? value : undefined);
+                }}
                 className="bg-gray-800/50 border-gray-700 text-white text-sm"
               />
             </div>

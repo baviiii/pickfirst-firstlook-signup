@@ -58,9 +58,11 @@ const BrowsePropertiesPageComponent = () => {
 
   useEffect(() => {
     // Reset filters when component mounts or profile changes
+    // Clear everything to ensure no filters are applied on initial load
     setCurrentFilters({});
     setFilteredListings([]);
     setListings([]);
+    setLoading(true);
     
     fetchListings();
     if (profile?.role === 'buyer') {
@@ -245,8 +247,9 @@ const BrowsePropertiesPageComponent = () => {
 
     // Apply price range filter
     // Only apply if user has explicitly set a price filter (not default/empty values)
+    // Must have priceMin > 0 OR priceMax < 1000000 (not the default slider range)
     const hasExplicitPriceFilter = (currentFilters.priceMin !== undefined && currentFilters.priceMin !== null && currentFilters.priceMin > 0) || 
-                                   (currentFilters.priceMax !== undefined && currentFilters.priceMax !== null && currentFilters.priceMax > 0 && currentFilters.priceMax < 1000000000);
+                                   (currentFilters.priceMax !== undefined && currentFilters.priceMax !== null && currentFilters.priceMax > 0 && currentFilters.priceMax < 1000000);
     
     if (hasExplicitPriceFilter) {
       filtered = filtered.filter(listing => {
