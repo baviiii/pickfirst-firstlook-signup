@@ -69,6 +69,9 @@ export const ResetPasswordForm = () => {
         return;
       }
 
+      // Ensure user is signed out before validating token (prevent auto-login)
+      await supabase.auth.signOut();
+
       try {
         const { data, error } = await supabase.auth.getUser(accessToken);
 
@@ -178,13 +181,20 @@ export const ResetPasswordForm = () => {
         ipAddress: await getClientIP()
       });
       
+      // Sign out immediately after password reset to prevent auto-login
+      await supabase.auth.signOut();
+      
       toast.success('Password updated successfully! Please log in with your new password.');
       
       // Clear sensitive data from state
       setFormData({ password: '', confirmPassword: '' });
       setRecoveryTokens(null);
       toggleRecoverySession(false);
-      navigate('/auth', { replace: true });
+      
+      // Small delay to ensure sign out completes before navigation
+      setTimeout(() => {
+        navigate('/auth', { replace: true });
+      }, 100);
       
     } catch (error: any) {
       console.error('Error resetting password:', error);

@@ -98,6 +98,11 @@ export const ProfileSettings = () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
 
   // Load user preferences when component mounts
   useEffect(() => {
@@ -196,6 +201,71 @@ export const ProfileSettings = () => {
   const handleAvatarUpload = () => {
     // Simulate file upload
     toast.success('Avatar uploaded successfully');
+  };
+
+  const handleChangePassword = async () => {
+    if (!user) {
+      toast.error('User not authenticated');
+      return;
+    }
+
+    // Validation
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      toast.error('Please fill in all password fields');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters long');
+      return;
+    }
+
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      toast.error('New password must be different from current password');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // First verify current password by signing in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email || '',
+        password: passwordData.currentPassword,
+      });
+
+      if (signInError) {
+        if (signInError.message.includes('Invalid login credentials')) {
+          throw new Error('Current password is incorrect');
+        }
+        throw signInError;
+      }
+
+      // Update to new password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: passwordData.newPassword
+      });
+
+      if (updateError) throw updateError;
+
+      toast.success('Password updated successfully');
+      
+      // Clear password fields
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    } catch (error: any) {
+      console.error('Password change error:', error);
+      toast.error(error.message || 'Failed to change password. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -477,6 +547,8 @@ export const ProfileSettings = () => {
                   <Input
                     id="current-password"
                     type="password"
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
                     className="bg-white/5 border-white/20 text-white"
                   />
                 </div>
@@ -485,6 +557,8 @@ export const ProfileSettings = () => {
                   <Input
                     id="new-password"
                     type="password"
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
                     className="bg-white/5 border-white/20 text-white"
                   />
                 </div>
@@ -493,11 +567,17 @@ export const ProfileSettings = () => {
                   <Input
                     id="confirm-password"
                     type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                     className="bg-white/5 border-white/20 text-white"
                   />
                 </div>
-                <Button className="w-full bg-red-500 text-white hover:bg-red-600">
-                  Update Password
+                <Button 
+                  onClick={handleChangePassword}
+                  disabled={isLoading}
+                  className="w-full bg-pickfirst-yellow text-black hover:bg-pickfirst-amber"
+                >
+                  {isLoading ? 'Updating...' : 'Update Password'}
                 </Button>
               </CardContent>
             </Card>

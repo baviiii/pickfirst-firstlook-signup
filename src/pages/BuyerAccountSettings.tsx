@@ -581,7 +581,7 @@ const BuyerAccountSettingsPage = () => {
                       type="tel"
                       value={settings.phone}
                       onChange={(e) => setSettings(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="(555) 123-4567"
+                      placeholder="04XX XXX XXX"
                       className="bg-input border border-border text-foreground focus:ring-primary focus:border-primary"
                     />
                   </div>
@@ -967,16 +967,44 @@ const BuyerAccountSettingsPage = () => {
                   <div className="pt-2">
                     <Button 
                       variant="destructive" 
-                      onClick={() => {
-                        if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                          if (confirm('This will permanently delete all your data. Are you absolutely sure?')) {
-                            toast.error('Account deletion not yet implemented. Please contact support.');
+                      onClick={async () => {
+                        if (!user) {
+                          toast.error('You must be logged in to delete your account');
+                          return;
+                        }
+
+                        if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                          return;
+                        }
+
+                        if (!confirm('This will permanently delete all your data. Are you absolutely sure?')) {
+                          return;
+                        }
+
+                        setIsLoading(true);
+                        try {
+                          // Delete profile (this will cascade delete related data due to foreign keys)
+                          const result = await ProfileService.deleteProfile(user.id);
+                          
+                          if (result.success) {
+                            toast.success('Account deleted successfully');
+                            // Sign out and redirect
+                            await supabase.auth.signOut();
+                            navigate('/');
+                          } else {
+                            toast.error(result.error || 'Failed to delete account');
                           }
+                        } catch (error: any) {
+                          console.error('Account deletion error:', error);
+                          toast.error(error.message || 'Failed to delete account. Please try again.');
+                        } finally {
+                          setIsLoading(false);
                         }
                       }}
+                      disabled={isLoading}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      Delete My Account
+                      {isLoading ? 'Deleting...' : 'Delete My Account'}
                     </Button>
                   </div>
                 </CardContent>
