@@ -57,6 +57,11 @@ const BrowsePropertiesPageComponent = () => {
   const [inquiryCount, setInquiryCount] = useState<number>(0);
 
   useEffect(() => {
+    // Reset filters when component mounts or profile changes
+    setCurrentFilters({});
+    setFilteredListings([]);
+    setListings([]);
+    
     fetchListings();
     if (profile?.role === 'buyer') {
       fetchFavorites();
@@ -278,6 +283,15 @@ const BrowsePropertiesPageComponent = () => {
           if (rangeMatch) {
             propertyMinPrice = parseNumericPrice(rangeMatch[1]);
             propertyMaxPrice = parseNumericPrice(rangeMatch[2]);
+          } else {
+            // Try to parse as single number
+            const singlePrice = parseNumericPrice(priceDisplay);
+            if (singlePrice !== null) {
+              propertyMinPrice = singlePrice;
+              propertyMaxPrice = singlePrice;
+            }
+            // If we can't parse price_display as a number, it's likely text like "Contact Agent"
+            // We'll handle this below by checking if propertyMinPrice is still null
           }
         }
         
