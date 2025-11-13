@@ -66,13 +66,15 @@ const BrowsePropertiesPageComponent = () => {
 
   useEffect(() => {
     // Always update filteredListings when listings change, even if filters are empty
+    console.log('useEffect triggered - listings:', listings.length, 'filteredListings:', filteredListings.length, 'filters:', currentFilters);
     if (listings.length > 0) {
+      // Only apply filters if we have listings
       applyFiltersAndSort();
-    } else {
-      // If listings is empty, also clear filteredListings
+    } else if (listings.length === 0 && !loading) {
+      // Only clear if we're not loading and truly have no listings
       setFilteredListings([]);
     }
-  }, [listings, currentFilters, sortBy]);
+  }, [listings, currentFilters, sortBy, loading]);
 
   const fetchListings = async () => {
     setLoading(true);
@@ -120,9 +122,11 @@ const BrowsePropertiesPageComponent = () => {
 
   const applyFiltersAndSort = () => {
     if (listings.length === 0) {
+      console.log('applyFiltersAndSort: No listings, clearing filteredListings');
       setFilteredListings([]);
       return;
     }
+    console.log('applyFiltersAndSort: Starting with', listings.length, 'listings');
     let filtered = [...listings];
 
     // Apply search term filter
@@ -155,12 +159,18 @@ const BrowsePropertiesPageComponent = () => {
 
     // Apply bedroom filter
     if (currentFilters.bedrooms) {
-      filtered = filtered.filter(listing => (listing.bedrooms || 0) >= currentFilters.bedrooms);
+      filtered = filtered.filter(listing => {
+        const bedrooms = typeof listing.bedrooms === 'string' ? parseFloat(listing.bedrooms) || 0 : (listing.bedrooms || 0);
+        return bedrooms >= currentFilters.bedrooms;
+      });
     }
 
     // Apply bathroom filter
     if (currentFilters.bathrooms) {
-      filtered = filtered.filter(listing => (listing.bathrooms || 0) >= currentFilters.bathrooms);
+      filtered = filtered.filter(listing => {
+        const bathrooms = typeof listing.bathrooms === 'string' ? parseFloat(listing.bathrooms) || 0 : (listing.bathrooms || 0);
+        return bathrooms >= currentFilters.bathrooms;
+      });
     }
 
     // Apply price range filter
@@ -177,7 +187,7 @@ const BrowsePropertiesPageComponent = () => {
     // Apply square footage filter
     if (currentFilters.minSquareFootage !== undefined || currentFilters.maxSquareFootage !== undefined) {
       filtered = filtered.filter(listing => {
-        const sqft = listing.square_feet || 0;
+        const sqft = typeof listing.square_feet === 'string' ? parseFloat(listing.square_feet) || 0 : (listing.square_feet || 0);
         const minSqft = currentFilters.minSquareFootage || 0;
         const maxSqft = currentFilters.maxSquareFootage || 5000;
         return sqft >= minSqft && sqft <= maxSqft;
@@ -204,6 +214,7 @@ const BrowsePropertiesPageComponent = () => {
       }
     });
 
+    console.log('applyFiltersAndSort - filtered count:', filtered.length, 'from listings:', listings.length);
     setFilteredListings(filtered);
   };
 
@@ -359,7 +370,18 @@ const BrowsePropertiesPageComponent = () => {
 
   // Property card component
   const PropertyCard = ({ listing }: { listing: PropertyListing }) => {
-    const hasImages = listing.images && listing.images.length > 0;
+    // Handle images as string or array (database might return JSON string)
+    let imagesArray: string[] = [];
+    if (Array.isArray(listing.images)) {
+      imagesArray = listing.images;
+    } else if (typeof listing.images === 'string') {
+      try {
+        imagesArray = JSON.parse(listing.images);
+      } catch {
+        imagesArray = [listing.images];
+      }
+    }
+    const hasImages = imagesArray && imagesArray.length > 0;
     const isFavorited = favorites.has(listing.id);
     const hasInquired = inquiredProperties.has(listing.id);
     const priceDisplay = PropertyService.getDisplayPrice(listing);
@@ -367,6 +389,10 @@ const BrowsePropertiesPageComponent = () => {
     const numericSoldPrice = typeof listing.sold_price === 'string' ? parseFloat(listing.sold_price) : listing.sold_price;
     const hasSoldPrice = Number.isFinite(numericSoldPrice) && (numericSoldPrice ?? 0) > 0;
     const numericListPrice = typeof listing.price === 'string' ? parseFloat(listing.price) : listing.price;
+    // Parse string values like SuperAdminDashboard does
+    const numericBedrooms = typeof listing.bedrooms === 'string' ? parseFloat(listing.bedrooms) : listing.bedrooms;
+    const numericBathrooms = typeof listing.bathrooms === 'string' ? parseFloat(listing.bathrooms) : listing.bathrooms;
+    const numericSquareFeet = typeof listing.square_feet === 'string' ? parseFloat(listing.square_feet) : listing.square_feet;
     const statusLabel = (() => {
       if (listing.status === 'sold') return 'Sold';
       if (listing.status === 'pending') return 'Pending Approval';
@@ -391,7 +417,7 @@ const BrowsePropertiesPageComponent = () => {
             <div className="sm:w-80 aspect-video sm:aspect-square overflow-hidden">
               {hasImages ? (
                 <img
-                  src={listing.images[0]}
+                  src={imagesArray[0]}
                   alt={listing.title}
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -447,22 +473,22 @@ const BrowsePropertiesPageComponent = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-4 text-sm">
-                  {listing.bedrooms !== null && (
+                  {numericBedrooms !== null && numericBedrooms !== undefined && !Number.isNaN(numericBedrooms) && (
                     <div className="flex items-center gap-1">
                       <Bed className="w-4 h-4 text-yellow-400" />
-                      <span className="text-gray-300">{listing.bedrooms}</span>
+                      <span className="text-gray-300">{numericBedrooms}</span>
                     </div>
                   )}
-                  {listing.bathrooms !== null && (
+                  {numericBathrooms !== null && numericBathrooms !== undefined && !Number.isNaN(numericBathrooms) && (
                     <div className="flex items-center gap-1">
                       <Bath className="w-4 h-4 text-yellow-400" />
-                      <span className="text-gray-300">{listing.bathrooms}</span>
+                      <span className="text-gray-300">{numericBathrooms}</span>
                     </div>
                   )}
-                  {listing.square_feet !== null && (
+                  {numericSquareFeet !== null && numericSquareFeet !== undefined && !Number.isNaN(numericSquareFeet) && (
                     <div className="flex items-center gap-1">
                       <Square className="w-4 h-4 text-yellow-400" />
-                      <span className="text-gray-300">{listing.square_feet.toLocaleString()}</span>
+                      <span className="text-gray-300">{numericSquareFeet.toLocaleString()}</span>
                     </div>
                   )}
                 </div>
@@ -532,7 +558,7 @@ const BrowsePropertiesPageComponent = () => {
         <div className="relative aspect-video overflow-hidden rounded-t-lg">
           {hasImages ? (
             <img
-              src={listing.images[0]}
+              src={imagesArray[0]}
               alt={listing.title}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
               onError={(e) => {
@@ -569,9 +595,9 @@ const BrowsePropertiesPageComponent = () => {
           </Button>
           
           {/* Image Count */}
-          {hasImages && listing.images.length > 1 && (
+          {hasImages && imagesArray.length > 1 && (
             <div className="absolute bottom-3 right-3 bg-black/70 text-white px-2 py-1 rounded-full text-xs">
-              {listing.images.length} photos
+              {imagesArray.length} photos
             </div>
           )}
         </div>
@@ -606,22 +632,22 @@ const BrowsePropertiesPageComponent = () => {
                 )}
               </div>
               <div className="flex items-center gap-3 text-xs">
-                {listing.bedrooms !== null && (
+                {numericBedrooms !== null && numericBedrooms !== undefined && !Number.isNaN(numericBedrooms) && (
                   <div className="flex items-center gap-1">
                     <Bed className="w-3 h-3 text-yellow-400" />
-                    <span className="text-gray-300">{listing.bedrooms}</span>
+                    <span className="text-gray-300">{numericBedrooms}</span>
                   </div>
                 )}
-                {listing.bathrooms !== null && (
+                {numericBathrooms !== null && numericBathrooms !== undefined && !Number.isNaN(numericBathrooms) && (
                   <div className="flex items-center gap-1">
                     <Bath className="w-3 h-3 text-yellow-400" />
-                    <span className="text-gray-300">{listing.bathrooms}</span>
+                    <span className="text-gray-300">{numericBathrooms}</span>
                   </div>
                 )}
-                {listing.square_feet !== null && (
+                {numericSquareFeet !== null && numericSquareFeet !== undefined && !Number.isNaN(numericSquareFeet) && (
                   <div className="flex items-center gap-1">
                     <Square className="w-3 h-3 text-yellow-400" />
-                    <span className="text-gray-300">{Math.round(listing.square_feet/1000)}k</span>
+                    <span className="text-gray-300">{Math.round(numericSquareFeet/1000)}k</span>
                   </div>
                 )}
               </div>
@@ -754,6 +780,9 @@ const BrowsePropertiesPageComponent = () => {
               <Home className="w-16 h-16 text-gray-500 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">No properties found</h3>
               <p className="text-gray-400 mb-4">Try adjusting your search or filters</p>
+              <p className="text-xs text-gray-500 mt-2">
+                Debug: listings={listings.length}, filtered={filteredListings.length}
+              </p>
             </div>
           ) : (
             <div className={
@@ -761,9 +790,14 @@ const BrowsePropertiesPageComponent = () => {
                 ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' 
                 : 'space-y-6'
             }>
-              {filteredListings.map(listing => (
-                <PropertyCard key={listing.id} listing={listing} />
-              ))}
+              {filteredListings.map((listing, index) => {
+                try {
+                  return <PropertyCard key={listing.id || index} listing={listing} />;
+                } catch (error) {
+                  console.error('Error rendering property card:', error, listing);
+                  return null;
+                }
+              })}
             </div>
           )}
         </div>
