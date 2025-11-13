@@ -65,7 +65,13 @@ const BrowsePropertiesPageComponent = () => {
   }, [profile]);
 
   useEffect(() => {
-    applyFiltersAndSort();
+    // Always update filteredListings when listings change, even if filters are empty
+    if (listings.length > 0) {
+      applyFiltersAndSort();
+    } else {
+      // If listings is empty, also clear filteredListings
+      setFilteredListings([]);
+    }
   }, [listings, currentFilters, sortBy]);
 
   const fetchListings = async () => {
@@ -77,10 +83,17 @@ const BrowsePropertiesPageComponent = () => {
       const publicListings = data?.filter(listing => 
         (listing as any).listing_source !== 'agent_posted'
       ) || [];
+      console.log('Fetched listings:', publicListings.length, 'properties');
       setListings(publicListings);
+      // Immediately set filteredListings to show properties even before filters apply
+      if (publicListings.length > 0) {
+        setFilteredListings(publicListings);
+      }
     } catch (error) {
+      console.error('Error fetching listings:', error);
       toast.error('Failed to load properties');
       setListings([]);
+      setFilteredListings([]);
     } finally {
       setLoading(false);
     }
@@ -106,6 +119,10 @@ const BrowsePropertiesPageComponent = () => {
   };
 
   const applyFiltersAndSort = () => {
+    if (listings.length === 0) {
+      setFilteredListings([]);
+      return;
+    }
     let filtered = [...listings];
 
     // Apply search term filter
@@ -149,9 +166,10 @@ const BrowsePropertiesPageComponent = () => {
     // Apply price range filter
     if (currentFilters.priceMin !== undefined || currentFilters.priceMax !== undefined) {
       filtered = filtered.filter(listing => {
-        const price = listing.price || 0;
+        // Handle both string and number prices
+        const price = typeof listing.price === 'string' ? parseFloat(listing.price) || 0 : (listing.price || 0);
         const minPrice = currentFilters.priceMin || 0;
-        const maxPrice = currentFilters.priceMax || 1000000;
+        const maxPrice = currentFilters.priceMax || 1000000000; // Increased max
         return price >= minPrice && price <= maxPrice;
       });
     }
@@ -170,9 +188,13 @@ const BrowsePropertiesPageComponent = () => {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'price-low':
-          return a.price - b.price;
+          const priceA = typeof a.price === 'string' ? parseFloat(a.price) || 0 : (a.price || 0);
+          const priceB = typeof b.price === 'string' ? parseFloat(b.price) || 0 : (b.price || 0);
+          return priceA - priceB;
         case 'price-high':
-          return b.price - a.price;
+          const priceAHigh = typeof a.price === 'string' ? parseFloat(a.price) || 0 : (a.price || 0);
+          const priceBHigh = typeof b.price === 'string' ? parseFloat(b.price) || 0 : (b.price || 0);
+          return priceBHigh - priceAHigh;
         case 'newest':
           return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
         case 'oldest':
