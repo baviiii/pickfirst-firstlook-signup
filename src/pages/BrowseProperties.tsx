@@ -272,6 +272,8 @@ const BrowsePropertiesPageComponent = () => {
         let propertyMaxPrice: number | null = null;
         
         if (priceDisplay) {
+          // Match price ranges like "1,125,000-1,200,000", "$120k-$500k", "120-500 (USP)", etc.
+          // The regex captures numbers before and after the dash, ignoring any text after (like "(USP)")
           const rangeMatch = priceDisplay.match(/^[\$]?\s*([\d,k.m]+)\s*[-–—]\s*[\$]?\s*([\d,k.m]+)/i);
           if (rangeMatch) {
             propertyMinPrice = parseNumericPrice(rangeMatch[1]);
