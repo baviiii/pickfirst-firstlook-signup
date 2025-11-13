@@ -110,9 +110,18 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
               matchPercentage = Math.round(property.similarityScore * 100);
               matchCriteria = {
                 priceMatch: property.price >= (preferences.min_budget || 0) && property.price <= (preferences.max_budget || 10000000),
-                bedroomsMatch: !preferences.preferred_bedrooms || (property.bedrooms && property.bedrooms >= preferences.preferred_bedrooms),
-                bathroomsMatch: !preferences.preferred_bathrooms || (property.bathrooms && property.bathrooms >= preferences.preferred_bathrooms),
-                garagesMatch: !preferences.preferred_garages || ((property as any).garages && (property as any).garages >= preferences.preferred_garages),
+                bedroomsMatch: !preferences.preferred_bedrooms || (() => {
+                  const bedrooms = typeof property.bedrooms === 'string' ? parseFloat(property.bedrooms) : property.bedrooms;
+                  return bedrooms && bedrooms >= preferences.preferred_bedrooms;
+                })(),
+                bathroomsMatch: !preferences.preferred_bathrooms || (() => {
+                  const bathrooms = typeof property.bathrooms === 'string' ? parseFloat(property.bathrooms) : property.bathrooms;
+                  return bathrooms && bathrooms >= preferences.preferred_bathrooms;
+                })(),
+                garagesMatch: !preferences.preferred_garages || (() => {
+                  const garages = typeof (property as any).garages === 'string' ? parseFloat((property as any).garages) : (property as any).garages;
+                  return garages && garages >= preferences.preferred_garages;
+                })(),
                 featuresMatch: !preferences.preferred_features || preferences.preferred_features.length === 0,
                 locationMatch: true, // Fuzzy match already found location similarity
                 propertyTypeMatch: !preferences.property_type_preferences || preferences.property_type_preferences.some((prefType: string) => prefType.toLowerCase() === property.property_type.toLowerCase()),
@@ -190,7 +199,8 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
     // Bedrooms matching
     if (preferences.preferred_bedrooms) {
       totalCriteria++;
-      if (property.bedrooms && property.bedrooms >= preferences.preferred_bedrooms) {
+      const bedrooms = typeof property.bedrooms === 'string' ? parseFloat(property.bedrooms) : property.bedrooms;
+      if (bedrooms && bedrooms >= preferences.preferred_bedrooms) {
         criteria.bedroomsMatch = true;
         criteria.matchedCriteria.push('Bedrooms');
         matches++;
@@ -200,7 +210,8 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
     // Bathrooms matching
     if (preferences.preferred_bathrooms) {
       totalCriteria++;
-      if (property.bathrooms && property.bathrooms >= preferences.preferred_bathrooms) {
+      const bathrooms = typeof property.bathrooms === 'string' ? parseFloat(property.bathrooms) : property.bathrooms;
+      if (bathrooms && bathrooms >= preferences.preferred_bathrooms) {
         criteria.bathroomsMatch = true;
         criteria.matchedCriteria.push('Bathrooms');
         matches++;
@@ -210,7 +221,8 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
     // Garages matching
     if (preferences.preferred_garages) {
       totalCriteria++;
-      if ((property as any).garages && (property as any).garages >= preferences.preferred_garages) {
+      const garages = typeof (property as any).garages === 'string' ? parseFloat((property as any).garages) : (property as any).garages;
+      if (garages && garages >= preferences.preferred_garages) {
         criteria.garagesMatch = true;
         criteria.matchedCriteria.push('Garages');
         matches++;
@@ -463,7 +475,27 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
 
             {/* Property Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {recommendations.map((property) => (
+              {recommendations.map((property) => {
+                // Parse string values like BrowseProperties does
+                const numericBedrooms = typeof property.bedrooms === 'string' ? parseFloat(property.bedrooms) : property.bedrooms;
+                const numericBathrooms = typeof property.bathrooms === 'string' ? parseFloat(property.bathrooms) : property.bathrooms;
+                const numericSquareFeet = typeof property.square_feet === 'string' ? parseFloat(property.square_feet) : property.square_feet;
+                const numericGarages = typeof (property as any).garages === 'string' ? parseFloat((property as any).garages) : (property as any).garages;
+                
+                // Handle images as string or array (database might return JSON string)
+                let imagesArray: string[] = [];
+                if (Array.isArray(property.images)) {
+                  imagesArray = property.images;
+                } else if (typeof property.images === 'string') {
+                  try {
+                    imagesArray = JSON.parse(property.images);
+                  } catch {
+                    imagesArray = [property.images];
+                  }
+                }
+                const hasImages = imagesArray && imagesArray.length > 0;
+                
+                return (
                 <Card 
                   key={property.id} 
                   className="group cursor-pointer hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/50 bg-card/50 backdrop-blur-sm flex flex-col h-full"
@@ -471,9 +503,9 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                 >
                   <CardHeader className="p-0 relative flex-1 flex flex-col">
                     <div className="aspect-video bg-muted rounded-t-md overflow-hidden relative flex-shrink-0">
-                      {property.images && property.images.length > 0 ? (
+                      {hasImages ? (
                         <img
-                          src={property.images[0]}
+                          src={imagesArray[0]}
                           alt={property.title}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           onError={(e) => {
@@ -482,7 +514,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                           }}
                         />
                       ) : null}
-                      <div className={`w-full h-full bg-muted flex items-center justify-center ${property.images && property.images.length > 0 ? 'hidden' : ''}`}>
+                      <div className={`w-full h-full bg-muted flex items-center justify-center ${hasImages ? 'hidden' : ''}`}>
                         <Home className="h-12 w-12 text-muted-foreground" />
                       </div>
                       
@@ -521,28 +553,28 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                       
                       {/* Property details - more compact on mobile */}
                       <div className="flex flex-wrap gap-1 sm:gap-2 mb-2 sm:mb-3">
-                        {property.bedrooms !== null && (
+                        {numericBedrooms !== null && numericBedrooms !== undefined && !Number.isNaN(numericBedrooms) && (
                           <div className="flex items-center text-[10px] sm:text-xs bg-blue-500/10 text-blue-300 px-1.5 sm:px-2 py-0.5 rounded">
                             <Bed className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" />
-                            {property.bedrooms} bd
+                            {numericBedrooms} bd
                           </div>
                         )}
-                        {property.bathrooms !== null && (
+                        {numericBathrooms !== null && numericBathrooms !== undefined && !Number.isNaN(numericBathrooms) && (
                           <div className="flex items-center text-[10px] sm:text-xs bg-purple-500/10 text-purple-300 px-1.5 sm:px-2 py-0.5 rounded">
                             <Bath className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" />
-                            {property.bathrooms} ba
+                            {numericBathrooms} ba
                           </div>
                         )}
-                        {property.square_feet !== null && (
+                        {numericSquareFeet !== null && numericSquareFeet !== undefined && !Number.isNaN(numericSquareFeet) && (
                           <div className="flex items-center text-[10px] sm:text-xs bg-green-500/10 text-green-300 px-1.5 sm:px-2 py-0.5 rounded">
                             <Square className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" />
-                            {Math.round(property.square_feet / 100) / 10}k sqft
+                            {Math.round(numericSquareFeet / 100) / 10}k sqft
                           </div>
                         )}
-                        {(property as any).garages !== null && (property as any).garages !== undefined && (
+                        {numericGarages !== null && numericGarages !== undefined && !Number.isNaN(numericGarages) && (
                           <div className="flex items-center text-[10px] sm:text-xs bg-orange-500/10 text-orange-300 px-1.5 sm:px-2 py-0.5 rounded">
                             <Car className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" />
-                            {(property as any).garages} gr
+                            {numericGarages} gr
                           </div>
                         )}
                       </div>
@@ -603,7 +635,8 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                     </CardContent>
                   </CardHeader>
                 </Card>
-              ))}
+              );
+              })}
             </div>
           </>
         )}
