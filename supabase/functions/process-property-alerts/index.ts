@@ -367,10 +367,41 @@ function checkPropertyMatch(
   let matches = 0
   let totalCriteria = 0
 
-  // Skip properties with invalid prices (negative or zero)
-  const price = parseFloat(property.price.toString())
-  if (price <= 0) {
-    return { isMatch: false, score: 0, matchedCriteria: [] }
+  // Parse price from price_display or price field (handles ranges, text, etc.)
+  const parsePropertyPrice = (prop: PropertyListing): { min: number | null; max: number | null } => {
+    const parseNumericPrice = (value: string | number | null | undefined): number | null => {
+      if (value === null || value === undefined) return null
+      if (typeof value === 'number') return isFinite(value) && value > 0 ? value : null
+      const cleaned = value.toString().replace(/[,$\s]/g, '').toLowerCase()
+      if (cleaned.includes('k')) {
+        const num = parseFloat(cleaned.replace('k', ''))
+        return isNaN(num) ? null : num * 1000
+      }
+      if (cleaned.includes('m')) {
+        const num = parseFloat(cleaned.replace('m', ''))
+        return isNaN(num) ? null : num * 1000000
+      }
+      const num = parseFloat(cleaned)
+      return isNaN(num) ? null : num
+    }
+    
+    const priceDisplay = typeof (prop as any).price_display === 'string' ? (prop as any).price_display.trim() : ''
+    if (priceDisplay) {
+      const rangeMatch = priceDisplay.match(/^[\$]?\s*([\d,k.m]+)\s*[-–—]\s*[\$]?\s*([\d,k.m]+)/i)
+      if (rangeMatch) {
+        return {
+          min: parseNumericPrice(rangeMatch[1]),
+          max: parseNumericPrice(rangeMatch[2])
+        }
+      }
+      const singlePrice = parseNumericPrice(priceDisplay)
+      if (singlePrice !== null) {
+        return { min: singlePrice, max: singlePrice }
+      }
+    }
+    
+    const price = parseNumericPrice(prop.price)
+    return price !== null ? { min: price, max: price } : { min: null, max: null }
   }
 
   // Convert budget_range to min_budget and max_budget (same as BuyerProfileService)
@@ -380,7 +411,7 @@ function checkPropertyMatch(
   if (preferences.budget_range) {
     const [minStr, maxStr] = preferences.budget_range.split('-')
     minBudget = parseInt(minStr) || 0
-    maxBudget = parseInt(maxStr) || 1000000
+    maxBudget = parseInt(maxStr) || 10000000
   }
 
   // Extract bedrooms and bathrooms from preferred_areas (same as BuyerProfileService)
@@ -401,9 +432,26 @@ function checkPropertyMatch(
     )
   }
 
-  // Price matching (EXACT same logic as buyer dashboard)
+  // Price matching - handle text prices, ranges, etc.
   totalCriteria++
-  if (price >= minBudget && price <= maxBudget) {
+  const propertyPrice = parsePropertyPrice(property)
+  
+  // Check if property price range overlaps with budget range
+  let priceMatch = false
+  if (propertyPrice.min !== null && propertyPrice.max !== null) {
+    // Property has a price range
+    priceMatch = (propertyPrice.min >= minBudget && propertyPrice.min <= maxBudget) ||
+                (propertyPrice.max >= minBudget && propertyPrice.max <= maxBudget) ||
+                (propertyPrice.min <= minBudget && propertyPrice.max >= maxBudget)
+  } else if (propertyPrice.min !== null) {
+    // Single price
+    priceMatch = propertyPrice.min >= minBudget && propertyPrice.min <= maxBudget
+  } else {
+    // No price (Contact Agent, etc.) - always include
+    priceMatch = true
+  }
+  
+  if (priceMatch) {
     matchedCriteria.push('Price Range')
     matches++
   }

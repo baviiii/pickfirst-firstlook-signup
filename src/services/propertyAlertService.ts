@@ -290,19 +290,70 @@ export class PropertyAlertService {
     let score = 0;
     let totalCriteria = 0;
 
-    // Price range matching
+    // Price range matching - handle text prices, ranges, etc.
     if (preferences.min_budget || preferences.max_budget) {
       totalCriteria++;
-      const price = parseFloat(property.price.toString());
       
-      if (preferences.min_budget && price >= preferences.min_budget) {
-        matchedCriteria.push('price_min');
-        score += 0.3;
+      // Parse price from price_display or price field (handles ranges, text, etc.)
+      const parsePropertyPrice = (prop: PropertyListing): { min: number | null; max: number | null } => {
+        const parseNumericPrice = (value: string | number | null | undefined): number | null => {
+          if (value === null || value === undefined) return null;
+          if (typeof value === 'number') return isFinite(value) && value > 0 ? value : null;
+          const cleaned = value.toString().replace(/[,$\s]/g, '').toLowerCase();
+          if (cleaned.includes('k')) {
+            const num = parseFloat(cleaned.replace('k', ''));
+            return isNaN(num) ? null : num * 1000;
+          }
+          if (cleaned.includes('m')) {
+            const num = parseFloat(cleaned.replace('m', ''));
+            return isNaN(num) ? null : num * 1000000;
+          }
+          const num = parseFloat(cleaned);
+          return isNaN(num) ? null : num;
+        };
+        
+        const priceDisplay = typeof (prop as any).price_display === 'string' ? (prop as any).price_display.trim() : '';
+        if (priceDisplay) {
+          const rangeMatch = priceDisplay.match(/^[\$]?\s*([\d,k.m]+)\s*[-–—]\s*[\$]?\s*([\d,k.m]+)/i);
+          if (rangeMatch) {
+            return {
+              min: parseNumericPrice(rangeMatch[1]),
+              max: parseNumericPrice(rangeMatch[2])
+            };
+          }
+          const singlePrice = parseNumericPrice(priceDisplay);
+          if (singlePrice !== null) {
+            return { min: singlePrice, max: singlePrice };
+          }
+        }
+        
+        const price = parseNumericPrice(prop.price);
+        return price !== null ? { min: price, max: price } : { min: null, max: null };
+      };
+      
+      const propertyPrice = parsePropertyPrice(property);
+      const minBudget = preferences.min_budget || 0;
+      const maxBudget = preferences.max_budget || 10000000;
+      
+      // Check if property price range overlaps with budget range
+      let priceMatches = false;
+      if (propertyPrice.min !== null && propertyPrice.max !== null) {
+        // Property has a price range
+        priceMatches = (propertyPrice.min >= minBudget && propertyPrice.min <= maxBudget) ||
+                      (propertyPrice.max >= minBudget && propertyPrice.max <= maxBudget) ||
+                      (propertyPrice.min <= minBudget && propertyPrice.max >= maxBudget);
+      } else if (propertyPrice.min !== null) {
+        // Single price
+        priceMatches = propertyPrice.min >= minBudget && propertyPrice.min <= maxBudget;
+      } else {
+        // No price (Contact Agent, etc.) - always include
+        priceMatches = true;
       }
       
-      if (preferences.max_budget && price <= preferences.max_budget) {
+      if (priceMatches) {
+        matchedCriteria.push('price_min');
         matchedCriteria.push('price_max');
-        score += 0.3;
+        score += 0.6; // Full price match score
       }
     }
 
