@@ -50,12 +50,17 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isInitialMount, setIsInitialMount] = useState(true);
 
   useEffect(() => {
-    // Only call onFiltersChange if filters have been explicitly set
-    // This prevents default values from triggering filters
+    // Don't call onFiltersChange on initial mount - wait for user interaction
+    if (isInitialMount) {
+      setIsInitialMount(false);
+      return;
+    }
+    // Only call onFiltersChange after initial mount when filters change
     onFiltersChange?.(filters);
-  }, [filters, onFiltersChange]);
+  }, [filters, onFiltersChange, isInitialMount]);
 
   const handleFilterChange = (key: keyof SimpleFilters, value: any) => {
     setFilters(prev => ({
@@ -66,10 +71,12 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
 
   const clearFilters = () => {
     setFilters({
-      // Clear price filters completely
+      // Clear all filters completely
       minSquareFootage: 0,
       maxSquareFootage: 5000
     });
+    // Explicitly call onFiltersChange when clearing to reset parent state
+    onFiltersChange?.({});
     toast.success('Filters cleared');
   };
 
