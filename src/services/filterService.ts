@@ -187,7 +187,10 @@ export class FilterService {
       }
 
       if (filters.propertyType) {
-        query = query.eq('property_type', filters.propertyType);
+        // Property type matching - normalize to lowercase for case-insensitive matching
+        const normalizedType = filters.propertyType.toLowerCase();
+        // Use or() to match both lowercase and original case
+        query = query.or(`property_type.eq.${normalizedType},property_type.eq.${filters.propertyType}`);
       }
 
       if (filters.squareFootageMin !== undefined && filters.squareFootageMin !== null && filters.squareFootageMin > 0) {

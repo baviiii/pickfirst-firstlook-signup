@@ -66,13 +66,20 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
         }
 
         // Build advanced filters from preferences - filter out null values
+        // Don't apply price filters if budget is "any" (0 or very high default values)
+        // This allows properties with text prices to show
+        const isBudgetAny = (!preferences.min_budget || preferences.min_budget === 0) && 
+                           (!preferences.max_budget || preferences.max_budget >= 10000000);
+        
         const filters: AdvancedPropertyFilters = {
-          priceMin: preferences.min_budget && preferences.min_budget > 0 ? preferences.min_budget : undefined,
-          priceMax: preferences.max_budget && preferences.max_budget < 10000000 ? preferences.max_budget : undefined,
+          // Only set price filters if user explicitly set a budget (not "any")
+          priceMin: !isBudgetAny && preferences.min_budget && preferences.min_budget > 0 ? preferences.min_budget : undefined,
+          priceMax: !isBudgetAny && preferences.max_budget && preferences.max_budget < 10000000 ? preferences.max_budget : undefined,
           bedrooms: preferences.preferred_bedrooms && preferences.preferred_bedrooms > 0 ? preferences.preferred_bedrooms : undefined,
           bathrooms: preferences.preferred_bathrooms && preferences.preferred_bathrooms > 0 ? preferences.preferred_bathrooms : undefined,
           garageSpaces: preferences.preferred_garages && preferences.preferred_garages >= 0 ? preferences.preferred_garages : undefined,
-          propertyType: preferences.property_type_preferences?.[0] || undefined,
+          // Normalize property type to lowercase for consistent matching
+          propertyType: preferences.property_type_preferences?.[0]?.toLowerCase() || undefined,
           sortBy: 'price',
           sortOrder: 'asc',
           limit: 12
@@ -147,22 +154,31 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
               };
               
               const propertyPrice = parsePropertyPrice(property);
-              const minBudget = preferences.min_budget || 0;
-              const maxBudget = preferences.max_budget || 10000000;
+              // Check if budget is "any" (no budget filter)
+              const isBudgetAny = (!preferences.min_budget || preferences.min_budget === 0) && 
+                                 (!preferences.max_budget || preferences.max_budget >= 10000000);
               
               // Check if property price range overlaps with budget range
               let priceMatch = false;
-              if (propertyPrice.min !== null && propertyPrice.max !== null) {
-                // Property has a price range
-                priceMatch = (propertyPrice.min >= minBudget && propertyPrice.min <= maxBudget) ||
-                            (propertyPrice.max >= minBudget && propertyPrice.max <= maxBudget) ||
-                            (propertyPrice.min <= minBudget && propertyPrice.max >= maxBudget);
-              } else if (propertyPrice.min !== null) {
-                // Single price
-                priceMatch = propertyPrice.min >= minBudget && propertyPrice.min <= maxBudget;
-              } else {
-                // No price (Contact Agent, etc.) - always include
+              if (isBudgetAny) {
+                // Budget is "any" - always include all properties regardless of price
                 priceMatch = true;
+              } else {
+                const minBudget = preferences.min_budget || 0;
+                const maxBudget = preferences.max_budget || 10000000;
+                
+                if (propertyPrice.min !== null && propertyPrice.max !== null) {
+                  // Property has a price range
+                  priceMatch = (propertyPrice.min >= minBudget && propertyPrice.min <= maxBudget) ||
+                              (propertyPrice.max >= minBudget && propertyPrice.max <= maxBudget) ||
+                              (propertyPrice.min <= minBudget && propertyPrice.max >= maxBudget);
+                } else if (propertyPrice.min !== null) {
+                  // Single price
+                  priceMatch = propertyPrice.min >= minBudget && propertyPrice.min <= maxBudget;
+                } else {
+                  // No price (Contact Agent, etc.) - always include
+                  priceMatch = true;
+                }
               }
               
               matchCriteria = {
@@ -285,22 +301,31 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
     };
     
     const propertyPrice = parsePropertyPrice(property);
-    const minBudget = preferences.min_budget || 0;
-    const maxBudget = preferences.max_budget || 10000000;
+    // Check if budget is "any" (no budget filter)
+    const isBudgetAny = (!preferences.min_budget || preferences.min_budget === 0) && 
+                       (!preferences.max_budget || preferences.max_budget >= 10000000);
     
     // Check if property price range overlaps with budget range
     let priceMatch = false;
-    if (propertyPrice.min !== null && propertyPrice.max !== null) {
-      // Property has a price range
-      priceMatch = (propertyPrice.min >= minBudget && propertyPrice.min <= maxBudget) ||
-                  (propertyPrice.max >= minBudget && propertyPrice.max <= maxBudget) ||
-                  (propertyPrice.min <= minBudget && propertyPrice.max >= maxBudget);
-    } else if (propertyPrice.min !== null) {
-      // Single price
-      priceMatch = propertyPrice.min >= minBudget && propertyPrice.min <= maxBudget;
-    } else {
-      // No price (Contact Agent, etc.) - always include
+    if (isBudgetAny) {
+      // Budget is "any" - always include all properties regardless of price
       priceMatch = true;
+    } else {
+      const minBudget = preferences.min_budget || 0;
+      const maxBudget = preferences.max_budget || 10000000;
+      
+      if (propertyPrice.min !== null && propertyPrice.max !== null) {
+        // Property has a price range
+        priceMatch = (propertyPrice.min >= minBudget && propertyPrice.min <= maxBudget) ||
+                    (propertyPrice.max >= minBudget && propertyPrice.max <= maxBudget) ||
+                    (propertyPrice.min <= minBudget && propertyPrice.max >= maxBudget);
+      } else if (propertyPrice.min !== null) {
+        // Single price
+        priceMatch = propertyPrice.min >= minBudget && propertyPrice.min <= maxBudget;
+      } else {
+        // No price (Contact Agent, etc.) - always include
+        priceMatch = true;
+      }
     }
     
     if (priceMatch) {
