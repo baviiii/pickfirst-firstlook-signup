@@ -171,52 +171,225 @@ const BrowsePropertiesPageComponent = () => {
     }
 
     // Apply bedroom filter
-    if (currentFilters.bedrooms) {
+    if (currentFilters.bedrooms !== undefined && currentFilters.bedrooms !== null && currentFilters.bedrooms > 0) {
       filtered = filtered.filter(listing => {
-        const bedrooms = typeof listing.bedrooms === 'string' ? parseFloat(listing.bedrooms) || 0 : (listing.bedrooms || 0);
-        return bedrooms >= currentFilters.bedrooms;
+        // Handle string values like "any", null, undefined
+        if (listing.bedrooms === null || listing.bedrooms === undefined) {
+          return false; // No bedrooms specified, exclude from filter
+        }
+        
+        let bedrooms: number | null = null;
+        if (typeof listing.bedrooms === 'string') {
+          const bedroomsStr = String(listing.bedrooms).toLowerCase().trim();
+          if (bedroomsStr === 'any' || bedroomsStr === '') {
+            return true; // Include if "any"
+          }
+          const parsed = parseFloat(listing.bedrooms);
+          if (!isNaN(parsed) && isFinite(parsed) && parsed >= 0) {
+            bedrooms = parsed;
+          } else {
+            return false; // Can't parse, exclude
+          }
+        } else if (typeof listing.bedrooms === 'number') {
+          if (isFinite(listing.bedrooms) && listing.bedrooms >= 0) {
+            bedrooms = listing.bedrooms;
+          } else {
+            return false;
+          }
+        } else {
+          return false;
+        }
+        
+        return bedrooms !== null && bedrooms >= currentFilters.bedrooms;
       });
     }
 
     // Apply bathroom filter
-    if (currentFilters.bathrooms) {
+    if (currentFilters.bathrooms !== undefined && currentFilters.bathrooms !== null && currentFilters.bathrooms > 0) {
       filtered = filtered.filter(listing => {
-        const bathrooms = typeof listing.bathrooms === 'string' ? parseFloat(listing.bathrooms) || 0 : (listing.bathrooms || 0);
-        return bathrooms >= currentFilters.bathrooms;
+        // Handle string values like "any", null, undefined
+        if (listing.bathrooms === null || listing.bathrooms === undefined) {
+          return false; // No bathrooms specified, exclude from filter
+        }
+        
+        let bathrooms: number | null = null;
+        if (typeof listing.bathrooms === 'string') {
+          const bathroomsStr = String(listing.bathrooms).toLowerCase().trim();
+          if (bathroomsStr === 'any' || bathroomsStr === '') {
+            return true; // Include if "any"
+          }
+          const parsed = parseFloat(listing.bathrooms);
+          if (!isNaN(parsed) && isFinite(parsed) && parsed >= 0) {
+            bathrooms = parsed;
+          } else {
+            return false; // Can't parse, exclude
+          }
+        } else if (typeof listing.bathrooms === 'number') {
+          if (isFinite(listing.bathrooms) && listing.bathrooms >= 0) {
+            bathrooms = listing.bathrooms;
+          } else {
+            return false;
+          }
+        } else {
+          return false;
+        }
+        
+        return bathrooms !== null && bathrooms >= currentFilters.bathrooms;
       });
     }
 
     // Apply price range filter
-    // Only apply if user has explicitly set a price filter (not default values)
-    const hasExplicitPriceFilter = (currentFilters.priceMin !== undefined && currentFilters.priceMin > 0) || 
-                                   (currentFilters.priceMax !== undefined && currentFilters.priceMax < 1000000000);
+    // Only apply if user has explicitly set a price filter (not default/empty values)
+    const hasExplicitPriceFilter = (currentFilters.priceMin !== undefined && currentFilters.priceMin !== null && currentFilters.priceMin > 0) || 
+                                   (currentFilters.priceMax !== undefined && currentFilters.priceMax !== null && currentFilters.priceMax > 0 && currentFilters.priceMax < 1000000000);
     
     if (hasExplicitPriceFilter) {
       filtered = filtered.filter(listing => {
-        // Handle both string and number prices
-        const price = typeof listing.price === 'string' ? parseFloat(listing.price) : listing.price;
+        // Helper to parse numeric price (removes commas, handles K/M suffixes)
+        const parseNumericPrice = (value: string | number | null | undefined): number | null => {
+          if (value === null || value === undefined) return null;
+          if (typeof value === 'number') {
+            return isFinite(value) && value > 0 ? value : null;
+          }
+          const cleaned = value.toString().replace(/[,$\s]/g, '').toLowerCase();
+          if (cleaned.includes('k')) {
+            const num = parseFloat(cleaned.replace('k', ''));
+            return isNaN(num) ? null : num * 1000;
+          }
+          if (cleaned.includes('m')) {
+            const num = parseFloat(cleaned.replace('m', ''));
+            return isNaN(num) ? null : num * 1000000;
+          }
+          const num = parseFloat(cleaned);
+          return isNaN(num) ? null : num;
+        };
         
-        // If price is null, undefined, or NaN, include it (user can contact for price)
-        if (price === null || price === undefined || isNaN(price) || price <= 0) {
-          return true; // Include properties with no price/contact for price
+        // Check price_display first (might contain ranges like "120-500")
+        const priceDisplay = typeof (listing as any).price_display === 'string' ? (listing as any).price_display.trim() : '';
+        
+        // Check for price ranges in price_display (e.g., "120-500", "$120k-$500k", "120,000-500,000")
+        let propertyMinPrice: number | null = null;
+        let propertyMaxPrice: number | null = null;
+        
+        if (priceDisplay) {
+          const rangeMatch = priceDisplay.match(/^[\$]?\s*([\d,k.m]+)\s*[-–—]\s*[\$]?\s*([\d,k.m]+)/i);
+          if (rangeMatch) {
+            propertyMinPrice = parseNumericPrice(rangeMatch[1]);
+            propertyMaxPrice = parseNumericPrice(rangeMatch[2]);
+          }
         }
         
-        const minPrice = currentFilters.priceMin || 0;
-        const maxPrice = currentFilters.priceMax || 1000000000;
-        return price >= minPrice && price <= maxPrice;
+        // If no range found in price_display, check the price field
+        if (propertyMinPrice === null && propertyMaxPrice === null) {
+          if (listing.price === null || listing.price === undefined) {
+            // No price - always include (contact for price)
+            return true;
+          }
+          
+          if (typeof listing.price === 'string') {
+            // Check for special string values
+            const priceStr = String(listing.price).toLowerCase().trim();
+            if (priceStr === 'any' || priceStr === 'contact' || priceStr === 'contact for price' || priceStr === 'best offer' || priceStr === '') {
+              return true; // Always include properties with special price strings
+            }
+            
+            // Check if price string contains a range
+            const rangeMatch = priceStr.match(/^([\d,k.m]+)\s*[-–—]\s*([\d,k.m]+)/i);
+            if (rangeMatch) {
+              propertyMinPrice = parseNumericPrice(rangeMatch[1]);
+              propertyMaxPrice = parseNumericPrice(rangeMatch[2]);
+            } else {
+              // Try to parse as single number
+              propertyMinPrice = parseNumericPrice(listing.price);
+              propertyMaxPrice = propertyMinPrice; // Same as min for single price
+            }
+          } else if (typeof listing.price === 'number') {
+            propertyMinPrice = parseNumericPrice(listing.price);
+            propertyMaxPrice = propertyMinPrice; // Same as min for single price
+          }
+        }
+        
+        // If we still couldn't determine price, include it
+        if (propertyMinPrice === null && propertyMaxPrice === null) {
+          return true;
+        }
+        
+        // Get filter range
+        const filterMinPrice = (currentFilters.priceMin !== undefined && currentFilters.priceMin !== null && currentFilters.priceMin > 0) ? currentFilters.priceMin : 0;
+        const filterMaxPrice = (currentFilters.priceMax !== undefined && currentFilters.priceMax !== null && currentFilters.priceMax > 0) ? currentFilters.priceMax : 1000000000;
+        
+        // For price ranges, check if ranges overlap
+        // Property range overlaps filter range if:
+        // - Property min is within filter range, OR
+        // - Property max is within filter range, OR
+        // - Property range completely contains filter range
+        if (propertyMinPrice !== null && propertyMaxPrice !== null) {
+          // Property has a range
+          const rangesOverlap = 
+            (propertyMinPrice >= filterMinPrice && propertyMinPrice <= filterMaxPrice) || // Property min in filter range
+            (propertyMaxPrice >= filterMinPrice && propertyMaxPrice <= filterMaxPrice) || // Property max in filter range
+            (propertyMinPrice <= filterMinPrice && propertyMaxPrice >= filterMaxPrice); // Property range contains filter range
+          
+          return rangesOverlap;
+        } else if (propertyMinPrice !== null) {
+          // Single price - check if it's within filter range
+          if (filterMaxPrice <= 0) {
+            return propertyMinPrice >= filterMinPrice;
+          }
+          return propertyMinPrice >= filterMinPrice && propertyMinPrice <= filterMaxPrice;
+        }
+        
+        // Fallback: include it
+        return true;
       });
     }
 
     // Apply square footage filter
-    // Only apply if user has explicitly set a square footage filter (not default values)
-    const hasExplicitSqftFilter = (currentFilters.minSquareFootage !== undefined && currentFilters.minSquareFootage > 0) || 
-                                   (currentFilters.maxSquareFootage !== undefined && currentFilters.maxSquareFootage < 5000);
+    // Only apply if user has explicitly set a square footage filter (not default/empty values)
+    const hasExplicitSqftFilter = (currentFilters.minSquareFootage !== undefined && currentFilters.minSquareFootage !== null && currentFilters.minSquareFootage > 0) || 
+                                   (currentFilters.maxSquareFootage !== undefined && currentFilters.maxSquareFootage !== null && currentFilters.maxSquareFootage > 0 && currentFilters.maxSquareFootage < 5000);
     
     if (hasExplicitSqftFilter) {
       filtered = filtered.filter(listing => {
-        const sqft = typeof listing.square_feet === 'string' ? parseFloat(listing.square_feet) || 0 : (listing.square_feet || 0);
-        const minSqft = currentFilters.minSquareFootage || 0;
-        const maxSqft = currentFilters.maxSquareFootage || 5000;
+        // Handle string values, null, undefined
+        if (listing.square_feet === null || listing.square_feet === undefined) {
+          return true; // Include properties without square footage specified
+        }
+        
+        let sqft: number | null = null;
+        if (typeof listing.square_feet === 'string') {
+          const sqftStr = String(listing.square_feet).toLowerCase().trim();
+          if (sqftStr === 'any' || sqftStr === '') {
+            return true; // Include if "any"
+          }
+          const parsed = parseFloat(listing.square_feet);
+          if (!isNaN(parsed) && isFinite(parsed) && parsed >= 0) {
+            sqft = parsed;
+          } else {
+            return true; // Can't parse, include it
+          }
+        } else if (typeof listing.square_feet === 'number') {
+          if (isFinite(listing.square_feet) && listing.square_feet >= 0) {
+            sqft = listing.square_feet;
+          } else {
+            return true; // Invalid number, include it
+          }
+        } else {
+          return true; // Unknown type, include it
+        }
+        
+        if (sqft === null) {
+          return true; // Include if we couldn't determine square footage
+        }
+        
+        const minSqft = (currentFilters.minSquareFootage !== undefined && currentFilters.minSquareFootage !== null && currentFilters.minSquareFootage > 0) ? currentFilters.minSquareFootage : 0;
+        const maxSqft = (currentFilters.maxSquareFootage !== undefined && currentFilters.maxSquareFootage !== null && currentFilters.maxSquareFootage > 0) ? currentFilters.maxSquareFootage : 5000;
+        
+        // If maxSqft is 0 or invalid, don't filter by max
+        if (maxSqft <= 0) {
+          return sqft >= minSqft;
+        }
+        
         return sqft >= minSqft && sqft <= maxSqft;
       });
     }
