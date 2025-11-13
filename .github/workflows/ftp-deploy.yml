@@ -28,7 +28,7 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
       
-      - name: Deploy via FTPS with TLS 1.2+
+      - name: Deploy via FTPS with TLS 1.2+ (Clean Slate)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -39,7 +39,7 @@ jobs:
           security: loose
           local-dir: ./dist/
           server-dir: /public_html/
-          state-name: .ftp-deploy-sync-state-pickfirst.json
+          dangerous-clean-slate: true
           exclude: |
             **/.git*
             **/.github/**
