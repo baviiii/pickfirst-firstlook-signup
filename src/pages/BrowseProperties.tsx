@@ -80,16 +80,28 @@ const BrowsePropertiesPageComponent = () => {
     setLoading(true);
     try {
       const { data } = await PropertyService.getApprovedListings();
+      console.log('Raw data from API:', data?.length, 'properties');
+      console.log('Sample property:', data?.[0]);
+      
       // Filter out agent-posted (off-market) listings - those require premium
       // Only show external_feed listings on browse page
-      const publicListings = data?.filter(listing => 
-        (listing as any).listing_source !== 'agent_posted'
-      ) || [];
-      console.log('Fetched listings:', publicListings.length, 'properties');
+      const publicListings = data?.filter(listing => {
+        const source = (listing as any).listing_source;
+        console.log('Listing source:', listing.id, source);
+        return source !== 'agent_posted';
+      }) || [];
+      
+      console.log('After filtering agent_posted:', publicListings.length, 'properties');
+      console.log('First listing after filter:', publicListings[0]);
+      
       setListings(publicListings);
       // Immediately set filteredListings to show properties even before filters apply
       if (publicListings.length > 0) {
+        console.log('Setting filteredListings to', publicListings.length, 'properties');
         setFilteredListings(publicListings);
+      } else {
+        console.warn('No public listings after filter! Total from API:', data?.length);
+        setFilteredListings([]);
       }
     } catch (error) {
       console.error('Error fetching listings:', error);
@@ -127,6 +139,7 @@ const BrowsePropertiesPageComponent = () => {
       return;
     }
     console.log('applyFiltersAndSort: Starting with', listings.length, 'listings');
+    console.log('Current filters:', currentFilters);
     let filtered = [...listings];
 
     // Apply search term filter
@@ -174,18 +187,32 @@ const BrowsePropertiesPageComponent = () => {
     }
 
     // Apply price range filter
-    if (currentFilters.priceMin !== undefined || currentFilters.priceMax !== undefined) {
+    // Only apply if user has explicitly set a price filter (not default values)
+    const hasExplicitPriceFilter = (currentFilters.priceMin !== undefined && currentFilters.priceMin > 0) || 
+                                   (currentFilters.priceMax !== undefined && currentFilters.priceMax < 1000000000);
+    
+    if (hasExplicitPriceFilter) {
       filtered = filtered.filter(listing => {
         // Handle both string and number prices
-        const price = typeof listing.price === 'string' ? parseFloat(listing.price) || 0 : (listing.price || 0);
+        const price = typeof listing.price === 'string' ? parseFloat(listing.price) : listing.price;
+        
+        // If price is null, undefined, or NaN, include it (user can contact for price)
+        if (price === null || price === undefined || isNaN(price) || price <= 0) {
+          return true; // Include properties with no price/contact for price
+        }
+        
         const minPrice = currentFilters.priceMin || 0;
-        const maxPrice = currentFilters.priceMax || 1000000000; // Increased max
+        const maxPrice = currentFilters.priceMax || 1000000000;
         return price >= minPrice && price <= maxPrice;
       });
     }
 
     // Apply square footage filter
-    if (currentFilters.minSquareFootage !== undefined || currentFilters.maxSquareFootage !== undefined) {
+    // Only apply if user has explicitly set a square footage filter (not default values)
+    const hasExplicitSqftFilter = (currentFilters.minSquareFootage !== undefined && currentFilters.minSquareFootage > 0) || 
+                                   (currentFilters.maxSquareFootage !== undefined && currentFilters.maxSquareFootage < 5000);
+    
+    if (hasExplicitSqftFilter) {
       filtered = filtered.filter(listing => {
         const sqft = typeof listing.square_feet === 'string' ? parseFloat(listing.square_feet) || 0 : (listing.square_feet || 0);
         const minSqft = currentFilters.minSquareFootage || 0;
@@ -215,6 +242,9 @@ const BrowsePropertiesPageComponent = () => {
     });
 
     console.log('applyFiltersAndSort - filtered count:', filtered.length, 'from listings:', listings.length);
+    console.log('Price filter active:', hasExplicitPriceFilter, 'priceMin:', currentFilters.priceMin, 'priceMax:', currentFilters.priceMax);
+    console.log('Square footage filter active:', hasExplicitSqftFilter);
+    console.log('Sample filtered listing:', filtered[0]);
     setFilteredListings(filtered);
   };
 

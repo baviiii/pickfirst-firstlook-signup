@@ -43,8 +43,7 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
   className = ''
 }) => {
   const [filters, setFilters] = useState<SimpleFilters>({
-    priceMin: 0,
-    priceMax: 1000000,
+    // Don't set default price filters - let BrowseProperties handle it
     minSquareFootage: 0,
     maxSquareFootage: 5000
   });
@@ -53,6 +52,8 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
+    // Only call onFiltersChange if filters have been explicitly set
+    // This prevents default values from triggering filters
     onFiltersChange?.(filters);
   }, [filters, onFiltersChange]);
 
@@ -65,8 +66,7 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
 
   const clearFilters = () => {
     setFilters({
-      priceMin: 0,
-      priceMax: 1000000,
+      // Clear price filters completely
       minSquareFootage: 0,
       maxSquareFootage: 5000
     });
