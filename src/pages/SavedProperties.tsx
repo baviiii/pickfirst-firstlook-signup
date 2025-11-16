@@ -169,7 +169,7 @@ const SavedPropertiesPageComponent = () => {
 
     if (viewMode === 'list') {
       return (
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl hover:shadow-yellow-400/20 transition-all duration-300 hover:scale-[1.01]">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg hover:shadow-pickfirst-yellow/40 transition-all duration-300 hover:scale-[1.01]">
           <div className="flex flex-col sm:flex-row">
             <div className="sm:w-80 aspect-video sm:aspect-square overflow-hidden relative">
               {hasImages ? (
@@ -286,7 +286,7 @@ const SavedPropertiesPageComponent = () => {
     }
 
     return (
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl hover:shadow-yellow-400/20 transition-all duration-300 hover:scale-[1.02] group cursor-pointer">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg hover:shadow-pickfirst-yellow/40 transition-all duration-300 hover:scale-[1.02] group cursor-pointer">
         <div 
           className="relative aspect-video overflow-hidden rounded-t-lg"
           onClick={() => navigate(`/property/${property.id}`)}
@@ -557,7 +557,7 @@ const SavedPropertiesPageComponent = () => {
                 </div>
               </div>
             ) : savedProperties.length === 0 ? (
-              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+              <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
                 <CardContent className="text-center py-16">
                   <Heart className="h-16 w-16 text-gray-500 mx-auto mb-6" />
                   <h3 className="text-2xl font-bold text-white mb-4">No saved properties yet</h3>
@@ -575,7 +575,7 @@ const SavedPropertiesPageComponent = () => {
                 </CardContent>
               </Card>
             ) : filteredProperties.length === 0 ? (
-              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+              <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
                 <CardContent className="text-center py-16">
                   <Search className="h-16 w-16 text-gray-500 mx-auto mb-6" />
                   <h3 className="text-xl font-semibold text-white mb-4">No properties match your search</h3>
@@ -606,7 +606,7 @@ const SavedPropertiesPageComponent = () => {
 
       {/* Remove Confirmation Dialog */}
       <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
-        <DialogContent className="w-full max-w-[95vw] sm:max-w-md bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-yellow-400/20 text-white">
+        <DialogContent className="w-full max-w-[95vw] sm:max-w-md pickfirst-glass bg-card text-card-foreground">
           <DialogHeader>
             <DialogTitle className="text-red-400 flex items-center gap-2">
               <Heart className="w-5 h-5" />

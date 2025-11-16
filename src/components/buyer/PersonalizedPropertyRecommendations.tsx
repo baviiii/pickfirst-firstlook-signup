@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FeatureGate } from '@/components/ui/FeatureGate';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
 import { BuyerProfileService } from '@/services/buyerProfileService';
 import { FilterService, AdvancedPropertyFilters, PropertyListingWithFuzzyMatch } from '@/services/filterService';
@@ -44,6 +45,7 @@ interface RecommendedProperty extends PropertyListingWithFuzzyMatch {
 
 export const PersonalizedPropertyRecommendations: React.FC = () => {
   const { user, profile } = useAuth();
+  const { canAccessOffMarketListings } = useSubscription();
   const navigate = useNavigate();
   const [recommendations, setRecommendations] = useState<RecommendedProperty[]>([]);
   const [buyerPreferences, setBuyerPreferences] = useState<any>(null);
@@ -80,6 +82,8 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
           garageSpaces: preferences.preferred_garages && preferences.preferred_garages >= 0 ? preferences.preferred_garages : undefined,
           // Normalize property type to lowercase for consistent matching
           propertyType: preferences.property_type_preferences?.[0]?.toLowerCase() || undefined,
+          // Include off-market properties if user has premium subscription
+          includeOffMarket: canAccessOffMarketListings(),
           sortBy: 'price',
           sortOrder: 'asc',
           limit: 12
@@ -494,7 +498,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
 
   if (!buyerPreferences) {
     return (
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground">
         <CardHeader className="text-center py-8">
           <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <CardTitle className="text-foreground">Set Your Preferences</CardTitle>
@@ -513,7 +517,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
   }
 
   return (
-    <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+    <Card className="pickfirst-glass bg-card/90 text-card-foreground">
       <CardHeader className="space-y-3 sm:space-y-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2 sm:gap-3">

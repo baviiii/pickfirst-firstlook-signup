@@ -145,15 +145,14 @@ const BuyerDashboardNewComponent = () => {
     }
   };
 
-
   const getAppointmentStatusBadge = (status: string) => {
     const statusConfig = {
-      scheduled: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-      confirmed: 'bg-green-500/20 text-green-300 border-green-500/30',
-      declined: 'bg-red-500/20 text-red-300 border-red-500/30',
-      completed: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-      cancelled: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
-      no_show: 'bg-orange-500/20 text-orange-300 border-orange-500/30'
+      scheduled: 'bg-yellow-600/20 text-yellow-800 border-yellow-600/40',
+      confirmed: 'bg-green-600/20 text-green-800 border-green-600/40',
+      declined: 'bg-red-600/20 text-red-800 border-red-600/40',
+      completed: 'bg-purple-600/20 text-purple-800 border-purple-600/40',
+      cancelled: 'bg-gray-600/20 text-gray-800 border-gray-600/40',
+      no_show: 'bg-orange-600/20 text-orange-800 border-orange-600/40'
     };
     return statusConfig[status as keyof typeof statusConfig] || statusConfig.scheduled;
   };
@@ -162,238 +161,247 @@ const BuyerDashboardNewComponent = () => {
     <BuyerLayout>
       <NewUserSetupDialog />
       
-      {/* Onboarding Modal for New Buyers */}
-      
-      <div className="space-y-4 sm:space-y-6">
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card 
-              className={`bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20 hover:border-blue-500/40 transition-all cursor-pointer relative ${
-                hasNewNotification('inquiries') ? 'animate-pulse-border' : ''
-              }`}
-              onClick={() => { clearCardNotifications('inquiries'); navigate('/buyer-account-settings?tab=favorites'); }}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-400">Inquiries Sent</p>
-                    <p className="text-3xl font-bold text-blue-400">{loadingMetrics ? '...' : metrics?.totalInquiries || 0}</p>
-                  </div>
-                  <div className="relative">
-                    <MessageSquare className="h-10 w-10 text-blue-500/50" />
-                    {cardCounts.inquiries > 0 && (
-                      <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold ${
-                        hasNewNotification('inquiries') ? 'animate-bounce-scale' : ''
-                      }`}>
-                        {cardCounts.inquiries > 99 ? '99+' : cardCounts.inquiries}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className={`bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20 hover:border-red-500/40 transition-all cursor-pointer relative ${
-                hasNewNotification('favorites') ? 'animate-pulse-border' : ''
-              }`}
-              onClick={() => { clearCardNotifications('favorites'); navigate('/saved-properties'); }}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-400">Saved Properties</p>
-                    <p className="text-3xl font-bold text-red-400">{loadingMetrics ? '...' : metrics?.totalFavorites || 0}</p>
-                  </div>
-                  <div className="relative">
-                    <Heart className="h-10 w-10 text-red-500/50" />
-                    {cardCounts.favorites > 0 && (
-                      <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold ${
-                        hasNewNotification('favorites') ? 'animate-bounce-scale' : ''
-                      }`}>
-                        {cardCounts.favorites > 99 ? '99+' : cardCounts.favorites}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className={`bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20 hover:border-green-500/40 transition-all cursor-pointer relative ${
-                hasNewNotification('alerts') ? 'animate-pulse-border' : ''
-              }`}
-              onClick={() => { clearCardNotifications('alerts'); navigate('/search-filters'); }}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-400">Saved Searches</p>
-                    <p className="text-3xl font-bold text-green-400">{loadingMetrics ? '...' : metrics?.savedSearches || 0}</p>
-                  </div>
-                  <div className="relative">
-                    <Filter className="h-10 w-10 text-green-500/50" />
-                    {cardCounts.alerts > 0 && (
-                      <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold ${
-                        hasNewNotification('alerts') ? 'animate-bounce-scale' : ''
-                      }`}>
-                        {cardCounts.alerts > 99 ? '99+' : cardCounts.alerts}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className={`bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20 hover:border-purple-500/40 transition-all cursor-pointer relative ${
-                hasNewNotification('messages') ? 'animate-pulse-border' : ''
-              }`}
-              onClick={() => { clearCardNotifications('messages'); navigate('/buyer-messages'); }}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-400">Conversations</p>
-                    <p className="text-3xl font-bold text-purple-400">{loadingMetrics ? '...' : metrics?.totalConversations || 0}</p>
-                  </div>
-                  <div className="relative">
-                    <MessageSquare className="h-10 w-10 text-purple-500/50" />
-                    {cardCounts.messages > 0 && (
-                      <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold ${
-                        hasNewNotification('messages') ? 'animate-bounce-scale' : ''
-                      }`}>
-                        {cardCounts.messages > 99 ? '99+' : cardCounts.messages}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Personalized Property Recommendations */}
-          <PersonalizedPropertyRecommendations />
-
-          {/* Recent Appointments */}
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
-            <CardHeader>
+      <div className="space-y-6">
+        {/* Stats Overview - Elegant Beige/Yellow System Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Inquiries Card */}
+          <Card 
+            className={`bg-gradient-to-br from-yellow-600/15 via-amber-500/10 to-orange-400/10 backdrop-blur-sm border-yellow-700/30 hover:border-yellow-600/50 hover:shadow-xl hover:shadow-yellow-600/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 ${
+              hasNewNotification('inquiries') ? 'animate-pulse-border' : ''
+            }`}
+            onClick={() => { clearCardNotifications('inquiries'); navigate('/buyer-account-settings?tab=favorites'); }}
+          >
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-pickfirst-yellow" />
-                    Upcoming Appointments
-                  </CardTitle>
-                  <CardDescription className="text-gray-300">
-                    Your scheduled property viewings
-                  </CardDescription>
+                  <p className="text-sm font-medium text-yellow-900/70 mb-1">Inquiries Sent</p>
+                  <p className="text-4xl font-bold text-yellow-900">{loadingMetrics ? '...' : metrics?.totalInquiries || 0}</p>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => navigate('/buyer-account-settings?tab=appointments')}
-                  className="text-gray-300 hover:text-pickfirst-yellow border-pickfirst-yellow/30"
-                >
-                  View All
-                </Button>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-yellow-600/20 rounded-full blur-xl"></div>
+                  <MessageSquare className="h-12 w-12 text-yellow-700 relative" />
+                  {cardCounts.inquiries > 0 && (
+                    <span className={`absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 bg-red-600 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg ${
+                      hasNewNotification('inquiries') ? 'animate-bounce' : ''
+                    }`}>
+                      {cardCounts.inquiries > 99 ? '99+' : cardCounts.inquiries}
+                    </span>
+                  )}
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              {loadingAppointments ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pickfirst-yellow"></div>
-                  <span className="ml-3 text-gray-300">Loading appointments...</span>
-                </div>
-              ) : appointments.length === 0 ? (
-                <div className="text-center py-8">
-                  <Calendar className="h-12 w-12 text-gray-600 mx-auto mb-3" />
-                  <div className="text-gray-400">No appointments scheduled yet</div>
-                  <div className="text-gray-500 text-sm mt-1">Agents will schedule appointments with you here</div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {appointments.slice(0, 3).map((appt) => (
-                    <div key={appt.id} className="p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="uppercase text-xs">
-                              {appt.appointment_type?.replace('_', ' ') || 'Meeting'}
-                            </Badge>
-                            <span className="text-white font-medium text-sm flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {appt.date} @ {appt.time}
-                            </span>
-                          </div>
-                          {appt.property?.title && (
-                            <div className="text-gray-300 text-sm">{appt.property.title}</div>
-                          )}
-                          {appt.agent && (
-                            <div className="text-gray-400 text-xs">
-                              With: {appt.agent.full_name}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {appt.status === 'scheduled' && (
-                            <>
-                              <Button 
-                                size="sm" 
-                                className="bg-green-500/20 text-green-300 hover:bg-green-500/30" 
-                                onClick={() => handleConfirmAppointment(appt.id)}
-                              >
-                                <Check className="h-4 w-4 mr-1" /> Confirm
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="text-red-300 border-red-400/30 hover:bg-red-500/10" 
-                                onClick={() => handleDeclineAppointment(appt.id)}
-                              >
-                                <X className="h-4 w-4 mr-1" /> Decline
-                              </Button>
-                            </>
-                          )}
-                          {appt.status && appt.status !== 'scheduled' && (
-                            <Badge className={getAppointmentStatusBadge(appt.status)}>
-                              {appt.status.charAt(0).toUpperCase() + appt.status.slice(1).replace('_', ' ')}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </CardContent>
           </Card>
 
-          {/* Property Comparison Tool */}
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
-            <CardHeader>
-              <CardTitle className="text-white">Property Comparison Tool</CardTitle>
-              <CardDescription className="text-gray-300">Compare properties side by side</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PropertyComparisonTool />
+          {/* Saved Properties Card */}
+          <Card 
+            className={`bg-gradient-to-br from-amber-600/15 via-yellow-500/10 to-orange-500/10 backdrop-blur-sm border-amber-700/30 hover:border-amber-600/50 hover:shadow-xl hover:shadow-amber-600/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 ${
+              hasNewNotification('favorites') ? 'animate-pulse-border' : ''
+            }`}
+            onClick={() => { clearCardNotifications('favorites'); navigate('/saved-properties'); }}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-amber-900/70 mb-1">Saved Properties</p>
+                  <p className="text-4xl font-bold text-amber-900">{loadingMetrics ? '...' : metrics?.totalFavorites || 0}</p>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-amber-600/20 rounded-full blur-xl"></div>
+                  <Heart className="h-12 w-12 text-amber-700 relative" />
+                  {cardCounts.favorites > 0 && (
+                    <span className={`absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 bg-red-600 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg ${
+                      hasNewNotification('favorites') ? 'animate-bounce' : ''
+                    }`}>
+                      {cardCounts.favorites > 99 ? '99+' : cardCounts.favorites}
+                    </span>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Property Alerts */}
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-pickfirst-yellow" />
-                Property Alerts
-              </CardTitle>
-              <CardDescription className="text-gray-300">Get notified about new listings matching your criteria</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PropertyAlerts />
+          {/* Saved Searches Card */}
+          <Card 
+            className={`bg-gradient-to-br from-yellow-500/15 via-amber-600/10 to-orange-600/10 backdrop-blur-sm border-yellow-600/30 hover:border-yellow-700/50 hover:shadow-xl hover:shadow-yellow-700/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 ${
+              hasNewNotification('alerts') ? 'animate-pulse-border' : ''
+            }`}
+            onClick={() => { clearCardNotifications('alerts'); navigate('/search-filters'); }}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-yellow-900/70 mb-1">Saved Searches</p>
+                  <p className="text-4xl font-bold text-yellow-900">{loadingMetrics ? '...' : metrics?.savedSearches || 0}</p>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-yellow-600/20 rounded-full blur-xl"></div>
+                  <Filter className="h-12 w-12 text-yellow-700 relative" />
+                  {cardCounts.alerts > 0 && (
+                    <span className={`absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 bg-red-600 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg ${
+                      hasNewNotification('alerts') ? 'animate-bounce' : ''
+                    }`}>
+                      {cardCounts.alerts > 99 ? '99+' : cardCounts.alerts}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Conversations Card */}
+          <Card 
+            className={`bg-gradient-to-br from-orange-600/15 via-amber-500/10 to-yellow-500/10 backdrop-blur-sm border-orange-700/30 hover:border-orange-600/50 hover:shadow-xl hover:shadow-orange-600/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 ${
+              hasNewNotification('messages') ? 'animate-pulse-border' : ''
+            }`}
+            onClick={() => { clearCardNotifications('messages'); navigate('/buyer-messages'); }}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-orange-900/70 mb-1">Conversations</p>
+                  <p className="text-4xl font-bold text-orange-900">{loadingMetrics ? '...' : metrics?.totalConversations || 0}</p>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-orange-600/20 rounded-full blur-xl"></div>
+                  <MessageSquare className="h-12 w-12 text-orange-700 relative" />
+                  {cardCounts.messages > 0 && (
+                    <span className={`absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 bg-red-600 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg ${
+                      hasNewNotification('messages') ? 'animate-bounce' : ''
+                    }`}>
+                      {cardCounts.messages > 99 ? '99+' : cardCounts.messages}
+                    </span>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
-      </BuyerLayout>
+
+        {/* Personalized Property Recommendations */}
+        <PersonalizedPropertyRecommendations />
+        
+        {/* Upcoming Appointments - Beautiful Beige Card */}
+        <Card className="bg-gradient-to-br from-amber-50/80 via-yellow-50/70 to-orange-50/80 backdrop-blur-sm border-yellow-700/30 shadow-xl hover:shadow-2xl hover:shadow-yellow-600/20 transition-all duration-300">
+          <CardHeader className="border-b border-yellow-700/20 bg-gradient-to-r from-yellow-600/10 to-amber-500/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-yellow-900">
+                  <Calendar className="h-5 w-5 text-yellow-700" />
+                  Upcoming Appointments
+                </CardTitle>
+                <CardDescription className="text-amber-800/70">
+                  Your scheduled property viewings
+                </CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate('/buyer-account-settings?tab=appointments')}
+                className="text-yellow-900 hover:text-yellow-700 border-yellow-700/40 hover:bg-yellow-600/10 hover:border-yellow-600/60 transition-all duration-300"
+              >
+                View All
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {loadingAppointments ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-700"></div>
+                <span className="ml-3 text-yellow-900 font-medium">Loading appointments...</span>
+              </div>
+            ) : appointments.length === 0 ? (
+              <div className="text-center py-8">
+                <Calendar className="h-12 w-12 text-yellow-700/50 mx-auto mb-3" />
+                <div className="text-yellow-900 font-medium">No appointments scheduled yet</div>
+                <div className="text-amber-800/70 text-sm mt-1">Agents will schedule appointments with you here</div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {appointments.slice(0, 3).map((appt) => (
+                  <div
+                    key={appt.id}
+                    className="p-4 rounded-xl border border-yellow-700/20 bg-white/60 hover:bg-white/80 backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:shadow-yellow-600/10"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="secondary" className="uppercase text-xs bg-yellow-600/20 text-yellow-900 border-yellow-600/30">
+                            {appt.appointment_type?.replace('_', ' ') || 'Meeting'}
+                          </Badge>
+                          <span className="font-semibold text-sm flex items-center gap-1 text-yellow-900">
+                            <Clock className="h-3.5 w-3.5 text-yellow-700" />
+                            {appt.date} @ {appt.time}
+                          </span>
+                        </div>
+                        {appt.property?.title && (
+                          <div className="text-sm font-medium text-amber-900">{appt.property.title}</div>
+                        )}
+                        {appt.agent && (
+                          <div className="text-xs text-amber-800/70">
+                            With: <span className="font-medium">{appt.agent.full_name}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {appt.status === 'scheduled' && (
+                          <>
+                            <Button 
+                              size="sm" 
+                              className="bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl transition-all duration-300" 
+                              onClick={() => handleConfirmAppointment(appt.id)}
+                            >
+                              <Check className="h-4 w-4 mr-1" /> Confirm
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-red-700 border-red-600/40 hover:bg-red-600/10 hover:border-red-600/60 transition-all duration-300" 
+                              onClick={() => handleDeclineAppointment(appt.id)}
+                            >
+                              <X className="h-4 w-4 mr-1" /> Decline
+                            </Button>
+                          </>
+                        )}
+                        {appt.status && appt.status !== 'scheduled' && (
+                          <Badge className={getAppointmentStatusBadge(appt.status)}>
+                            {appt.status.charAt(0).toUpperCase() + appt.status.slice(1).replace('_', ' ')}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Property Comparison Tool */}
+        <Card className="bg-gradient-to-br from-amber-50/80 via-yellow-50/70 to-orange-50/80 backdrop-blur-sm border-yellow-700/30 shadow-xl hover:shadow-2xl hover:shadow-yellow-600/20 transition-all duration-300">
+          <CardHeader className="border-b border-yellow-700/20 bg-gradient-to-r from-yellow-600/10 to-amber-500/10">
+            <CardTitle className="text-yellow-900">Property Comparison Tool</CardTitle>
+            <CardDescription className="text-amber-800/70">Compare properties side by side</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <PropertyComparisonTool />
+          </CardContent>
+        </Card>
+
+        {/* Property Alerts */}
+        <Card className="bg-gradient-to-br from-amber-50/80 via-yellow-50/70 to-orange-50/80 backdrop-blur-sm border-yellow-700/30 shadow-xl hover:shadow-2xl hover:shadow-yellow-600/20 transition-all duration-300">
+          <CardHeader className="border-b border-yellow-700/20 bg-gradient-to-r from-yellow-600/10 to-amber-500/10">
+            <CardTitle className="text-yellow-900 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-yellow-700" />
+              Property Alerts
+            </CardTitle>
+            <CardDescription className="text-amber-800/70">Get notified about new listings matching your criteria</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <PropertyAlerts />
+          </CardContent>
+        </Card>
+      </div>
+    </BuyerLayout>
   );
 };
 

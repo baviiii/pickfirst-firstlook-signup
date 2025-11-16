@@ -183,10 +183,10 @@ export const BuyerMessages = () => {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-900 to-black">
+      <div className="flex h-screen items-center justify-center pickfirst-bg">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pickfirst-yellow mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading conversations...</p>
+          <p className="mt-4 text-muted-foreground">Loading conversations...</p>
         </div>
       </div>
     );

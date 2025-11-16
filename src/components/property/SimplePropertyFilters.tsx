@@ -95,14 +95,14 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
   };
 
   return (
-    <Card className={`bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-yellow-400/20 ${className}`}>
+  <Card className={`pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 ${className}`}>
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <CardTitle className="text-white flex items-center gap-2 flex-wrap">
-            <Filter className="h-5 w-5 text-yellow-400" />
+          <CardTitle className="text-foreground flex items-center gap-2 flex-wrap">
+            <Filter className="h-5 w-5 text-primary" />
             Property Search
             {getActiveFilterCount() > 0 && (
-              <Badge className="bg-yellow-400 text-black">
+              <Badge className="bg-primary text-primary-foreground">
                 {getActiveFilterCount()} active
               </Badge>
             )}
@@ -113,7 +113,7 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={clearFilters}
-                className="text-gray-300 hover:text-yellow-400"
+                className="text-muted-foreground hover:text-primary"
               >
                 <X className="h-4 w-4 sm:mr-1" />
                 <span className="hidden sm:inline">Clear</span>
@@ -124,7 +124,7 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="text-gray-300 hover:text-yellow-400"
+                className="text-muted-foreground hover:text-primary"
               >
                 {showAdvanced ? 'Simple' : 'Advanced'}
               </Button>
@@ -133,7 +133,7 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="text-gray-300 hover:text-yellow-400"
+              className="text-muted-foreground hover:text-primary"
             >
               {isCollapsed ? 'Expand' : 'Collapse'}
             </Button>
@@ -146,27 +146,27 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
           {/* Basic Search */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <Label className="text-gray-300 mb-2 block text-sm">Search Properties</Label>
+            <Label className="text-muted-foreground mb-2 block text-sm">Search Properties</Label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Enter keywords (e.g., pool, garage, modern)..."
                 value={filters.searchTerm || ''}
                 onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
-                className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder-gray-400"
+                className="pl-10 bg-card border border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
           </div>
 
           <div>
-            <Label className="text-gray-300 mb-2 block text-sm">Location</Label>
+            <Label className="text-muted-foreground mb-2 block text-sm">Location</Label>
             <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="City, suburb, or postcode..."
                 value={filters.location || ''}
                 onChange={(e) => handleFilterChange('location', e.target.value)}
-                className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder-gray-400"
+                className="pl-10 bg-card border border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -174,7 +174,7 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
 
           {/* Price Range */}
           <div>
-          <Label className="text-gray-300 mb-4 block text-sm">
+          <Label className="text-muted-foreground mb-4 block text-sm">
             {filters.priceMin !== undefined || filters.priceMax !== undefined
               ? `Price Range: $${(filters.priceMin || 0).toLocaleString()} - $${(filters.priceMax || 1000000).toLocaleString()}`
               : 'Price Range: Not Set'}
@@ -201,7 +201,7 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
           />
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <div>
-              <Label className="text-gray-300 mb-1 block text-xs">Min Price</Label>
+              <Label className="text-muted-foreground mb-1 block text-xs">Min Price</Label>
               <Input
                 type="number"
                 placeholder="No minimum"
@@ -211,11 +211,11 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
                   // Only set if > 0, otherwise clear
                   handleFilterChange('priceMin', value && value > 0 ? value : undefined);
                 }}
-                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+                className="bg-card border border-border text-foreground text-sm"
               />
             </div>
             <div>
-              <Label className="text-gray-300 mb-1 block text-xs">Max Price</Label>
+              <Label className="text-muted-foreground mb-1 block text-xs">Max Price</Label>
               <Input
                 type="number"
                 placeholder="No maximum"
@@ -225,7 +225,7 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
                   // Only set if < 1000000 (not default), otherwise clear
                   handleFilterChange('priceMax', value && value < 1000000 ? value : undefined);
                 }}
-                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+                className="bg-card border border-border text-foreground text-sm"
               />
             </div>
           </div>
@@ -234,12 +234,12 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
           {/* Property Basics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <div>
-            <Label className="text-gray-300 mb-2 block text-sm">Property Type</Label>
+            <Label className="text-muted-foreground mb-2 block text-sm">Property Type</Label>
             <Select
               value={filters.propertyType || ''}
               onValueChange={(value) => handleFilterChange('propertyType', value === 'any' ? undefined : value)}
             >
-              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
+              <SelectTrigger className="bg-card border border-border text-foreground">
                 <SelectValue placeholder="Any Type" />
               </SelectTrigger>
               <SelectContent>
@@ -254,7 +254,7 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
           </div>
           
           <div>
-            <Label className="text-gray-300 mb-2 block text-sm flex items-center gap-1">
+            <Label className="text-muted-foreground mb-2 block text-sm flex items-center gap-1">
               <Bed className="h-4 w-4" />
               Bedrooms
             </Label>
@@ -262,7 +262,7 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
               value={filters.bedrooms?.toString() || ''}
               onValueChange={(value) => handleFilterChange('bedrooms', value === 'any' ? undefined : parseInt(value))}
             >
-              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
+              <SelectTrigger className="bg-card border border-border text-foreground">
                 <SelectValue placeholder="Any" />
               </SelectTrigger>
               <SelectContent>
@@ -275,7 +275,7 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
           </div>
           
           <div>
-            <Label className="text-gray-300 mb-2 block text-sm flex items-center gap-1">
+            <Label className="text-muted-foreground mb-2 block text-sm flex items-center gap-1">
               <Bath className="h-4 w-4" />
               Bathrooms
             </Label>
@@ -283,7 +283,7 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
               value={filters.bathrooms?.toString() || ''}
               onValueChange={(value) => handleFilterChange('bathrooms', value === 'any' ? undefined : parseFloat(value))}
             >
-              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
+              <SelectTrigger className="bg-card border border-border text-foreground">
                 <SelectValue placeholder="Any" />
               </SelectTrigger>
               <SelectContent>
@@ -298,7 +298,7 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
 
           {/* Advanced Filters (Collapsible) */}
           {showAdvanced && (
-            <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t border-gray-700">
+            <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t border-border">
             <div>
               <Label className="text-gray-300 mb-2 block text-sm flex items-center gap-1">
                 <Square className="h-4 w-4" />
@@ -310,14 +310,14 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
                   placeholder="Min sq ft"
                   value={filters.minSquareFootage || ''}
                   onChange={(e) => handleFilterChange('minSquareFootage', e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="bg-gray-800/50 border-gray-700 text-white text-sm"
+                  className="bg-card border border-border text-foreground text-sm"
                 />
                 <Input
                   type="number"
                   placeholder="Max sq ft"
                   value={filters.maxSquareFootage || ''}
                   onChange={(e) => handleFilterChange('maxSquareFootage', e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="bg-gray-800/50 border-gray-700 text-white text-sm"
+                  className="bg-card border border-border text-foreground text-sm"
                 />
               </div>
             </div>
@@ -327,7 +327,7 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
           {/* Search Button */}
           <Button
             onClick={onSearch}
-            className="w-full bg-yellow-400 hover:bg-amber-500 text-black font-medium py-2.5 sm:py-3"
+            className="w-full bg-primary hover:bg-pickfirst-amber text-primary-foreground font-medium py-2.5 sm:py-3"
           >
             <Search className="h-4 w-4 mr-2" />
             Search Properties

@@ -86,39 +86,39 @@ export const ForgotPasswordForm = () => {
 
   if (emailSent) {
     return (
-      <Card className="w-full max-w-md bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl shadow-pickfirst-yellow/10">
-      <CardHeader className="text-center space-y-3">
+      <Card className="w-full max-w-md pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-2xl shadow-pickfirst-yellow/20">
+        <CardHeader className="text-center space-y-3">
         <img
           src="https://pickfirst.com.au/logo.jpg"
           alt="PickFirst Real Estate"
           className="mx-auto h-16 w-auto drop-shadow-lg"
           loading="lazy"
         />
-          <div className="mx-auto w-16 h-16 bg-pickfirst-yellow/20 rounded-full flex items-center justify-center mb-4">
-            <Mail className="w-8 h-8 text-pickfirst-yellow" />
+          <div className="mx-auto w-16 h-16 bg-primary/10 border border-primary/40 rounded-full flex items-center justify-center mb-4">
+            <Mail className="w-8 h-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-bold text-white">
+          <CardTitle className="text-2xl font-bold text-foreground">
             Check Your Email
           </CardTitle>
-          <CardDescription className="text-gray-300">
-            We've sent a password reset link to <span className="text-pickfirst-yellow font-semibold">{email}</span>
+          <CardDescription className="text-muted-foreground">
+            We've sent a password reset link to <span className="text-primary font-semibold">{email}</span>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-center space-y-4">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-muted-foreground">
               Didn't receive the email? Check your spam folder or try again.
             </p>
             <Button 
               onClick={() => setEmailSent(false)}
               variant="outline"
-              className="w-full border-pickfirst-yellow/30 text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
+              className="w-full border-primary/40 text-primary hover:bg-primary/10"
             >
               Try Again
             </Button>
             <Link 
               to="/auth" 
-              className="flex items-center justify-center gap-2 text-pickfirst-yellow hover:text-pickfirst-yellow/80 transition-colors"
+              className="flex items-center justify-center gap-2 text-primary hover:text-primary/80 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to Sign In
@@ -130,7 +130,7 @@ export const ForgotPasswordForm = () => {
   }
 
   return (
-    <Card className="w-full max-w-md bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl shadow-pickfirst-yellow/10">
+    <Card className="w-full max-w-md pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-2xl shadow-pickfirst-yellow/20">
       <CardHeader className="text-center space-y-3">
         <img
           src="https://pickfirst.com.au/logo.jpg"
@@ -138,17 +138,17 @@ export const ForgotPasswordForm = () => {
           className="mx-auto h-16 w-auto drop-shadow-lg"
           loading="lazy"
         />
-        <CardTitle className="text-2xl font-bold text-white">
+        <CardTitle className="text-2xl font-bold text-foreground">
           Reset Password
         </CardTitle>
-        <CardDescription className="text-gray-300">
+        <CardDescription className="text-muted-foreground">
           Enter your email address and we'll send you a link to reset your password
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-white font-semibold">
+            <Label htmlFor="email" className="text-foreground font-semibold">
               Email Address
             </Label>
             <Input
@@ -157,14 +157,14 @@ export const ForgotPasswordForm = () => {
               placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="h-12 bg-white/5 border border-white/20 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
+              className="h-12 bg-card border border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
               required
             />
           </div>
           
           <Button 
             type="submit" 
-            className="w-full pickfirst-gradient-yellow-amber text-black font-bold h-12 rounded-xl" 
+            className="w-full bg-primary hover:bg-pickfirst-amber text-primary-foreground font-bold h-12 rounded-xl" 
             disabled={loading}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -175,7 +175,7 @@ export const ForgotPasswordForm = () => {
         <div className="mt-6 text-center">
           <Link 
             to="/auth" 
-            className="flex items-center justify-center gap-2 text-pickfirst-yellow hover:text-pickfirst-yellow/80 transition-colors"
+            className="flex items-center justify-center gap-2 text-primary hover:text-primary/80 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Sign In

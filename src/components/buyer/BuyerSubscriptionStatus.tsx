@@ -20,7 +20,7 @@ export const BuyerSubscriptionStatus = () => {
 
   if (loading) {
     return (
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
         <CardContent className="py-8">
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pickfirst-yellow"></div>
@@ -35,7 +35,7 @@ export const BuyerSubscriptionStatus = () => {
   const isFree = tier === 'free' || !subscribed;
 
   return (
-    <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+    <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>

@@ -236,7 +236,7 @@ export const ResetPasswordForm = () => {
   // Show loading state while validating token
   if (validatingToken) {
     return (
-      <Card className="w-full max-w-md mx-auto">
+      <Card className="w-full max-w-md mx-auto pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
         <CardHeader className="space-y-3 text-center">
           <img
             src="https://pickfirst.com.au/logo.jpg"
@@ -244,14 +244,14 @@ export const ResetPasswordForm = () => {
             className="mx-auto h-16 w-auto drop-shadow-lg"
             loading="lazy"
           />
-          <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl font-bold text-foreground">Reset Password</CardTitle>
+          <CardDescription className="text-muted-foreground">
             Validating your reset link...
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-          <p className="text-sm text-gray-500">Please wait...</p>
+          <p className="text-sm text-muted-foreground">Please wait...</p>
         </CardContent>
       </Card>
     );
@@ -260,7 +260,7 @@ export const ResetPasswordForm = () => {
   // Show error state if token is invalid
   if (!hasValidToken) {
     return (
-      <Card className="w-full max-w-md mx-auto border-red-200">
+      <Card className="w-full max-w-md mx-auto pickfirst-glass bg-card/90 text-card-foreground border border-red-300">
         <CardHeader className="space-y-3 text-center">
           <img
             src="https://pickfirst.com.au/logo.jpg"
@@ -290,7 +290,7 @@ export const ResetPasswordForm = () => {
           <div className="space-y-2">
             <Button 
               onClick={() => navigate('/forgot-password')}
-              className="w-full"
+              className="w-full bg-primary text-primary-foreground hover:bg-pickfirst-amber"
               variant="default"
             >
               Request New Reset Link
@@ -298,7 +298,7 @@ export const ResetPasswordForm = () => {
             
             <Button 
               onClick={() => navigate('/auth')}
-              className="w-full"
+              className="w-full border-border text-muted-foreground hover:bg-muted"
               variant="outline"
             >
               Back to Login
@@ -306,7 +306,7 @@ export const ResetPasswordForm = () => {
             
             <Button 
               onClick={() => navigate('/signup')}
-              className="w-full"
+              className="w-full text-primary hover:bg-primary/10"
               variant="ghost"
             >
               Don't have an account? Sign Up
@@ -319,7 +319,7 @@ export const ResetPasswordForm = () => {
 
   // Show the reset password form only if token is valid
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full max-w-md mx-auto pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
       <CardHeader className="space-y-3 text-center">
         <img
           src="https://pickfirst.com.au/logo.jpg"
@@ -327,15 +327,15 @@ export const ResetPasswordForm = () => {
           className="mx-auto h-16 w-auto drop-shadow-lg"
           loading="lazy"
         />
-        <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-2xl font-bold text-foreground">Reset Password</CardTitle>
+        <CardDescription className="text-muted-foreground">
           Enter your new password below.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="password">New Password</Label>
+            <Label htmlFor="password" className="text-foreground">New Password</Label>
             <div className="relative">
               <Input
                 id="password"
@@ -343,14 +343,14 @@ export const ResetPasswordForm = () => {
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={handleChange}
-                className={`pr-10 ${errors.password ? 'border-red-500' : ''}`}
+                className={`pr-10 bg-card border ${errors.password ? 'border-red-500' : 'border-border'} text-foreground`}
                 placeholder="Enter new password"
                 autoComplete="new-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2.5 top-2.5 text-gray-500 hover:text-gray-700"
+                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
                 tabIndex={-1}
               >
                 {showPassword ? (
@@ -362,13 +362,13 @@ export const ResetPasswordForm = () => {
             </div>
             {formData.password && (
               <div className="mt-1">
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-2">
                   <div 
                     className={`h-2 rounded-full ${getPasswordStrengthColor()}`} 
                     style={{ width: `${(passwordScore / 4) * 100}%` }}
                   />
                 </div>
-                <p className="text-xs mt-1 text-gray-500">
+                <p className="text-xs mt-1 text-muted-foreground">
                   Password strength: {getPasswordStrengthText()}
                 </p>
               </div>
@@ -379,7 +379,7 @@ export const ResetPasswordForm = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Label htmlFor="confirmPassword" className="text-foreground">Confirm Password</Label>
             <div className="relative">
               <Input
                 id="confirmPassword"
@@ -387,14 +387,14 @@ export const ResetPasswordForm = () => {
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className={`pr-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                className={`pr-10 bg-card border ${errors.confirmPassword ? 'border-red-500' : 'border-border'} text-foreground`}
                 placeholder="Confirm new password"
                 autoComplete="new-password"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-2.5 top-2.5 text-gray-500 hover:text-gray-700"
+                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
                 tabIndex={-1}
               >
                 {showConfirmPassword ? (
@@ -411,7 +411,7 @@ export const ResetPasswordForm = () => {
           
           <Button 
             type="submit" 
-            className="w-full"
+            className="w-full bg-primary hover:bg-pickfirst-amber text-primary-foreground"
             disabled={loading}
           >
             {loading ? (
@@ -425,7 +425,7 @@ export const ResetPasswordForm = () => {
           </Button>
         </form>
         
-        <div className="mt-4 text-center text-sm">
+        <div className="mt-4 text-center text-sm text-muted-foreground">
           <button
             onClick={() => navigate('/auth')}
             className="text-primary hover:underline"

@@ -72,7 +72,7 @@ export const InquiryStatusComponent = ({ propertyId, onNavigateToMessages }: Inq
 
   if (loading) {
     return (
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
         <CardContent className="p-4">
           <div className="text-gray-300">Checking inquiry status...</div>
         </CardContent>
@@ -85,7 +85,7 @@ export const InquiryStatusComponent = ({ propertyId, onNavigateToMessages }: Inq
   }
 
   return (
-    <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-green-500/20">
+    <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-green-500/30">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

@@ -170,7 +170,7 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
   };
 
   return (
-    <Card className={`bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20 ${compact ? 'p-4' : ''}`}>
+    <Card className={`pickfirst-glass bg-card/90 text-card-foreground border border-primary/30 ${compact ? 'p-4' : ''}`}>
       {showTitle && (
         <CardHeader className={compact ? 'pb-4' : ''}>
           <div className="flex items-center gap-3">

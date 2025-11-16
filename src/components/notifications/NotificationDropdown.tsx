@@ -212,7 +212,7 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
       <Button
         variant="ghost"
         size="icon"
-        className={`relative text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-colors ${
+        className={`relative text-muted-foreground hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-colors ${
           isOpen ? 'text-pickfirst-yellow' : ''
         } h-10 w-10 rounded-full sm:h-auto sm:w-auto sm:rounded-lg`}
         onClick={() => setIsOpen(!isOpen)}
@@ -233,18 +233,18 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
             isMobile
               ? 'fixed inset-x-4 top-16 z-50 w-auto mx-auto'
               : 'absolute right-0 mt-2 w-96'
-          } max-w-[calc(100vw-2rem)] bg-gradient-to-b from-gray-900/98 to-black/98 backdrop-blur-xl border border-pickfirst-yellow/20 rounded-xl shadow-2xl overflow-hidden`}
+          } max-w-[calc(100vw-2rem)] pickfirst-glass bg-card/95 text-card-foreground border border-pickfirst-yellow/30 rounded-xl shadow-2xl overflow-hidden`}
           style={isMobile ? { maxHeight: '75vh' } : {}}
         >
           {/* Header */}
-          <div className="p-4 border-b border-pickfirst-yellow/20 bg-gradient-to-r from-pickfirst-yellow/5 to-transparent">
+          <div className="p-4 border-b border-pickfirst-yellow/20 bg-gradient-to-r from-pickfirst-yellow/10 to-transparent">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                   <Bell className="h-5 w-5 text-pickfirst-yellow" />
                   Notifications
                 </h3>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up!'}
                 </p>
               </div>
@@ -254,7 +254,7 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
                     variant="ghost"
                     size="sm"
                     onClick={handleMarkAllAsRead}
-                    className="text-xs text-pickfirst-yellow hover:text-amber-400 hover:bg-pickfirst-yellow/10"
+                    className="text-xs text-pickfirst-yellow hover:text-amber-500 hover:bg-pickfirst-yellow/10"
                     title="Mark all as read"
                   >
                     <CheckCheck className="h-4 w-4" />
@@ -267,7 +267,7 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
                     navigate('/notifications');
                     setIsOpen(false);
                   }}
-                  className="text-xs text-gray-400 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
+                    className="text-xs text-muted-foreground hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
                   title="View all notifications"
                 >
                   <Settings className="h-4 w-4" />
@@ -281,16 +281,16 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pickfirst-yellow"></div>
-                <span className="ml-3 text-gray-400">Loading...</span>
+                <span className="ml-3 text-muted-foreground">Loading...</span>
               </div>
             ) : notifications.length === 0 ? (
               <div className="text-center py-12 px-4">
-                <Bell className="h-12 w-12 text-gray-600 mx-auto mb-3 opacity-50" />
-                <p className="text-gray-400 text-sm">No notifications yet</p>
-                <p className="text-gray-500 text-xs mt-1">We'll notify you when something happens</p>
+                <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-60" />
+                <p className="text-muted-foreground text-sm">No notifications yet</p>
+                <p className="text-muted-foreground/80 text-xs mt-1">We'll notify you when something happens</p>
               </div>
             ) : (
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-border/60">
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
@@ -318,7 +318,7 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <h4 className={`text-sm font-medium ${!notification.read ? 'text-white' : 'text-gray-300'}`}>
+                          <h4 className={`text-sm font-medium ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
                             {notification.title}
                           </h4>
                           <Button
@@ -331,11 +331,11 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
-                        <p className="text-xs text-gray-400 mt-1 line-clamp-2">
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                           {notification.message}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-muted-foreground/80">
                             {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                           </span>
                           {!notification.read && (
@@ -362,7 +362,7 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
                   navigate('/notifications');
                   setIsOpen(false);
                 }}
-                className="w-full text-sm text-pickfirst-yellow hover:text-amber-400 hover:bg-pickfirst-yellow/10"
+                className="w-full text-sm text-pickfirst-yellow hover:text-amber-500 hover:bg-pickfirst-yellow/10"
               >
                 View All Notifications
               </Button>

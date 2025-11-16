@@ -632,7 +632,7 @@ const BrowsePropertiesPageComponent = () => {
     if (viewMode === 'list') {
       return (
         <Card 
-          className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl hover:shadow-yellow-400/20 transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+          className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg hover:shadow-pickfirst-yellow/40 transition-all duration-300 hover:scale-[1.02] cursor-pointer"
           onClick={() => navigate(`/property/${listing.id}`)}
         >
           <div className="flex flex-col sm:flex-row">
@@ -774,7 +774,7 @@ const BrowsePropertiesPageComponent = () => {
 
     return (
       <Card 
-        className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl hover:shadow-yellow-400/20 transition-all duration-300 hover:scale-[1.02] cursor-pointer group"
+        className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg hover:shadow-pickfirst-yellow/40 transition-all duration-300 hover:scale-[1.02] cursor-pointer group"
         onClick={() => navigate(`/property/${listing.id}`)}
       >
         <div className="relative aspect-video overflow-hidden rounded-t-lg">
@@ -968,7 +968,7 @@ const BrowsePropertiesPageComponent = () => {
         />
 
         {/* Sort Controls */}
-        <div className="bg-gradient-to-br from-gray-900/50 to-black/50 backdrop-blur-xl border border-yellow-400/20 rounded-lg p-3 sm:p-4">
+        <div className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 rounded-lg p-3 sm:p-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             {/* Sort Controls */}
             <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
@@ -1026,7 +1026,7 @@ const BrowsePropertiesPageComponent = () => {
 
         {/* Inquiry Dialog */}
         <Dialog open={isInquiryDialogOpen} onOpenChange={setIsInquiryDialogOpen}>
-        <DialogContent className="w-full max-w-[95vw] sm:max-w-lg bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-yellow-400/20 text-white">
+        <DialogContent className="w-full max-w-[95vw] sm:max-w-lg pickfirst-glass bg-card text-card-foreground">
           <DialogHeader>
             <DialogTitle className="text-yellow-400">Enquire About Property</DialogTitle>
             <DialogDescription className="text-gray-300">

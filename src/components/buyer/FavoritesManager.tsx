@@ -67,7 +67,7 @@ export const FavoritesManager: React.FC<FavoritesManagerProps> = ({ className })
 
   if (loading) {
     return (
-      <Card className={`bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20 ${className}`}>
+      <Card className={`pickfirst-glass bg-card/90 text-card-foreground border border-primary/30 ${className}`}>
         <CardContent className="p-6">
           <div className="text-center">Loading favorites...</div>
         </CardContent>
@@ -77,7 +77,7 @@ export const FavoritesManager: React.FC<FavoritesManagerProps> = ({ className })
 
   return (
     <div className={`space-y-6 ${className}`}>
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-primary/30">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

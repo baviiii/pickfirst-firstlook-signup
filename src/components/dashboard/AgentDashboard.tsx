@@ -129,7 +129,7 @@ export const AgentDashboard = () => {
 
       {/* Performance Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
+        <Card className="bg-card text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
           <CardHeader>
             <CardTitle className="text-white">This Month's Performance</CardTitle>
           </CardHeader>
@@ -163,7 +163,7 @@ export const AgentDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
+        <Card className="bg-card text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
           <CardHeader>
             <CardTitle className="text-white">Recent Activity</CardTitle>
           </CardHeader>

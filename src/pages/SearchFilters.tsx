@@ -41,7 +41,7 @@ const EnhancedSearchFiltersPage = () => {
     const showRentalSuffix = rentalSuffix && property.status !== 'sold';
     
     return (
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 hover:border-yellow-400/40 transition-all duration-300">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 transition-all duration-300">
         <div 
           className="relative aspect-video overflow-hidden rounded-t-lg cursor-pointer group"
           onClick={() => navigate(`/property/${property.id}`)}
@@ -168,7 +168,7 @@ const EnhancedSearchFiltersPage = () => {
 
           {/* Results Section */}
           {showResults && (
-            <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+            <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-white flex items-center gap-2">

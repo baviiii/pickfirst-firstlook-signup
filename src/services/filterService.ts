@@ -21,6 +21,8 @@ export interface AdvancedPropertyFilters {
   squareFootageMax?: number;
   yearBuiltMin?: number;
   yearBuiltMax?: number;
+  // Access control
+  includeOffMarket?: boolean; // If true, includes agent_posted listings (premium feature)
   
   // Advanced filters
   features?: string[];
@@ -114,6 +116,12 @@ export class FilterService {
       let query = supabase
         .from('property_listings')
         .select('*', { count: 'exact' });
+
+      // Filter out off-market (agent_posted) listings unless user has premium access
+      // Off-market properties require premium subscription
+      if (!filters.includeOffMarket) {
+        query = query.neq('listing_source', 'agent_posted');
+      }
 
       // Apply basic filters
       if (filters.searchTerm) {

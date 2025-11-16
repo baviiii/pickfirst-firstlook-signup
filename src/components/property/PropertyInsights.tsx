@@ -304,11 +304,11 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
 
   // Memoized components
   const PlaceCard = useMemo(() => ({ place, icon: Icon }: { place: NearbyPlace; icon: any }) => (
-    <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-yellow-400/50 transition-all duration-200 group">
+  <div className="p-4 pickfirst-glass bg-card/90 rounded-lg border border-border hover:border-pickfirst-yellow/50 transition-all duration-200 group">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2 flex-1">
-          <Icon className="h-4 w-4 text-yellow-400 flex-shrink-0" />
-          <h4 className="text-sm font-medium text-white line-clamp-2 group-hover:text-yellow-100 transition-colors">
+          <Icon className="h-4 w-4 text-primary flex-shrink-0" />
+          <h4 className="text-sm font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors">
             {place.name}
           </h4>
         </div>
@@ -321,17 +321,17 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
       </div>
       
       <div className="space-y-1">
-        <div className="flex items-center justify-between text-xs text-gray-400">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span className="line-clamp-1">{place.vicinity || 'Nearby'}</span>
           {place.distance && (
-            <span className="text-yellow-400/80 font-medium">
+            <span className="text-primary/80 font-medium">
               {place.distance < 1 ? `${Math.round(place.distance * 1000)}m` : `${place.distance.toFixed(1)}km`}
             </span>
           )}
         </div>
         
         {place.user_ratings_total && (
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-muted-foreground/80">
             {place.user_ratings_total.toLocaleString()} reviews
             {place.price_level && (
               <span className="ml-2">
@@ -356,17 +356,17 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
 
   if (loading) {
     return (
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-yellow-400" />
+          <CardTitle className="text-foreground flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-primary" />
             Neighborhood Insights
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 space-y-4">
-            <Loader2 className="h-8 w-8 text-yellow-400 animate-spin" />
-            <div className="text-gray-400 text-center">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+            <div className="text-muted-foreground text-center">
               <p>Loading real data from Google Maps...</p>
               {retryCount > 0 && (
                 <p className="text-sm text-yellow-400 mt-1">
@@ -382,17 +382,17 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
 
   if (error) {
     return (
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-red-400/20">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-red-400/30">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
+          <CardTitle className="text-foreground flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-red-400" />
             Property Insights
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Alert className="bg-red-500/10 border-red-500/20">
+          <Alert className="bg-red-500/10 border-red-500/30">
             <AlertTriangle className="h-4 w-4 text-red-400" />
-            <AlertDescription className="text-red-200">
+            <AlertDescription className="text-red-200 text-sm">
               {error}
               {retryCount < maxRetries && (
                 <Button 
@@ -449,68 +449,68 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
   return (
     <div className="space-y-6">
       {/* Quick Stats from Real Data */}
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Star className="h-5 w-5 text-yellow-400" />
+          <CardTitle className="text-foreground flex items-center gap-2">
+            <Star className="h-5 w-5 text-primary" />
             Neighborhood at a Glance
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Schools */}
-            <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/50">
+            <div className="p-4 rounded-lg border border-border bg-card/80">
               <div className="flex items-center gap-2 mb-2">
-                <GraduationCap className="h-4 w-4 text-yellow-400" />
-                <span className="text-sm font-medium text-white">Schools</span>
+                <GraduationCap className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">Schools</span>
               </div>
-              <div className="text-2xl font-bold text-yellow-400">
+              <div className="text-2xl font-bold text-primary">
                 {avgSchoolRating > 0 ? avgSchoolRating.toFixed(1) : 'N/A'}
               </div>
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-muted-foreground">
                 {nearbyPlaces.schools.length > 0 ? `${nearbyPlaces.schools.length} nearby` : 'avg rating'}
               </div>
             </div>
 
             {/* Restaurants */}
-            <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/50">
+            <div className="p-4 rounded-lg border border-border bg-card/80">
               <div className="flex items-center gap-2 mb-2">
-                <Coffee className="h-4 w-4 text-yellow-400" />
-                <span className="text-sm font-medium text-white">Dining</span>
+                <Coffee className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">Dining</span>
               </div>
-              <div className="text-2xl font-bold text-yellow-400">
+              <div className="text-2xl font-bold text-primary">
                 {topRatedRestaurants}
               </div>
-              <div className="text-xs text-gray-400">top-rated spots</div>
+              <div className="text-xs text-muted-foreground">top-rated spots</div>
             </div>
 
             {/* Transit */}
-            <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/50">
+            <div className="p-4 rounded-lg border border-border bg-card/80">
               <div className="flex items-center gap-2 mb-2">
-                <Train className="h-4 w-4 text-yellow-400" />
-                <span className="text-sm font-medium text-white">Transit</span>
+                <Train className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">Transit</span>
               </div>
-              <div className="text-2xl font-bold text-yellow-400">
+              <div className="text-2xl font-bold text-primary">
                 {transitOptions}
               </div>
-              <div className="text-xs text-gray-400">stations nearby</div>
+              <div className="text-xs text-muted-foreground">stations nearby</div>
             </div>
 
             {/* Parks */}
-            <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/50">
+            <div className="p-4 rounded-lg border border-border bg-card/80">
               <div className="flex items-center gap-2 mb-2">
-                <TreePine className="h-4 w-4 text-yellow-400" />
-                <span className="text-sm font-medium text-white">Parks</span>
+                <TreePine className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">Parks</span>
               </div>
-              <div className="text-2xl font-bold text-yellow-400">
+              <div className="text-2xl font-bold text-primary">
                 {parksNearby}
               </div>
-              <div className="text-xs text-gray-400">green spaces</div>
+              <div className="text-xs text-muted-foreground">green spaces</div>
             </div>
 
             {/* Air Quality */}
             {airQuality && (
-              <div className={`p-4 rounded-lg border border-gray-700 ${aqInfo.bgColor}`}>
+              <div className={`p-4 rounded-lg border border-border ${aqInfo.bgColor}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">{aqInfo.icon}</span>
                   <span className="text-sm font-medium text-white">Air Quality</span>
@@ -535,12 +535,12 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
                     Air Quality Index: {airQuality.aqi} ({aqInfo.label})
                   </p>
                   {airQuality.dominantPollutant && (
-                    <p className="text-gray-300 text-xs">
+                    <p className="text-muted-foreground text-xs">
                       Primary pollutant: {airQuality.dominantPollutant}
                     </p>
                   )}
                   {airQuality.healthRecommendations?.generalPopulation && (
-                    <p className="text-gray-400 text-xs mt-2">
+                    <p className="text-muted-foreground/80 text-xs mt-2">
                       {airQuality.healthRecommendations.generalPopulation}
                     </p>
                   )}
@@ -552,30 +552,30 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
       </Card>
 
       {/* Data Source Notice */}
-      <Card className="bg-gradient-to-br from-blue-900/20 to-blue-950/20 backdrop-blur-xl border border-blue-400/30">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-primary/30">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+            <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
             <div className="text-sm space-y-2">
-              <p className="text-white font-medium">
+              <p className="text-foreground font-medium">
                 100% Real Data from Google (Cached for 30 Days)
               </p>
-              <p className="text-gray-300">
+              <p className="text-muted-foreground">
                 All information is sourced from <strong>Google Maps Places API</strong> and <strong>Google Air Quality API</strong>. 
                 Data is cached for 30 days to optimize performance. First-time views fetch fresh data, subsequent views use cached results for instant loading.
               </p>
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-blue-400 hover:text-blue-300 p-0 h-auto font-normal"
+                className="text-primary hover:text-primary/80 p-0 h-auto font-normal"
                 onClick={() => setShowMethodology(!showMethodology)}
               >
                 {showMethodology ? <ChevronUp className="h-4 w-4 inline mr-1" /> : <ChevronDown className="h-4 w-4 inline mr-1" />}
                 How we calculate this data
               </Button>
               {showMethodology && (
-                <div className="mt-3 p-4 bg-gray-900/50 rounded-lg border border-gray-700 space-y-2 text-gray-300">
-                  <p className="font-medium text-white">Calculation Methodology:</p>
+                <div className="mt-3 p-4 bg-card/80 rounded-lg border border-border space-y-2 text-muted-foreground">
+                  <p className="font-medium text-foreground">Calculation Methodology:</p>
                   <ul className="space-y-1 text-xs list-disc list-inside">
                     <li><strong>Distance:</strong> Calculated using the Haversine formula, which determines the great-circle distance between two points on Earth using their latitude and longitude coordinates.</li>
                     <li><strong>Ratings:</strong> Pulled directly from Google Maps user reviews (out of 5 stars).</li>
@@ -586,7 +586,7 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
                     <li><strong>Caching:</strong> Data is stored in our database and refreshed every 30 days. This means instant loading for cached properties and zero duplicate API calls.</li>
                     <li><strong>Data Freshness:</strong> First-time property views fetch fresh data from Google APIs. Subsequent views use cached data (max 30 days old) for instant performance.</li>
                   </ul>
-                  <p className="text-xs text-gray-400 italic mt-2">
+                  <p className="text-xs text-muted-foreground/80 italic mt-2">
                     Note: Air Quality data is from official monitoring stations. We do NOT use estimated metrics for noise levels or crime data. Cached data ensures fast, cost-effective insights.
                   </p>
                 </div>
@@ -597,49 +597,49 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
       </Card>
 
       {/* Nearby Places */}
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
         <CardHeader>
-          <CardTitle className="text-white flex items-center justify-between">
+          <CardTitle className="text-foreground flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-yellow-400" />
+              <MapPin className="h-5 w-5 text-primary" />
               Nearby Places
             </div>
-            <Badge variant="outline" className="text-yellow-400 border-yellow-400/40">
+            <Badge variant="outline" className="text-primary border-primary/40 bg-primary/10">
               {totalPlaces} verified places
             </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {totalPlaces === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              <MapPin className="h-12 w-12 mx-auto mb-3 opacity-50" />
+            <div className="text-center py-8 text-muted-foreground">
+              <MapPin className="h-12 w-12 mx-auto mb-3 opacity-60" />
               <p>No nearby places found in this area.</p>
             </div>
           ) : (
             <div className="space-y-4">
               {categories.map(category => (
-                <div key={category.key} className="border-b border-gray-700 last:border-b-0 pb-4 last:pb-0">
+                <div key={category.key} className="border-b border-border/60 last:border-b-0 pb-4 last:pb-0">
                   <Button
                     variant="ghost"
-                    className="w-full justify-between text-left p-3 h-auto hover:bg-gray-800/50 rounded-lg"
+                    className="w-full justify-between text-left p-3 h-auto hover:bg-card/80 rounded-lg"
                     onClick={() => setExpandedCategory(
                       expandedCategory === category.key ? '' : category.key
                     )}
                   >
                     <div className="flex items-center gap-3">
-                      <category.icon className="h-5 w-5 text-yellow-400" />
-                      <span className="text-white font-medium">{category.label}</span>
+                      <category.icon className="h-5 w-5 text-primary" />
+                      <span className="text-foreground font-medium">{category.label}</span>
                       <Badge 
                         variant="outline" 
-                        className={`${category.places.length > 0 ? 'text-yellow-400 border-yellow-400/40' : 'text-gray-500 border-gray-500/40'}`}
+                        className={`${category.places.length > 0 ? 'text-primary border-primary/40 bg-primary/5' : 'text-muted-foreground border-border'}`}
                       >
                         {category.places.length}
                       </Badge>
                     </div>
                     {expandedCategory === category.key ? (
-                      <ChevronUp className="h-4 w-4 text-gray-400" />
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
                     ) : (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     )}
                   </Button>
                   
@@ -650,7 +650,7 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
                           <PlaceCard key={place.place_id || index} place={place} icon={category.icon} />
                         ))
                       ) : (
-                        <div className="text-gray-400 text-sm col-span-full text-center py-4">
+                        <div className="text-muted-foreground text-sm col-span-full text-center py-4">
                           No {category.label.toLowerCase()} found nearby
                         </div>
                       )}

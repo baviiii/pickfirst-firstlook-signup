@@ -167,37 +167,37 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
   return (
     <div className={`space-y-6 ${className}`}>
         {/* Alert Settings */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-primary/30">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-foreground">
               <Bell className="h-5 w-5 text-primary" />
               Property Alert Settings
             </CardTitle>
-            <CardDescription className="text-gray-300">
+            <CardDescription className="text-muted-foreground">
               Get notified when new on-market properties match your preferences.
               <br />
-              <span className="text-yellow-400 font-medium mt-1 inline-block">
+              <span className="text-primary font-medium mt-1 inline-block">
                 🔐 Premium subscribers get exclusive OFF-MARKET property alerts
               </span>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-gray-800/50">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-card/80 border border-border/60">
               <div className="flex items-center gap-3">
                 {preferences?.property_alerts ? (
-                  <Bell className="h-5 w-5 text-green-400" />
+                  <Bell className="h-5 w-5 text-green-600" />
                 ) : (
-                  <BellOff className="h-5 w-5 text-gray-400" />
+                  <BellOff className="h-5 w-5 text-muted-foreground" />
                 )}
                 <div>
-                  <h4 className="text-white font-medium">On-Market Property Alerts</h4>
-                  <p className="text-sm text-gray-400">
+                  <h4 className="text-foreground font-medium">On-Market Property Alerts</h4>
+                  <p className="text-sm text-muted-foreground">
                     {preferences?.property_alerts 
                       ? 'You will receive email alerts for new on-market properties matching your criteria'
                       : 'Enable to receive alerts for new on-market properties'
                     }
                   </p>
-                  <p className="text-xs text-yellow-400/70 mt-1">
+                  <p className="text-xs text-primary/80 mt-1">
                     Premium members also receive exclusive off-market alerts
                   </p>
                 </div>
@@ -211,38 +211,38 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
 
             {/* Current Preferences Summary */}
             {preferences?.property_alerts && (
-              <div className="p-4 rounded-lg bg-gray-800/30 border border-gray-700">
-                <h5 className="text-white font-medium mb-3 flex items-center gap-2">
+              <div className="p-4 rounded-lg bg-card/80 border border-border">
+                <h5 className="text-foreground font-medium mb-3 flex items-center gap-2">
                   <Settings className="h-4 w-4" />
                   Your Alert Criteria
                 </h5>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                   {preferences.min_budget && (
-                    <div className="flex items-center gap-2 text-gray-300">
+                    <div className="flex items-center gap-2 text-muted-foreground">
                       <DollarSign className="h-4 w-4" />
                       <span>Min: {formatPrice(preferences.min_budget)}</span>
                     </div>
                   )}
                   {preferences.max_budget && (
-                    <div className="flex items-center gap-2 text-gray-300">
+                    <div className="flex items-center gap-2 text-muted-foreground">
                       <DollarSign className="h-4 w-4" />
                       <span>Max: {formatPrice(preferences.max_budget)}</span>
                     </div>
                   )}
                   {preferences.preferred_bedrooms && (
-                    <div className="flex items-center gap-2 text-gray-300">
+                    <div className="flex items-center gap-2 text-muted-foreground">
                       <Home className="h-4 w-4" />
                       <span>{preferences.preferred_bedrooms}+ bedrooms</span>
                     </div>
                   )}
                   {preferences.preferred_bathrooms && (
-                    <div className="flex items-center gap-2 text-gray-300">
+                    <div className="flex items-center gap-2 text-muted-foreground">
                       <Home className="h-4 w-4" />
                       <span>{preferences.preferred_bathrooms}+ bathrooms</span>
                     </div>
                   )}
                   {preferences.preferred_areas && preferences.preferred_areas.length > 0 && (
-                    <div className="flex items-center gap-2 text-gray-300">
+                    <div className="flex items-center gap-2 text-muted-foreground">
                       <MapPin className="h-4 w-4" />
                       <span>{preferences.preferred_areas.join(', ')}</span>
                     </div>
@@ -260,22 +260,22 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
         </Card>
 
         {/* Alert History */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-primary/30">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-foreground">
               <Mail className="h-5 w-5 text-primary" />
               Recent Alerts
             </CardTitle>
-            <CardDescription className="text-gray-300">
+            <CardDescription className="text-muted-foreground">
               Your recent property alert notifications
             </CardDescription>
           </CardHeader>
           <CardContent>
             {alertHistory.length === 0 ? (
               <div className="text-center py-8">
-                <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400">No alerts sent yet</p>
-                <p className="text-sm text-gray-500 mt-2">
+                <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No alerts sent yet</p>
+                <p className="text-sm text-muted-foreground/80 mt-2">
                   You'll receive notifications when properties match your criteria
                 </p>
               </div>

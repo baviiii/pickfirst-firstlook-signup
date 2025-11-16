@@ -275,7 +275,7 @@ const PropertyDetailsComponent = () => {
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-            <p className="text-white">Loading property details...</p>
+            <p className="text-muted-foreground">Loading property details...</p>
           </div>
         </div>
       </div>
@@ -287,8 +287,11 @@ const PropertyDetailsComponent = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <h2 className="text-xl mb-4 text-white">Property not found</h2>
-            <Button onClick={() => navigate('/browse-properties')} className="bg-yellow-400 hover:bg-amber-500 text-black">
+            <h2 className="text-xl mb-4 text-foreground">Property not found</h2>
+            <Button
+              onClick={() => navigate('/browse-properties')}
+              className="bg-primary hover:bg-pickfirst-amber text-primary-foreground"
+            >
               Back to Browse
             </Button>
           </div>
@@ -307,7 +310,7 @@ const PropertyDetailsComponent = () => {
       <Button
         variant="ghost"
         onClick={() => navigate(-1)}
-        className="text-gray-300 hover:text-pickfirst-yellow"
+        className="text-muted-foreground hover:text-primary"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back
@@ -319,7 +322,9 @@ const PropertyDetailsComponent = () => {
             variant="ghost" 
             size="icon"
             onClick={handleToggleFavorite}
-            className={`rounded-full hover:bg-yellow-400/10 ${isFavorited ? 'text-yellow-400' : 'text-gray-400'}`}
+            className={`rounded-full hover:bg-primary/10 ${
+              isFavorited ? 'text-primary' : 'text-muted-foreground'
+            }`}
           >
             <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
           </Button>
@@ -327,7 +332,7 @@ const PropertyDetailsComponent = () => {
             variant="ghost" 
             size="icon"
             onClick={handleShare}
-            className="text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10"
+            className="text-muted-foreground hover:text-primary hover:bg-primary/10"
           >
             <Share2 className="h-4 w-4" />
           </Button>
@@ -421,15 +426,15 @@ const PropertyDetailsComponent = () => {
           {/* Main Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Property Header */}
-            <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+            <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
               <CardHeader className="pb-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                  <div className="flex items-center text-yellow-400/80">
+                  <div className="flex items-center text-primary">
                     <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
-                    <span className="text-sm lg:text-base">{property.address}</span>
+                    <span className="text-sm lg:text-base text-foreground">{property.address}</span>
                   </div>
                   {property.created_at && (
-                    <div className="flex items-center text-gray-400 text-xs">
+                    <div className="flex items-center text-muted-foreground text-xs">
                       <Clock className="w-3 h-3 mr-1" />
                       <span>Posted {new Date(property.created_at).toLocaleDateString()}</span>
                     </div>
@@ -438,12 +443,12 @@ const PropertyDetailsComponent = () => {
                 
                 {/* Price and Stats */}
                 <div className="bg-yellow-400/5 p-4 rounded-lg border border-yellow-400/20">
-                  <div className="text-3xl font-bold text-yellow-400 mb-3">
+                  <div className="text-3xl font-bold text-primary mb-3">
                     {hasSoldPrice ? (
                       <>
                         {numericOriginalPrice && Number.isFinite(numericOriginalPrice) && (numericOriginalPrice as number) > 0 && (
                           <>
-                            <span className="text-xl text-gray-400 line-through">
+                            <span className="text-xl text-muted-foreground line-through">
                               {`$${(numericOriginalPrice as number).toLocaleString()}`}
                             </span>
                             <br />
@@ -475,19 +480,19 @@ const PropertyDetailsComponent = () => {
                     {property.bedrooms !== null && (
                       <div className="flex items-center gap-2">
                         <Bed className="w-5 h-5 text-yellow-400" />
-                        <span className="text-gray-300">{property.bedrooms} Bed{property.bedrooms !== 1 ? 's' : ''}</span>
+                        <span className="text-muted-foreground">{property.bedrooms} Bed{property.bedrooms !== 1 ? 's' : ''}</span>
                       </div>
                     )}
                     {property.bathrooms !== null && (
                       <div className="flex items-center gap-2">
                         <Bath className="w-5 h-5 text-yellow-400" />
-                        <span className="text-gray-300">{property.bathrooms} Bath{property.bathrooms !== 1 ? 's' : ''}</span>
+                        <span className="text-muted-foreground">{property.bathrooms} Bath{property.bathrooms !== 1 ? 's' : ''}</span>
                       </div>
                     )}
                     {propertySquareFeet !== null && propertySquareFeet !== undefined && !Number.isNaN(propertySquareFeet) && (
                       <div className="flex items-center gap-2">
                         <Square className="w-5 h-5 text-yellow-400" />
-                        <span className="text-gray-300">{propertySquareFeet.toLocaleString()} sq ft</span>
+                        <span className="text-muted-foreground">{propertySquareFeet.toLocaleString()} sq ft</span>
                       </div>
                     )}
                   </div>
@@ -496,15 +501,15 @@ const PropertyDetailsComponent = () => {
             </Card>
 
             {/* Description */}
-            <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+            <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
               <CardHeader>
-                <CardTitle className="text-white text-lg flex items-center">
+                <CardTitle className="text-foreground text-lg flex items-center">
                   <Home className="w-5 h-5 mr-2 text-yellow-400" />
                   Property Description
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-300 leading-relaxed">
+                <p className="text-muted-foreground leading-relaxed">
                   {property.description}
                 </p>
               </CardContent>
@@ -512,14 +517,14 @@ const PropertyDetailsComponent = () => {
 
             {/* Features */}
             {property.features && property.features.length > 0 && (
-              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+              <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
                 <CardHeader>
-                  <CardTitle className="text-white text-lg">Key Features</CardTitle>
+                  <CardTitle className="text-foreground text-lg">Key Features</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {property.features.map((feature, index) => (
-                      <div key={index} className="flex items-center text-gray-300 group">
+                      <div key={index} className="flex items-center text-muted-foreground group">
                         <div className="w-2 h-2 rounded-full bg-yellow-400 mr-3 group-hover:animate-pulse flex-shrink-0"></div>
                         <span className="group-hover:text-yellow-400/90 transition-colors text-sm">
                           {feature}
@@ -533,15 +538,15 @@ const PropertyDetailsComponent = () => {
 
             {/* Inspection Times */}
             {property.showing_instructions && (
-              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+              <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
                 <CardHeader>
-                  <CardTitle className="text-white text-lg flex items-center">
+                  <CardTitle className="text-foreground text-lg flex items-center">
                     <Calendar className="w-5 h-5 mr-2 text-yellow-400" />
                     Open Inspection Times
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-gray-300 leading-relaxed whitespace-pre-line">
+                  <div className="text-muted-foreground leading-relaxed whitespace-pre-line">
                     {property.showing_instructions}
                   </div>
                 </CardContent>
@@ -550,9 +555,9 @@ const PropertyDetailsComponent = () => {
 
             {/* Floor Plans */}
             {(property as any).floor_plans && Array.isArray((property as any).floor_plans) && (property as any).floor_plans.length > 0 && (
-              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+              <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
                 <CardHeader>
-                  <CardTitle className="text-white text-lg flex items-center">
+                  <CardTitle className="text-foreground text-lg flex items-center">
                     <Home className="w-5 h-5 mr-2 text-yellow-400" />
                     Floor Plans
                   </CardTitle>
@@ -597,9 +602,9 @@ const PropertyDetailsComponent = () => {
 
             {/* Agent Details */}
             {agentDetails && (
-              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+              <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
                 <CardHeader>
-                  <CardTitle className="text-white text-lg flex items-center">
+                  <CardTitle className="text-foreground text-lg flex items-center">
                     <User className="w-5 h-5 mr-2 text-yellow-400" />
                     Listing Agent
                   </CardTitle>
@@ -619,20 +624,20 @@ const PropertyDetailsComponent = () => {
                         </div>
                       )}
                       <div>
-                        <h3 className="text-white font-semibold text-lg">{agentDetails.full_name}</h3>
+                        <h3 className="text-foreground font-semibold text-lg">{agentDetails.full_name}</h3>
                         {agentDetails.company && (
-                          <p className="text-gray-400 text-sm">{agentDetails.company}</p>
+                          <p className="text-muted-foreground text-sm">{agentDetails.company}</p>
                         )}
                       </div>
                     </div>
                     
                     {agentDetails.bio && (
-                      <p className="text-gray-300 text-sm leading-relaxed">{agentDetails.bio}</p>
+                      <p className="text-muted-foreground text-sm leading-relaxed">{agentDetails.bio}</p>
                     )}
                     
                     <div className="space-y-2">
                       {agentDetails.phone && (
-                        <div className="flex items-center text-gray-300 text-sm">
+                        <div className="flex items-center text-muted-foreground text-sm">
                           <Phone className="w-4 h-4 mr-2 text-yellow-400" />
                           <a href={`tel:${agentDetails.phone}`} className="hover:text-yellow-400 transition-colors">
                             {agentDetails.phone}
@@ -640,7 +645,7 @@ const PropertyDetailsComponent = () => {
                         </div>
                       )}
                       {agentDetails.email && (
-                        <div className="flex items-center text-gray-300 text-sm">
+                        <div className="flex items-center text-muted-foreground text-sm">
                           <Mail className="w-4 h-4 mr-2 text-yellow-400" />
                           <a href={`mailto:${agentDetails.email}`} className="hover:text-yellow-400 transition-colors">
                             {agentDetails.email}
@@ -648,14 +653,14 @@ const PropertyDetailsComponent = () => {
                         </div>
                       )}
                       {agentDetails.location && (
-                        <div className="flex items-center text-gray-300 text-sm">
+                        <div className="flex items-center text-muted-foreground text-sm">
                           <MapPin className="w-4 h-4 mr-2 text-yellow-400" />
                           <span>{agentDetails.location}</span>
                         </div>
                       )}
                     </div>
                     {agentDetails.email && agentDetails.phone && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-muted-foreground/80">
                         Prefer email or phone? Reach out using whichever suits you best.
                       </p>
                     )}
@@ -685,17 +690,17 @@ const PropertyDetailsComponent = () => {
               />
             ) : ((property as any).vendor_ownership_duration || (property as any).vendor_special_conditions) ? (
               <>
-                <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+                <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
                   <CardHeader>
-                    <CardTitle className="text-white text-lg flex items-center">
-                      <Shield className="w-5 h-5 mr-2 text-yellow-400" />
+                    <CardTitle className="text-lg flex items-center text-foreground">
+                      <Shield className="w-5 h-5 mr-2 text-primary" />
                       Vendor Insights (Premium)
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 text-sm text-gray-300">
+                  <CardContent className="space-y-2 text-sm text-muted-foreground">
                     <p>Get access to ownership duration, motivation, and special conditions for this property.</p>
                     {!isFeatureEnabled('vendor_details') && (
-                      <div className="text-xs text-gray-400">
+                      <div className="text-xs">
                         Upgrade your plan to unlock detailed vendor insights and negotiate with confidence.
                       </div>
                     )}
@@ -707,44 +712,44 @@ const PropertyDetailsComponent = () => {
 
           {/* Action Panel - Sticky on desktop */}
           <div className="lg:sticky lg:top-24 lg:self-start">
-            <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl">
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
               <CardHeader>
-                <CardTitle className="text-white text-lg">
+              <CardTitle className="text-lg text-foreground">
                   {existingInquiry ? 'Your Inquiry' : 'Contact Agent'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {existingInquiry ? (
                   <div className="space-y-4">
-                    <div className="bg-yellow-400/5 p-4 rounded-lg border border-yellow-400/20">
+                  <div className="bg-primary/10 p-4 rounded-lg border border-primary/25">
                       <InquiryStatus propertyId={id} />
-                      <p className="text-sm text-yellow-400/80 mt-2">
+                    <p className="text-sm text-primary/90 mt-2">
                         Submitted {new Date(existingInquiry.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                     {hasFloorPlans && (
                       <Button 
                         variant="outline"
-                        className="w-full border-yellow-400/40 text-yellow-400 hover:bg-yellow-400/10 hover:text-yellow-200"
+                        className="w-full border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
                         onClick={() => window.open(floorPlans[0], '_blank', 'noopener')}
                       >
                         <FileText className="w-4 h-4 mr-2" />
                         View Floor Plan
                       </Button>
                     )}
-                    <p className="text-gray-300 text-sm">
+                    <p className="text-sm text-muted-foreground">
                       Check your messages to continue the conversation with the agent.
                     </p>
                   </div>
                 ) : property.status === 'sold' ? (
                   <div className="space-y-3">
-                    <div className="bg-red-500/5 p-4 rounded-lg border border-red-500/20 text-center">
-                      <p className="text-red-400 font-medium mb-2">Property Sold</p>
-                      <p className="text-gray-400 text-sm">
+                    <div className="bg-red-500/5 p-4 rounded-lg border border-red-500/30 text-center">
+                      <p className="text-red-600 font-medium mb-2">Property Sold</p>
+                      <p className="text-sm text-muted-foreground">
                         This property is no longer available for inquiries.
                       </p>
                       {property.sold_date && (
-                        <p className="text-gray-500 text-xs mt-2">
+                        <p className="text-xs mt-2 text-muted-foreground/80">
                           Sold on {new Date(property.sold_date).toLocaleDateString()}
                         </p>
                       )}
@@ -752,7 +757,7 @@ const PropertyDetailsComponent = () => {
                     {hasFloorPlans && (
                       <Button 
                         variant="outline"
-                        className="w-full border-yellow-400/40 text-yellow-400 hover:bg-yellow-400/10 hover:text-yellow-200"
+                        className="w-full border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
                         onClick={() => window.open(floorPlans[0], '_blank', 'noopener')}
                       >
                         <FileText className="w-4 h-4 mr-2" />
@@ -765,7 +770,7 @@ const PropertyDetailsComponent = () => {
                     {hasFloorPlans && (
                       <Button 
                         variant="outline"
-                        className="w-full border-yellow-400/40 text-yellow-400 hover:bg-yellow-400/10 hover:text-yellow-200"
+                        className="w-full border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
                         onClick={() => window.open(floorPlans[0], '_blank', 'noopener')}
                       >
                         <FileText className="w-4 h-4 mr-2" />
@@ -774,13 +779,13 @@ const PropertyDetailsComponent = () => {
                     )}
                     <Button 
                       onClick={handleEnquire}
-                      className="w-full bg-yellow-400 hover:bg-amber-500 text-black font-medium py-4 text-base transition-all duration-300 hover:scale-[1.02] shadow-lg"
+                      className="w-full bg-primary hover:bg-pickfirst-amber text-primary-foreground font-medium py-4 text-base transition-all duration-300 hover:scale-[1.02] shadow-lg"
                       size="lg"
                     >
                       <MessageSquare className="w-5 h-5 mr-2" />
                       Make an Enquiry
                     </Button>
-                    <p className="text-gray-400 text-xs text-center">
+                    <p className="text-xs text-muted-foreground text-center">
                       Connect directly with the listing agent
                     </p>
                   </div>
@@ -819,22 +824,22 @@ const PropertyDetailsComponent = () => {
 
       {/* Inquiry Dialog */}
       <Dialog open={isInquiryDialogOpen} onOpenChange={setIsInquiryDialogOpen}>
-        <DialogContent className="w-full max-w-[95vw] sm:max-w-lg bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-yellow-400/20 text-white">
+        <DialogContent className="w-full max-w-[95vw] sm:max-w-lg pickfirst-glass bg-card text-card-foreground">
           <DialogHeader>
-            <DialogTitle className="text-yellow-400">Enquire About Property</DialogTitle>
-            <DialogDescription className="text-gray-300">
+            <DialogTitle className="text-foreground">Enquire About Property</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               Send a message to the agent about {property.title}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="inquiry-message" className="text-white">Your Message</Label>
+              <Label htmlFor="inquiry-message" className="text-foreground">Your Message</Label>
               <Textarea
                 id="inquiry-message"
                 placeholder="I'm interested in this property. Could you provide more information about viewing times, additional features, or next steps?"
                 value={inquiryMessage}
                 onChange={(e) => setInquiryMessage(e.target.value)}
-                className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 mt-2 min-h-[100px]"
+                className="mt-2 min-h-[100px] bg-card border border-border text-foreground placeholder:text-muted-foreground"
                 rows={4}
               />
             </div>
@@ -842,18 +847,18 @@ const PropertyDetailsComponent = () => {
               <Button
                 variant="outline"
                 onClick={() => setIsInquiryDialogOpen(false)}
-                className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
+                className="flex-1 border-border text-muted-foreground hover:bg-muted"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSubmitInquiry}
                 disabled={submittingInquiry || !inquiryMessage.trim()}
-                className="flex-1 bg-yellow-400 hover:bg-amber-500 text-black"
+                className="flex-1 bg-primary hover:bg-pickfirst-amber text-primary-foreground"
               >
                 {submittingInquiry ? (
                   <span className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2"></div>
                     Sending...
                   </span>
                 ) : (

@@ -296,7 +296,7 @@ const BrowsePropertiesSimple = () => {
 
     return (
       <Card 
-        className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20 shadow-2xl hover:shadow-yellow-400/20 transition-all duration-300 hover:scale-[1.02] overflow-hidden cursor-pointer"
+        className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-2xl hover:shadow-pickfirst-yellow/30 transition-all duration-300 hover:scale-[1.02] overflow-hidden cursor-pointer"
         onClick={() => navigate(`/property/${listing.id}`)}
       >
         <div className="relative">
@@ -309,8 +309,8 @@ const BrowsePropertiesSimple = () => {
                 className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
               />
             ) : (
-              <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                <Home className="h-16 w-16 text-gray-600" />
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                <Home className="h-16 w-16 text-muted-foreground" />
               </div>
             )}
           </div>
@@ -336,7 +336,7 @@ const BrowsePropertiesSimple = () => {
             <Button
               variant="ghost"
               size="sm"
-              className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 text-white"
+              className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white"
               onClick={(e) => {
                 e.stopPropagation();
                 toggleFavorite(listing.id);
@@ -350,23 +350,23 @@ const BrowsePropertiesSimple = () => {
         <CardContent className="p-4">
           {/* Price */}
           <div className="flex items-center justify-between mb-3">
-            <h3 className={`text-2xl font-bold ${isSold ? 'text-gray-400 line-through' : 'text-yellow-400'}`}>
+            <h3 className={`text-2xl font-bold ${isSold ? 'text-muted-foreground line-through' : 'text-primary'}`}>
               {formatPriceForDisplay(listing.price, listing.price_display)}
             </h3>
             {isSold && listing.sold_price && (
-              <span className="text-green-400 font-semibold">
+              <span className="text-green-600 font-semibold">
                 Sold: {formatPriceForDisplay(listing.sold_price)}
               </span>
             )}
           </div>
 
           {/* Title */}
-          <h4 className="text-white font-semibold text-lg mb-2 line-clamp-1">
+          <h4 className="text-foreground font-semibold text-lg mb-2 line-clamp-1">
             {listing.title}
           </h4>
 
           {/* Location */}
-          <div className="flex items-center text-gray-300 text-sm mb-3">
+          <div className="flex items-center text-muted-foreground text-sm mb-3">
             <MapPin className="h-4 w-4 mr-1" />
             <span className="line-clamp-1">
               {listing.address}, {listing.city}, {listing.state}
@@ -374,7 +374,7 @@ const BrowsePropertiesSimple = () => {
           </div>
 
           {/* Property Details */}
-          <div className="flex items-center gap-4 text-gray-300 text-sm mb-4">
+          <div className="flex items-center gap-4 text-muted-foreground text-sm mb-4">
             {listing.bedrooms && (
               <div className="flex items-center gap-1">
                 <Bed className="h-4 w-4" />
@@ -402,7 +402,7 @@ const BrowsePropertiesSimple = () => {
                 e.stopPropagation();
                 navigate(`/property/${listing.id}`);
               }}
-              className="flex-1 bg-yellow-400 hover:bg-amber-500 text-black font-medium"
+              className="flex-1 bg-primary hover:bg-pickfirst-amber text-primary-foreground font-medium"
             >
               <Eye className="h-4 w-4 mr-2" />
               View Details
@@ -415,8 +415,8 @@ const BrowsePropertiesSimple = () => {
                   handleEnquire(listing);
                 }}
                 variant="outline"
-                className={`border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black ${
-                  hasInquired ? 'bg-yellow-400/20' : ''
+                className={`border-primary text-primary hover:bg-primary hover:text-primary-foreground ${
+                  hasInquired ? 'bg-primary/10' : ''
                 }`}
                 disabled={hasInquired}
               >
@@ -434,10 +434,10 @@ const BrowsePropertiesSimple = () => {
     return (
       <div className="max-w-7xl mx-auto">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-700 rounded w-1/4"></div>
+          <div className="h-8 bg-muted rounded w-1/4"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-96 bg-gray-800 rounded-lg"></div>
+              <div key={i} className="h-96 bg-card/70 rounded-lg"></div>
             ))}
           </div>
         </div>
@@ -450,18 +450,18 @@ const BrowsePropertiesSimple = () => {
         {/* Header - Mobile Optimized */}
         <div className="space-y-4">
           {/* Back Button and Title */}
-          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               onClick={() => navigate('/dashboard')}
-              className="text-gray-300 hover:text-yellow-400 shrink-0"
+              className="text-muted-foreground hover:text-primary shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
               <span className="hidden sm:inline ml-2">Back</span>
             </Button>
             <div className="min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white truncate">Browse Properties</h1>
-              <p className="text-sm text-gray-400">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">Browse Properties</h1>
+              <p className="text-sm text-muted-foreground">
                 {filteredListings.length} {filteredListings.length === 1 ? 'property' : 'properties'} found
               </p>
             </div>
@@ -471,11 +471,11 @@ const BrowsePropertiesSimple = () => {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             {/* Sort Options */}
             <div className="flex items-center gap-2 flex-1">
-              <SortAsc className="h-4 w-4 text-gray-400 shrink-0" />
+              <SortAsc className="h-4 w-4 text-muted-foreground shrink-0" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="bg-gray-800 border border-gray-700 text-white rounded px-3 py-2 text-sm w-full sm:w-auto"
+                className="bg-card border border-border text-foreground rounded px-3 py-2 text-sm w-full sm:w-auto"
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
@@ -485,7 +485,7 @@ const BrowsePropertiesSimple = () => {
             </div>
 
             {/* View Mode Toggle */}
-            <div className="flex border border-gray-700 rounded self-end sm:self-auto">
+            <div className="flex border border-border rounded self-end sm:self-auto">
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="sm"
@@ -516,11 +516,11 @@ const BrowsePropertiesSimple = () => {
 
         {/* Properties Grid */}
         {filteredListings.length === 0 ? (
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
             <CardContent className="text-center py-12">
-              <Home className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">No Properties Found</h3>
-              <p className="text-gray-400">
+              <Home className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">No Properties Found</h3>
+              <p className="text-muted-foreground">
                 Try adjusting your search criteria or filters to find more properties.
               </p>
             </CardContent>

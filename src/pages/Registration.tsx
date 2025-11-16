@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, CheckCircle, User, Mail, Lock, Phone, Building, Shield } from 'lucide-react';
+import AuthLayout from '@/components/layouts/AuthLayout';
 
 const Registration = () => {
   const { signUp, updateProfile } = useAuth();
@@ -91,70 +92,26 @@ const Registration = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
-      {/* Enhanced Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Primary glow */}
-        <div className="absolute top-20 right-20 w-96 h-96 rounded-full pickfirst-gradient-yellow-amber opacity-20 blur-3xl animate-pulse"></div>
-        
-        {/* Secondary glow */}
-        <div className="absolute bottom-32 left-16 w-80 h-80 rounded-full pickfirst-gradient-yellow-amber opacity-15 blur-2xl animate-pulse" style={{animationDelay: '1s'}}></div>
-        
-        {/* Accent glow */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full pickfirst-yellow opacity-10 blur-xl animate-bounce" style={{animationDuration: '4s'}}></div>
-        
-        {/* Moving orbs */}
-        <div className="absolute top-1/4 right-1/4 w-32 h-32 rounded-full pickfirst-yellow opacity-5 blur-lg animate-pulse" style={{animationDuration: '3s'}}></div>
-        <div className="absolute bottom-1/4 left-1/3 w-24 h-24 rounded-full pickfirst-amber opacity-8 blur-md animate-pulse" style={{animationDuration: '2s', animationDelay: '0.5s'}}></div>
-        
-        {/* Subtle grid pattern */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.05)_1px,transparent_0)] bg-[length:20px_20px]"></div>
-      </div>
-
-      {/* Enhanced Navigation */}
-      <nav className="relative z-10 pickfirst-glass border-b border-pickfirst-yellow/20 shadow-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20">
-            {/* Logo Section */}
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-black/20 border border-pickfirst-yellow/30 flex items-center justify-center shadow-xl shadow-pickfirst-yellow/20 transition-all duration-300 hover:shadow-pickfirst-yellow/40 hover:scale-105 hover:border-pickfirst-yellow/50 p-2">
-                <img 
-                  src="/logo.jpg" 
-                  alt="PickFirst Logo" 
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold pickfirst-gradient-yellow-amber-text">
-                  PickFirst
-                </h1>
-                <p className="text-xs sm:text-sm text-gray-400 hidden sm:block">Off-Market Property Access</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Registration Card */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-[80vh] py-12 px-4">
+    <AuthLayout>
+      <div className="w-full max-w-lg mx-auto py-12 px-4">
         <Button 
           variant="ghost" 
           onClick={() => navigate('/')} 
-          className="mb-6 self-start hover:bg-pickfirst-yellow/10 hover:text-pickfirst-yellow text-gray-300 transition-all duration-300"
+          className="mb-6 self-start hover:bg-primary/10 hover:text-primary text-muted-foreground transition-all duration-300"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Home
         </Button>
 
-        <Card className="w-full max-w-lg bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl shadow-pickfirst-yellow/10 hover:shadow-pickfirst-yellow/20 transition-all duration-500 hover:scale-[1.02]">
+        <Card className="w-full pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-2xl hover:shadow-pickfirst-yellow/30 transition-all duration-500 hover:scale-[1.02]">
           <CardHeader className="text-center pb-6">
-            <div className="w-16 h-16 pickfirst-gradient-yellow-amber rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <User className="w-8 h-8 text-black" />
+            <div className="w-16 h-16 bg-primary/10 border border-primary/40 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <User className="w-8 h-8 text-primary" />
             </div>
-            <CardTitle className="text-3xl font-bold pickfirst-gradient-yellow-amber-text">
+            <CardTitle className="text-3xl font-bold text-foreground">
               Sign Up for PickFirst
             </CardTitle>
-            <CardDescription className="text-gray-300 text-lg">
+            <CardDescription className="text-muted-foreground text-lg">
               Choose your account type to access off-market properties
             </CardDescription>
           </CardHeader>
@@ -163,37 +120,37 @@ const Registration = () => {
             <div className="space-y-6">
               {/* User Type Selection */}
               <div className="space-y-3">
-                <Label htmlFor="userType" className="text-white font-semibold flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-pickfirst-yellow" />
+                <Label htmlFor="userType" className="text-foreground font-semibold flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-primary" />
                   Account Type
                 </Label>
                 <Select value={formData.userType} onValueChange={(value) => handleInputChange('userType', value)}>
-                  <SelectTrigger className="h-12 bg-white/5 border border-pickfirst-yellow/30 text-white rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring">
+                  <SelectTrigger className="h-12 bg-card border border-border text-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring">
                     <SelectValue placeholder="Select your user type" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border border-white/20">
-                    <SelectItem value="buyer" className="text-white hover:bg-white/10">
+                  <SelectContent className="bg-card border border-border text-foreground">
+                    <SelectItem value="buyer" className="hover:bg-muted">
                       <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-pickfirst-yellow" />
+                        <User className="w-4 h-4 text-primary" />
                         Property Buyer
                       </div>
                     </SelectItem>
-                    <SelectItem value="agent" className="text-white hover:bg-white/10">
+                    <SelectItem value="agent" className="hover:bg-muted">
                       <div className="flex items-center gap-2">
-                        <Building className="w-4 h-4 text-pickfirst-yellow" />
+                        <Building className="w-4 h-4 text-primary" />
                         Real Estate Agent
                       </div>
                     </SelectItem>
-                    <SelectItem value="super_admin" className="text-white hover:bg-white/10">
+                    <SelectItem value="super_admin" className="hover:bg-muted">
                       <div className="flex items-center gap-2">
-                        <Shield className="w-4 h-4 text-pickfirst-yellow" />
+                        <Shield className="w-4 h-4 text-primary" />
                         Super Admin
                       </div>
                     </SelectItem>
                   </SelectContent>
                 </Select>
                 {formData.userType && (
-                  <p className="text-sm text-pickfirst-yellow/70 bg-pickfirst-yellow/10 p-2 rounded-lg border border-pickfirst-yellow/20">
+                  <p className="text-sm text-primary bg-primary/5 p-2 rounded-lg border border-primary/30">
                     {getUserTypeDescription(formData.userType)}
                   </p>
                 )}
@@ -201,8 +158,8 @@ const Registration = () => {
 
               {/* Personal Information */}
               <div className="space-y-3">
-                <Label htmlFor="fullName" className="text-white font-semibold flex items-center gap-2">
-                  <User className="w-4 h-4 text-pickfirst-yellow" />
+                <Label htmlFor="fullName" className="text-foreground font-semibold flex items-center gap-2">
+                  <User className="w-4 h-4 text-primary" />
                   Full Name
                 </Label>
                 <Input
@@ -210,7 +167,7 @@ const Registration = () => {
                   placeholder="Enter your full name"
                   value={formData.fullName}
                   onChange={(e) => handleInputChange('fullName', e.target.value)}
-                  className="h-12 bg-white/5 border border-white/20 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
+                  className="h-12 bg-card border border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
                   required
                 />
               </div>
@@ -218,8 +175,8 @@ const Registration = () => {
               {/* Company (for agents/super_admins) */}
               {(formData.userType === 'agent' || formData.userType === 'super_admin') && (
                 <div className="space-y-3">
-                  <Label htmlFor="company" className="text-white font-semibold flex items-center gap-2">
-                    <Building className="w-4 h-4 text-pickfirst-yellow" />
+                  <Label htmlFor="company" className="text-foreground font-semibold flex items-center gap-2">
+                    <Building className="w-4 h-4 text-primary" />
                     Company Name
                   </Label>
                   <Input
@@ -227,15 +184,15 @@ const Registration = () => {
                     placeholder="Enter your company name"
                     value={formData.company}
                     onChange={(e) => handleInputChange('company', e.target.value)}
-                    className="h-12 bg-white/5 border border-white/20 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
+                    className="h-12 bg-card border border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
                   />
                 </div>
               )}
 
               {/* Phone Number */}
               <div className="space-y-3">
-                <Label htmlFor="phone" className="text-white font-semibold flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-pickfirst-yellow" />
+                <Label htmlFor="phone" className="text-foreground font-semibold flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-primary" />
                   Phone Number
                 </Label>
                 <Input
@@ -244,14 +201,14 @@ const Registration = () => {
                   placeholder="Enter your phone number"
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="h-12 bg-white/5 border border-white/20 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
+                  className="h-12 bg-card border border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
                 />
               </div>
               
               {/* Email */}
               <div className="space-y-3">
-                <Label htmlFor="email" className="text-white font-semibold flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-pickfirst-yellow" />
+                <Label htmlFor="email" className="text-foreground font-semibold flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-primary" />
                   Email Address
                 </Label>
                 <Input
@@ -260,15 +217,15 @@ const Registration = () => {
                   placeholder="Enter your email address"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="h-12 bg-white/5 border border-white/20 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
+                  className="h-12 bg-card border border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
                   required
                 />
               </div>
               
               {/* Password */}
               <div className="space-y-3">
-                <Label htmlFor="password" className="text-white font-semibold flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-pickfirst-yellow" />
+                <Label htmlFor="password" className="text-foreground font-semibold flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-primary" />
                   Password
                 </Label>
                 <Input
@@ -277,18 +234,18 @@ const Registration = () => {
                   placeholder="Create a secure password"
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
-                  className="h-12 bg-white/5 border border-white/20 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
+                  className="h-12 bg-card border border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
                   required
                 />
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   Must be at least 6 characters long
                 </p>
               </div>
               
               {/* Confirm Password */}
               <div className="space-y-3">
-                <Label htmlFor="confirmPassword" className="text-white font-semibold flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-pickfirst-yellow" />
+                <Label htmlFor="confirmPassword" className="text-foreground font-semibold flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-primary" />
                   Confirm Password
                 </Label>
                 <Input
@@ -297,32 +254,32 @@ const Registration = () => {
                   placeholder="Confirm your password"
                   value={formData.confirmPassword}
                   onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                  className="h-12 bg-white/5 border border-white/20 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
+                  className="h-12 bg-card border border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
                   required
                 />
               </div>
 
               {/* Benefits Section */}
-              <div className="space-y-4 pt-4 bg-gradient-to-r from-pickfirst-yellow/5 to-pickfirst-amber/5 p-4 rounded-xl border border-pickfirst-yellow/20">
-                <h3 className="text-lg font-semibold text-pickfirst-yellow flex items-center gap-2">
+              <div className="space-y-4 pt-4 bg-card/80 p-4 rounded-xl border border-border">
+                <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
                   <CheckCircle className="w-5 h-5" />
                   Member Benefits
                 </h3>
                 <div className="grid grid-cols-1 gap-3">
-                  <div className="flex items-center gap-3 text-sm text-gray-300">
-                    <div className="w-2 h-2 bg-pickfirst-yellow rounded-full"></div>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
                     <span>Exclusive access to off-market properties</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-300">
-                    <div className="w-2 h-2 bg-pickfirst-yellow rounded-full"></div>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
                     <span>Direct messaging with property owners</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-300">
-                    <div className="w-2 h-2 bg-pickfirst-yellow rounded-full"></div>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
                     <span>Advanced search and filtering tools</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-300">
-                    <div className="w-2 h-2 bg-pickfirst-yellow rounded-full"></div>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
                     <span>Priority notifications for new listings</span>
                   </div>
                 </div>
@@ -347,7 +304,7 @@ const Registration = () => {
                 )}
               </Button>
               
-              <div className="text-center text-sm text-gray-400 pt-4">
+              <div className="text-center text-sm text-muted-foreground pt-4">
                 Already have an account?{' '}
                 <button 
                   type="button"
@@ -361,7 +318,7 @@ const Registration = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

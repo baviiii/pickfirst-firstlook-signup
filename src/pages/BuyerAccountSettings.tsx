@@ -431,7 +431,7 @@ const BuyerAccountSettingsPage = () => {
             
             {/* Appointments Tab */}
             <TabsContent value="appointments" className="space-y-6">
-              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+              <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-primary/30">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-primary" />
@@ -726,7 +726,7 @@ const BuyerAccountSettingsPage = () => {
 
             {/* Favorites Tab */}
             <TabsContent value="favorites" className="space-y-6">
-              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+              <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-primary/30">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <Heart className="h-5 w-5 text-primary" />
@@ -798,7 +798,7 @@ const BuyerAccountSettingsPage = () => {
 
             {/* Notifications Tab */}
             <TabsContent value="notifications" className="space-y-6">
-              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+              <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-primary/30">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <Bell className="h-5 w-5 text-primary" />
@@ -902,7 +902,7 @@ const BuyerAccountSettingsPage = () => {
 
             {/* Privacy Tab */}
             <TabsContent value="privacy" className="space-y-6">
-              <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+              <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-primary/30">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <Lock className="h-5 w-5 text-primary" />

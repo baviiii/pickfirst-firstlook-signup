@@ -136,7 +136,7 @@ export const AuthForm = () => {
   };
 
   return (
-    <Card className="w-full max-w-md bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl shadow-pickfirst-yellow/10 hover:shadow-pickfirst-yellow/20 transition-all duration-500 hover:scale-[1.02]">
+    <Card className="w-full max-w-md pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-2xl hover:shadow-pickfirst-yellow/30 transition-all duration-500 hover:scale-[1.02]">
       <CardHeader className="text-center space-y-3">
         <img
           src="https://pickfirst.com.au/logo.jpg"
@@ -144,20 +144,20 @@ export const AuthForm = () => {
           className="mx-auto h-16 w-auto drop-shadow-lg"
           loading="lazy"
         />
-        <CardTitle className="text-3xl font-bold pickfirst-gradient-yellow-amber-text">
+        <CardTitle className="text-3xl font-bold text-foreground">
           PickFirst
         </CardTitle>
-        <CardDescription className="text-gray-300 text-lg">
+        <CardDescription className="text-muted-foreground text-lg">
           Sign in to access exclusive real estate opportunities
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="signin" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-white/5 border border-white/20">
-            <TabsTrigger value="signin" className="text-white data-[state=active]:bg-pickfirst-yellow/20 data-[state=active]:text-pickfirst-yellow">
+          <TabsList className="grid w-full grid-cols-2 bg-card/80 border border-border">
+            <TabsTrigger value="signin" className="text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
               Sign In
             </TabsTrigger>
-            <TabsTrigger value="signup" className="text-white data-[state=active]:bg-pickfirst-yellow/20 data-[state=active]:text-pickfirst-yellow">
+            <TabsTrigger value="signup" className="text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
               Sign Up
             </TabsTrigger>
           </TabsList>
@@ -167,30 +167,30 @@ export const AuthForm = () => {
               <input type="hidden" name="csrfToken" value={csrf.token} />
               
               <div className="space-y-2">
-                <Label htmlFor="signin-email" className="text-white font-semibold">Email</Label>
+                <Label htmlFor="signin-email" className="text-foreground font-semibold">Email</Label>
                 <Input
                   id="signin-email"
                   type="email"
                   placeholder="Enter your email"
                   value={signInData.email}
                   onChange={(e) => handleSignInInputChange('email', e.target.value)}
-                  className="h-12 bg-white/5 border border-white/20 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
+                  className="h-12 bg-card border border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="signin-password" className="text-white font-semibold">Password</Label>
+                <Label htmlFor="signin-password" className="text-foreground font-semibold">Password</Label>
                 <Input
                   id="signin-password"
                   type="password"
                   placeholder="Enter your password"
                   value={signInData.password}
                   onChange={(e) => handleSignInInputChange('password', e.target.value)}
-                  className="h-12 bg-white/5 border border-white/20 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
+                  className="h-12 bg-card border border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
                   required
                 />
               </div>
-              <Button type="submit" className="w-full pickfirst-gradient-yellow-amber text-black font-bold h-12 rounded-xl" disabled={loading}>
+              <Button type="submit" className="w-full bg-primary hover:bg-pickfirst-amber text-primary-foreground font-bold h-12 rounded-xl" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
               </Button>
@@ -211,28 +211,28 @@ export const AuthForm = () => {
               <input type="hidden" name="csrfToken" value={csrf.token} />
               
               <div className="space-y-2">
-                <Label htmlFor="userType" className="text-white font-semibold flex items-center gap-2">
+                <Label htmlFor="userType" className="text-foreground font-semibold flex items-center gap-2">
                   <Shield className="w-4 h-4 text-pickfirst-yellow" />
                   Account Type
                 </Label>
                 <Select value={signUpData.userType} onValueChange={(value) => handleSignUpInputChange('userType', value)}>
-                  <SelectTrigger className="h-12 bg-white/5 border border-pickfirst-yellow/30 text-white rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring">
+                  <SelectTrigger className="h-12 bg-card border border-border text-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring">
                     <SelectValue placeholder="Select your user type" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border border-white/20">
-                    <SelectItem value="buyer" className="text-white hover:bg-white/10">
+                  <SelectContent className="bg-card border border-border text-foreground">
+                    <SelectItem value="buyer" className="hover:bg-muted">
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-pickfirst-yellow" />
                         Property Buyer
                       </div>
                     </SelectItem>
-                    <SelectItem value="agent" className="text-white hover:bg-white/10">
+                    <SelectItem value="agent" className="hover:bg-muted">
                       <div className="flex items-center gap-2">
                         <Building className="w-4 h-4 text-pickfirst-yellow" />
                         Real Estate Agent
                       </div>
                     </SelectItem>
-                    <SelectItem value="super_admin" className="text-white hover:bg-white/10">
+                    <SelectItem value="super_admin" className="hover:bg-muted">
                       <div className="flex items-center gap-2">
                         <Shield className="w-4 h-4 text-pickfirst-yellow" />
                         Super Admin
@@ -241,67 +241,67 @@ export const AuthForm = () => {
                   </SelectContent>
                 </Select>
                 {signUpData.userType && (
-                  <p className="text-sm text-pickfirst-yellow/70 bg-pickfirst-yellow/10 p-2 rounded-lg border border-pickfirst-yellow/20">
+                  <p className="text-sm text-primary bg-primary/5 p-2 rounded-lg border border-primary/30">
                     {getUserTypeDescription(signUpData.userType)}
                   </p>
                 )}
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="signup-fullName" className="text-white font-semibold">Full Name</Label>
+                <Label htmlFor="signup-fullName" className="text-foreground font-semibold">Full Name</Label>
                 <Input
                   id="signup-fullName"
                   placeholder="Enter your full name"
                   value={signUpData.fullName}
                   onChange={(e) => handleSignUpInputChange('fullName', e.target.value)}
-                  className="h-12 bg-white/5 border border-white/20 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
+                  className="h-12 bg-card border border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
                   required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="signup-email" className="text-white font-semibold">Email</Label>
+                <Label htmlFor="signup-email" className="text-foreground font-semibold">Email</Label>
                 <Input
                   id="signup-email"
                   type="email"
                   placeholder="Enter your email"
                   value={signUpData.email}
                   onChange={(e) => handleSignUpInputChange('email', e.target.value)}
-                  className="h-12 bg-white/5 border border-white/20 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
+                  className="h-12 bg-card border border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
                   required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="signup-password" className="text-white font-semibold">Password</Label>
+                <Label htmlFor="signup-password" className="text-foreground font-semibold">Password</Label>
                 <Input
                   id="signup-password"
                   type="password"
                   placeholder="Create a secure password"
                   value={signUpData.password}
                   onChange={(e) => handleSignUpInputChange('password', e.target.value)}
-                  className="h-12 bg-white/5 border border-white/20 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
+                  className="h-12 bg-card border border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
                   required
                 />
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   Must be at least 6 characters long
                 </p>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="signup-confirmPassword" className="text-white font-semibold">Confirm Password</Label>
+                <Label htmlFor="signup-confirmPassword" className="text-foreground font-semibold">Confirm Password</Label>
                 <Input
                   id="signup-confirmPassword"
                   type="password"
                   placeholder="Confirm your password"
                   value={signUpData.confirmPassword}
                   onChange={(e) => handleSignUpInputChange('confirmPassword', e.target.value)}
-                  className="h-12 bg-white/5 border border-white/20 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
+                  className="h-12 bg-card border border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
                   required
                 />
               </div>
               
-              <Button type="submit" className="w-full pickfirst-gradient-yellow-amber text-black font-bold h-12 rounded-xl" disabled={loading}>
+              <Button type="submit" className="w-full bg-primary hover:bg-pickfirst-amber text-primary-foreground font-bold h-12 rounded-xl" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Account
               </Button>
