@@ -86,7 +86,10 @@ const BrowsePropertiesPageComponent = () => {
   const fetchListings = async () => {
     setLoading(true);
     try {
-      const { data } = await PropertyService.getApprovedListings();
+      // Include off-market listings in the response; we'll lock them in the UI
+      const { data } = await PropertyService.getApprovedListings(undefined, {
+        includeOffMarket: true,
+      });
       console.log('Raw data from API:', data?.length, 'properties');
       console.log('Sample property:', data?.[0]);
       
