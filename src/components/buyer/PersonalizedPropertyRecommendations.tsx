@@ -9,20 +9,21 @@ import { useNavigate } from 'react-router-dom';
 import { BuyerProfileService } from '@/services/buyerProfileService';
 import { FilterService, AdvancedPropertyFilters, PropertyListingWithFuzzyMatch } from '@/services/filterService';
 import { PropertyService } from '@/services/propertyService';
-import { 
-  Home, 
-  MapPin, 
-  Heart, 
-  MessageSquare, 
-  Bed, 
-  Bath, 
-  Square, 
+import {
+  Home,
+  MapPin,
+  Heart,
+  MessageSquare,
+  Bed,
+  Bath,
+  Square,
   DollarSign,
   Target,
   TrendingUp,
   CheckCircle,
   Settings,
-  Car
+  Car,
+  Crown
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -82,8 +83,9 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
           garageSpaces: preferences.preferred_garages && preferences.preferred_garages >= 0 ? preferences.preferred_garages : undefined,
           // Normalize property type to lowercase for consistent matching
           propertyType: preferences.property_type_preferences?.[0]?.toLowerCase() || undefined,
-          // Include off-market properties if user has premium subscription
-          includeOffMarket: canAccessOffMarketListings(),
+          // Always include off-market properties in recommendations,
+          // we'll lock them in the UI for non-premium buyers
+          includeOffMarket: true,
           sortBy: 'price',
           sortOrder: 'asc',
           limit: 12
@@ -636,13 +638,26 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                   }
                 }
                 const hasImages = imagesArray && imagesArray.length > 0;
+
+                // Identify off-market (agent posted) properties
+                const isOffMarket = (property as any).listing_source === 'agent_posted';
+                const isPremiumUser = canAccessOffMarketListings();
+                const isLockedOffMarket = isOffMarket && !isPremiumUser;
                 
                 return (
-                <Card 
-                  key={property.id} 
-                  className="group cursor-pointer hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/50 bg-card/50 backdrop-blur-sm flex flex-col h-full"
-                  onClick={() => handlePropertyClick(property.id)}
-                >
+                  <Card 
+                    key={property.id} 
+                    className={`group relative hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/50 bg-card/50 backdrop-blur-sm flex flex-col h-full ${
+                      isLockedOffMarket ? 'cursor-not-allowed opacity-95' : 'cursor-pointer'
+                    }`}
+                    onClick={() => {
+                      if (isLockedOffMarket) {
+                        navigate('/pricing');
+                      } else {
+                        handlePropertyClick(property.id);
+                      }
+                    }}
+                  >
                   <CardHeader className="p-0 relative flex-1 flex flex-col">
                     <div className="aspect-video bg-muted rounded-t-md overflow-hidden relative flex-shrink-0">
                       {hasImages ? (
@@ -673,6 +688,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                         size="sm"
                         className="absolute top-2 right-2 h-8 w-8 p-0 bg-background/90 backdrop-blur-sm hover:bg-background rounded-full flex items-center justify-center"
                         onClick={(e) => handleToggleFavorite(property.id, e)}
+                        disabled={isLockedOffMarket}
                       >
                         <Heart className="h-4 w-4" fill="currentColor" />
                       </Button>
@@ -684,7 +700,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                           {property.title}
                         </CardTitle>
                         <div className="text-primary font-bold text-sm sm:text-base whitespace-nowrap">
-                          {PropertyService.getDisplayPrice(property)}
+                          {isLockedOffMarket ? 'Premium Off-Market' : PropertyService.getDisplayPrice(property)}
                         </div>
                       </div>
                       
@@ -751,31 +767,70 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                     
                     <CardContent className="pt-0 px-3 sm:px-4 pb-3 sm:pb-4">
                       <div className="mt-auto pt-3 flex flex-col sm:flex-row gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full sm:flex-1 text-xs sm:text-sm h-8 sm:h-9"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePropertyClick(property.id);
-                          }}
-                        >
-                          View Details
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          className="w-full sm:flex-1 text-xs sm:text-sm h-8 sm:h-9 bg-primary hover:bg-primary/90"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/property/${property.id}?action=contact`);
-                          }}
-                        >
-                          <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                          Contact Agent
-                        </Button>
+                        {isLockedOffMarket ? (
+                          <Button
+                            size="sm"
+                            className="w-full text-xs sm:text-sm h-8 sm:h-9 bg-primary hover:bg-pickfirst-amber text-primary-foreground"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate('/pricing');
+                            }}
+                          >
+                            <Crown className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            Unlock with Premium
+                          </Button>
+                        ) : (
+                          <>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="w-full sm:flex-1 text-xs sm:text-sm h-8 sm:h-9"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePropertyClick(property.id);
+                              }}
+                            >
+                              View Details
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              className="w-full sm:flex-1 text-xs sm:text-sm h-8 sm:h-9 bg-primary hover:bg-primary/90"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/property/${property.id}?action=contact`);
+                              }}
+                            >
+                              <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                              Contact Agent
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </CardContent>
                   </CardHeader>
+
+                  {/* Premium lock overlay for non-premium buyers on off-market listings */}
+                  {isLockedOffMarket && (
+                    <div className="absolute inset-0 rounded-lg bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 px-4 text-center">
+                      <Crown className="h-6 w-6 text-primary mb-1" />
+                      <p className="text-sm font-semibold text-foreground">
+                        Premium Off-Market Listing
+                      </p>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Upgrade to unlock full details and contact the agent.
+                      </p>
+                      <Button
+                        size="sm"
+                        className="bg-primary hover:bg-pickfirst-amber text-primary-foreground text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/pricing');
+                        }}
+                      >
+                        View Premium Plans
+                      </Button>
+                    </div>
+                  )}
                 </Card>
               );
               })}
