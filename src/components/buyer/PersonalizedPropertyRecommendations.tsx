@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,9 @@ import {
   CheckCircle,
   Settings,
   Car,
-  Crown
+  Crown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -52,6 +54,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
   const [buyerPreferences, setBuyerPreferences] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [totalMatches, setTotalMatches] = useState(0);
+  const sliderRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const loadRecommendations = async () => {
@@ -498,6 +501,19 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
     return 'bg-gray-500/90 text-white';
   };
 
+  const scrollSlider = (direction: 'left' | 'right') => {
+    const container = sliderRef.current;
+    if (!container) return;
+
+    const cardWidth = 320; // approximate card width for scroll step
+    const scrollAmount = direction === 'left' ? -cardWidth : cardWidth;
+
+    container.scrollBy({
+      left: scrollAmount,
+      behavior: 'smooth',
+    });
+  };
+
   if (!buyerPreferences) {
     return (
       <Card className="pickfirst-glass bg-card/90 text-card-foreground">
@@ -535,6 +551,28 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
             <Badge variant="secondary" className="bg-primary/10 text-primary text-xs whitespace-nowrap">
               {recommendations.length} matches
             </Badge>
+            {recommendations.length > 0 && (
+              <div className="hidden sm:flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10"
+                  onClick={() => scrollSlider('left')}
+                  aria-label="Scroll recommendations left"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10"
+                  onClick={() => scrollSlider('right')}
+                  aria-label="Scroll recommendations right"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
             <Button 
               variant="outline" 
               size="sm"
@@ -617,8 +655,28 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
               </div>
             </div>
 
-            {/* Property Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {/* Property Slider */}
+            <div className="relative">
+              {/* Mobile scroll hint arrows (overlay) */}
+              {recommendations.length > 1 && (
+                <div className="absolute inset-y-0 left-0 right-0 pointer-events-none sm:hidden">
+                  <div className="flex justify-between items-center h-full px-1">
+                    <div className="w-6 h-6 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center shadow-sm pointer-events-auto"
+                      onClick={() => scrollSlider('left')}>
+                      <ChevronLeft className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                    <div className="w-6 h-6 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center shadow-sm pointer-events-auto"
+                      onClick={() => scrollSlider('right')}>
+                      <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div
+                ref={sliderRef}
+                className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 pt-1 scroll-smooth snap-x snap-mandatory"
+              >
               {recommendations.map((property) => {
                 // Parse string values like BrowseProperties does
                 const numericBedrooms = typeof property.bedrooms === 'string' ? parseFloat(property.bedrooms) : property.bedrooms;
@@ -647,7 +705,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                 return (
                   <Card 
                     key={property.id} 
-                    className={`group relative hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/50 bg-card/50 backdrop-blur-sm flex flex-col h-full ${
+                    className={`group relative hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/50 bg-card/60 backdrop-blur-sm flex flex-col h-full snap-start min-w-[260px] sm:min-w-[280px] lg:min-w-[320px] max-w-[320px] ${
                       isLockedOffMarket ? 'cursor-not-allowed opacity-95' : 'cursor-pointer'
                     }`}
                     onClick={() => {
@@ -811,7 +869,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
 
                   {/* Premium lock overlay for non-premium buyers on off-market listings */}
                   {isLockedOffMarket && (
-                    <div className="absolute inset-0 rounded-lg bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 px-4 text-center">
+                    <div className="absolute inset-0 rounded-lg bg-background/85 backdrop-blur-sm flex flex-col items-center justify-center gap-2 px-4 text-center">
                       <Crown className="h-6 w-6 text-primary mb-1" />
                       <p className="text-sm font-semibold text-foreground">
                         Premium Off-Market Listing
@@ -834,6 +892,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                 </Card>
               );
               })}
+              </div>
             </div>
           </>
         )}

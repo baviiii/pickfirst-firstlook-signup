@@ -34,7 +34,7 @@ type SortOption = 'price-low' | 'price-high' | 'newest' | 'oldest';
 const BrowsePropertiesPageComponent = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const { canUseFavorites, getFavoritesLimit } = useSubscription();
+  const { canUseFavorites, getFavoritesLimit, canAccessOffMarketListings } = useSubscription();
   
   // State
   const [listings, setListings] = useState<PropertyListing[]>([]);
@@ -90,24 +90,17 @@ const BrowsePropertiesPageComponent = () => {
       console.log('Raw data from API:', data?.length, 'properties');
       console.log('Sample property:', data?.[0]);
       
-      // Filter out agent-posted (off-market) listings - those require premium
-      // Only show external_feed listings on browse page
-      const publicListings = data?.filter(listing => {
-        const source = (listing as any).listing_source;
-        console.log('Listing source:', listing.id, source);
-        return source !== 'agent_posted';
-      }) || [];
+      // Keep all approved listings (including agent_posted off-market)
+      const approvedListings = data || [];
+      console.log('Approved listings (including off-market):', approvedListings.length);
       
-      console.log('After filtering agent_posted:', publicListings.length, 'properties');
-      console.log('First listing after filter:', publicListings[0]);
-      
-      setListings(publicListings);
+      setListings(approvedListings);
       // Immediately set filteredListings to show properties even before filters apply
-      if (publicListings.length > 0) {
-        console.log('Setting filteredListings to', publicListings.length, 'properties');
-        setFilteredListings(publicListings);
+      if (approvedListings.length > 0) {
+        console.log('Setting filteredListings to', approvedListings.length, 'properties');
+        setFilteredListings(approvedListings);
       } else {
-        console.warn('No public listings after filter! Total from API:', data?.length);
+        console.warn('No approved listings returned from API');
         setFilteredListings([]);
       }
     } catch (error) {
@@ -608,6 +601,8 @@ const BrowsePropertiesPageComponent = () => {
     const hasInquired = inquiredProperties.has(listing.id);
     const priceDisplay = PropertyService.getDisplayPrice(listing);
     const isOffMarket = (listing as any).listing_source === 'agent_posted';
+    const isPremiumUser = canAccessOffMarketListings();
+    const isLockedOffMarket = isOffMarket && !isPremiumUser;
     const numericSoldPrice = typeof listing.sold_price === 'string' ? parseFloat(listing.sold_price) : listing.sold_price;
     const hasSoldPrice = Number.isFinite(numericSoldPrice) && (numericSoldPrice ?? 0) > 0;
     const numericListPrice = typeof listing.price === 'string' ? parseFloat(listing.price) : listing.price;

@@ -163,7 +163,7 @@ export const AdvancedSearchDropdown = ({ onClose }: AdvancedSearchDropdownProps)
     <div ref={searchRef} className="relative w-full max-w-2xl">
       {/* Search Input */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           ref={inputRef}
           type="text"
@@ -182,7 +182,7 @@ export const AdvancedSearchDropdown = ({ onClose }: AdvancedSearchDropdownProps)
               setIsOpen(false);
             }
           }}
-          className="pl-10 pr-10 bg-white/5 border-pickfirst-yellow/20 text-white placeholder:text-gray-400 focus:border-pickfirst-yellow/50 focus:ring-pickfirst-yellow/20 h-11"
+          className="pl-10 pr-10 bg-card border border-pickfirst-yellow/20 text-foreground placeholder:text-muted-foreground focus:border-pickfirst-yellow/50 focus:ring-pickfirst-yellow/20 h-11"
         />
         {searchQuery && (
           <button
@@ -191,7 +191,7 @@ export const AdvancedSearchDropdown = ({ onClose }: AdvancedSearchDropdownProps)
               setResults([]);
               inputRef.current?.focus();
             }}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
