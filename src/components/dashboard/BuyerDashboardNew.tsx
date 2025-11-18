@@ -166,7 +166,7 @@ const BuyerDashboardNewComponent = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Inquiries Card */}
           <Card 
-            className={`bg-gradient-to-br from-yellow-600/15 via-amber-500/10 to-orange-400/10 backdrop-blur-sm border-yellow-700/30 hover:border-yellow-600/50 hover:shadow-xl hover:shadow-yellow-600/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 ${
+            className={`bg-gradient-to-br from-yellow-600/15 via-amber-500/10 to-orange-400/10 backdrop-blur-sm border-yellow-700/30 hover:border-yellow-600/50 hover:shadow-xl hover:shadow-yellow-600/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-0 ${
               hasNewNotification('inquiries') ? 'animate-pulse-border' : ''
             }`}
             onClick={() => { clearCardNotifications('inquiries'); navigate('/buyer-account-settings?tab=favorites'); }}
@@ -194,7 +194,7 @@ const BuyerDashboardNewComponent = () => {
 
           {/* Saved Properties Card */}
           <Card 
-            className={`bg-gradient-to-br from-amber-600/15 via-yellow-500/10 to-orange-500/10 backdrop-blur-sm border-amber-700/30 hover:border-amber-600/50 hover:shadow-xl hover:shadow-amber-600/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 ${
+            className={`bg-gradient-to-br from-amber-600/15 via-yellow-500/10 to-orange-500/10 backdrop-blur-sm border-amber-700/30 hover:border-amber-600/50 hover:shadow-xl hover:shadow-amber-600/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-50 ${
               hasNewNotification('favorites') ? 'animate-pulse-border' : ''
             }`}
             onClick={() => { clearCardNotifications('favorites'); navigate('/saved-properties'); }}
@@ -222,7 +222,7 @@ const BuyerDashboardNewComponent = () => {
 
           {/* Saved Searches Card */}
           <Card 
-            className={`bg-gradient-to-br from-yellow-500/15 via-amber-600/10 to-orange-600/10 backdrop-blur-sm border-yellow-600/30 hover:border-yellow-700/50 hover:shadow-xl hover:shadow-yellow-700/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 ${
+            className={`bg-gradient-to-br from-yellow-500/15 via-amber-600/10 to-orange-600/10 backdrop-blur-sm border-yellow-600/30 hover:border-yellow-700/50 hover:shadow-xl hover:shadow-yellow-700/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-100 ${
               hasNewNotification('alerts') ? 'animate-pulse-border' : ''
             }`}
             onClick={() => { clearCardNotifications('alerts'); navigate('/search-filters'); }}
@@ -250,7 +250,7 @@ const BuyerDashboardNewComponent = () => {
 
           {/* Conversations Card */}
           <Card 
-            className={`bg-gradient-to-br from-orange-600/15 via-amber-500/10 to-yellow-500/10 backdrop-blur-sm border-orange-700/30 hover:border-orange-600/50 hover:shadow-xl hover:shadow-orange-600/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 ${
+            className={`bg-gradient-to-br from-orange-600/15 via-amber-500/10 to-yellow-500/10 backdrop-blur-sm border-orange-700/30 hover:border-orange-600/50 hover:shadow-xl hover:shadow-orange-600/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-150 ${
               hasNewNotification('messages') ? 'animate-pulse-border' : ''
             }`}
             onClick={() => { clearCardNotifications('messages'); navigate('/buyer-messages'); }}
@@ -278,10 +278,12 @@ const BuyerDashboardNewComponent = () => {
         </div>
 
         {/* Personalized Property Recommendations */}
-        <PersonalizedPropertyRecommendations />
+        <div className="dashboard-animate-fade-scale dashboard-delay-200">
+          <PersonalizedPropertyRecommendations />
+        </div>
         
         {/* Upcoming Appointments - Beautiful Beige Card */}
-        <Card className="bg-gradient-to-br from-amber-50/80 via-yellow-50/70 to-orange-50/80 backdrop-blur-sm border-yellow-700/30 shadow-xl hover:shadow-2xl hover:shadow-yellow-600/20 transition-all duration-300">
+        <Card className="bg-gradient-to-br from-amber-50/80 via-yellow-50/70 to-orange-50/80 backdrop-blur-sm border-yellow-700/30 shadow-xl hover:shadow-2xl hover:shadow-yellow-600/20 transition-all duration-300 dashboard-animate-fade-up dashboard-delay-300">
           <CardHeader className="border-b border-yellow-700/20 bg-gradient-to-r from-yellow-600/10 to-amber-500/10">
             <div className="flex items-center justify-between">
               <div>
@@ -377,7 +379,7 @@ const BuyerDashboardNewComponent = () => {
         </Card>
 
         {/* Property Comparison Tool */}
-        <Card className="bg-gradient-to-br from-amber-50/80 via-yellow-50/70 to-orange-50/80 backdrop-blur-sm border-yellow-700/30 shadow-xl hover:shadow-2xl hover:shadow-yellow-600/20 transition-all duration-300">
+        <Card className="bg-gradient-to-br from-amber-50/80 via-yellow-50/70 to-orange-50/80 backdrop-blur-sm border-yellow-700/30 shadow-xl hover:shadow-2xl hover:shadow-yellow-600/20 transition-all duration-300 dashboard-animate-fade-scale dashboard-delay-400">
           <CardHeader className="border-b border-yellow-700/20 bg-gradient-to-r from-yellow-600/10 to-amber-500/10">
             <CardTitle className="text-yellow-900">Property Comparison Tool</CardTitle>
             <CardDescription className="text-amber-800/70">Compare properties side by side</CardDescription>
@@ -388,7 +390,7 @@ const BuyerDashboardNewComponent = () => {
         </Card>
 
         {/* Property Alerts */}
-        <Card className="bg-gradient-to-br from-amber-50/80 via-yellow-50/70 to-orange-50/80 backdrop-blur-sm border-yellow-700/30 shadow-xl hover:shadow-2xl hover:shadow-yellow-600/20 transition-all duration-300">
+        <Card className="bg-gradient-to-br from-amber-50/80 via-yellow-50/70 to-orange-50/80 backdrop-blur-sm border-yellow-700/30 shadow-xl hover:shadow-2xl hover:shadow-yellow-600/20 transition-all duration-300 dashboard-animate-fade-scale dashboard-delay-500">
           <CardHeader className="border-b border-yellow-700/20 bg-gradient-to-r from-yellow-600/10 to-amber-500/10">
             <CardTitle className="text-yellow-900 flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-yellow-700" />

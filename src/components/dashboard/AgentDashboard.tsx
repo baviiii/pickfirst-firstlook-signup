@@ -67,7 +67,7 @@ export const AgentDashboard = () => {
     <AgentLayoutSidebar>
       <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 dashboard-animate-fade-up dashboard-delay-0">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
             Welcome back, Agent {profile?.full_name?.split(' ')[0] || 'Smith'}!
@@ -86,11 +86,13 @@ export const AgentDashboard = () => {
           const Icon = action.icon;
           const notificationCount = action.cardType ? cardCounts[action.cardType] || 0 : 0;
           const hasNew = action.cardType ? hasNewNotification(action.cardType) : false;
+          const delays = ['dashboard-delay-0', 'dashboard-delay-50', 'dashboard-delay-100', 'dashboard-delay-150', 'dashboard-delay-200', 'dashboard-delay-250', 'dashboard-delay-300', 'dashboard-delay-350'];
+          const delayClass = delays[Math.min(index, delays.length - 1)];
           
           return (
             <Card
               key={index}
-              className={`hover:shadow-md transition-all cursor-pointer pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg hover:shadow-xl hover:scale-105 relative ${
+              className={`hover:shadow-md transition-all cursor-pointer pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg hover:shadow-xl hover:scale-105 relative dashboard-animate-fade-up ${delayClass} ${
                 hasNew ? 'animate-pulse-border' : ''
               }`}
               onClick={action.onClick}
@@ -129,7 +131,7 @@ export const AgentDashboard = () => {
 
       {/* Performance Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg dashboard-animate-fade-scale dashboard-delay-200">
           <CardHeader>
             <CardTitle className="text-foreground">This Month's Performance</CardTitle>
           </CardHeader>
@@ -163,7 +165,7 @@ export const AgentDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg dashboard-animate-fade-scale dashboard-delay-250">
           <CardHeader>
             <CardTitle className="text-foreground">Recent Activity</CardTitle>
           </CardHeader>
@@ -261,7 +263,7 @@ export const AgentDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg dashboard-animate-fade-scale dashboard-delay-300">
           <CardHeader>
             <CardTitle className="text-foreground">Revenue Overview</CardTitle>
           </CardHeader>
@@ -285,7 +287,7 @@ export const AgentDashboard = () => {
       </div>
 
       {/* Upcoming Appointments */}
-      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg dashboard-animate-fade-up dashboard-delay-300">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-foreground">Upcoming Appointments</CardTitle>
@@ -322,7 +324,9 @@ export const AgentDashboard = () => {
       </Card>
 
       {/* Agent Specialties */}
-      <AgentSpecialtyManager />
+      <div className="dashboard-animate-fade-scale dashboard-delay-400">
+        <AgentSpecialtyManager />
+      </div>
     </div>
     </AgentLayoutSidebar>
   );
