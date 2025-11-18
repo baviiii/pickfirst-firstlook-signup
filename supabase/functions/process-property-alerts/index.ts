@@ -568,18 +568,31 @@ async function createAlertRecord(
   status: 'sent' | 'delivered' | 'failed',
   alertType: 'on_market' | 'off_market'
 ): Promise<void> {
-  const template = alertType === 'off_market' ? 'offMarketPropertyAlert' : 'propertyAlert';
-  
-  await supabaseClient
-    .from('property_alerts')
-    .insert({
-      buyer_id: buyerId,
-      property_id: propertyId,
-      status,
-      alert_type: alertType,
-      email_template: template,
-      sent_at: new Date().toISOString()
-    })
+  try {
+    const template = alertType === 'off_market' ? 'offMarketPropertyAlert' : 'propertyAlert';
+    
+    const { data, error } = await supabaseClient
+      .from('property_alerts')
+      .insert({
+        buyer_id: buyerId,
+        property_id: propertyId,
+        status,
+        alert_type: alertType,
+        email_template: template,
+        sent_at: new Date().toISOString()
+      })
+      .select();
+    
+    if (error) {
+      console.error(`Error creating alert record for buyer ${buyerId}, property ${propertyId}:`, error);
+      throw error;
+    }
+    
+    console.log(`✅ Alert record created: buyer ${buyerId}, property ${propertyId}, status ${status}`);
+  } catch (error) {
+    console.error(`Failed to create alert record:`, error);
+    // Don't throw - we don't want to fail the entire alert process if record creation fails
+  }
 }
 
 /**

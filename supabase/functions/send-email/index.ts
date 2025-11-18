@@ -37,11 +37,27 @@ const commonStyles = `
 // Enhanced email header with gradient
 const getEmailHeader = () => `
   <div style="background: linear-gradient(135deg, ${BRAND_COLORS.secondary} 0%, #2a2a2a 100%); padding: 30px 20px; text-align: center; border-bottom: 4px solid ${BRAND_COLORS.primary};">
-    <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 12px;">
-      <img src="https://rkwvgqozbpqgmpbvujgz.supabase.co/storage/v1/object/public/logo/logo.jpg" alt="PickFirst" style="max-width: 80px; height: auto; border-radius: 6px; display: block;" />
-      <h1 style="color: ${BRAND_COLORS.primary}; margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 1px;">PickFirst</h1>
-    </div>
-    <p style="color: ${BRAND_COLORS.primary}; margin: 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.9;">Your Trusted Property Partner</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+      <tr>
+        <td style="text-align: center; padding-bottom: 12px;">
+          <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+            <tr>
+              <td style="vertical-align: middle; padding-right: 12px;">
+                <img src="https://rkwvgqozbpqgmpbvujgz.supabase.co/storage/v1/object/public/logo/logo.jpg" alt="PickFirst" style="max-width: 80px; height: auto; max-height: 50px; border-radius: 6px; display: block; vertical-align: middle;" />
+              </td>
+              <td style="vertical-align: middle;">
+                <h1 style="color: ${BRAND_COLORS.primary}; margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 1px; line-height: 1.2; vertical-align: middle;">PickFirst</h1>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: center;">
+          <p style="color: ${BRAND_COLORS.primary}; margin: 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.9;">Your Trusted Property Partner</p>
+        </td>
+      </tr>
+    </table>
   </div>
 `;
 
@@ -51,12 +67,18 @@ const getEmailFooter = () => `
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
       <tr>
         <td style="text-align: center; padding-bottom: 20px;">
-          <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-            <img src="https://rkwvgqozbpqgmpbvujgz.supabase.co/storage/v1/object/public/logo/logo.jpg" alt="PickFirst" style="max-width: 60px; height: auto; opacity: 0.8; border-radius: 4px; display: block;" />
-            <p style="margin: 0; color: ${BRAND_COLORS.text}; font-size: 18px; font-weight: bold;">
-              PickFirst Real Estate
-            </p>
-          </div>
+          <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+            <tr>
+              <td style="vertical-align: middle; padding-right: 10px;">
+                <img src="https://rkwvgqozbpqgmpbvujgz.supabase.co/storage/v1/object/public/logo/logo.jpg" alt="PickFirst" style="max-width: 60px; height: auto; max-height: 40px; opacity: 0.8; border-radius: 4px; display: block; vertical-align: middle;" />
+              </td>
+              <td style="vertical-align: middle;">
+                <p style="margin: 0; color: ${BRAND_COLORS.text}; font-size: 18px; font-weight: bold; line-height: 1.2; vertical-align: middle;">
+                  PickFirst Real Estate
+                </p>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
       <tr>

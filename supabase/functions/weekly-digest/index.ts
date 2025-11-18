@@ -388,10 +388,16 @@ async function sendWeeklyDigestEmail(supabaseClient, digest, userEmail, userName
         <div class="email-wrapper">
           <div class="container">
             <div class="header">
-              <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 20px;">
-                <img src="https://pickfirst.com.au/logo.jpg" alt="PickFirst" style="max-width: 80px; height: auto; border-radius: 6px; display: block;" />
-                <h1 style="margin: 0; font-size: 32px; font-weight: 700;">PickFirst</h1>
-              </div>
+              <table cellpadding="0" cellspacing="0" style="margin: 0 auto 20px auto;">
+                <tr>
+                  <td style="vertical-align: middle; padding-right: 12px;">
+                    <img src="https://pickfirst.com.au/logo.jpg" alt="PickFirst" style="max-width: 80px; height: auto; max-height: 50px; border-radius: 6px; display: block; vertical-align: middle;" />
+                  </td>
+                  <td style="vertical-align: middle;">
+                    <h1 style="margin: 0; font-size: 32px; font-weight: 700; line-height: 1.2; vertical-align: middle; color: white;">PickFirst</h1>
+                  </td>
+                </tr>
+              </table>
               <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 8px;">Your Weekly Property Digest</h2>
               <p class="subtitle">${digest.week_start} - ${digest.week_end}</p>
             </div>

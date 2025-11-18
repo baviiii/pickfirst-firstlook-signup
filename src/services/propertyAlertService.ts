@@ -581,7 +581,7 @@ export class PropertyAlertService {
     try {
       const template = alertType === 'off_market' ? 'offMarketPropertyAlert' : 'propertyAlert';
       
-      await supabase
+      const { data, error } = await supabase
         .from('property_alerts')
         .insert({
           buyer_id: buyerId,
@@ -590,9 +590,23 @@ export class PropertyAlertService {
           alert_type: alertType,
           email_template: template,
           sent_at: new Date().toISOString()
-        });
+        })
+        .select();
+      
+      if (error) {
+        console.error('Error creating alert record:', error);
+        // Check if it's a duplicate (unique constraint violation)
+        if (error.code === '23505') {
+          console.log(`Alert record already exists for buyer ${buyerId}, property ${propertyId}`);
+        } else {
+          throw error;
+        }
+      } else {
+        console.log(`✅ Alert record created: buyer ${buyerId}, property ${propertyId}, status ${status}`);
+      }
     } catch (error) {
       console.error('Error creating alert record:', error);
+      // Don't throw - we don't want to fail the entire alert process if record creation fails
     }
   }
 
