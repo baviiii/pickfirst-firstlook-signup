@@ -1,5 +1,6 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useViewMode } from '@/hooks/useViewMode';
 import { BuyerLayoutImproved } from './BuyerLayoutImproved';
 import { AgentLayoutSidebar } from './AgentLayoutSidebar';
 import { SuperAdminLayout } from './SuperAdminLayout';
@@ -11,6 +12,23 @@ interface RoleBasedLayoutProps {
 
 export const RoleBasedLayout = ({ children, fallbackLayout = 'none' }: RoleBasedLayoutProps) => {
   const { profile, user } = useAuth();
+  const { viewMode } = useViewMode();
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [displayMode, setDisplayMode] = useState<'agent' | 'buyer' | null>(null);
+
+  // Handle smooth transitions between modes
+  useEffect(() => {
+    if (profile?.role === 'agent') {
+      setIsTransitioning(true);
+      const timer = setTimeout(() => {
+        setDisplayMode(viewMode);
+        setIsTransitioning(false);
+      }, 200);
+      return () => clearTimeout(timer);
+    } else {
+      setDisplayMode(null);
+    }
+  }, [viewMode, profile?.role]);
 
   // If user is not authenticated, render without layout (for public pages)
   if (!user) {
@@ -40,12 +58,23 @@ export const RoleBasedLayout = ({ children, fallbackLayout = 'none' }: RoleBased
     );
   }
 
-  // Apply layout based on user role
+  // Apply layout based on view mode (for agents) or role (for others)
+  // Agents can switch between agent and buyer views with smooth transitions
+  if (profile?.role === 'agent') {
+    const currentMode = displayMode || viewMode;
+    const LayoutComponent = currentMode === 'buyer' ? BuyerLayoutImproved : AgentLayoutSidebar;
+    
+    return (
+      <div className={`transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+        <LayoutComponent>{children}</LayoutComponent>
+      </div>
+    );
+  }
+
+  // Apply layout based on user role for non-agents
   switch (profile?.role) {
     case 'buyer':
       return <BuyerLayoutImproved>{children}</BuyerLayoutImproved>;
-    case 'agent':
-      return <AgentLayoutSidebar>{children}</AgentLayoutSidebar>;
     case 'super_admin':
       return <SuperAdminLayout>{children}</SuperAdminLayout>;
     default:

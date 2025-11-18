@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
+import { ViewModeProvider } from "@/hooks/useViewMode";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/ComingSoon";
 import Auth from "./pages/Auth";
@@ -70,8 +71,9 @@ const AuthHashRedirect = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <SubscriptionProvider>
-        <TooltipProvider>
+      <ViewModeProvider>
+        <SubscriptionProvider>
+          <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter basename={import.meta.env.BASE_URL}>
@@ -130,6 +132,7 @@ const App = () => (
           </BrowserRouter>
         </TooltipProvider>
       </SubscriptionProvider>
+      </ViewModeProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

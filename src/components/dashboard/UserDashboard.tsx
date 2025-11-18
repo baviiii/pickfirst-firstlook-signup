@@ -1,12 +1,14 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useViewMode } from '@/hooks/useViewMode';
 import { BuyerDashboardNew } from './BuyerDashboardNew';
 import { AgentDashboard } from './AgentDashboard';
 import { SuperAdminDashboard } from './SuperAdminDashboard';
 
 export const UserDashboard = () => {
   const { profile, refetchProfile, user } = useAuth();
+  const { viewMode } = useViewMode();
   const [isLoading, setIsLoading] = useState(true);
 
   // Only refetch when component mounts
@@ -36,12 +38,16 @@ export const UserDashboard = () => {
     );
   }
 
-  // Route to the appropriate dashboard based on user role
+  // Route to the appropriate dashboard based on user role and view mode
+  // Agents can switch between agent and buyer dashboards
+  if (profile?.role === 'agent') {
+    return viewMode === 'buyer' ? <BuyerDashboardNew /> : <AgentDashboard />;
+  }
+
+  // Route to the appropriate dashboard based on user role for non-agents
   switch (profile?.role) {
     case 'buyer':
       return <BuyerDashboardNew />;
-    case 'agent':
-      return <AgentDashboard />;
     case 'super_admin':
       return <SuperAdminDashboard />;
     default:

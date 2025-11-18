@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { AdvancedSearchDropdown } from '@/components/search/AdvancedSearchDropdown';
 import { useAuth } from '@/hooks/useAuth';
+import { useViewMode } from '@/hooks/useViewMode';
 import { 
   Home, 
   Users, 
@@ -17,7 +18,9 @@ import {
   CreditCard,
   Info,
   Menu,
-  X
+  X,
+  ShoppingBag,
+  UserCog
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -27,11 +30,13 @@ interface AgentLayoutSidebarProps {
 
 export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
   const { profile, signOut } = useAuth();
+  const { viewMode, toggleViewMode, canSwitchToBuyer } = useViewMode();
   const navigate = useNavigate();
   
   // State management - Start with sidebar closed for cleaner look
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -523,8 +528,41 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
               <AdvancedSearchDropdown />
             </div>
 
-            {/* Right: Notifications & Profile */}
+            {/* Right: Buyer Mode Toggle, Notifications & Profile */}
             <div className="flex items-center gap-3">
+              {/* Beautiful Buyer Mode Toggle Button */}
+              {canSwitchToBuyer && (
+                <Button
+                  onClick={() => {
+                    setIsTransitioning(true);
+                    setTimeout(() => {
+                      toggleViewMode();
+                      setIsTransitioning(false);
+                    }, 300);
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="relative overflow-hidden bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300/50 text-blue-700 hover:from-blue-100 hover:to-indigo-100 hover:border-blue-400/70 hover:text-blue-800 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20 group"
+                >
+                  {/* Animated background shimmer */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                  
+                  <div className="relative flex items-center gap-2">
+                    {viewMode === 'agent' ? (
+                      <>
+                        <ShoppingBag className="h-4 w-4 transition-transform group-hover:scale-110" />
+                        <span className="hidden sm:inline font-medium">Buyer Mode</span>
+                      </>
+                    ) : (
+                      <>
+                        <UserCog className="h-4 w-4 transition-transform group-hover:scale-110" />
+                        <span className="hidden sm:inline font-medium">Agent Mode</span>
+                      </>
+                    )}
+                  </div>
+                </Button>
+              )}
+
               <NotificationDropdown />
 
               <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-600/10 to-amber-500/10 border border-yellow-700/20 shadow-lg shadow-yellow-600/10 hover:shadow-xl hover:shadow-yellow-600/20 transition-all duration-300">
