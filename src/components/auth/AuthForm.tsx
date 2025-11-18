@@ -27,7 +27,8 @@ export const AuthForm = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    userType: 'buyer'
+    userType: 'buyer',
+    company: '',
   });
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -65,6 +66,12 @@ export const AuthForm = () => {
     
     if (signUpData.password !== signUpData.confirmPassword) {
       toast.error('Passwords do not match');
+      return;
+    }
+
+    // Require organisation / business name when signing up as an agent
+    if (signUpData.userType === 'agent' && !signUpData.company.trim()) {
+      toast.error('Please enter your organisation / business name');
       return;
     }
     
@@ -246,6 +253,24 @@ export const AuthForm = () => {
                   </p>
                 )}
               </div>
+
+              {/* Organisation / Business (agents only) */}
+              {signUpData.userType === 'agent' && (
+                <div className="space-y-2">
+                  <Label htmlFor="signup-company" className="text-foreground font-semibold flex items-center gap-2">
+                    <Building className="w-4 h-4 text-pickfirst-yellow" />
+                    Organisation / Business
+                  </Label>
+                  <Input
+                    id="signup-company"
+                    placeholder="Enter your organisation or business name"
+                    value={signUpData.company}
+                    onChange={(e) => handleSignUpInputChange('company', e.target.value)}
+                    className="h-12 bg-card border border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:ring-2 focus:ring-offset-0 pickfirst-yellow-border pickfirst-yellow-ring"
+                    required={signUpData.userType === 'agent'}
+                  />
+                </div>
+              )}
               
               <div className="space-y-2">
                 <Label htmlFor="signup-fullName" className="text-foreground font-semibold">Full Name</Label>

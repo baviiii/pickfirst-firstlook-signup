@@ -41,6 +41,12 @@ const Registration = () => {
       toast.error('Please select your user type');
       return;
     }
+
+    // Require organisation / business name when signing up as an agent
+    if (formData.userType === 'agent' && !formData.company.trim()) {
+      toast.error('Please enter your organisation / business name');
+      return;
+    }
     
     setLoading(true);
     let error;
@@ -50,11 +56,15 @@ const Registration = () => {
     error = result.error;
     
     if (!error) {
-      // Wait a bit for the profile to be created, then ensure the role is correct
+      // Wait a bit for the profile to be created, then ensure the role and company are correct
       await new Promise((resolve) => setTimeout(resolve, 3000));
-      const updateResult = await updateProfile({ role: formData.userType });
+      const updateResult = await updateProfile({
+        role: formData.userType,
+        // Store organisation / business name on profile when provided
+        company: formData.company?.trim() || undefined,
+      });
       if (updateResult.error) {
-        console.error('Failed to update profile role:', updateResult.error);
+        console.error('Failed to update profile after registration:', updateResult.error);
       }
     }
     if (error) {
@@ -172,12 +182,12 @@ const Registration = () => {
                 />
               </div>
 
-              {/* Company (for agents/super_admins) */}
+              {/* Organisation / Business (for agents and admins) */}
               {(formData.userType === 'agent' || formData.userType === 'super_admin') && (
                 <div className="space-y-3">
                   <Label htmlFor="company" className="text-foreground font-semibold flex items-center gap-2">
                     <Building className="w-4 h-4 text-primary" />
-                    Company Name
+                    Organisation / Business
                   </Label>
                   <Input
                     id="company"

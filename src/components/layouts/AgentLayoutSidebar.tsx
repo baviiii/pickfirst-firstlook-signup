@@ -114,51 +114,127 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
-        {/* Gorgeous Animated Background Elements */}
+      <div className="flex min-h-screen w-full pickfirst-bg relative overflow-hidden">
+        {/* Animated Flowing Water Background - Multiple Layers */}
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-yellow-50/50 to-orange-50"></div>
+        
+        {/* Flowing Gradient Waves */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Primary glow */}
-          <div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-gradient-to-r from-pickfirst-yellow/20 via-amber-500/20 to-pickfirst-yellow/20 blur-3xl animate-pulse"></div>
-          
-          {/* Secondary glow */}
-          <div className="absolute bottom-32 left-16 w-80 h-80 rounded-full bg-gradient-to-r from-pickfirst-yellow/15 via-amber-500/15 to-pickfirst-yellow/15 blur-2xl animate-pulse" style={{animationDelay: '1s'}}></div>
-          
-          {/* Accent glow */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-pickfirst-yellow/10 blur-xl animate-bounce" style={{animationDuration: '4s'}}></div>
-          
-          {/* Moving orbs */}
-          <div className="absolute top-1/4 right-1/4 w-32 h-32 rounded-full bg-pickfirst-yellow/5 blur-lg animate-pulse" style={{animationDuration: '3s'}}></div>
-          <div className="absolute bottom-1/4 left-1/3 w-24 h-24 rounded-full bg-amber-500/8 blur-md animate-pulse" style={{animationDuration: '2s', animationDelay: '0.5s'}}></div>
-          
-          {/* Subtle grid pattern */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.05)_1px,transparent_0)] bg-[length:20px_20px]"></div>
+          <div 
+            className="absolute w-[200%] h-[200%] -top-1/2 -left-1/2"
+            style={{
+              background: 'radial-gradient(circle at 30% 50%, rgba(251, 191, 36, 0.3) 0%, transparent 50%)',
+              animation: 'flow1 25s ease-in-out infinite',
+            }}
+          />
+          <div 
+            className="absolute w-[200%] h-[200%] -top-1/2 -right-1/2"
+            style={{
+              background: 'radial-gradient(circle at 70% 50%, rgba(245, 158, 11, 0.25) 0%, transparent 50%)',
+              animation: 'flow2 30s ease-in-out infinite',
+              animationDelay: '5s'
+            }}
+          />
+          <div 
+            className="absolute w-[200%] h-[200%] -bottom-1/2 -left-1/2"
+            style={{
+              background: 'radial-gradient(circle at 40% 50%, rgba(249, 115, 22, 0.2) 0%, transparent 50%)',
+              animation: 'flow3 35s ease-in-out infinite',
+              animationDelay: '10s'
+            }}
+          />
         </div>
-        <Sidebar variant="inset" className="bg-gradient-to-b from-gray-900/95 to-black/95 backdrop-blur-xl border-r border-pickfirst-yellow/20 [&>div]:bg-gradient-to-b [&>div]:from-gray-900/95 [&>div]:to-black/95">
+
+        {/* Floating Liquid Blobs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div 
+            className="absolute w-[600px] h-[600px] rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(251, 191, 36, 0.4) 0%, rgba(245, 158, 11, 0.2) 40%, transparent 70%)',
+              filter: 'blur(60px)',
+              animation: 'floatBlob1 20s ease-in-out infinite',
+              top: '10%',
+              left: '20%'
+            }}
+          />
+          <div 
+            className="absolute w-[500px] h-[500px] rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(245, 158, 11, 0.35) 0%, rgba(249, 115, 22, 0.2) 40%, transparent 70%)',
+              filter: 'blur(50px)',
+              animation: 'floatBlob2 25s ease-in-out infinite',
+              bottom: '15%',
+              right: '15%',
+              animationDelay: '7s'
+            }}
+          />
+        </div>
+
+        {/* Texture + shimmer */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.03) 50%, transparent 70%)',
+            backgroundSize: '200% 200%',
+            animation: 'shimmer 15s ease-in-out infinite',
+          }}
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_2px_2px,rgba(180,83,9,0.02)_1px,transparent_0)] bg-[length:32px_32px] pointer-events-none" />
+
+        {/* Keyframes for background animation */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes flow1 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30%, 20%) rotate(120deg); }
+            66% { transform: translate(-20%, 30%) rotate(240deg); }
+          }
+          @keyframes flow2 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(-25%, -15%) rotate(-120deg); }
+            66% { transform: translate(25%, -25%) rotate(-240deg); }
+          }
+          @keyframes flow3 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(20%, -20%) rotate(180deg); }
+          }
+          @keyframes floatBlob1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(50px, -80px) scale(1.1); }
+            66% { transform: translate(-80px, 50px) scale(0.9); }
+          }
+          @keyframes floatBlob2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-60px, 70px) scale(1.15); }
+            66% { transform: translate(70px, -60px) scale(0.95); }
+          }
+          @keyframes shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+          }
+        ` }} />
+
+        <Sidebar variant="inset" className="pickfirst-glass bg-card/90 backdrop-blur-2xl border-r border-pickfirst-yellow/30 [&>div]:bg-transparent">
           <SidebarHeader className="border-b border-pickfirst-yellow/20 p-4">
             <div 
               className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => navigate('/dashboard')}
             >
               <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-pickfirst-yellow via-amber-500 to-pickfirst-yellow rounded-xl blur-md opacity-75 group-hover:opacity-100 transition duration-500 animate-[pulse_3s_ease-in-out_infinite]"></div>
-                <div className="relative w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden">
-                  <img 
-                    src="/logo.jpg" 
-                    alt="PickFirst Logo" 
-                    className="w-full h-full object-cover"
-                  />
+                <div className="absolute -inset-1 bg-gradient-to-r from-primary via-pickfirst-amber to-primary rounded-xl blur-md opacity-50 group-hover:opacity-75 transition duration-500"></div>
+                <div className="relative w-10 h-10 rounded-xl bg-primary/10 border border-primary/40 flex items-center justify-center overflow-hidden">
+                  <Home className="w-5 h-5 text-primary" />
                 </div>
               </div>
               <div>
-                <span className="font-bold text-white text-lg tracking-wide">PickFirst</span>
-                <p className="text-xs text-pickfirst-yellow">Agent Portal</p>
+                <span className="font-bold text-foreground text-lg tracking-wide">PickFirst</span>
+                <p className="text-xs text-muted-foreground">Agent Portal</p>
               </div>
             </div>
           </SidebarHeader>
           
           <SidebarContent>
             <SidebarGroup>
-              <SidebarGroupLabel className="text-pickfirst-yellow">Agent Tools</SidebarGroupLabel>
+              <SidebarGroupLabel className="text-muted-foreground">Agent Tools</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   {agentNavItems.map((item) => (
@@ -166,7 +242,7 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
                       <SidebarMenuButton 
                         asChild
                         tooltip={item.description}
-                        className="text-gray-300 hover:text-white hover:bg-pickfirst-yellow/10 data-[active=true]:bg-pickfirst-yellow/20 data-[active=true]:text-pickfirst-yellow"
+                        className="text-muted-foreground hover:text-foreground hover:bg-card/80 hover:border-pickfirst-yellow/40 data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:border-primary/40"
                       >
                         <a 
                           href={item.url} 
@@ -195,22 +271,22 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
             <div className="space-y-3">
               {/* Agent Badge */}
               <div className="flex items-center justify-center">
-                <Badge className="bg-pickfirst-amber text-black">
+                <Badge className="bg-primary text-primary-foreground">
                   <CreditCard className="h-3 w-3 mr-1" />
                   Real Estate Agent
                 </Badge>
               </div>
               
               {/* User Info */}
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-pickfirst-yellow/20">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-pickfirst-yellow to-amber-600 flex items-center justify-center text-black font-bold text-sm">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-card/80 border border-pickfirst-yellow/30">
+                <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-primary font-bold text-sm">
                   {profile?.full_name?.charAt(0) || 'A'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-white truncate">
+                  <div className="text-sm font-medium text-foreground truncate">
                     {profile?.full_name || 'Agent'}
                   </div>
-                  <div className="text-xs text-gray-400">Agent Account</div>
+                  <div className="text-xs text-muted-foreground">Agent Account</div>
                 </div>
               </div>
               
@@ -219,7 +295,7 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
                 <Button
                   onClick={() => navigate('/about')}
                   variant="ghost"
-                  className="w-full justify-start text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 text-sm"
+                  className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-card/80 text-sm"
                   size="sm"
                 >
                   <Info className="h-4 w-4 mr-2" />
@@ -228,7 +304,7 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
                 <Button
                   onClick={handleSignOut}
                   variant="ghost"
-                  className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10 text-sm"
+                  className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-500/10 text-sm"
                   size="sm"
                 >
                   <LogOut className="h-4 w-4 mr-2" />
@@ -239,11 +315,11 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
           </SidebarFooter>
         </Sidebar>
         
-        <SidebarInset className="flex-1 bg-gradient-to-br from-black via-gray-900 to-black">
+        <SidebarInset className="flex-1 pickfirst-bg">
           {/* Minimal Header with just trigger and notifications */}
-          <header className="sticky top-0 z-10 bg-gradient-to-r from-gray-900/95 to-black/95 backdrop-blur-xl border-b border-pickfirst-yellow/20 px-4 py-3">
+          <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-xl border-b border-pickfirst-yellow/20 px-4 py-3">
             <div className="flex items-center justify-between gap-4">
-              <SidebarTrigger className="text-pickfirst-yellow hover:bg-pickfirst-yellow/10" />
+              <SidebarTrigger className="text-foreground hover:bg-card/80 hover:border-pickfirst-yellow/40" />
               
               {/* Right Side Actions */}
               <div className="flex items-center gap-3">
@@ -253,7 +329,7 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
                   onClick={() => navigate('/agent-profile')}
                   variant="ghost"
                   size="sm"
-                  className="text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
+                  className="text-muted-foreground hover:text-foreground hover:bg-card/80"
                 >
                   <User className="h-4 w-4 mr-2" />
                   Profile

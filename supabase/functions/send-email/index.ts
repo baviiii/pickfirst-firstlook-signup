@@ -36,9 +36,12 @@ const commonStyles = `
 
 // Enhanced email header with gradient
 const getEmailHeader = () => `
-  <div style="background: linear-gradient(135deg, ${BRAND_COLORS.secondary} 0%, #2a2a2a 100%); padding: 40px 20px; text-align: center; border-bottom: 4px solid ${BRAND_COLORS.primary};">
-    <img src="https://rkwvgqozbpqgmpbvujgz.supabase.co/storage/v1/object/public/logo/logo.jpg" alt="PickFirst Real Estate" style="max-width: 200px; height: auto; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" />
-    <p style="color: ${BRAND_COLORS.primary}; margin: 10px 0 0 0; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;">Your Trusted Property Partner</p>
+  <div style="background: linear-gradient(135deg, ${BRAND_COLORS.secondary} 0%, #2a2a2a 100%); padding: 30px 20px; text-align: center; border-bottom: 4px solid ${BRAND_COLORS.primary};">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 12px;">
+      <img src="https://rkwvgqozbpqgmpbvujgz.supabase.co/storage/v1/object/public/logo/logo.jpg" alt="PickFirst" style="max-width: 80px; height: auto; border-radius: 6px; display: block;" />
+      <h1 style="color: ${BRAND_COLORS.primary}; margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 1px;">PickFirst</h1>
+    </div>
+    <p style="color: ${BRAND_COLORS.primary}; margin: 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.9;">Your Trusted Property Partner</p>
   </div>
 `;
 
@@ -48,14 +51,16 @@ const getEmailFooter = () => `
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
       <tr>
         <td style="text-align: center; padding-bottom: 20px;">
-          <img src="https://rkwvgqozbpqgmpbvujgz.supabase.co/storage/v1/object/public/logo/logo.jpg" alt="PickFirst" style="max-width: 120px; height: auto; opacity: 0.8; border-radius: 6px;" />
+          <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <img src="https://rkwvgqozbpqgmpbvujgz.supabase.co/storage/v1/object/public/logo/logo.jpg" alt="PickFirst" style="max-width: 60px; height: auto; opacity: 0.8; border-radius: 4px; display: block;" />
+            <p style="margin: 0; color: ${BRAND_COLORS.text}; font-size: 18px; font-weight: bold;">
+              PickFirst Real Estate
+            </p>
+          </div>
         </td>
       </tr>
       <tr>
         <td style="text-align: center;">
-          <p style="margin: 0 0 15px 0; color: ${BRAND_COLORS.text}; font-size: 16px; font-weight: bold;">
-            PickFirst Real Estate
-          </p>
           <p style="margin: 0 0 20px 0; color: ${BRAND_COLORS.textLight}; font-size: 14px; line-height: 1.6;">
             Your trusted partner in finding the perfect property
           </p>
