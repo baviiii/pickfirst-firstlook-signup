@@ -39,7 +39,6 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
   // State management - Start with sidebar closed for cleaner look
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -573,11 +572,7 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
               {canSwitchToBuyer && viewMode === 'buyer' && (
                 <Button
                   onClick={() => {
-                    setIsTransitioning(true);
-                    setTimeout(() => {
-                      toggleViewMode();
-                      setIsTransitioning(false);
-                    }, 300);
+                    toggleViewMode();
                   }}
                   variant="outline"
                   size="sm"

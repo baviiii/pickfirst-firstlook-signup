@@ -36,7 +36,6 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
   // State management - Start with sidebar closed for cleaner look
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -534,11 +533,7 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
               {canSwitchToBuyer && (
                 <Button
                   onClick={() => {
-                    setIsTransitioning(true);
-                    setTimeout(() => {
-                      toggleViewMode();
-                      setIsTransitioning(false);
-                    }, 300);
+                    toggleViewMode();
                   }}
                   variant="outline"
                   size="sm"
