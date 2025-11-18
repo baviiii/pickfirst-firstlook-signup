@@ -69,18 +69,18 @@ export const AgentDashboard = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
             Welcome back, Agent {profile?.full_name?.split(' ')[0] || 'Smith'}!
           </h1>
-          <p className="text-gray-300">Ready to help your clients find their dream home?</p>
+          <p className="text-muted-foreground">Ready to help your clients find their dream home?</p>
         </div>
         <div className="flex items-center gap-3">
           <NotificationDropdown />
-          <Badge className="bg-pickfirst-amber text-black">Real Estate Agent</Badge>
+          <Badge className="bg-primary text-primary-foreground">Real Estate Agent</Badge>
         </div>
       </div>
 
-      {/* Quick Actions Grid */}
+      {/* Quick Actions Grid - Matching Buyer Dashboard Style */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {agentActions.map((action, index) => {
           const Icon = action.icon;
@@ -90,7 +90,7 @@ export const AgentDashboard = () => {
           return (
             <Card
               key={index}
-              className={`hover:shadow-md transition-all bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl hover:shadow-pickfirst-yellow/20 hover:scale-105 cursor-pointer relative ${
+              className={`hover:shadow-md transition-all cursor-pointer pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg hover:shadow-xl hover:scale-105 relative ${
                 hasNew ? 'animate-pulse-border' : ''
               }`}
               onClick={action.onClick}
@@ -107,11 +107,11 @@ export const AgentDashboard = () => {
                       </span>
                     )}
                   </div>
-                  <CardTitle className="text-sm text-white flex-1">{action.label}</CardTitle>
+                  <CardTitle className="text-sm text-foreground flex-1">{action.label}</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                <CardDescription className="text-xs text-gray-300">
+                <CardDescription className="text-xs text-muted-foreground">
                   {action.description}
                 </CardDescription>
               </CardContent>
@@ -129,48 +129,48 @@ export const AgentDashboard = () => {
 
       {/* Performance Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="bg-card text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-white">This Month's Performance</CardTitle>
+            <CardTitle className="text-foreground">This Month's Performance</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 rounded-lg bg-green-500/10">
-                <div className="text-2xl font-bold text-green-500">
+              <div className="text-center p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                <div className="text-2xl font-bold text-green-600">
                   {loadingMetrics ? '...' : metrics?.activeListings || 0}
                 </div>
-                <div className="text-sm text-gray-300">Active Listings</div>
+                <div className="text-sm text-muted-foreground">Active Listings</div>
               </div>
-              <div className="text-center p-4 rounded-lg bg-blue-500/10">
-                <div className="text-2xl font-bold text-blue-500">
+              <div className="text-center p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <div className="text-2xl font-bold text-blue-600">
                   {loadingMetrics ? '...' : metrics?.totalListings || 0}
                 </div>
-                <div className="text-sm text-gray-300">Total Listings</div>
+                <div className="text-sm text-muted-foreground">Total Listings</div>
               </div>
-              <div className="text-center p-4 rounded-lg bg-purple-500/10">
-                <div className="text-2xl font-bold text-purple-500">
+              <div className="text-center p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                <div className="text-2xl font-bold text-purple-600">
                   {loadingMetrics ? '...' : metrics?.totalClients || 0}
                 </div>
-                <div className="text-sm text-gray-300">Total Clients</div>
+                <div className="text-sm text-muted-foreground">Total Clients</div>
               </div>
-              <div className="text-center p-4 rounded-lg bg-orange-500/10">
-                <div className="text-2xl font-bold text-orange-500">
+              <div className="text-center p-4 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                <div className="text-2xl font-bold text-orange-600">
                   {loadingMetrics ? '...' : metrics?.totalAppointments || 0}
                 </div>
-                <div className="text-sm text-gray-300">Appointments</div>
+                <div className="text-sm text-muted-foreground">Appointments</div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-card text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-white">Recent Activity</CardTitle>
+            <CardTitle className="text-foreground">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {loadingMetrics ? (
-                <div className="text-gray-300">Loading activity...</div>
+                <div className="text-muted-foreground">Loading activity...</div>
               ) : metrics?.recentActivity && metrics.recentActivity.length > 0 ? (
                 metrics.recentActivity.map((activity) => {
                   // Parse user-friendly messages
@@ -183,40 +183,40 @@ export const AgentDashboard = () => {
                       return {
                         message: activity.details,
                         icon: Eye,
-                        color: 'text-blue-400'
+                        color: 'text-blue-600'
                       };
                     }
                     
                     // Map technical actions to user-friendly messages
                     if (action === 'CREATE' || action === 'INSERT') {
-                      if (table === 'property_listings') return { message: 'Added a new property listing', icon: PlusCircle, color: 'text-green-400' };
-                      if (table === 'clients') return { message: 'Added a new client', icon: UserPlus, color: 'text-green-400' };
-                      if (table === 'appointments') return { message: 'Scheduled a new appointment', icon: Calendar, color: 'text-green-400' };
-                      if (table === 'messages') return { message: 'Sent a message', icon: Mail, color: 'text-green-400' };
-                      return { message: `Created new ${table.replace('_', ' ')}`, icon: PlusCircle, color: 'text-green-400' };
+                      if (table === 'property_listings') return { message: 'Added a new property listing', icon: PlusCircle, color: 'text-green-600' };
+                      if (table === 'clients') return { message: 'Added a new client', icon: UserPlus, color: 'text-green-600' };
+                      if (table === 'appointments') return { message: 'Scheduled a new appointment', icon: Calendar, color: 'text-green-600' };
+                      if (table === 'messages') return { message: 'Sent a message', icon: Mail, color: 'text-green-600' };
+                      return { message: `Created new ${table.replace('_', ' ')}`, icon: PlusCircle, color: 'text-green-600' };
                     }
                     
                     if (action === 'UPDATE') {
-                      if (table === 'property_listings') return { message: 'Updated a property listing', icon: Edit3, color: 'text-blue-400' };
-                      if (table === 'profiles') return { message: 'Updated profile information', icon: Edit3, color: 'text-blue-400' };
-                      if (table === 'appointments') return { message: 'Modified an appointment', icon: Calendar, color: 'text-blue-400' };
-                      if (table === 'clients') return { message: 'Updated client information', icon: Edit3, color: 'text-blue-400' };
-                      return { message: `Updated ${table.replace('_', ' ')}`, icon: Edit3, color: 'text-blue-400' };
+                      if (table === 'property_listings') return { message: 'Updated a property listing', icon: Edit3, color: 'text-blue-600' };
+                      if (table === 'profiles') return { message: 'Updated profile information', icon: Edit3, color: 'text-blue-600' };
+                      if (table === 'appointments') return { message: 'Modified an appointment', icon: Calendar, color: 'text-blue-600' };
+                      if (table === 'clients') return { message: 'Updated client information', icon: Edit3, color: 'text-blue-600' };
+                      return { message: `Updated ${table.replace('_', ' ')}`, icon: Edit3, color: 'text-blue-600' };
                     }
                     
                     if (action === 'DELETE') {
-                      if (table === 'property_listings') return { message: 'Removed a property listing', icon: Trash2, color: 'text-red-400' };
-                      if (table === 'clients') return { message: 'Removed a client', icon: Trash2, color: 'text-red-400' };
-                      if (table === 'appointments') return { message: 'Cancelled an appointment', icon: Trash2, color: 'text-red-400' };
-                      return { message: `Deleted ${table.replace('_', ' ')}`, icon: Trash2, color: 'text-red-400' };
+                      if (table === 'property_listings') return { message: 'Removed a property listing', icon: Trash2, color: 'text-red-600' };
+                      if (table === 'clients') return { message: 'Removed a client', icon: Trash2, color: 'text-red-600' };
+                      if (table === 'appointments') return { message: 'Cancelled an appointment', icon: Trash2, color: 'text-red-600' };
+                      return { message: `Deleted ${table.replace('_', ' ')}`, icon: Trash2, color: 'text-red-600' };
                     }
                     
                     if (action === 'VIEW') {
-                      if (table === 'property_listings') return { message: 'Viewed property listings', icon: Eye, color: 'text-purple-400' };
-                      return { message: `Viewed ${table.replace('_', ' ')}`, icon: Eye, color: 'text-purple-400' };
+                      if (table === 'property_listings') return { message: 'Viewed property listings', icon: Eye, color: 'text-purple-600' };
+                      return { message: `Viewed ${table.replace('_', ' ')}`, icon: Eye, color: 'text-purple-600' };
                     }
                     
-                    return { message: `${action.toLowerCase()} on ${table.replace('_', ' ')}`, icon: FileText, color: 'text-gray-400' };
+                    return { message: `${action.toLowerCase()} on ${table.replace('_', ' ')}`, icon: FileText, color: 'text-muted-foreground' };
                   };
                   
                   const { message, icon: Icon, color } = getActivityDetails();
@@ -236,15 +236,15 @@ export const AgentDashboard = () => {
                   })();
                   
                   return (
-                    <div key={activity.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                      <div className={`p-2 rounded-lg bg-white/5 ${color}`}>
+                    <div key={activity.id} className="flex items-center gap-3 p-3 rounded-lg bg-card/80 border border-border hover:bg-card transition-colors">
+                      <div className={`p-2 rounded-lg bg-primary/10 ${color}`}>
                         <Icon className="h-4 w-4" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">
+                        <p className="text-sm font-medium text-foreground truncate">
                           {message}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-muted-foreground">
                           {timeAgo}
                         </p>
                       </div>
@@ -253,31 +253,31 @@ export const AgentDashboard = () => {
                 })
               ) : (
                 <div className="text-center py-4">
-                  <FileText className="h-8 w-8 text-gray-600 mx-auto mb-2" />
-                  <div className="text-gray-400 text-sm">No recent activity</div>
+                  <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <div className="text-muted-foreground text-sm">No recent activity</div>
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-white">Revenue Overview</CardTitle>
+            <CardTitle className="text-foreground">Revenue Overview</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="text-center p-4 rounded-lg bg-pickfirst-yellow/10">
-                <div className="text-2xl font-bold text-pickfirst-yellow">
+              <div className="text-center p-4 rounded-lg bg-primary/10 border border-primary/20">
+                <div className="text-2xl font-bold text-primary">
                   {loadingMetrics ? '...' : `$${(metrics?.monthlyRevenue || 0).toLocaleString()}`}
                 </div>
-                <div className="text-sm text-gray-300">This Month</div>
+                <div className="text-sm text-muted-foreground">This Month</div>
               </div>
-              <div className="text-center p-4 rounded-lg bg-pickfirst-amber/10">
+              <div className="text-center p-4 rounded-lg bg-pickfirst-amber/10 border border-pickfirst-amber/20">
                 <div className="text-xl font-bold text-pickfirst-amber">
                   {loadingMetrics ? '...' : `$${((metrics?.monthlyRevenue || 0) * 3).toLocaleString()}`}
                 </div>
-                <div className="text-sm text-gray-300">This Quarter (Est.)</div>
+                <div className="text-sm text-muted-foreground">This Quarter (Est.)</div>
               </div>
             </div>
           </CardContent>
@@ -285,11 +285,11 @@ export const AgentDashboard = () => {
       </div>
 
       {/* Upcoming Appointments */}
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 shadow-2xl">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-white">Upcoming Appointments</CardTitle>
-            <Button variant="outline" size="sm" className="text-gray-300 hover:text-pickfirst-yellow">
+            <CardTitle className="text-foreground">Upcoming Appointments</CardTitle>
+            <Button variant="outline" size="sm" className="text-muted-foreground hover:text-foreground border-border">
               View Calendar
             </Button>
           </div>
@@ -297,25 +297,25 @@ export const AgentDashboard = () => {
         <CardContent>
           <div className="space-y-4">
             {loadingMetrics ? (
-              <div className="text-gray-300">Loading appointments...</div>
+              <div className="text-muted-foreground">Loading appointments...</div>
             ) : metrics?.upcomingAppointments && metrics.upcomingAppointments.length > 0 ? (
               metrics.upcomingAppointments.map((appointment, index) => (
-                <div key={index} className="flex items-center gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                <div key={index} className="flex items-center gap-4 p-4 rounded-lg bg-card/80 border border-border hover:bg-card transition-colors">
                   <div className="text-center min-w-[80px]">
-                    <div className="text-sm font-bold text-pickfirst-yellow">{appointment.time}</div>
+                    <div className="text-sm font-bold text-primary">{appointment.time}</div>
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-white">{appointment.client_name}</h4>
-                    <p className="text-sm text-gray-400">{appointment.appointment_type} - {appointment.property_address}</p>
-                    <p className="text-xs text-gray-500">{new Date(appointment.date).toLocaleDateString()}</p>
+                    <h4 className="font-semibold text-foreground">{appointment.client_name}</h4>
+                    <p className="text-sm text-muted-foreground">{appointment.appointment_type} - {appointment.property_address}</p>
+                    <p className="text-xs text-muted-foreground/80">{new Date(appointment.date).toLocaleDateString()}</p>
                   </div>
-                  <Button variant="outline" size="sm" className="text-gray-300 hover:text-pickfirst-yellow">
+                  <Button variant="outline" size="sm" className="text-muted-foreground hover:text-foreground border-border">
                     View Details
                   </Button>
                 </div>
               ))
             ) : (
-              <div className="text-gray-400 text-sm">No upcoming appointments</div>
+              <div className="text-muted-foreground text-sm">No upcoming appointments</div>
             )}
           </div>
         </CardContent>
