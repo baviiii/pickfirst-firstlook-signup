@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
-import { Users, Building, Shield, Settings, BarChart3, Database, AlertTriangle, Activity, TestTube, History } from 'lucide-react';
+import { Users, Building, Shield, Settings, BarChart3, Database, AlertTriangle, Activity, TestTube, History, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { analyticsService, DashboardMetrics } from '@/services/analyticsService';
@@ -192,19 +192,63 @@ export const SuperAdminDashboard = () => {
                 const numericBathrooms = typeof listing.bathrooms === 'string' ? parseFloat(listing.bathrooms) : listing.bathrooms;
                 const numericSquareFeet = typeof listing.square_feet === 'string' ? parseFloat(listing.square_feet) : listing.square_feet;
                 
+                // Parse images array
+                let imagesArray: string[] = [];
+                if (listing.images) {
+                  if (typeof listing.images === 'string') {
+                    try {
+                      imagesArray = JSON.parse(listing.images);
+                    } catch {
+                      imagesArray = [listing.images];
+                    }
+                  } else if (Array.isArray(listing.images)) {
+                    imagesArray = listing.images;
+                  }
+                }
+                const hasImages = imagesArray.length > 0;
+                const mainImage = hasImages ? imagesArray[0] : null;
+                
                 return (
-                  <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10">
-                    <CardHeader className="space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <CardTitle className="text-lg text-pickfirst-yellow">{listing.title}</CardTitle>
-                          <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
+                  <Card key={listing.id} className="bg-white/5 border border-pickfirst-yellow/10 overflow-hidden">
+                    {/* Property Image */}
+                    {mainImage ? (
+                      <div className="relative aspect-video w-full overflow-hidden">
+                        <img
+                          src={mainImage}
+                          alt={listing.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                        <div className="hidden w-full h-full bg-gray-800 flex items-center justify-center absolute inset-0">
+                          <span className="text-gray-500 text-sm">Image Failed to Load</span>
                         </div>
                         {isOffMarket && (
-                          <Badge className="text-xs bg-pink-500/20 text-pink-300 border border-pink-500/30">
+                          <Badge className="absolute top-2 right-2 text-xs bg-pink-500/20 text-pink-300 border border-pink-500/30">
                             OFF-MARKET
                           </Badge>
                         )}
+                      </div>
+                    ) : (
+                      <div className="relative aspect-video w-full bg-gray-800 flex items-center justify-center">
+                        <span className="text-gray-500 text-sm">No Image Available</span>
+                        {isOffMarket && (
+                          <Badge className="absolute top-2 right-2 text-xs bg-pink-500/20 text-pink-300 border border-pink-500/30">
+                            OFF-MARKET
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                    
+                    <CardHeader className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <CardTitle className="text-lg text-pickfirst-yellow">{listing.title}</CardTitle>
+                          <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -212,23 +256,34 @@ export const SuperAdminDashboard = () => {
                       <div className="text-gray-400 text-sm mb-2">{listing.property_type.replace(/\b\w/g, l => l.toUpperCase())}</div>
                       <div className="flex flex-wrap gap-2 mb-2">
                         {numericBedrooms !== null && numericBedrooms !== undefined && !Number.isNaN(numericBedrooms) && (
-                          <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded">{numericBedrooms} Bed</span>
+                          <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded text-xs">{numericBedrooms} Bed</span>
                         )}
                         {numericBathrooms !== null && numericBathrooms !== undefined && !Number.isNaN(numericBathrooms) && (
-                          <span className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded">{numericBathrooms} Bath</span>
+                          <span className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded text-xs">{numericBathrooms} Bath</span>
                         )}
                         {numericSquareFeet !== null && numericSquareFeet !== undefined && !Number.isNaN(numericSquareFeet) && (
-                          <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded">{numericSquareFeet.toLocaleString()} Sq Ft</span>
+                          <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded text-xs">{numericSquareFeet.toLocaleString()} Sq Ft</span>
                         )}
                       </div>
-                      <div className="text-xs text-gray-400 mb-2">Status: <span className="text-yellow-400">Pending</span></div>
-                      <div className="flex gap-2 mt-2">
-                        <Button size="sm" className="bg-green-500 text-white hover:bg-green-600" onClick={() => handleApprove(listing.id)}>
-                          Approve
+                      <div className="text-xs text-gray-400 mb-3">Status: <span className="text-yellow-400">Pending</span></div>
+                      <div className="flex flex-col gap-2 mt-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="w-full text-pickfirst-yellow border-pickfirst-yellow/30 hover:bg-pickfirst-yellow/10"
+                          onClick={() => navigate(`/property/${listing.id}`)}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Details
                         </Button>
-                        <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-500/10" onClick={() => handleReject(listing.id)}>
-                          Reject
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button size="sm" className="flex-1 bg-green-500 text-white hover:bg-green-600" onClick={() => handleApprove(listing.id)}>
+                            Approve
+                          </Button>
+                          <Button size="sm" variant="outline" className="flex-1 text-red-500 border-red-500 hover:bg-red-500/10" onClick={() => handleReject(listing.id)}>
+                            Reject
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
