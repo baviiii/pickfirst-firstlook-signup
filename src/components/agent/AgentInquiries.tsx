@@ -377,7 +377,7 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-300">Loading inquiries...</div>
+        <div className="text-muted-foreground">Loading inquiries...</div>
       </div>
     );
   }
@@ -385,9 +385,9 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
   if (inquiries.length === 0) {
     return (
       <div className="text-center py-12">
-        <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-white mb-2">No Inquiries Yet</h3>
-        <p className="text-gray-400">Property inquiries from buyers will appear here.</p>
+        <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-foreground mb-2">No Inquiries Yet</h3>
+        <p className="text-muted-foreground">Property inquiries from buyers will appear here.</p>
       </div>
     );
   }
@@ -395,13 +395,13 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
   return (
     <div className="space-y-6">
       {/* Info Banner */}
-      <Card className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/30">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-primary/30">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <MessageSquare className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
+            <MessageSquare className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <div className="text-white font-medium mb-1">Unified Messaging System</div>
-              <div className="text-gray-300 text-sm">
+              <div className="text-foreground font-medium mb-1">Unified Messaging System</div>
+              <div className="text-muted-foreground text-sm">
                 Conversations are automatically created when buyers inquire. Click "Open Chat" to view and respond to the conversation. All messages are synced between Leads and Messages pages.
               </div>
             </div>
@@ -411,34 +411,34 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
 
       {/* Statistics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-blue-500/20">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-500">{inquiries.length}</div>
-            <div className="text-sm text-gray-300">Total Inquiries</div>
+            <div className="text-2xl font-bold text-blue-600">{inquiries.length}</div>
+            <div className="text-sm text-muted-foreground">Total Inquiries</div>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-green-500/20">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-500">
+            <div className="text-2xl font-bold text-green-600">
               {inquiries.filter(i => i.appointment).length}
             </div>
-            <div className="text-sm text-gray-300">Appointments</div>
+            <div className="text-sm text-muted-foreground">Appointments</div>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-500/20">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-500">
+            <div className="text-2xl font-bold text-pickfirst-yellow">
               {inquiries.filter(i => i.client && !i.appointment).length}
             </div>
-            <div className="text-sm text-gray-300">Clients Added</div>
+            <div className="text-sm text-muted-foreground">Clients Added</div>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-gray-500/20">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-gray-500">
+            <div className="text-2xl font-bold text-muted-foreground">
               {inquiries.filter(i => !i.agent_response && !i.client && !i.appointment).length}
             </div>
-            <div className="text-sm text-gray-300">Pending</div>
+            <div className="text-sm text-muted-foreground">Pending</div>
           </CardContent>
         </Card>
       </div>
@@ -451,8 +451,8 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
           return (
           <Card 
             key={inquiry.id} 
-            className={`bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 hover:shadow-lg hover:shadow-pickfirst-yellow/10 transition-all ${
-              isNew ? 'animate-pulse-border border-yellow-400/50' : ''
+            className={`pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:shadow-lg hover:shadow-pickfirst-yellow/10 transition-all ${
+              isNew ? 'animate-pulse-border border-pickfirst-yellow/60' : ''
             }`}
           >
             <CardHeader>
@@ -465,10 +465,10 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle className="text-white text-sm">
+                    <CardTitle className="text-foreground text-sm">
                       {inquiry.buyer?.full_name || 'Unknown Buyer'}
                     </CardTitle>
-                    <CardDescription className="text-gray-300 text-xs">
+                    <CardDescription className="text-muted-foreground text-xs">
                       {inquiry.buyer?.email}
                     </CardDescription>
                   </div>
@@ -483,25 +483,25 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Property Details */}
-              <div className="bg-white/5 p-3 rounded-lg">
+              <div className="bg-card/80 border border-border p-3 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <Home className="h-4 w-4 text-pickfirst-yellow" />
-                  <span className="text-white font-medium text-sm">
+                  <Home className="h-4 w-4 text-primary" />
+                  <span className="text-foreground font-medium text-sm">
                     {inquiry.property?.title}
                   </span>
                 </div>
-                <div className="text-gray-300 text-xs">
+                <div className="text-muted-foreground text-xs">
                   {inquiry.property?.address}
                 </div>
-                <div className="text-pickfirst-yellow font-bold text-sm">
+                <div className="text-primary font-bold text-sm">
                   ${inquiry.property?.price?.toLocaleString()}
                 </div>
               </div>
 
               {/* Inquiry Message */}
               <div>
-                <div className="text-white font-medium text-sm mb-2">Buyer's Message:</div>
-                <div className="text-gray-300 text-sm bg-white/5 p-2 rounded">
+                <div className="text-foreground font-medium text-sm mb-2">Buyer's Message:</div>
+                <div className="text-muted-foreground text-sm bg-card/80 border border-border p-2 rounded">
                   {inquiry.message}
                 </div>
               </div>
@@ -510,21 +510,21 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
               {inquiry.appointment && (
                 <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="h-4 w-4 text-blue-400" />
-                    <span className="text-white font-medium text-sm">Appointment Scheduled</span>
+                    <Calendar className="h-4 w-4 text-blue-600" />
+                    <span className="text-foreground font-medium text-sm">Appointment Scheduled</span>
                   </div>
-                  <div className="text-gray-300 text-xs space-y-1">
-                    <div><strong>Date:</strong> {new Date(inquiry.appointment.date).toLocaleDateString()}</div>
-                    <div><strong>Time:</strong> {inquiry.appointment.time}</div>
-                    <div><strong>Type:</strong> {inquiry.appointment.appointment_type.replace('_', ' ').toUpperCase()}</div>
-                    <div><strong>Duration:</strong> {inquiry.appointment.duration} minutes</div>
-                    <div><strong>Status:</strong> 
+                  <div className="text-muted-foreground text-xs space-y-1">
+                    <div><strong className="text-foreground">Date:</strong> {new Date(inquiry.appointment.date).toLocaleDateString()}</div>
+                    <div><strong className="text-foreground">Time:</strong> {inquiry.appointment.time}</div>
+                    <div><strong className="text-foreground">Type:</strong> {inquiry.appointment.appointment_type.replace('_', ' ').toUpperCase()}</div>
+                    <div><strong className="text-foreground">Duration:</strong> {inquiry.appointment.duration} minutes</div>
+                    <div><strong className="text-foreground">Status:</strong> 
                       <span className={`ml-1 ${
-                        inquiry.appointment.status === 'confirmed' ? 'text-green-400' :
-                        inquiry.appointment.status === 'scheduled' ? 'text-blue-400' :
-                        inquiry.appointment.status === 'completed' ? 'text-purple-400' :
-                        inquiry.appointment.status === 'cancelled' ? 'text-red-400' :
-                        'text-gray-400'
+                        inquiry.appointment.status === 'confirmed' ? 'text-green-600' :
+                        inquiry.appointment.status === 'scheduled' ? 'text-blue-600' :
+                        inquiry.appointment.status === 'completed' ? 'text-purple-600' :
+                        inquiry.appointment.status === 'cancelled' ? 'text-red-600' :
+                        'text-muted-foreground'
                       }`}>
                         {inquiry.appointment.status.toUpperCase()}
                       </span>
@@ -535,18 +535,18 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
 
               {/* Client Information */}
               {inquiry.client && !inquiry.appointment && (
-                <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-lg">
+                <div className="bg-pickfirst-yellow/10 border border-pickfirst-yellow/20 p-3 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <UserPlus className="h-4 w-4 text-yellow-400" />
-                    <span className="text-white font-medium text-sm">Client Added</span>
+                    <UserPlus className="h-4 w-4 text-pickfirst-yellow" />
+                    <span className="text-foreground font-medium text-sm">Client Added</span>
                   </div>
-                  <div className="text-gray-300 text-xs">
-                    <div><strong>Name:</strong> {inquiry.client.name}</div>
-                    <div><strong>Status:</strong> 
+                  <div className="text-muted-foreground text-xs">
+                    <div><strong className="text-foreground">Name:</strong> {inquiry.client.name}</div>
+                    <div><strong className="text-foreground">Status:</strong> 
                       <span className={`ml-1 ${
-                        inquiry.client.status === 'active' ? 'text-green-400' :
-                        inquiry.client.status === 'lead' ? 'text-blue-400' :
-                        'text-gray-400'
+                        inquiry.client.status === 'active' ? 'text-green-600' :
+                        inquiry.client.status === 'lead' ? 'text-blue-600' :
+                        'text-muted-foreground'
                       }`}>
                         {inquiry.client.status.toUpperCase()}
                       </span>
@@ -558,15 +558,15 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
               {/* Response if exists */}
               {inquiry.agent_response && (
                 <div>
-                  <div className="text-white font-medium text-sm mb-2">Your Response:</div>
-                  <div className="text-gray-300 text-sm bg-green-500/10 p-2 rounded">
+                  <div className="text-foreground font-medium text-sm mb-2">Your Response:</div>
+                  <div className="text-muted-foreground text-sm bg-green-500/10 border border-green-500/20 p-2 rounded">
                     {inquiry.agent_response}
                   </div>
                 </div>
               )}
 
               {/* Timing */}
-              <div className="flex items-center gap-2 text-xs text-gray-400">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 Received: {new Date(inquiry.created_at).toLocaleDateString()} at {new Date(inquiry.created_at).toLocaleTimeString()}
                 {inquiry.responded_at && (
@@ -583,7 +583,7 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
                   <Button
                     size="sm"
                     onClick={() => handleRespondToInquiry(inquiry)}
-                    className="flex-1 bg-pickfirst-yellow text-black hover:bg-pickfirst-amber"
+                    className="flex-1 bg-primary text-primary-foreground hover:bg-pickfirst-amber"
                   >
                     <Reply className="h-4 w-4 mr-1" />
                     Respond
@@ -595,8 +595,8 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
                   onClick={() => handleStartConversation(inquiry)}
                   className={`flex-1 ${
                     inquiry.conversation?.id || (inquiry as any).conversation_id
-                      ? 'bg-green-500/20 text-green-300 border-green-500/30 hover:bg-green-500/30' 
-                      : 'bg-blue-500/20 text-blue-300 border-blue-500/30 hover:bg-blue-500/30'
+                      ? 'bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20' 
+                      : 'bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20'
                   }`}
                 >
                   <MessageSquare className="h-4 w-4 mr-1" />
@@ -610,8 +610,8 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
                     onClick={() => handleConvertLead(inquiry)}
                     className={`flex-1 ${
                       inquiry.client 
-                        ? 'text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/10' 
-                        : 'text-green-500 border-green-500/20 hover:bg-green-500/10'
+                        ? 'text-pickfirst-yellow border-pickfirst-yellow/30 hover:bg-pickfirst-yellow/10' 
+                        : 'text-green-600 border-green-500/30 hover:bg-green-500/10'
                     }`}
                   >
                     {inquiry.client ? (
@@ -632,31 +632,31 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
               {/* Status Summary */}
               <div className="space-y-2">
                 {inquiry.conversation?.id && (
-                  <div className="flex items-center gap-2 text-xs text-green-400 bg-green-500/10 p-2 rounded">
+                  <div className="flex items-center gap-2 text-xs text-green-600 bg-green-500/10 border border-green-500/20 p-2 rounded">
                     <CheckCircle className="h-3 w-3" />
                     Active conversation available
                   </div>
                 )}
                 
                 {inquiry.appointment && (
-                  <div className="flex items-center gap-2 text-xs text-blue-400 bg-blue-500/10 p-2 rounded">
+                  <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-500/10 border border-blue-500/20 p-2 rounded">
                     <Calendar className="h-3 w-3" />
                     Appointment scheduled for {new Date(inquiry.appointment.date).toLocaleDateString()} at {inquiry.appointment.time}
                   </div>
                 )}
                 
                 {inquiry.client && !inquiry.appointment && (
-                  <div className="flex items-center gap-2 text-xs text-yellow-400 bg-yellow-500/10 p-2 rounded">
+                  <div className="flex items-center gap-2 text-xs text-pickfirst-yellow bg-pickfirst-yellow/10 border border-pickfirst-yellow/20 p-2 rounded">
                     <UserPlus className="h-3 w-3" />
                     Client added - ready to schedule appointment
                   </div>
                 )}
                 
                 {!inquiry.agent_response && !inquiry.client && !inquiry.appointment && (
-                  <div className={`flex items-center gap-2 text-xs p-2 rounded ${
+                  <div className={`flex items-center gap-2 text-xs p-2 rounded border ${
                     isNew 
-                      ? 'text-yellow-400 bg-yellow-500/20 animate-pulse' 
-                      : 'text-gray-400 bg-gray-500/10'
+                      ? 'text-pickfirst-yellow bg-pickfirst-yellow/20 border-pickfirst-yellow/30 animate-pulse' 
+                      : 'text-muted-foreground bg-card/80 border-border'
                   }`}>
                     <Clock className="h-3 w-3" />
                     {isNew ? '🆕 New inquiry - awaiting response' : 'New inquiry - awaiting response'}
@@ -671,21 +671,21 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
 
       {/* Response Dialog */}
       <Dialog open={isResponseDialogOpen} onOpenChange={setIsResponseDialogOpen}>
-        <DialogContent className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-pickfirst-yellow/20 text-white">
+        <DialogContent className="pickfirst-glass bg-card text-card-foreground border border-pickfirst-yellow/30">
           <DialogHeader>
-            <DialogTitle className="text-pickfirst-yellow">Respond to Inquiry</DialogTitle>
-            <DialogDescription className="text-gray-300">
+            <DialogTitle className="text-foreground">Respond to Inquiry</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               Send a response to {selectedInquiry?.buyer?.full_name} about {selectedInquiry?.property?.title}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-white text-sm font-medium">Your Response</label>
+              <label className="text-foreground text-sm font-medium">Your Response</label>
               <Textarea
                 placeholder="Thank you for your interest in this property. I'd be happy to provide more information..."
                 value={response}
                 onChange={(e) => setResponse(e.target.value)}
-                className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 mt-2"
+                className="bg-card border-border text-foreground placeholder:text-muted-foreground mt-2"
                 rows={4}
               />
             </div>
@@ -693,14 +693,14 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
               <Button
                 variant="outline"
                 onClick={() => setIsResponseDialogOpen(false)}
-                className="flex-1"
+                className="flex-1 border-border text-muted-foreground hover:bg-muted"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSubmitResponse}
                 disabled={submittingResponse || !response.trim()}
-                className="flex-1 bg-pickfirst-yellow text-black hover:bg-pickfirst-amber"
+                className="flex-1 bg-primary text-primary-foreground hover:bg-pickfirst-amber"
               >
                 {submittingResponse ? 'Sending...' : 'Send Response'}
               </Button>

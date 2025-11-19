@@ -405,7 +405,7 @@ export const Appointments = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-white">Loading appointments...</div>
+        <div className="text-muted-foreground">Loading appointments...</div>
       </div>
     );
   }
@@ -426,48 +426,48 @@ export const Appointments = () => {
 
         {/* Statistics */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
             <CardContent className="p-3 md:p-4 text-center">
-              <div className="text-xl md:text-2xl font-bold text-blue-500">{stats.today}</div>
-              <div className="text-xs md:text-sm text-gray-300">Today</div>
+              <div className="text-xl md:text-2xl font-bold text-blue-600">{stats.today}</div>
+              <div className="text-xs md:text-sm text-muted-foreground">Today</div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
             <CardContent className="p-3 md:p-4 text-center">
-              <div className="text-xl md:text-2xl font-bold text-purple-500">{stats.week}</div>
-              <div className="text-xs md:text-sm text-gray-300">This Week</div>
+              <div className="text-xl md:text-2xl font-bold text-purple-600">{stats.week}</div>
+              <div className="text-xs md:text-sm text-muted-foreground">This Week</div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
             <CardContent className="p-3 md:p-4 text-center">
-              <div className="text-xl md:text-2xl font-bold text-green-500">{stats.confirmed}</div>
-              <div className="text-xs md:text-sm text-gray-300">Confirmed</div>
+              <div className="text-xl md:text-2xl font-bold text-green-600">{stats.confirmed}</div>
+              <div className="text-xs md:text-sm text-muted-foreground">Confirmed</div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
             <CardContent className="p-3 md:p-4 text-center">
-              <div className="text-xl md:text-2xl font-bold text-yellow-500">{stats.pending}</div>
-              <div className="text-xs md:text-sm text-gray-300">Pending</div>
+              <div className="text-xl md:text-2xl font-bold text-pickfirst-yellow">{stats.pending}</div>
+              <div className="text-xs md:text-sm text-muted-foreground">Pending</div>
             </CardContent>
           </Card>
         </div>
 
         {/* Filters */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
           <CardContent className="p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by client or property..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
+                  className="pl-10 bg-card border-border text-foreground placeholder:text-muted-foreground"
                 />
               </div>
               
               <Select value={dateFilter} onValueChange={setDateFilter}>
-                <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                <SelectTrigger className="bg-card border-border text-foreground">
                   <SelectValue placeholder="Filter by date" />
                 </SelectTrigger>
                 <SelectContent>
@@ -480,7 +480,7 @@ export const Appointments = () => {
               </Select>
 
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                <SelectTrigger className="bg-card border-border text-foreground">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -494,7 +494,7 @@ export const Appointments = () => {
               </Select>
 
               <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                <SelectTrigger className="bg-card border-border text-foreground">
                   <SelectValue placeholder="Filter by type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -520,8 +520,8 @@ export const Appointments = () => {
             return (
               <Card 
                 key={appointment.id} 
-                className={`bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border transition-all hover:shadow-lg hover:shadow-pickfirst-yellow/10 ${
-                  isToday ? 'border-pickfirst-yellow/40' : 'border-pickfirst-yellow/20'
+                className={`pickfirst-glass bg-card/90 text-card-foreground border transition-all hover:shadow-lg hover:shadow-pickfirst-yellow/10 ${
+                  isToday ? 'border-pickfirst-yellow/50' : 'border-pickfirst-yellow/30'
                 }`}
               >
                 <CardContent className="p-4 md:p-6">
@@ -531,8 +531,8 @@ export const Appointments = () => {
                       <div className="flex items-start gap-3">
                         <div className="text-2xl flex-shrink-0">{getTypeIcon(appointment.appointment_type)}</div>
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-lg font-semibold text-white truncate">{appointment.client_name}</h3>
-                          <p className="text-pickfirst-yellow font-medium text-sm">{formatAppointmentType(appointment.appointment_type)}</p>
+                          <h3 className="text-lg font-semibold text-foreground truncate">{appointment.client_name}</h3>
+                          <p className="text-primary font-medium text-sm">{formatAppointmentType(appointment.appointment_type)}</p>
                         </div>
                       </div>
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
@@ -547,37 +547,37 @@ export const Appointments = () => {
 
                     {/* Info Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-                      <div className="flex items-center gap-2 text-gray-300">
-                        <Calendar className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Calendar className="h-4 w-4 text-blue-600 flex-shrink-0" />
                         <span className="truncate">{appointmentDate.toLocaleDateString()}</span>
-                        {isToday && <Badge className="bg-blue-500/10 text-blue-500 text-xs ml-auto">Today</Badge>}
+                        {isToday && <Badge className="bg-blue-500/10 text-blue-600 text-xs ml-auto border border-blue-500/20">Today</Badge>}
                       </div>
-                      <div className="flex items-center gap-2 text-gray-300">
-                        <Clock className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="h-4 w-4 text-green-600 flex-shrink-0" />
                         <span>{appointment.time} ({appointment.duration} min)</span>
                       </div>
-                      <div className="flex items-center gap-2 text-gray-300">
-                        <Phone className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Phone className="h-4 w-4 text-purple-600 flex-shrink-0" />
                         <span className="truncate">{appointment.client_phone}</span>
                       </div>
                     </div>
 
                     {/* Address */}
                     <div className="flex items-start gap-2 text-sm">
-                      <MapPin className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-300 break-words">{appointment.property_address}</span>
+                      <MapPin className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-muted-foreground break-words">{appointment.property_address}</span>
                     </div>
 
                     {/* Notes */}
                     {appointment.notes && (
-                      <div className="text-sm text-gray-400 bg-white/5 p-3 rounded">
+                      <div className="text-sm text-muted-foreground bg-card/80 border border-border p-3 rounded">
                         <div className="flex items-center justify-between mb-2">
-                          <strong className="text-white">Notes:</strong>
+                          <strong className="text-foreground">Notes:</strong>
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => openEditNotesDialog(appointment.id)}
-                            className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
                           >
                             <Edit3 className="h-3 w-3" />
                           </Button>
@@ -587,18 +587,18 @@ export const Appointments = () => {
                     )}
 
                     {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-white/10">
+                    <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-border">
                       <div className="flex flex-wrap gap-2 flex-1">
                         {/* Quick Status Change Buttons */}
                         {appointment.status === 'scheduled' && (
                           <div className="flex flex-col gap-1">
-                            <div className="text-xs text-yellow-400 mb-1">
+                            <div className="text-xs text-pickfirst-yellow mb-1">
                               ⏳ Waiting for client response
                             </div>
                             <Button
                               size="sm"
                               onClick={() => openStatusChangeDialog(appointment.id, 'confirmed')}
-                              className="bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500/20 text-xs"
+                              className="bg-green-500/10 text-green-600 border border-green-500/20 hover:bg-green-500/20 text-xs"
                               disabled={updatingStatus === appointment.id}
                             >
                               <Check className="h-3 w-3 mr-1" />
@@ -611,7 +611,7 @@ export const Appointments = () => {
                           <Button
                             size="sm"
                             onClick={() => openStatusChangeDialog(appointment.id, 'completed')}
-                            className="bg-purple-500/10 text-purple-500 border border-purple-500/20 hover:bg-purple-500/20 text-xs"
+                            className="bg-purple-500/10 text-purple-600 border border-purple-500/20 hover:bg-purple-500/20 text-xs"
                             disabled={updatingStatus === appointment.id}
                           >
                             <Check className="h-3 w-3 mr-1" />
@@ -623,7 +623,7 @@ export const Appointments = () => {
                           <Button
                             size="sm"
                             onClick={() => openStatusChangeDialog(appointment.id, 'cancelled')}
-                            className="bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 text-xs"
+                            className="bg-red-500/10 text-red-600 border border-red-500/20 hover:bg-red-500/20 text-xs"
                             disabled={updatingStatus === appointment.id}
                           >
                             <X className="h-3 w-3 mr-1" />
@@ -635,7 +635,7 @@ export const Appointments = () => {
                           <Button
                             size="sm"
                             onClick={() => openRescheduleDialog(appointment.id)}
-                            className="bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 text-xs"
+                            className="bg-blue-500/10 text-blue-600 border border-blue-500/20 hover:bg-blue-500/20 text-xs"
                             disabled={updatingStatus === appointment.id}
                           >
                             <Undo2 className="h-3 w-3 mr-1" />
@@ -647,7 +647,7 @@ export const Appointments = () => {
                           <Button
                             size="sm"
                             onClick={() => openRescheduleDialog(appointment.id)}
-                            className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 hover:bg-yellow-500/20 text-xs"
+                            className="bg-pickfirst-yellow/10 text-pickfirst-yellow border border-pickfirst-yellow/20 hover:bg-pickfirst-yellow/20 text-xs"
                             disabled={updatingStatus === appointment.id}
                           >
                             <CalendarIcon className="h-3 w-3 mr-1" />
@@ -660,7 +660,7 @@ export const Appointments = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => openEditNotesDialog(appointment.id)}
-                          className="text-gray-300 border-white/20 hover:bg-white/5 text-xs"
+                          className="text-muted-foreground border-border hover:bg-muted text-xs"
                         >
                           <MessageSquare className="h-3 w-3 mr-1" />
                           {appointment.notes ? 'Edit Notes' : 'Add Notes'}
@@ -669,7 +669,7 @@ export const Appointments = () => {
 
                       {/* Change Status Dropdown */}
                       <Select onValueChange={(value) => openStatusChangeDialog(appointment.id, value)}>
-                        <SelectTrigger className="w-full sm:w-auto bg-white/5 border-white/20 text-white text-xs">
+                        <SelectTrigger className="w-full sm:w-auto bg-card border-border text-foreground text-xs">
                           <SelectValue placeholder="Change Status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -693,11 +693,11 @@ export const Appointments = () => {
 
         {/* Empty State */}
         {filteredAppointments.length === 0 && (
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
             <CardContent className="p-8 text-center">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-white mb-2">No appointments found</h3>
-              <p className="text-gray-400 mb-4">
+              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No appointments found</h3>
+              <p className="text-muted-foreground mb-4">
                 {searchTerm || filterStatus !== 'all' || filterType !== 'all' || dateFilter !== 'all'
                   ? 'No appointments match your current filters.'
                   : 'You haven\'t scheduled any appointments yet.'}
@@ -719,24 +719,24 @@ export const Appointments = () => {
         <Dialog open={statusChangeDialog.isOpen} onOpenChange={(open) => 
           !open && setStatusChangeDialog({ isOpen: false, appointmentId: '', newStatus: '', currentNotes: '' })
         }>
-          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border border-pickfirst-yellow/20 text-white max-w-md">
+          <DialogContent className="pickfirst-glass bg-card text-card-foreground border border-pickfirst-yellow/30 max-w-md">
             <DialogHeader>
-              <DialogTitle>Change Appointment Status</DialogTitle>
-              <DialogDescription className="text-gray-400">
+              <DialogTitle className="text-foreground">Change Appointment Status</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
                 Update the status to "{statusChangeDialog.newStatus.replace('_', ' ')}" and optionally add notes.
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Notes (Optional)
                 </label>
                 <Textarea
                   value={statusChangeDialog.currentNotes}
                   onChange={(e) => setStatusChangeDialog(prev => ({ ...prev, currentNotes: e.target.value }))}
                   placeholder="Add any additional notes about this status change..."
-                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 min-h-[100px]"
+                  className="bg-card border-border text-foreground placeholder:text-muted-foreground min-h-[100px]"
                 />
               </div>
             </div>
@@ -745,7 +745,7 @@ export const Appointments = () => {
               <Button
                 variant="outline"
                 onClick={() => setStatusChangeDialog({ isOpen: false, appointmentId: '', newStatus: '', currentNotes: '' })}
-                className="border-white/20 text-gray-300 hover:bg-white/5"
+                className="border-border text-muted-foreground hover:bg-muted"
               >
                 Cancel
               </Button>
@@ -755,7 +755,7 @@ export const Appointments = () => {
                   statusChangeDialog.newStatus,
                   statusChangeDialog.currentNotes
                 )}
-                className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber"
+                className="bg-primary text-primary-foreground hover:bg-pickfirst-amber"
                 disabled={updatingStatus === statusChangeDialog.appointmentId}
               >
                 {updatingStatus === statusChangeDialog.appointmentId ? 'Updating...' : 'Update Status'}
@@ -768,24 +768,24 @@ export const Appointments = () => {
         <Dialog open={editNotesDialog.isOpen} onOpenChange={(open) =>
           !open && setEditNotesDialog({ isOpen: false, appointmentId: '', currentNotes: '' })
         }>
-          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border border-pickfirst-yellow/20 text-white max-w-md">
+          <DialogContent className="pickfirst-glass bg-card text-card-foreground border border-pickfirst-yellow/30 max-w-md">
             <DialogHeader>
-              <DialogTitle>Edit Appointment Notes</DialogTitle>
-              <DialogDescription className="text-gray-400">
+              <DialogTitle className="text-foreground">Edit Appointment Notes</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
                 Add or update notes for this appointment.
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Notes
                 </label>
                 <Textarea
                   value={editNotesDialog.currentNotes}
                   onChange={(e) => setEditNotesDialog(prev => ({ ...prev, currentNotes: e.target.value }))}
                   placeholder="Enter your notes here..."
-                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 min-h-[120px]"
+                  className="bg-card border-border text-foreground placeholder:text-muted-foreground min-h-[120px]"
                 />
               </div>
             </div>
@@ -794,13 +794,13 @@ export const Appointments = () => {
               <Button
                 variant="outline"
                 onClick={() => setEditNotesDialog({ isOpen: false, appointmentId: '', currentNotes: '' })}
-                className="border-white/20 text-gray-300 hover:bg-white/5"
+                className="border-border text-muted-foreground hover:bg-muted"
               >
                 Cancel
               </Button>
               <Button
                 onClick={() => handleNotesUpdate(editNotesDialog.appointmentId, editNotesDialog.currentNotes)}
-                className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber"
+                className="bg-primary text-primary-foreground hover:bg-pickfirst-amber"
               >
                 Save Notes
               </Button>
@@ -819,17 +819,17 @@ export const Appointments = () => {
             newTime: '' 
           })
         }>
-          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border border-pickfirst-yellow/20 text-white max-w-md">
+          <DialogContent className="pickfirst-glass bg-card text-card-foreground border border-pickfirst-yellow/30 max-w-md">
             <DialogHeader>
-              <DialogTitle>Reschedule Appointment</DialogTitle>
-              <DialogDescription className="text-gray-400">
+              <DialogTitle className="text-foreground">Reschedule Appointment</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
                 Select a new date and time for this appointment.
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   New Date
                 </label>
                 <Popover>
@@ -837,7 +837,7 @@ export const Appointments = () => {
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal bg-white/5 border-white/20 text-white hover:bg-white/10",
+                        "w-full justify-start text-left font-normal bg-card border-border text-foreground hover:bg-muted",
                         !rescheduleDialog.newDate && "text-muted-foreground"
                       )}
                     >
@@ -845,7 +845,7 @@ export const Appointments = () => {
                       {rescheduleDialog.newDate ? format(rescheduleDialog.newDate, "PPP") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-gray-900 border-gray-700" align="start">
+                  <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
                     <CalendarComponent
                       mode="single"
                       selected={rescheduleDialog.newDate}
@@ -859,14 +859,14 @@ export const Appointments = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   New Time
                 </label>
                 <Input
                   type="time"
                   value={rescheduleDialog.newTime}
                   onChange={(e) => setRescheduleDialog(prev => ({ ...prev, newTime: e.target.value }))}
-                  className="bg-white/5 border-white/20 text-white"
+                  className="bg-card border-border text-foreground"
                 />
               </div>
             </div>
@@ -882,7 +882,7 @@ export const Appointments = () => {
                   newDate: undefined, 
                   newTime: '' 
                 })}
-                className="border-white/20 text-gray-300 hover:bg-white/5"
+                className="border-border text-muted-foreground hover:bg-muted"
               >
                 Cancel
               </Button>
@@ -892,7 +892,7 @@ export const Appointments = () => {
                     handleReschedule(rescheduleDialog.appointmentId, rescheduleDialog.newDate, rescheduleDialog.newTime);
                   }
                 }}
-                className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber"
+                className="bg-primary text-primary-foreground hover:bg-pickfirst-amber"
                 disabled={!rescheduleDialog.newDate || !rescheduleDialog.newTime || updatingStatus === rescheduleDialog.appointmentId}
               >
                 {updatingStatus === rescheduleDialog.appointmentId ? 'Rescheduling...' : 'Reschedule Appointment'}

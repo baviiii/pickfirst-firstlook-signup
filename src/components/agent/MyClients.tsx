@@ -293,22 +293,22 @@ export const MyClients = () => {
       </div>
 
       {/* Filters and Search */}
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search clients by name or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
+                  className="pl-10 bg-card border-border text-foreground placeholder:text-muted-foreground"
                 />
               </div>
             </div>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-[180px] bg-white/5 border-white/20 text-white">
+              <SelectTrigger className="w-[180px] bg-card border-border text-foreground">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -325,36 +325,36 @@ export const MyClients = () => {
 
       {/* Client Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-500">
+            <div className="text-2xl font-bold text-green-600">
               {clients.filter(c => c.status === 'active').length}
             </div>
-            <div className="text-sm text-gray-300">Active Clients</div>
+            <div className="text-sm text-muted-foreground">Active Clients</div>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-500">
+            <div className="text-2xl font-bold text-blue-600">
               {clients.filter(c => c.status === 'lead').length}
             </div>
-            <div className="text-sm text-gray-300">Leads</div>
+            <div className="text-sm text-muted-foreground">Leads</div>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-purple-500">
+            <div className="text-2xl font-bold text-purple-600">
               {clients.filter(c => c.status === 'past_client').length}
             </div>
-            <div className="text-sm text-gray-300">Past Clients</div>
+            <div className="text-sm text-muted-foreground">Past Clients</div>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-pickfirst-yellow">
               {clients.length > 0 ? Math.round(clients.reduce((sum, c) => sum + c.rating, 0) / clients.length * 10) / 10 : 0}
             </div>
-            <div className="text-sm text-gray-300">Avg Rating</div>
+            <div className="text-sm text-muted-foreground">Avg Rating</div>
           </CardContent>
         </Card>
       </div>
@@ -362,16 +362,16 @@ export const MyClients = () => {
       {/* Client List */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-pickfirst-yellow" />
-          <span className="ml-2 text-gray-300">Loading clients...</span>
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading clients...</span>
         </div>
       ) : filteredClients.length === 0 ? (
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
           <CardContent className="p-8 text-center">
-            <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold text-white mb-2">No clients found</h3>
-            <p className="text-gray-300 mb-4">Start by adding your first client to manage your relationships.</p>
-            <Button onClick={() => setIsAddingClient(true)} className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber">
+            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No clients found</h3>
+            <p className="text-muted-foreground mb-4">Start by adding your first client to manage your relationships.</p>
+            <Button onClick={() => setIsAddingClient(true)} className="bg-primary text-primary-foreground hover:bg-pickfirst-amber">
               <Plus className="h-4 w-4 mr-2" />
               Add Your First Client
             </Button>
@@ -380,12 +380,12 @@ export const MyClients = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredClients.map((client) => (
-          <Card key={client.id} className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20 hover:shadow-lg hover:shadow-pickfirst-yellow/10 transition-all">
+          <Card key={client.id} className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:shadow-lg hover:shadow-pickfirst-yellow/10 transition-all">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="text-white text-lg">{client.name}</CardTitle>
-                  <CardDescription className="text-gray-300">{client.email}</CardDescription>
+                  <CardTitle className="text-foreground text-lg">{client.name}</CardTitle>
+                  <CardDescription className="text-muted-foreground">{client.email}</CardDescription>
                 </div>
                 <Badge className={getStatusColor(client.status)}>
                   {client.status.replace('_', ' ')}
@@ -397,22 +397,22 @@ export const MyClients = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2 text-sm">
-                <div className="text-gray-300">
-                  <span className="text-white font-medium">Budget:</span> {client.budget_range}
+                <div className="text-muted-foreground">
+                  <span className="text-foreground font-medium">Budget:</span> {client.budget_range}
                 </div>
-                <div className="text-gray-300">
-                  <span className="text-white font-medium">Property:</span> {client.property_type}
+                <div className="text-muted-foreground">
+                  <span className="text-foreground font-medium">Property:</span> {client.property_type}
                 </div>
-                <div className="text-gray-300">
-                  <span className="text-white font-medium">Areas:</span> {client.preferred_areas.join(', ')}
+                <div className="text-muted-foreground">
+                  <span className="text-foreground font-medium">Areas:</span> {client.preferred_areas.join(', ')}
                 </div>
-                <div className="text-gray-300">
-                  <span className="text-white font-medium">Last Contact:</span> {new Date(client.last_contact).toLocaleDateString()}
+                <div className="text-muted-foreground">
+                  <span className="text-foreground font-medium">Last Contact:</span> {new Date(client.last_contact).toLocaleDateString()}
                 </div>
               </div>
               
               {client.notes && (
-                <div className="text-sm text-gray-400 bg-white/5 p-2 rounded">
+                <div className="text-sm text-muted-foreground bg-card/80 border border-border p-2 rounded">
                   {client.notes}
                 </div>
               )}
@@ -422,7 +422,7 @@ export const MyClients = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => handleContactClient(client, 'phone')}
-                  className="flex-1 text-green-400 border-green-400/30 hover:bg-green-400/20 hover:text-green-300 hover:border-green-400/50"
+                  className="flex-1 text-green-600 border-green-500/30 hover:bg-green-500/20 hover:text-green-700 hover:border-green-500/50"
                 >
                   <Phone className="h-4 w-4" />
                 </Button>
@@ -430,7 +430,7 @@ export const MyClients = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => handleContactClient(client, 'email')}
-                  className="flex-1 text-blue-400 border-blue-400/30 hover:bg-blue-400/20 hover:text-blue-300 hover:border-blue-400/50"
+                  className="flex-1 text-blue-600 border-blue-500/30 hover:bg-blue-500/20 hover:text-blue-700 hover:border-blue-500/50"
                 >
                   <Mail className="h-4 w-4" />
                 </Button>
@@ -438,7 +438,7 @@ export const MyClients = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => handleContactClient(client, 'message')}
-                  className="flex-1 text-purple-400 border-purple-400/30 hover:bg-purple-400/20 hover:text-purple-300 hover:border-purple-400/50"
+                  className="flex-1 text-purple-600 border-purple-500/30 hover:bg-purple-500/20 hover:text-purple-700 hover:border-purple-500/50"
                 >
                   <MessageSquare className="h-4 w-4" />
                 </Button>
@@ -455,7 +455,7 @@ export const MyClients = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => setSelectedClient(client)}
-                  className="text-yellow-400 border-yellow-400/30 hover:bg-yellow-400/20 hover:text-yellow-300 hover:border-yellow-400/50"
+                  className="text-pickfirst-yellow border-pickfirst-yellow/30 hover:bg-pickfirst-yellow/20 hover:text-pickfirst-amber hover:border-pickfirst-yellow/50"
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
@@ -463,7 +463,7 @@ export const MyClients = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => handleDeleteClient(client.id)}
-                  className="text-red-400 border-red-400/30 hover:bg-red-400/20 hover:text-red-300 hover:border-red-400/50"
+                  className="text-red-600 border-red-500/30 hover:bg-red-500/20 hover:text-red-700 hover:border-red-500/50"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -479,22 +479,22 @@ export const MyClients = () => {
         setIsAddingClient(open);
         if (!open) resetClientForm();
       }}>
-        <DialogContent className="bg-gray-900/95 backdrop-blur-xl border border-pickfirst-yellow/20 text-white max-h-[90vh] overflow-y-auto max-w-2xl">
+        <DialogContent className="pickfirst-glass bg-card text-card-foreground border border-pickfirst-yellow/30 max-h-[90vh] overflow-y-auto max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl">Add New Client</DialogTitle>
-            <DialogDescription className="text-gray-300">
+            <DialogTitle className="text-xl text-foreground">Add New Client</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               Search for existing users or add new clients with optional invitation.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-6">
             {/* Step 1: Email Search */}
-            <div className="space-y-3 p-4 bg-white/5 rounded-lg border border-white/10">
+            <div className="space-y-3 p-4 bg-card/80 rounded-lg border border-border">
               <div className="flex items-center gap-2 mb-2">
-                <div className="h-6 w-6 rounded-full bg-pickfirst-yellow text-black flex items-center justify-center text-sm font-bold">1</div>
-                <h3 className="font-semibold text-white">Search by Email (Optional)</h3>
+                <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">1</div>
+                <h3 className="font-semibold text-foreground">Search by Email (Optional)</h3>
               </div>
-              <p className="text-xs text-gray-400 ml-8">Check if the client is already registered in the system.</p>
+              <p className="text-xs text-muted-foreground ml-8">Check if the client is already registered in the system.</p>
               
               <div className="flex gap-2 ml-8">
                 <Input
@@ -505,7 +505,7 @@ export const MyClients = () => {
                     setUserSearched(false);
                     setFoundUser(null);
                   }}
-                  className="bg-white/5 border-white/20 text-white"
+                  className="bg-card border-border text-foreground"
                   placeholder="client@example.com"
                 />
                 <Button 
@@ -529,13 +529,13 @@ export const MyClients = () => {
               {userSearched && foundUser && (
                 <div className="ml-8 bg-green-500/10 border border-green-500/20 rounded-lg p-3">
                   <div className="flex items-start gap-2">
-                    <div className="text-green-400 mt-1">✓</div>
+                    <div className="text-green-600 mt-1">✓</div>
                     <div className="flex-1">
-                      <div className="text-sm text-green-400 font-medium mb-2">User Found in System</div>
-                      <div className="text-sm text-gray-300 space-y-1">
-                        <div><strong>Name:</strong> {foundUser.full_name || 'Not provided'}</div>
-                        <div><strong>Email:</strong> {foundUser.email}</div>
-                        <div><strong>Registered:</strong> {new Date(foundUser.created_at).toLocaleDateString()}</div>
+                      <div className="text-sm text-green-600 font-medium mb-2">User Found in System</div>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <div><strong className="text-foreground">Name:</strong> {foundUser.full_name || 'Not provided'}</div>
+                        <div><strong className="text-foreground">Email:</strong> {foundUser.email}</div>
+                        <div><strong className="text-foreground">Registered:</strong> {new Date(foundUser.created_at).toLocaleDateString()}</div>
                       </div>
                     </div>
                   </div>
@@ -545,10 +545,10 @@ export const MyClients = () => {
               {userSearched && !foundUser && (
                 <div className="ml-8 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
                   <div className="flex items-start gap-2">
-                    <div className="text-blue-400 mt-1">ℹ</div>
+                    <div className="text-blue-600 mt-1">ℹ</div>
                     <div className="flex-1">
-                      <div className="text-sm text-blue-400 font-medium mb-1">Not Registered Yet</div>
-                      <div className="text-xs text-gray-400">
+                      <div className="text-sm text-blue-600 font-medium mb-1">Not Registered Yet</div>
+                      <div className="text-xs text-muted-foreground">
                         This email isn't in our system. You can add them as a client and optionally send an invitation.
                       </div>
                     </div>
@@ -558,55 +558,55 @@ export const MyClients = () => {
             </div>
 
             {/* Step 2: Client Details */}
-            <div className="space-y-3 p-4 bg-white/5 rounded-lg border border-white/10">
+            <div className="space-y-3 p-4 bg-card/80 rounded-lg border border-border">
               <div className="flex items-center gap-2 mb-2">
-                <div className="h-6 w-6 rounded-full bg-pickfirst-yellow text-black flex items-center justify-center text-sm font-bold">2</div>
-                <h3 className="font-semibold text-white">Client Information</h3>
+                <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">2</div>
+                <h3 className="font-semibold text-foreground">Client Information</h3>
               </div>
-              <p className="text-xs text-gray-400 ml-8">Enter the basic details about this client.</p>
+              <p className="text-xs text-muted-foreground ml-8">Enter the basic details about this client.</p>
 
               <div className="ml-8 space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-300">Name *</label>
+                  <label className="text-sm font-medium text-foreground">Name *</label>
                   <Input
                     value={newClient.name}
                     onChange={(e) => setNewClient({...newClient, name: e.target.value})}
-                    className="bg-white/5 border-white/20 text-white"
+                    className="bg-card border-border text-foreground"
                     placeholder="Client full name"
                     disabled={!!foundUser}
                   />
                   {foundUser && (
-                    <p className="text-xs text-gray-400 mt-1">Using name from registered account</p>
+                    <p className="text-xs text-muted-foreground mt-1">Using name from registered account</p>
                   )}
                 </div>
 
                 {!foundUser && !newClient.email && (
                   <div>
-                    <label className="text-sm font-medium text-gray-300">Email</label>
+                    <label className="text-sm font-medium text-foreground">Email</label>
                     <Input
                       type="email"
                       value={newClient.email}
                       onChange={(e) => setNewClient({...newClient, email: e.target.value})}
-                      className="bg-white/5 border-white/20 text-white"
+                      className="bg-card border-border text-foreground"
                       placeholder="client@example.com"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="text-sm font-medium text-gray-300">Phone</label>
+                  <label className="text-sm font-medium text-foreground">Phone</label>
                   <PhoneInput
                     value={newClient.phone}
                     onChange={(value) => setNewClient({...newClient, phone: value})}
-                    className="bg-white/5 border-white/20 text-white"
+                    className="bg-card border-border text-foreground"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-300">Status</label>
+                    <label className="text-sm font-medium text-foreground">Status</label>
                     <Select value={newClient.status} onValueChange={(value) => setNewClient({...newClient, status: value as any})}>
-                      <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                      <SelectTrigger className="bg-card border-border text-foreground">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -618,32 +618,32 @@ export const MyClients = () => {
                     </Select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-300">Property Type</label>
+                    <label className="text-sm font-medium text-foreground">Property Type</label>
                     <Input
                       value={newClient.property_type}
                       onChange={(e) => setNewClient({...newClient, property_type: e.target.value})}
-                      className="bg-white/5 border-white/20 text-white"
+                      className="bg-card border-border text-foreground"
                       placeholder="e.g., Single Family"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-300">Budget Range</label>
+                  <label className="text-sm font-medium text-foreground">Budget Range</label>
                   <Input
                     value={newClient.budget_range}
                     onChange={(e) => setNewClient({...newClient, budget_range: e.target.value})}
-                    className="bg-white/5 border-white/20 text-white"
+                    className="bg-card border-border text-foreground"
                     placeholder="e.g., $300,000 - $500,000"
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-300">Notes</label>
+                  <label className="text-sm font-medium text-foreground">Notes</label>
                   <Textarea
                     value={newClient.notes}
                     onChange={(e) => setNewClient({...newClient, notes: e.target.value})}
-                    className="bg-white/5 border-white/20 text-white"
+                    className="bg-card border-border text-foreground"
                     placeholder="Additional notes..."
                     rows={2}
                   />
@@ -652,12 +652,12 @@ export const MyClients = () => {
             </div>
 
             {/* Step 3: Action Options */}
-            <div className="space-y-3 p-4 bg-white/5 rounded-lg border border-white/10">
+            <div className="space-y-3 p-4 bg-card/80 rounded-lg border border-border">
               <div className="flex items-center gap-2 mb-2">
-                <div className="h-6 w-6 rounded-full bg-pickfirst-yellow text-black flex items-center justify-center text-sm font-bold">3</div>
-                <h3 className="font-semibold text-white">Choose Action</h3>
+                <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">3</div>
+                <h3 className="font-semibold text-foreground">Choose Action</h3>
               </div>
-              <p className="text-xs text-gray-400 ml-8">Select how you want to add this client.</p>
+              <p className="text-xs text-muted-foreground ml-8">Select how you want to add this client.</p>
 
               <div className="ml-8 space-y-3">
                 {/* Option 1: Existing User */}
@@ -752,7 +752,7 @@ export const MyClients = () => {
                     )}
 
                     {!newClient.email && (
-                      <div className="text-xs text-gray-400 ml-4 flex items-start gap-2">
+                      <div className="text-xs text-muted-foreground ml-4 flex items-start gap-2">
                         <div className="mt-0.5">💡</div>
                         <span>Add an email address to enable the invitation option.</span>
                       </div>
@@ -764,10 +764,11 @@ export const MyClients = () => {
           </div>
 
           {/* Footer */}
-          <div className="flex justify-between gap-2 pt-4 border-t border-white/10">
+          <div className="flex justify-between gap-2 pt-4 border-t border-border">
             <Button 
               variant="outline" 
               onClick={resetClientForm}
+              className="border-border text-muted-foreground hover:bg-muted"
             >
               Cancel
             </Button>
@@ -777,10 +778,10 @@ export const MyClients = () => {
 
       {/* Edit Client Dialog */}
       <Dialog open={!!selectedClient} onOpenChange={(open) => !open && setSelectedClient(null)}>
-        <DialogContent className="bg-gray-900/95 backdrop-blur-xl border border-pickfirst-yellow/20 text-white max-h-[90vh] overflow-y-auto">
+        <DialogContent className="pickfirst-glass bg-card text-card-foreground border border-pickfirst-yellow/30 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Client</DialogTitle>
-            <DialogDescription className="text-gray-300">
+            <DialogTitle className="text-foreground">Edit Client</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               Update client information.
             </DialogDescription>
           </DialogHeader>
@@ -788,41 +789,41 @@ export const MyClients = () => {
           {selectedClient && (
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-300">Name</label>
+                <label className="text-sm font-medium text-foreground">Name</label>
                 <Input
                   value={selectedClient.name}
                   onChange={(e) => setSelectedClient({...selectedClient, name: e.target.value})}
-                  className="bg-white/5 border-white/20 text-white"
+                  className="bg-card border-border text-foreground"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-300">Email</label>
+                <label className="text-sm font-medium text-foreground">Email</label>
                 <Input
                   type="email"
                   value={selectedClient.email || ''}
                   onChange={(e) => setSelectedClient({...selectedClient, email: e.target.value})}
-                  className="bg-white/5 border-white/20 text-white"
+                  className="bg-card border-border text-foreground"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-300">Phone</label>
+                <label className="text-sm font-medium text-foreground">Phone</label>
                 <PhoneInput
                   value={selectedClient.phone || ''}
                   onChange={(value) => setSelectedClient({...selectedClient, phone: value})}
-                  className="bg-white/5 border-white/20 text-white"
+                  className="bg-card border-border text-foreground"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-300">Status</label>
+                  <label className="text-sm font-medium text-foreground">Status</label>
                   <Select 
                     value={selectedClient.status} 
                     onValueChange={(value) => setSelectedClient({...selectedClient, status: value as any})}
                   >
-                    <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                    <SelectTrigger className="bg-card border-border text-foreground">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -834,30 +835,30 @@ export const MyClients = () => {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-300">Property Type</label>
+                  <label className="text-sm font-medium text-foreground">Property Type</label>
                   <Input
                     value={selectedClient.property_type || ''}
                     onChange={(e) => setSelectedClient({...selectedClient, property_type: e.target.value})}
-                    className="bg-white/5 border-white/20 text-white"
+                    className="bg-card border-border text-foreground"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-300">Budget Range</label>
+                <label className="text-sm font-medium text-foreground">Budget Range</label>
                 <Input
                   value={selectedClient.budget_range || ''}
                   onChange={(e) => setSelectedClient({...selectedClient, budget_range: e.target.value})}
-                  className="bg-white/5 border-white/20 text-white"
+                  className="bg-card border-border text-foreground"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-300">Notes</label>
+                <label className="text-sm font-medium text-foreground">Notes</label>
                 <Textarea
                   value={selectedClient.notes || ''}
                   onChange={(e) => setSelectedClient({...selectedClient, notes: e.target.value})}
-                  className="bg-white/5 border-white/20 text-white"
+                  className="bg-card border-border text-foreground"
                   rows={3}
                 />
               </div>
@@ -868,6 +869,7 @@ export const MyClients = () => {
             <Button 
               variant="outline" 
               onClick={() => setSelectedClient(null)}
+              className="border-border text-muted-foreground hover:bg-muted"
             >
               Cancel
             </Button>
@@ -894,7 +896,7 @@ export const MyClients = () => {
                 setClients(clients.map(c => c.id === selectedClient.id ? selectedClient : c));
                 setSelectedClient(null);
               }}
-              className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber"
+              className="bg-primary text-primary-foreground hover:bg-pickfirst-amber"
             >
               Save Changes
             </Button>

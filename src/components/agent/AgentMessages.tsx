@@ -283,10 +283,10 @@ export const AgentMessages = () => {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-900 to-black">
+      <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pickfirst-yellow mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading conversations...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading conversations...</p>
         </div>
       </div>
     );
@@ -297,10 +297,10 @@ export const AgentMessages = () => {
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar - Conversations List */}
         <div 
-          className={`${showConversations ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-80 border-r bg-card`}
+          className={`${showConversations ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-80 border-r pickfirst-glass bg-card/90`}
         >
-          <div className="p-4 border-b">
-            <h2 className="text-xl font-semibold">Messages</h2>
+          <div className="p-4 border-b border-border">
+            <h2 className="text-xl font-semibold text-foreground">Messages</h2>
           </div>
           <div className="flex-1 overflow-y-auto">
             {filteredConversations.map((conv) => (
@@ -308,8 +308,8 @@ export const AgentMessages = () => {
                 key={conv.id}
                 className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
                   selectedConversation?.id === conv.id 
-                    ? 'bg-pickfirst-yellow/20 border-pickfirst-yellow shadow-md' 
-                    : 'border-gray-700 hover:bg-gray-800/50 hover:border-gray-600'
+                    ? 'bg-primary/20 border-primary shadow-md' 
+                    : 'border-border hover:bg-card/80 hover:border-pickfirst-yellow/40'
                 }`}
                 onClick={() => handleConversationSelect(conv)}
               >
@@ -322,21 +322,21 @@ export const AgentMessages = () => {
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between mb-1">
-                      <div className="font-medium text-white text-sm truncate">
+                      <div className="font-medium text-foreground text-sm truncate">
                         {conv.client_profile?.full_name || 'Unknown User'}
                       </div>
                       {conv.unread_count && conv.unread_count > 0 && (
-                        <Badge className="bg-pickfirst-yellow text-black text-xs ml-2 flex-shrink-0">
+                        <Badge className="bg-primary text-primary-foreground text-xs ml-2 flex-shrink-0">
                           {conv.unread_count}
                         </Badge>
                       )}
                     </div>
-                    <div className="text-sm font-medium mb-1 text-gray-300 truncate">
+                    <div className="text-sm font-medium mb-1 text-muted-foreground truncate">
                       {conv.subject}
                     </div>
                     {/* Enhanced property inquiry display */}
                     {conv.property && (
-                      <div className="text-xs text-blue-400 mb-1 truncate">
+                      <div className="text-xs text-blue-600 mb-1 truncate">
                         📍 {conv.property.title}
                       </div>
                     )}
@@ -347,7 +347,7 @@ export const AgentMessages = () => {
                       </div>
                     )}
                     {conv.last_message_at && (
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-muted-foreground">
                         {new Date(conv.last_message_at).toLocaleDateString([], { 
                           month: 'short', 
                           day: 'numeric',
@@ -364,10 +364,10 @@ export const AgentMessages = () => {
         </div>
 
         {/* Main Content - Messages */}
-        <div className={`${!showConversations ? 'flex' : 'hidden'} lg:flex flex-col flex-1 bg-background`}>
+        <div className={`${!showConversations ? 'flex' : 'hidden'} lg:flex flex-col flex-1`}>
           {selectedConversation ? (
             <>
-              <div className="border-b p-4 flex items-center justify-between bg-card">
+              <div className="border-b border-border p-4 flex items-center justify-between pickfirst-glass bg-card/90">
                 <div className="flex items-center space-x-4">
                   <Button 
                     variant="ghost" 
@@ -385,7 +385,7 @@ export const AgentMessages = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="font-medium">
+                      <h3 className="font-medium text-foreground">
                         {selectedConversation.client_profile?.full_name || 'Unknown Client'}
                       </h3>
                       <p className="text-sm text-muted-foreground">
@@ -417,8 +417,8 @@ export const AgentMessages = () => {
                     <div
                       className={`max-w-[85%] md:max-w-[70%] p-3 rounded-2xl break-words ${
                         msg.sender_id === user?.id
-                          ? 'bg-pickfirst-yellow text-black rounded-br-md'
-                          : 'bg-gray-800 text-white rounded-bl-md'
+                          ? 'bg-primary text-primary-foreground rounded-br-md'
+                          : 'bg-card/80 text-foreground rounded-bl-md border border-border'
                       }`}
                       style={{
                         wordWrap: 'break-word',
@@ -430,7 +430,7 @@ export const AgentMessages = () => {
                         {msg.content}
                       </div>
                       <div className={`text-xs mt-1 ${
-                        msg.sender_id === user?.id ? 'text-black/70' : 'text-gray-400'
+                        msg.sender_id === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
                       }`}>
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
@@ -441,20 +441,21 @@ export const AgentMessages = () => {
               </div>
 
               {/* Message Input */}
-              <div className="border-t p-4 bg-card">
+              <div className="border-t border-border p-4 pickfirst-glass bg-card/90">
                 <div className="flex items-end space-x-2">
                   <Textarea
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
                     placeholder="Type a message..."
-                    className="min-h-[40px] max-h-32 resize-none"
+                    className="min-h-[40px] max-h-32 resize-none bg-card border-border text-foreground placeholder:text-muted-foreground"
                     rows={1}
                   />
                   <Button 
                     size="icon" 
                     onClick={handleSendMessage}
                     disabled={!newMessage.trim() || sending}
+                    className="bg-primary text-primary-foreground hover:bg-pickfirst-amber"
                   >
                     <Send className="h-5 w-5" />
                   </Button>
@@ -465,7 +466,7 @@ export const AgentMessages = () => {
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center space-y-2 max-w-md p-8">
                 <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground" />
-                <h3 className="text-lg font-medium">No conversation selected</h3>
+                <h3 className="text-lg font-medium text-foreground">No conversation selected</h3>
                 <p className="text-sm text-muted-foreground">
                   Select a conversation or start a new one
                 </p>
@@ -477,43 +478,43 @@ export const AgentMessages = () => {
 
       {/* New Message Dialog */}
       <Dialog open={isNewMessageOpen} onOpenChange={setIsNewMessageOpen}>
-        <DialogContent className="bg-gray-900 border border-pickfirst-yellow/20">
+        <DialogContent className="pickfirst-glass bg-card text-card-foreground border border-pickfirst-yellow/30">
           <DialogHeader>
-            <DialogTitle className="text-white">Send New Message</DialogTitle>
+            <DialogTitle className="text-foreground">Send New Message</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="clientEmail" className="text-white">Client Email</Label>
+              <Label htmlFor="clientEmail" className="text-foreground">Client Email</Label>
               <Input
                 id="clientEmail"
                 type="email"
                 placeholder="client@example.com"
                 value={newMessageForm.clientEmail}
                 onChange={(e) => setNewMessageForm({...newMessageForm, clientEmail: e.target.value})}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-card border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
             <div>
-              <Label htmlFor="subject" className="text-white">Subject</Label>
+              <Label htmlFor="subject" className="text-foreground">Subject</Label>
               <Input
                 id="subject"
                 placeholder="Message subject"
                 value={newMessageForm.subject}
                 onChange={(e) => setNewMessageForm({...newMessageForm, subject: e.target.value})}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-card border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
             <div>
-              <Label htmlFor="content" className="text-white">Message</Label>
+              <Label htmlFor="content" className="text-foreground">Message</Label>
               <Textarea
                 id="content"
                 placeholder="Type your message..."
-                className="min-h-[100px] bg-gray-800 border-gray-700 text-white resize-none"
+                className="min-h-[100px] bg-card border-border text-foreground placeholder:text-muted-foreground resize-none"
                 value={newMessageForm.content}
                 onChange={(e) => setNewMessageForm({...newMessageForm, content: e.target.value})}
               />
             </div>
-            <Button onClick={handleNewMessage} className="w-full bg-pickfirst-yellow text-black hover:bg-pickfirst-yellow/90">
+            <Button onClick={handleNewMessage} className="w-full bg-primary text-primary-foreground hover:bg-pickfirst-amber">
               Send Message
             </Button>
           </div>
