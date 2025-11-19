@@ -162,136 +162,21 @@ const BuyerDashboardNewComponent = () => {
       <NewUserSetupDialog />
       
       <div className="space-y-6">
-        {/* Stats Overview - Elegant Beige/Yellow System Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Inquiries Card */}
-          <Card 
-            className={`bg-gradient-to-br from-yellow-600/15 via-amber-500/10 to-orange-400/10 backdrop-blur-sm border-yellow-700/30 hover:border-yellow-600/50 hover:shadow-xl hover:shadow-yellow-600/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-0 ${
-              hasNewNotification('inquiries') ? 'animate-pulse-border' : ''
-            }`}
-            onClick={() => { clearCardNotifications('inquiries'); navigate('/buyer-account-settings?tab=favorites'); }}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-yellow-900/70 mb-1">Inquiries Sent</p>
-                  <p className="text-4xl font-bold text-yellow-900">{loadingMetrics ? '...' : metrics?.totalInquiries || 0}</p>
-                </div>
-                <div className="relative">
-                  <div className="absolute inset-0 bg-yellow-600/20 rounded-full blur-xl"></div>
-                  <MessageSquare className="h-12 w-12 text-yellow-700 relative" />
-                  {cardCounts.inquiries > 0 && (
-                    <span className={`absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 bg-red-600 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg ${
-                      hasNewNotification('inquiries') ? 'animate-bounce' : ''
-                    }`}>
-                      {cardCounts.inquiries > 99 ? '99+' : cardCounts.inquiries}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Saved Properties Card */}
-          <Card 
-            className={`bg-gradient-to-br from-amber-600/15 via-yellow-500/10 to-orange-500/10 backdrop-blur-sm border-amber-700/30 hover:border-amber-600/50 hover:shadow-xl hover:shadow-amber-600/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-50 ${
-              hasNewNotification('favorites') ? 'animate-pulse-border' : ''
-            }`}
-            onClick={() => { clearCardNotifications('favorites'); navigate('/saved-properties'); }}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-amber-900/70 mb-1">Saved Properties</p>
-                  <p className="text-4xl font-bold text-amber-900">{loadingMetrics ? '...' : metrics?.totalFavorites || 0}</p>
-                </div>
-                <div className="relative">
-                  <div className="absolute inset-0 bg-amber-600/20 rounded-full blur-xl"></div>
-                  <Heart className="h-12 w-12 text-amber-700 relative" />
-                  {cardCounts.favorites > 0 && (
-                    <span className={`absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 bg-red-600 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg ${
-                      hasNewNotification('favorites') ? 'animate-bounce' : ''
-                    }`}>
-                      {cardCounts.favorites > 99 ? '99+' : cardCounts.favorites}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Saved Searches Card */}
-          <Card 
-            className={`bg-gradient-to-br from-yellow-500/15 via-amber-600/10 to-orange-600/10 backdrop-blur-sm border-yellow-600/30 hover:border-yellow-700/50 hover:shadow-xl hover:shadow-yellow-700/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-100 ${
-              hasNewNotification('alerts') ? 'animate-pulse-border' : ''
-            }`}
-            onClick={() => { clearCardNotifications('alerts'); navigate('/search-filters'); }}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-yellow-900/70 mb-1">Saved Searches</p>
-                  <p className="text-4xl font-bold text-yellow-900">{loadingMetrics ? '...' : metrics?.savedSearches || 0}</p>
-                </div>
-                <div className="relative">
-                  <div className="absolute inset-0 bg-yellow-600/20 rounded-full blur-xl"></div>
-                  <Filter className="h-12 w-12 text-yellow-700 relative" />
-                  {cardCounts.alerts > 0 && (
-                    <span className={`absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 bg-red-600 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg ${
-                      hasNewNotification('alerts') ? 'animate-bounce' : ''
-                    }`}>
-                      {cardCounts.alerts > 99 ? '99+' : cardCounts.alerts}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Conversations Card */}
-          <Card 
-            className={`bg-gradient-to-br from-orange-600/15 via-amber-500/10 to-yellow-500/10 backdrop-blur-sm border-orange-700/30 hover:border-orange-600/50 hover:shadow-xl hover:shadow-orange-600/20 transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-150 ${
-              hasNewNotification('messages') ? 'animate-pulse-border' : ''
-            }`}
-            onClick={() => { clearCardNotifications('messages'); navigate('/buyer-messages'); }}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-orange-900/70 mb-1">Conversations</p>
-                  <p className="text-4xl font-bold text-orange-900">{loadingMetrics ? '...' : metrics?.totalConversations || 0}</p>
-                </div>
-                <div className="relative">
-                  <div className="absolute inset-0 bg-orange-600/20 rounded-full blur-xl"></div>
-                  <MessageSquare className="h-12 w-12 text-orange-700 relative" />
-                  {cardCounts.messages > 0 && (
-                    <span className={`absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 bg-red-600 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg ${
-                      hasNewNotification('messages') ? 'animate-bounce' : ''
-                    }`}>
-                      {cardCounts.messages > 99 ? '99+' : cardCounts.messages}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Personalized Property Recommendations */}
-        <div className="dashboard-animate-fade-scale dashboard-delay-200">
+        {/* Personalized Property Recommendations - Main Focus */}
+        <div className="dashboard-animate-fade-scale dashboard-delay-0">
           <PersonalizedPropertyRecommendations />
         </div>
         
-        {/* Upcoming Appointments - Beautiful Beige Card */}
-        <Card className="bg-gradient-to-br from-amber-50/80 via-yellow-50/70 to-orange-50/80 backdrop-blur-sm border-yellow-700/30 shadow-xl hover:shadow-2xl hover:shadow-yellow-600/20 transition-all duration-300 dashboard-animate-fade-up dashboard-delay-300">
-          <CardHeader className="border-b border-yellow-700/20 bg-gradient-to-r from-yellow-600/10 to-amber-500/10">
+        {/* Upcoming Appointments */}
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-xl hover:shadow-2xl transition-all duration-300 dashboard-animate-fade-up dashboard-delay-200">
+          <CardHeader className="border-b border-border">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2 text-yellow-900">
-                  <Calendar className="h-5 w-5 text-yellow-700" />
+                <CardTitle className="flex items-center gap-2 text-foreground">
+                  <Calendar className="h-5 w-5 text-primary" />
                   Upcoming Appointments
                 </CardTitle>
-                <CardDescription className="text-amber-800/70">
+                <CardDescription className="text-muted-foreground">
                   Your scheduled property viewings
                 </CardDescription>
               </div>
@@ -299,7 +184,7 @@ const BuyerDashboardNewComponent = () => {
                 variant="outline" 
                 size="sm"
                 onClick={() => navigate('/buyer-account-settings?tab=appointments')}
-                className="text-yellow-900 hover:text-yellow-700 border-yellow-700/40 hover:bg-yellow-600/10 hover:border-yellow-600/60 transition-all duration-300"
+                className="text-muted-foreground hover:text-foreground border-border hover:bg-muted transition-all duration-300"
               >
                 View All
               </Button>
@@ -308,38 +193,38 @@ const BuyerDashboardNewComponent = () => {
           <CardContent className="pt-6">
             {loadingAppointments ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-700"></div>
-                <span className="ml-3 text-yellow-900 font-medium">Loading appointments...</span>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <span className="ml-3 text-foreground font-medium">Loading appointments...</span>
               </div>
             ) : appointments.length === 0 ? (
               <div className="text-center py-8">
-                <Calendar className="h-12 w-12 text-yellow-700/50 mx-auto mb-3" />
-                <div className="text-yellow-900 font-medium">No appointments scheduled yet</div>
-                <div className="text-amber-800/70 text-sm mt-1">Agents will schedule appointments with you here</div>
+                <Calendar className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
+                <div className="text-foreground font-medium">No appointments scheduled yet</div>
+                <div className="text-muted-foreground text-sm mt-1">Agents will schedule appointments with you here</div>
               </div>
             ) : (
               <div className="space-y-3">
                 {appointments.slice(0, 3).map((appt) => (
                   <div
                     key={appt.id}
-                    className="p-4 rounded-xl border border-yellow-700/20 bg-white/60 hover:bg-white/80 backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:shadow-yellow-600/10"
+                    className="p-4 rounded-xl border border-border bg-card/80 hover:bg-card transition-all duration-300 hover:shadow-lg"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="secondary" className="uppercase text-xs bg-yellow-600/20 text-yellow-900 border-yellow-600/30">
+                          <Badge variant="secondary" className="uppercase text-xs bg-primary/10 text-primary border-primary/20">
                             {appt.appointment_type?.replace('_', ' ') || 'Meeting'}
                           </Badge>
-                          <span className="font-semibold text-sm flex items-center gap-1 text-yellow-900">
-                            <Clock className="h-3.5 w-3.5 text-yellow-700" />
+                          <span className="font-semibold text-sm flex items-center gap-1 text-foreground">
+                            <Clock className="h-3.5 w-3.5 text-primary" />
                             {appt.date} @ {appt.time}
                           </span>
                         </div>
                         {appt.property?.title && (
-                          <div className="text-sm font-medium text-amber-900">{appt.property.title}</div>
+                          <div className="text-sm font-medium text-foreground">{appt.property.title}</div>
                         )}
                         {appt.agent && (
-                          <div className="text-xs text-amber-800/70">
+                          <div className="text-xs text-muted-foreground">
                             With: <span className="font-medium">{appt.agent.full_name}</span>
                           </div>
                         )}
@@ -379,10 +264,10 @@ const BuyerDashboardNewComponent = () => {
         </Card>
 
         {/* Property Comparison Tool */}
-        <Card className="bg-gradient-to-br from-amber-50/80 via-yellow-50/70 to-orange-50/80 backdrop-blur-sm border-yellow-700/30 shadow-xl hover:shadow-2xl hover:shadow-yellow-600/20 transition-all duration-300 dashboard-animate-fade-scale dashboard-delay-400">
-          <CardHeader className="border-b border-yellow-700/20 bg-gradient-to-r from-yellow-600/10 to-amber-500/10">
-            <CardTitle className="text-yellow-900">Property Comparison Tool</CardTitle>
-            <CardDescription className="text-amber-800/70">Compare properties side by side</CardDescription>
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-xl hover:shadow-2xl transition-all duration-300 dashboard-animate-fade-scale dashboard-delay-300">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-foreground">Property Comparison Tool</CardTitle>
+            <CardDescription className="text-muted-foreground">Compare properties side by side</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <PropertyComparisonTool />
@@ -390,18 +275,210 @@ const BuyerDashboardNewComponent = () => {
         </Card>
 
         {/* Property Alerts */}
-        <Card className="bg-gradient-to-br from-amber-50/80 via-yellow-50/70 to-orange-50/80 backdrop-blur-sm border-yellow-700/30 shadow-xl hover:shadow-2xl hover:shadow-yellow-600/20 transition-all duration-300 dashboard-animate-fade-scale dashboard-delay-500">
-          <CardHeader className="border-b border-yellow-700/20 bg-gradient-to-r from-yellow-600/10 to-amber-500/10">
-            <CardTitle className="text-yellow-900 flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-700" />
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-xl hover:shadow-2xl transition-all duration-300 dashboard-animate-fade-scale dashboard-delay-400">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-primary" />
               Property Alerts
             </CardTitle>
-            <CardDescription className="text-amber-800/70">Get notified about new listings matching your criteria</CardDescription>
+            <CardDescription className="text-muted-foreground">Get notified about new listings matching your criteria</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <PropertyAlerts />
           </CardContent>
         </Card>
+
+        {/* Stats Overview - Moved to Bottom */}
+        {/* Mobile Banner View */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+          <div className="grid grid-cols-4 gap-1 p-2">
+            {/* Inquiries */}
+            <button
+              onClick={() => { clearCardNotifications('inquiries'); navigate('/buyer-account-settings?tab=favorites'); }}
+              className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-50 transition-colors relative"
+            >
+              <div className="relative">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                {cardCounts.inquiries > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-600 rounded-full text-[10px] flex items-center justify-center text-white font-bold">
+                    {cardCounts.inquiries > 9 ? '9+' : cardCounts.inquiries}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-medium text-foreground mt-1">Inquiries</span>
+              <span className="text-xs font-bold text-primary">{loadingMetrics ? '...' : metrics?.totalInquiries || 0}</span>
+            </button>
+
+            {/* Saved Properties */}
+            <button
+              onClick={() => { clearCardNotifications('favorites'); navigate('/saved-properties'); }}
+              className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-50 transition-colors relative"
+            >
+              <div className="relative">
+                <Heart className="h-5 w-5 text-primary" />
+                {cardCounts.favorites > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-600 rounded-full text-[10px] flex items-center justify-center text-white font-bold">
+                    {cardCounts.favorites > 9 ? '9+' : cardCounts.favorites}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-medium text-foreground mt-1">Saved</span>
+              <span className="text-xs font-bold text-primary">{loadingMetrics ? '...' : metrics?.totalFavorites || 0}</span>
+            </button>
+
+            {/* Saved Searches */}
+            <button
+              onClick={() => { clearCardNotifications('alerts'); navigate('/search-filters'); }}
+              className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-50 transition-colors relative"
+            >
+              <div className="relative">
+                <Filter className="h-5 w-5 text-primary" />
+                {cardCounts.alerts > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-600 rounded-full text-[10px] flex items-center justify-center text-white font-bold">
+                    {cardCounts.alerts > 9 ? '9+' : cardCounts.alerts}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-medium text-foreground mt-1">Searches</span>
+              <span className="text-xs font-bold text-primary">{loadingMetrics ? '...' : metrics?.savedSearches || 0}</span>
+            </button>
+
+            {/* Conversations */}
+            <button
+              onClick={() => { clearCardNotifications('messages'); navigate('/buyer-messages'); }}
+              className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-50 transition-colors relative"
+            >
+              <div className="relative">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                {cardCounts.messages > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-600 rounded-full text-[10px] flex items-center justify-center text-white font-bold">
+                    {cardCounts.messages > 9 ? '9+' : cardCounts.messages}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-medium text-foreground mt-1">Messages</span>
+              <span className="text-xs font-bold text-primary">{loadingMetrics ? '...' : metrics?.totalConversations || 0}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop Full Cards View */}
+        <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Inquiries Card */}
+          <Card 
+            className={`pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-600 ${
+              hasNewNotification('inquiries') ? 'animate-pulse-border' : ''
+            }`}
+            onClick={() => { clearCardNotifications('inquiries'); navigate('/buyer-account-settings?tab=favorites'); }}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Inquiries Sent</p>
+                  <p className="text-4xl font-bold text-foreground">{loadingMetrics ? '...' : metrics?.totalInquiries || 0}</p>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl"></div>
+                  <MessageSquare className="h-12 w-12 text-primary relative" />
+                  {cardCounts.inquiries > 0 && (
+                    <span className={`absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 bg-red-600 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg ${
+                      hasNewNotification('inquiries') ? 'animate-bounce' : ''
+                    }`}>
+                      {cardCounts.inquiries > 99 ? '99+' : cardCounts.inquiries}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Saved Properties Card */}
+          <Card 
+            className={`pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-650 ${
+              hasNewNotification('favorites') ? 'animate-pulse-border' : ''
+            }`}
+            onClick={() => { clearCardNotifications('favorites'); navigate('/saved-properties'); }}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Saved Properties</p>
+                  <p className="text-4xl font-bold text-foreground">{loadingMetrics ? '...' : metrics?.totalFavorites || 0}</p>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl"></div>
+                  <Heart className="h-12 w-12 text-primary relative" />
+                  {cardCounts.favorites > 0 && (
+                    <span className={`absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 bg-red-600 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg ${
+                      hasNewNotification('favorites') ? 'animate-bounce' : ''
+                    }`}>
+                      {cardCounts.favorites > 99 ? '99+' : cardCounts.favorites}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Saved Searches Card */}
+          <Card 
+            className={`pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-700 ${
+              hasNewNotification('alerts') ? 'animate-pulse-border' : ''
+            }`}
+            onClick={() => { clearCardNotifications('alerts'); navigate('/search-filters'); }}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Saved Searches</p>
+                  <p className="text-4xl font-bold text-foreground">{loadingMetrics ? '...' : metrics?.savedSearches || 0}</p>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl"></div>
+                  <Filter className="h-12 w-12 text-primary relative" />
+                  {cardCounts.alerts > 0 && (
+                    <span className={`absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 bg-red-600 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg ${
+                      hasNewNotification('alerts') ? 'animate-bounce' : ''
+                    }`}>
+                      {cardCounts.alerts > 99 ? '99+' : cardCounts.alerts}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Conversations Card */}
+          <Card 
+            className={`pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-750 ${
+              hasNewNotification('messages') ? 'animate-pulse-border' : ''
+            }`}
+            onClick={() => { clearCardNotifications('messages'); navigate('/buyer-messages'); }}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Conversations</p>
+                  <p className="text-4xl font-bold text-foreground">{loadingMetrics ? '...' : metrics?.totalConversations || 0}</p>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl"></div>
+                  <MessageSquare className="h-12 w-12 text-primary relative" />
+                  {cardCounts.messages > 0 && (
+                    <span className={`absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 bg-red-600 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg ${
+                      hasNewNotification('messages') ? 'animate-bounce' : ''
+                    }`}>
+                      {cardCounts.messages > 99 ? '99+' : cardCounts.messages}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Spacer for mobile banner */}
+        <div className="md:hidden h-20"></div>
       </div>
     </BuyerLayout>
   );

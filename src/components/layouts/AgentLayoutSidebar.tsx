@@ -113,160 +113,7 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
   ];
 
   return (
-    <div className="flex min-h-screen relative overflow-hidden">
-      {/* Animated Flowing Water Background - Multiple Layers */}
-      <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-yellow-50/50 to-orange-50"></div>
-      
-      {/* Flowing Gradient Waves - Layer 1 */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute w-[200%] h-[200%] -top-1/2 -left-1/2"
-          style={{
-            background: 'radial-gradient(circle at 30% 50%, rgba(251, 191, 36, 0.3) 0%, transparent 50%)',
-            animation: 'flow1 25s ease-in-out infinite',
-          }}
-        />
-        <div 
-          className="absolute w-[200%] h-[200%] -top-1/2 -right-1/2"
-          style={{
-            background: 'radial-gradient(circle at 70% 50%, rgba(245, 158, 11, 0.25) 0%, transparent 50%)',
-            animation: 'flow2 30s ease-in-out infinite',
-            animationDelay: '5s'
-          }}
-        />
-        <div 
-          className="absolute w-[200%] h-[200%] -bottom-1/2 -left-1/2"
-          style={{
-            background: 'radial-gradient(circle at 40% 50%, rgba(249, 115, 22, 0.2) 0%, transparent 50%)',
-            animation: 'flow3 35s ease-in-out infinite',
-            animationDelay: '10s'
-          }}
-        />
-      </div>
-
-      {/* Floating Liquid Blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Large flowing blob - moves like water */}
-        <div 
-          className="absolute w-[600px] h-[600px] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(251, 191, 36, 0.4) 0%, rgba(245, 158, 11, 0.2) 40%, transparent 70%)',
-            filter: 'blur(60px)',
-            animation: 'floatBlob1 20s ease-in-out infinite',
-            top: '10%',
-            left: '20%'
-          }}
-        />
-        
-        {/* Medium flowing blob */}
-        <div 
-          className="absolute w-[500px] h-[500px] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(245, 158, 11, 0.35) 0%, rgba(249, 115, 22, 0.2) 40%, transparent 70%)',
-            filter: 'blur(50px)',
-            animation: 'floatBlob2 25s ease-in-out infinite',
-            bottom: '15%',
-            right: '15%',
-            animationDelay: '7s'
-          }}
-        />
-        
-        {/* Small accent blob */}
-        <div 
-          className="absolute w-[400px] h-[400px] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(252, 211, 77, 0.3) 0%, rgba(251, 191, 36, 0.15) 40%, transparent 70%)',
-            filter: 'blur(40px)',
-            animation: 'floatBlob3 18s ease-in-out infinite',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            animationDelay: '3s'
-          }}
-        />
-
-        {/* Additional flowing particles */}
-        <div 
-          className="absolute w-[300px] h-[300px] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(251, 191, 36, 0.25) 0%, transparent 60%)',
-            filter: 'blur(35px)',
-            animation: 'floatBlob4 22s ease-in-out infinite',
-            top: '70%',
-            left: '10%',
-            animationDelay: '12s'
-          }}
-        />
-        
-        <div 
-          className="absolute w-[350px] h-[350px] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(245, 158, 11, 0.3) 0%, transparent 60%)',
-            filter: 'blur(45px)',
-            animation: 'floatBlob5 28s ease-in-out infinite',
-            top: '20%',
-            right: '25%',
-            animationDelay: '5s'
-          }}
-        />
-      </div>
-
-      {/* Subtle shimmer overlay */}
-      <div 
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.03) 50%, transparent 70%)',
-          backgroundSize: '200% 200%',
-          animation: 'shimmer 15s ease-in-out infinite'
-        }}
-      />
-
-      {/* Elegant texture overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_2px_2px,rgba(180,83,9,0.02)_1px,transparent_0)] bg-[length:32px_32px] pointer-events-none"></div>
-
-      {/* Add keyframe animations */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes flow1 {
-          0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          33% { transform: translate(30%, 20%) rotate(120deg); }
-          66% { transform: translate(-20%, 30%) rotate(240deg); }
-        }
-        @keyframes flow2 {
-          0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          33% { transform: translate(-25%, -15%) rotate(-120deg); }
-          66% { transform: translate(25%, -25%) rotate(-240deg); }
-        }
-        @keyframes flow3 {
-          0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          50% { transform: translate(20%, -20%) rotate(180deg); }
-        }
-        @keyframes floatBlob1 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(50px, -80px) scale(1.1); }
-          66% { transform: translate(-80px, 50px) scale(0.9); }
-        }
-        @keyframes floatBlob2 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(-60px, 70px) scale(1.15); }
-          66% { transform: translate(70px, -60px) scale(0.95); }
-        }
-        @keyframes floatBlob3 {
-          0%, 100% { transform: translate(-50%, -50%) scale(1); }
-          50% { transform: translate(calc(-50% + 40px), calc(-50% - 40px)) scale(1.1); }
-        }
-        @keyframes floatBlob4 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(60px, -50px) scale(1.2); }
-        }
-        @keyframes floatBlob5 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(-50px, 60px) scale(1.1); }
-        }
-        @keyframes shimmer {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-      ` }} />
+    <div className="flex min-h-screen relative overflow-hidden bg-white">
 
       {/* Mobile Overlay */}
       {mobileMenuOpen && (
@@ -283,106 +130,8 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       } 
       w-80 transition-all duration-500 ease-out flex flex-col h-screen fixed lg:relative top-0 z-40 overflow-hidden`}>
-        {/* Lighter glass background for sidebar */}
-        <div className="absolute inset-0 pickfirst-glass bg-card/90 backdrop-blur-2xl border-r border-pickfirst-yellow/30"></div>
-        
-        {/* Flowing water effect inside sidebar */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div 
-            className="absolute w-[150%] h-[150%] -top-1/4 -left-1/4"
-            style={{
-              background: 'radial-gradient(circle at 50% 50%, rgba(251, 191, 36, 0.15) 0%, transparent 60%)',
-              animation: 'sidebarFlow1 20s ease-in-out infinite',
-            }}
-          />
-          <div 
-            className="absolute w-[120%] h-[120%] -bottom-1/4 -right-1/4"
-            style={{
-              background: 'radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.12) 0%, transparent 60%)',
-              animation: 'sidebarFlow2 25s ease-in-out infinite',
-              animationDelay: '5s'
-            }}
-          />
-        </div>
-
-        {/* Very subtle floating blobs in sidebar */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div 
-            className="absolute w-[200px] h-[200px] rounded-full"
-            style={{
-              background: 'radial-gradient(circle, rgba(251, 191, 36, 0.12) 0%, transparent 70%)',
-              filter: 'blur(28px)',
-              animation: 'sidebarBlob1 15s ease-in-out infinite',
-              top: '20%',
-              left: '30%'
-            }}
-          />
-          <div 
-            className="absolute w-[180px] h-[180px] rounded-full"
-            style={{
-              background: 'radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, transparent 70%)',
-              filter: 'blur(24px)',
-              animation: 'sidebarBlob2 18s ease-in-out infinite',
-              bottom: '30%',
-              right: '20%',
-              animationDelay: '7s'
-            }}
-          />
-          <div 
-            className="absolute w-[150px] h-[150px] rounded-full"
-            style={{
-              background: 'radial-gradient(circle, rgba(249, 115, 22, 0.1) 0%, transparent 70%)',
-              filter: 'blur(18px)',
-              animation: 'sidebarBlob3 20s ease-in-out infinite',
-              top: '60%',
-              left: '10%',
-              animationDelay: '3s'
-            }}
-          />
-        </div>
-
-        {/* Subtle shimmer for sidebar */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(135deg, transparent 40%, rgba(255, 255, 255, 0.05) 50%, transparent 60%)',
-            backgroundSize: '200% 200%',
-            animation: 'sidebarShimmer 12s ease-in-out infinite'
-          }}
-        />
-        
-        {/* Gradient border */}
-        <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-pickfirst-yellow/40 to-transparent"></div>
-        
-        {/* Sidebar animations */}
-        <style dangerouslySetInnerHTML={{ __html: `
-          @keyframes sidebarFlow1 {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            50% { transform: translate(20%, -20%) rotate(180deg); }
-          }
-          @keyframes sidebarFlow2 {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            50% { transform: translate(-20%, 20%) rotate(-180deg); }
-          }
-          @keyframes sidebarBlob1 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(30px, -40px) scale(1.1); }
-            66% { transform: translate(-20px, 30px) scale(0.9); }
-          }
-          @keyframes sidebarBlob2 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(-30px, 35px) scale(1.15); }
-            66% { transform: translate(35px, -30px) scale(0.95); }
-          }
-          @keyframes sidebarBlob3 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(25px, -25px) scale(1.1); }
-          }
-          @keyframes sidebarShimmer {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-          }
-        ` }} />
+        {/* Sidebar background */}
+        <div className="absolute inset-0 bg-white border-r border-gray-200"></div>
         
         <div className="relative z-10 flex flex-col h-full">
         
@@ -465,23 +214,23 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
         </nav>
 
         {/* Luxurious Sidebar Footer */}
-        <div className="p-5 border-t border-yellow-700/10 space-y-4 bg-gradient-to-b from-transparent to-amber-50/30">
+        <div className="p-5 border-t border-gray-200 space-y-4 bg-white">
           <div className="space-y-3">
             <div className="flex items-center justify-between px-2">
               <div className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-yellow-700" />
-                <span className="text-sm font-medium text-amber-800">Your Account</span>
+                <CreditCard className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">Your Account</span>
               </div>
               <Badge className="bg-primary text-primary-foreground">
                 Real Estate Agent
               </Badge>
             </div>
           </div>
-          <div className="pt-3 border-t border-yellow-700/10 space-y-2">
+          <div className="pt-3 border-t border-gray-200 space-y-2">
             <Button
               onClick={() => navigate('/about')}
               variant="ghost"
-              className="w-full justify-start text-amber-700 hover:text-yellow-900 hover:bg-yellow-600/10 text-sm rounded-xl transition-all duration-300"
+              className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted text-sm rounded-xl transition-all duration-300"
               size="sm"
             >
               <Info className="h-4 w-4 mr-2" />
@@ -504,23 +253,38 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
       {/* Main Content with Floating Card Effect */}
       <main className="flex-1 transition-all duration-500 ease-out overflow-y-auto h-screen flex flex-col relative">
         {/* Elegant Floating Header */}
-        <header className="sticky top-0 z-10 mx-4 mt-4 mb-2 rounded-2xl bg-gradient-to-r from-amber-50/95 via-yellow-50/90 to-orange-50/95 backdrop-blur-2xl shadow-xl shadow-yellow-600/10 border border-yellow-700/20">
+        <header className="sticky top-0 z-10 mx-4 mt-4 mb-2 rounded-2xl bg-white shadow-md border border-gray-200">
           <div className="flex items-center justify-between gap-4 px-5 py-4">
-            {/* Left: Elegant Menu Toggle */}
-            <Button
-              onClick={() => {
-                if (window.innerWidth < 1024) {
-                  setMobileMenuOpen(!mobileMenuOpen);
-                } else {
-                  setSidebarOpen(!sidebarOpen);
-                }
-              }}
-              variant="ghost"
-              size="sm"
-              className="text-yellow-700 hover:text-yellow-900 hover:bg-yellow-600/10 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-yellow-600/20"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
+            {/* Left: Logo (when sidebar collapsed) + Menu Toggle */}
+            <div className="flex items-center gap-3">
+              {!sidebarOpen && (
+                <div 
+                  className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition-all duration-300"
+                  onClick={() => navigate('/dashboard')}
+                >
+                  <img 
+                    src="/logo.jpg" 
+                    alt="PickFirst Logo" 
+                    className="h-8 w-8 rounded-lg object-cover"
+                  />
+                  <span className="font-bold text-foreground text-lg tracking-tight">PickFirst</span>
+                </div>
+              )}
+              <Button
+                onClick={() => {
+                  if (window.innerWidth < 1024) {
+                    setMobileMenuOpen(!mobileMenuOpen);
+                  } else {
+                    setSidebarOpen(!sidebarOpen);
+                  }
+                }}
+                variant="ghost"
+                size="sm"
+                className="text-foreground hover:bg-muted rounded-xl transition-all duration-300"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </div>
 
             {/* Center: Premium Search (desktop only) */}
             <div className="hidden lg:flex flex-1 max-w-2xl">
@@ -560,28 +324,30 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
 
               <NotificationDropdown />
 
-              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-600/10 to-amber-500/10 border border-yellow-700/20 shadow-lg shadow-yellow-600/10 hover:shadow-xl hover:shadow-yellow-600/20 transition-all duration-300">
+              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card/80 border border-border shadow-sm hover:shadow-md transition-all duration-300">
                 <div className="relative">
-                  {/* Glow ring */}
-                  <div className="absolute -inset-1 bg-gradient-to-br from-yellow-600 to-amber-600 rounded-full blur-sm opacity-40"></div>
-                  
                   {/* Avatar */}
-                  <div className="relative h-9 w-9 rounded-full bg-gradient-to-br from-yellow-600 to-amber-700 flex items-center justify-center text-white font-bold text-sm shadow-lg ring-2 ring-yellow-600/30">
+                  <div className="relative h-9 w-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-sm ring-2 ring-primary/20">
                     {profile?.full_name?.charAt(0) || 'A'}
                   </div>
                 </div>
                 <div className="hidden md:block">
-                  <div className="text-sm font-semibold text-yellow-900">{profile?.full_name || 'Agent'}</div>
-                  <div className="text-xs text-amber-700/70 font-medium">Real Estate Agent</div>
+                  <div className="text-sm font-semibold text-foreground">{profile?.full_name || 'Agent'}</div>
+                  <div className="text-xs text-muted-foreground font-medium">Real Estate Agent</div>
                 </div>
               </div>
             </div>
           </div>
         </header>
 
+        {/* Mobile Search Bar */}
+        <div className="lg:hidden px-4 mb-2">
+          <AdvancedSearchDropdown />
+        </div>
+
         {/* Content Area - Floating Card Style */}
         <div className="flex-1 px-4 pb-4">
-          <div className="h-full rounded-2xl bg-white/40 backdrop-blur-sm shadow-2xl shadow-yellow-600/10 border border-yellow-700/10 overflow-y-auto p-6">
+          <div className="h-full rounded-2xl bg-white shadow-sm border border-gray-200 overflow-y-auto p-6">
             {children}
           </div>
         </div>
