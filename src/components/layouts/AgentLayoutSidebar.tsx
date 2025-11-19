@@ -267,7 +267,7 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
                     alt="PickFirst Logo" 
                     className="h-8 w-8 rounded-lg object-cover"
                   />
-                  <span className="font-bold text-foreground text-lg tracking-tight">PickFirst</span>
+                  <span className="hidden md:inline font-bold text-foreground text-lg tracking-tight">PickFirst</span>
                 </div>
               )}
               <Button
