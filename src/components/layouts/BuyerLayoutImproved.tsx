@@ -292,8 +292,16 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
       {/* Main Content with Floating Card Effect */}
       <main className="flex-1 transition-all duration-500 ease-out overflow-y-auto h-screen flex flex-col relative">
         {/* Elegant Floating Header */}
-        <header className="sticky top-0 z-10 mx-4 mt-4 mb-2 rounded-2xl bg-white shadow-md border border-gray-200">
-          <div className="flex items-center justify-between gap-4 px-5 py-4">
+        <header className="sticky top-0 z-10 mx-4 mt-4 mb-2 rounded-2xl overflow-hidden bg-white/70 border border-gray-200 shadow-md backdrop-blur">
+          <div className="pointer-events-none absolute inset-0">
+            <img
+              src="/@syndey-habour.jpg"
+              alt=""
+              className="w-full h-full object-cover object-center opacity-90 mix-blend-color-dodge"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/70 to-white/90" />
+          </div>
+          <div className="relative z-10 flex items-center justify-between gap-4 px-5 py-4">
             {/* Left: Logo (when sidebar collapsed) + Menu Toggle */}
             <div className="flex items-center gap-3">
               {!sidebarOpen && (
@@ -327,7 +335,9 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
 
             {/* Center: Premium Search (desktop only) */}
             <div className="hidden lg:flex flex-1 max-w-2xl">
-              <AdvancedSearchDropdown />
+              <div className="w-full rounded-2xl border border-pickfirst-yellow/40 bg-white/90 shadow-inner px-3 py-2">
+                <AdvancedSearchDropdown />
+              </div>
             </div>
 
             {/* Right: Agent Mode Toggle (if agent), Notifications & Premium Profile */}

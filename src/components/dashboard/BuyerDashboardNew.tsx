@@ -366,12 +366,14 @@ const BuyerDashboardNewComponent = () => {
         <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Inquiries Card */}
           <Card 
-            className={`pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-600 ${
+            className={`relative bg-white text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-600 overflow-hidden ${
               hasNewNotification('inquiries') ? 'animate-pulse-border' : ''
             }`}
             onClick={() => { clearCardNotifications('inquiries'); navigate('/buyer-account-settings?tab=favorites'); }}
           >
-            <CardContent className="p-6">
+            {/* Yellow Overlay */}
+            <div className="absolute inset-0 bg-pickfirst-yellow/5 pointer-events-none"></div>
+            <CardContent className="p-6 relative z-10">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1">Inquiries Sent</p>
@@ -394,12 +396,14 @@ const BuyerDashboardNewComponent = () => {
 
           {/* Saved Properties Card */}
           <Card 
-            className={`pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-650 ${
+            className={`relative bg-white text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-650 overflow-hidden ${
               hasNewNotification('favorites') ? 'animate-pulse-border' : ''
             }`}
             onClick={() => { clearCardNotifications('favorites'); navigate('/saved-properties'); }}
           >
-            <CardContent className="p-6">
+            {/* Yellow Overlay */}
+            <div className="absolute inset-0 bg-pickfirst-yellow/5 pointer-events-none"></div>
+            <CardContent className="p-6 relative z-10">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1">Saved Properties</p>
@@ -422,12 +426,14 @@ const BuyerDashboardNewComponent = () => {
 
           {/* Saved Searches Card */}
           <Card 
-            className={`pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-700 ${
+            className={`relative bg-white text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-700 overflow-hidden ${
               hasNewNotification('alerts') ? 'animate-pulse-border' : ''
             }`}
             onClick={() => { clearCardNotifications('alerts'); navigate('/search-filters'); }}
           >
-            <CardContent className="p-6">
+            {/* Yellow Overlay */}
+            <div className="absolute inset-0 bg-pickfirst-yellow/5 pointer-events-none"></div>
+            <CardContent className="p-6 relative z-10">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1">Saved Searches</p>
@@ -450,12 +456,14 @@ const BuyerDashboardNewComponent = () => {
 
           {/* Conversations Card */}
           <Card 
-            className={`pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-750 ${
+            className={`relative bg-white text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-750 overflow-hidden ${
               hasNewNotification('messages') ? 'animate-pulse-border' : ''
             }`}
             onClick={() => { clearCardNotifications('messages'); navigate('/buyer-messages'); }}
           >
-            <CardContent className="p-6">
+            {/* Yellow Overlay */}
+            <div className="absolute inset-0 bg-pickfirst-yellow/5 pointer-events-none"></div>
+            <CardContent className="p-6 relative z-10">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1">Conversations</p>
