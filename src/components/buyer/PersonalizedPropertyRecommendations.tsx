@@ -516,7 +516,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
 
   if (!buyerPreferences) {
     return (
-      <Card className="pickfirst-glass bg-card/90 text-card-foreground">
+      <Card className="bg-white border border-gray-200 text-foreground shadow-sm">
         <CardHeader className="text-center py-8">
           <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <CardTitle className="text-foreground">Set Your Preferences</CardTitle>
@@ -535,10 +535,10 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
   }
 
   return (
-    <Card className="pickfirst-glass bg-card/90 text-card-foreground">
+    <Card className="bg-white border border-gray-200 text-foreground shadow-sm">
       <CardHeader className="space-y-3 sm:space-y-0">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
             <Target className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
             <div className="min-w-0">
               <CardTitle className="text-sm sm:text-base lg:text-lg text-foreground">Recommended for You</CardTitle>
@@ -612,7 +612,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
         ) : (
           <>
             {/* Preferences Summary */}
-            <div className="mb-6 p-4 bg-muted/5 rounded-lg border border-border/50">
+            <div className="mb-6 p-4 bg-white rounded-lg border border-gray-100 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
                 <CheckCircle className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium text-foreground">Your Search Criteria:</span>
@@ -705,7 +705,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                 return (
                   <Card 
                     key={property.id} 
-                    className={`group relative hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/50 bg-card/60 backdrop-blur-sm flex flex-col h-full snap-start min-w-[260px] sm:min-w-[280px] lg:min-w-[320px] max-w-[320px] ${
+                    className={`group relative hover:shadow-lg transition-all duration-300 border border-gray-100 bg-white flex flex-col h-full snap-start min-w-[260px] sm:min-w-[280px] lg:min-w-[320px] max-w-[320px] ${
                       isLockedOffMarket ? 'cursor-not-allowed opacity-95' : 'cursor-pointer'
                     }`}
                     onClick={() => {

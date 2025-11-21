@@ -292,16 +292,8 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
       {/* Main Content with Floating Card Effect */}
       <main className="flex-1 transition-all duration-500 ease-out overflow-y-auto h-screen flex flex-col relative">
         {/* Elegant Floating Header */}
-        <header className="sticky top-0 z-10 mx-4 mt-4 mb-2 rounded-2xl overflow-hidden bg-white/70 border border-gray-200 shadow-md backdrop-blur">
-          <div className="pointer-events-none absolute inset-0">
-            <img
-              src="/@syndey-habour.jpg"
-              alt=""
-              className="w-full h-full object-cover object-center opacity-90 mix-blend-color-dodge"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/70 to-white/90" />
-          </div>
-          <div className="relative z-10 flex items-center justify-between gap-4 px-5 py-4">
+        <header className="sticky top-0 z-10 mx-4 mt-4 mb-1 rounded-2xl bg-white shadow-md border border-gray-200">
+          <div className="flex items-center justify-between gap-4 px-5 py-4">
             {/* Left: Logo (when sidebar collapsed) + Menu Toggle */}
             <div className="flex items-center gap-3">
               {!sidebarOpen && (
@@ -380,10 +372,35 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
           </div>
         </header>
 
-        {/* Mobile Search Bar */}
-        <div className="lg:hidden px-4 mb-2">
-          <AdvancedSearchDropdown />
-        </div>
+        {/* Hero search overlay */}
+        <section className="mx-4 mb-4 sticky top-[92px] z-20">
+          <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/60 shadow-2xl shadow-yellow-500/10 backdrop-blur-sm">
+            <div className="pointer-events-none absolute inset-0">
+              <img
+                src="/@syndey-habour.jpg"
+                alt="Sydney Harbour"
+                className="w-full h-full object-cover object-center brightness-90"
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-white/80 via-white/60 to-transparent"></div>
+              <div className="absolute -top-16 right-4 h-32 w-32 rounded-full bg-pickfirst-yellow/40 blur-3xl" />
+              <div className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-primary/30 blur-3xl" />
+            </div>
+            <div className="relative z-10 flex flex-col gap-4 px-6 py-8 lg:px-12 lg:py-12">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                Featured search
+              </p>
+              <h2 className="text-2xl font-semibold text-foreground sm:text-3xl">
+                Discover your next property with a spotlight search
+              </h2>
+              <p className="max-w-2xl text-sm text-muted-foreground">
+                Use our smart filters to surface approved, premium, and off-market homes that match your needs. The search runs instantly and stays flexible like the market.
+              </p>
+              <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white/90 p-2 shadow-lg shadow-yellow-500/10">
+                <AdvancedSearchDropdown />
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Content Area - Floating Card Style */}
         <div className="flex-1 px-4 pb-24 md:pb-4">

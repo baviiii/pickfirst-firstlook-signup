@@ -168,8 +168,8 @@ const BuyerDashboardNewComponent = () => {
         </div>
         
         {/* Upcoming Appointments */}
-        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-xl hover:shadow-2xl transition-all duration-300 dashboard-animate-fade-up dashboard-delay-200">
-          <CardHeader className="border-b border-border">
+        <Card className="bg-white text-card-foreground border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 dashboard-animate-fade-up dashboard-delay-200">
+          <CardHeader className="border-b border-gray-100 bg-white">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2 text-foreground">
@@ -264,8 +264,8 @@ const BuyerDashboardNewComponent = () => {
         </Card>
 
         {/* Property Comparison Tool */}
-        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-xl hover:shadow-2xl transition-all duration-300 dashboard-animate-fade-scale dashboard-delay-300">
-          <CardHeader className="border-b border-border">
+        <Card className="bg-white text-card-foreground border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 dashboard-animate-fade-scale dashboard-delay-300">
+          <CardHeader className="border-b border-gray-100 bg-white">
             <CardTitle className="text-foreground">Property Comparison Tool</CardTitle>
             <CardDescription className="text-muted-foreground">Compare properties side by side</CardDescription>
           </CardHeader>
@@ -275,8 +275,8 @@ const BuyerDashboardNewComponent = () => {
         </Card>
 
         {/* Property Alerts */}
-        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-xl hover:shadow-2xl transition-all duration-300 dashboard-animate-fade-scale dashboard-delay-400">
-          <CardHeader className="border-b border-border">
+        <Card className="bg-white text-card-foreground border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 dashboard-animate-fade-scale dashboard-delay-400">
+          <CardHeader className="border-b border-gray-100 bg-white">
             <CardTitle className="text-foreground flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-primary" />
               Property Alerts
