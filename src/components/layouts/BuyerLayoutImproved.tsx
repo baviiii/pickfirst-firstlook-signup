@@ -398,8 +398,8 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
                 </div>
                 {/* Text appears only on desktop */}
                 <div className="hidden md:block">
-                  <span className="font-bold text-foreground text-xl tracking-tight bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">PickFirst</span>
-                  <div className="text-xs text-muted-foreground font-semibold">Premium Properties</div>
+                  <span className="font-bold text-2xl tracking-tight bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent drop-shadow-lg">PickFirst</span>
+                  <div className="text-xs text-foreground/80 font-semibold drop-shadow">Premium Properties</div>
                 </div>
               </div>
               
