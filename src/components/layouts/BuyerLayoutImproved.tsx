@@ -292,7 +292,7 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
       {/* Main Content with Floating Card Effect */}
       <main className="flex-1 transition-all duration-500 ease-out overflow-y-auto h-screen flex flex-col relative">
         {/* Elegant Floating Header */}
-        <header className="sticky top-0 z-10 mx-4 mt-4 mb-1 rounded-2xl bg-white shadow-md border border-gray-200">
+        <header className="sticky top-0 z-50 mx-4 mt-4 mb-1 rounded-2xl bg-white shadow-md border border-gray-200">
           <div className="flex items-center justify-between gap-4 px-5 py-4">
             {/* Left: Logo (when sidebar collapsed) + Menu Toggle */}
             <div className="flex items-center gap-3">
@@ -323,13 +323,6 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
               >
                 <Menu className="h-5 w-5" />
               </Button>
-            </div>
-
-            {/* Center: Premium Search (desktop only) */}
-            <div className="hidden lg:flex flex-1 max-w-2xl">
-              <div className="w-full rounded-2xl border border-pickfirst-yellow/40 bg-white/90 shadow-inner px-3 py-2">
-                <AdvancedSearchDropdown />
-              </div>
             </div>
 
             {/* Right: Agent Mode Toggle (if agent), Notifications & Premium Profile */}
@@ -373,7 +366,7 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
         </header>
 
         {/* Hero search overlay */}
-        <section className="mx-4 mb-4">
+        <section className="mx-4 mb-4 relative z-0">
           <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/60 shadow-2xl shadow-yellow-500/10 backdrop-blur-sm">
             <div className="pointer-events-none absolute inset-0">
               <img
@@ -385,7 +378,7 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
               <div className="absolute -top-16 right-4 h-32 w-32 rounded-full bg-pickfirst-yellow/40 blur-3xl" />
               <div className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-primary/30 blur-3xl" />
             </div>
-            <div className="relative z-10 flex flex-col gap-4 px-6 py-8 lg:px-12 lg:py-12">
+            <div className="relative z-10 flex flex-col gap-4 px-6 py-8 lg:px-12 lg:py-12 items-center text-center">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
                 Featured search
               </p>
@@ -395,7 +388,7 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
               <p className="max-w-2xl text-sm text-muted-foreground">
                 Use our smart filters to surface approved, premium, and off-market homes that match your needs. The search runs instantly and stays flexible like the market.
               </p>
-              <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white/90 p-2 shadow-lg shadow-yellow-500/10">
+              <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white/90 p-2 shadow-lg shadow-yellow-500/10 relative z-50">
                 <AdvancedSearchDropdown />
               </div>
             </div>
