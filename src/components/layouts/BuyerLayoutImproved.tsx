@@ -385,15 +385,13 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
                   {/* Animated glow ring */}
                   <div className="absolute -inset-2 bg-gradient-to-r from-yellow-600 via-amber-500 to-yellow-600 rounded-2xl blur-lg opacity-70 group-hover:opacity-100 transition duration-700 animate-[pulse_4s_ease-in-out_infinite]"></div>
                   
-                  {/* Logo container */}
-                  <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white shadow-2xl shadow-yellow-600/30 flex items-center justify-center overflow-hidden ring-2 ring-yellow-500/50 transition-all duration-300 p-1">
-                    <div className="w-full h-full rounded-xl bg-white flex items-center justify-center overflow-hidden">
-                      <img 
-                        src="/logo.jpg" 
-                        alt="PickFirst Logo" 
-                        className="w-full h-full object-cover rounded-lg"
-                      />
-                    </div>
+                  {/* Logo without white background */}
+                  <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-2xl shadow-2xl shadow-yellow-600/30 flex items-center justify-center overflow-hidden ring-2 ring-yellow-500/50 transition-all duration-300">
+                    <img 
+                      src="/logo.jpg" 
+                      alt="PickFirst Logo" 
+                      className="w-full h-full object-cover rounded-2xl"
+                    />
                   </div>
                 </div>
                 {/* Text appears only on desktop */}
@@ -412,7 +410,7 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
               <p className="max-w-2xl text-sm text-muted-foreground">
                 Use our smart filters to surface approved, premium, and off-market homes that match your needs. The search runs instantly and stays flexible like the market.
               </p>
-              <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white/90 p-2 shadow-lg shadow-yellow-500/10 relative z-50">
+              <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white/90 p-2 shadow-lg shadow-yellow-500/10 relative z-[60]">
                 <AdvancedSearchDropdown />
               </div>
             </div>
@@ -420,7 +418,7 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
         </section>
 
         {/* Content Area - Floating Card Style */}
-        <div className="flex-1 px-4 pb-24 md:pb-4">
+        <div className="flex-1 px-4 pb-24 md:pb-4 relative z-0">
           <div className="h-full rounded-2xl bg-white shadow-sm border border-gray-200 overflow-y-auto p-6">
             {children}
           </div>
