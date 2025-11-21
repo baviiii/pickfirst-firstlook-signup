@@ -377,7 +377,7 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
           <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/60 shadow-2xl shadow-yellow-500/10 backdrop-blur-sm">
             <div className="pointer-events-none absolute inset-0">
               <img
-                src="/@syndey-habour.jpg"
+                src="/public/syndey-habour.jpg"
                 alt="Sydney Harbour"
                 className="w-full h-full object-cover object-center brightness-90"
               />
