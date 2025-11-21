@@ -379,6 +379,30 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
               <div className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-primary/30 blur-3xl" />
             </div>
             <div className="relative z-10 flex flex-col gap-4 px-6 py-8 lg:px-12 lg:py-12 items-center text-center">
+              {/* Logo positioned above Featured Search text */}
+              <div className="flex items-center gap-3 mb-2">
+                <div className="relative group">
+                  {/* Animated glow ring */}
+                  <div className="absolute -inset-2 bg-gradient-to-r from-yellow-600 via-amber-500 to-yellow-600 rounded-2xl blur-lg opacity-70 group-hover:opacity-100 transition duration-700 animate-[pulse_4s_ease-in-out_infinite]"></div>
+                  
+                  {/* Logo container */}
+                  <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white shadow-2xl shadow-yellow-600/30 flex items-center justify-center overflow-hidden ring-2 ring-yellow-500/50 transition-all duration-300 p-1">
+                    <div className="w-full h-full rounded-xl bg-white flex items-center justify-center overflow-hidden">
+                      <img 
+                        src="/logo.jpg" 
+                        alt="PickFirst Logo" 
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    </div>
+                  </div>
+                </div>
+                {/* Text appears only on desktop */}
+                <div className="hidden md:block">
+                  <span className="font-bold text-foreground text-xl tracking-tight bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">PickFirst</span>
+                  <div className="text-xs text-muted-foreground font-semibold">Premium Properties</div>
+                </div>
+              </div>
+              
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
                 Featured search
               </p>
