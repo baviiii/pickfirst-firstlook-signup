@@ -373,7 +373,7 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
         </header>
 
         {/* Hero search overlay */}
-        <section className="mx-4 mb-4 sticky top-[92px] z-20">
+        <section className="mx-4 mb-4">
           <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/60 shadow-2xl shadow-yellow-500/10 backdrop-blur-sm">
             <div className="pointer-events-none absolute inset-0">
               <img
