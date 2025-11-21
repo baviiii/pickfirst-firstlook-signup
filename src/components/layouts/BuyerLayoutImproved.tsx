@@ -370,13 +370,11 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
           <div className="relative overflow-visible rounded-3xl border border-gray-200 bg-white/60 shadow-2xl shadow-yellow-500/10 backdrop-blur-sm">
             <div className="pointer-events-none absolute inset-0 rounded-3xl overflow-hidden">
               <img
-                src="https://www.pickfirst.com.au/background.jpg"
+                src="https://www.pickfirst.com.au/syndey-habour.jpg"
                 alt="Sydney Harbour"
-                className="w-full h-full object-cover object-center brightness-90"
+                className="w-full h-full object-cover object-center opacity-70"
               />
-              <div className="absolute inset-0 bg-gradient-to-br from-white/80 via-white/60 to-transparent"></div>
-              <div className="absolute -top-16 right-4 h-32 w-32 rounded-full bg-pickfirst-yellow/40 blur-3xl" />
-              <div className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-primary/30 blur-3xl" />
+              <div className="absolute inset-0 bg-white/20"></div>
             </div>
             <div className="relative z-[110] flex flex-col gap-4 px-6 py-8 lg:px-12 lg:py-12 items-center text-center">
               {/* Logo positioned above Featured Search text */}
@@ -391,22 +389,24 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
                 </div>
                 {/* Text appears only on desktop */}
                 <div className="hidden md:block">
-                  <span className="font-bold text-2xl tracking-tight bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent drop-shadow-lg">PickFirst</span>
-                  <div className="text-xs text-foreground/80 font-semibold drop-shadow">Premium Properties</div>
+                  <span className="font-bold text-2xl tracking-tight text-black">PickFirst</span>
+                  <div className="text-xs text-black/70 font-semibold">Premium Properties</div>
                 </div>
               </div>
               
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-black/70">
                 Featured search
               </p>
-              <h2 className="text-2xl font-semibold text-foreground sm:text-3xl">
+              <h2 className="text-2xl font-semibold text-black sm:text-3xl">
                 Discover your next property with a spotlight search
               </h2>
-              <p className="max-w-2xl text-sm text-muted-foreground">
+              <p className="max-w-2xl text-sm text-black/80">
                 Use our smart filters to surface approved, premium, and off-market homes that match your needs. The search runs instantly and stays flexible like the market.
               </p>
-              <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white p-2 shadow-lg shadow-yellow-500/10 relative z-[120]">
-                <AdvancedSearchDropdown />
+              <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white p-2 shadow-xl relative z-[120]">
+                <div className="bg-white rounded-xl">
+                  <AdvancedSearchDropdown />
+                </div>
               </div>
             </div>
           </div>
