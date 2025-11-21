@@ -366,9 +366,9 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
         </header>
 
         {/* Hero search overlay */}
-        <section className="mx-4 mb-4 relative z-0">
-          <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/60 shadow-2xl shadow-yellow-500/10 backdrop-blur-sm">
-            <div className="pointer-events-none absolute inset-0">
+        <section className="mx-4 mb-4 relative z-[100]">
+          <div className="relative overflow-visible rounded-3xl border border-gray-200 bg-white/60 shadow-2xl shadow-yellow-500/10 backdrop-blur-sm">
+            <div className="pointer-events-none absolute inset-0 rounded-3xl overflow-hidden">
               <img
                 src="https://www.pickfirst.com.au/syndey-habour.jpg"
                 alt="Sydney Harbour"
@@ -378,7 +378,7 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
               <div className="absolute -top-16 right-4 h-32 w-32 rounded-full bg-pickfirst-yellow/40 blur-3xl" />
               <div className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-primary/30 blur-3xl" />
             </div>
-            <div className="relative z-10 flex flex-col gap-4 px-6 py-8 lg:px-12 lg:py-12 items-center text-center">
+            <div className="relative z-[110] flex flex-col gap-4 px-6 py-8 lg:px-12 lg:py-12 items-center text-center">
               {/* Logo positioned above Featured Search text */}
               <div className="flex items-center gap-3 mb-2">
                 <div className="relative group">
@@ -410,7 +410,7 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
               <p className="max-w-2xl text-sm text-muted-foreground">
                 Use our smart filters to surface approved, premium, and off-market homes that match your needs. The search runs instantly and stays flexible like the market.
               </p>
-              <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white/90 p-2 shadow-lg shadow-yellow-500/10 relative z-[60]">
+              <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white/90 p-2 shadow-lg shadow-yellow-500/10 relative z-[120]">
                 <AdvancedSearchDropdown />
               </div>
             </div>
