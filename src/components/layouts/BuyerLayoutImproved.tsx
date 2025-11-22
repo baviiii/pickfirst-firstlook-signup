@@ -352,7 +352,7 @@ export const BuyerLayoutImproved = ({ children, showSearchBar = false }: BuyerLa
 
             <div
               className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card/80 border border-border shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
-              onClick={() => navigate('/profile-settings')}
+              onClick={() => navigate('/buyer-account-settings')}
             >
                 <div className="relative">
                   {/* Avatar */}
