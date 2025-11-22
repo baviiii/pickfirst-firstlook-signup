@@ -20,6 +20,10 @@ export const AuthForm = () => {
   const csrf = useCSRFProtection();
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState(() => {
+    const tabParam = searchParams.get('tab');
+    return tabParam === 'signup' ? 'signup' : 'signin';
+  });
   const [signInData, setSignInData] = useState({
     email: '',
     password: ''
@@ -32,6 +36,14 @@ export const AuthForm = () => {
     userType: 'buyer',
     company: '',
   });
+
+  // Update active tab when URL parameter changes
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'signup' || tabParam === 'signin') {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,7 +194,12 @@ export const AuthForm = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="signin" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={(value) => {
+          setActiveTab(value);
+          const params = new URLSearchParams(searchParams);
+          params.set('tab', value);
+          setSearchParams(params, { replace: true });
+        }} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 bg-card/80 border border-border">
             <TabsTrigger value="signin" className="text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
               Sign In

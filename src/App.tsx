@@ -52,6 +52,7 @@ import RealApp from './pages/RealApp';
 const queryClient = new QueryClient();
 
 // Ensure Supabase auth hash callbacks land on the dashboard route for onboarding
+// Also handles email verification links to force manual login
 const AuthHashRedirect = () => {
   useEffect(() => {
     const hasAuthHash = typeof window !== 'undefined' && window.location.hash && (
@@ -63,15 +64,35 @@ const AuthHashRedirect = () => {
     if (hasAuthHash && onRootPath) {
       const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
       const type = hashParams.get('type');
-      const isSignupFlow = type === 'signup' || type === 'invite';
+      
+      // Email verification, signup, and invite flows should force login (no auto-login)
+      const isVerificationFlow = type === 'signup' || type === 'invite' || type === 'email';
+      const isRecoveryFlow = type === 'recovery';
+      
       const base = import.meta.env.BASE_URL || '';
       const basePath = `${base.endsWith('/') ? base.slice(0, -1) : base}`;
-      const targetPath = isSignupFlow ? `${basePath}/auth?tab=signin&showConfirm=1` : `${basePath}/dashboard`;
-      const newUrl = `${window.location.origin}${targetPath}${isSignupFlow ? '' : window.location.hash}`;
-      if (isSignupFlow) {
-        supabase.auth.signOut().catch(console.error);
+      
+      // For verification flows, always redirect to login page and sign out
+      if (isVerificationFlow) {
+        // Sign out immediately to prevent auto-login
+        supabase.auth.signOut().then(() => {
+          const targetPath = `${basePath}/auth?tab=signin&showConfirm=1`;
+          window.location.replace(`${window.location.origin}${targetPath}`);
+        }).catch((error) => {
+          console.error('Error signing out:', error);
+          // Still redirect even if sign out fails
+          const targetPath = `${basePath}/auth?tab=signin&showConfirm=1`;
+          window.location.replace(`${window.location.origin}${targetPath}`);
+        });
+      } else if (isRecoveryFlow) {
+        // Password reset flow - redirect to reset password page
+        const targetPath = `${basePath}/reset-password`;
+        window.location.replace(`${window.location.origin}${targetPath}${window.location.hash}`);
+      } else {
+        // Other auth flows (e.g., magic link) - redirect to dashboard
+        const targetPath = `${basePath}/dashboard`;
+        window.location.replace(`${window.location.origin}${targetPath}${window.location.hash}`);
       }
-      window.location.replace(newUrl);
     }
   }, []);
   return null;
