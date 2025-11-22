@@ -158,7 +158,7 @@ const BuyerDashboardNewComponent = () => {
   };
 
   return (
-    <BuyerLayout>
+    <BuyerLayout showSearchBar>
       <NewUserSetupDialog />
       
       <div className="space-y-6">

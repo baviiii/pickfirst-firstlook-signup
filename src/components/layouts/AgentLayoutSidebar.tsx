@@ -253,7 +253,7 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
       {/* Main Content with Floating Card Effect */}
       <main className="flex-1 transition-all duration-500 ease-out overflow-y-auto h-screen flex flex-col relative">
         {/* Elegant Floating Header */}
-        <header className="sticky top-0 z-10 mx-4 mt-4 mb-2 rounded-2xl bg-white shadow-md border border-gray-200">
+        <header className="sticky top-0 z-50 mx-4 mt-4 mb-2 rounded-2xl bg-white shadow-md border border-gray-200">
           <div className="flex items-center justify-between gap-4 px-5 py-4">
             {/* Left: Logo (when sidebar collapsed) + Menu Toggle */}
             <div className="flex items-center gap-3">
@@ -324,7 +324,12 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
 
               <NotificationDropdown />
 
-              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card/80 border border-border shadow-sm hover:shadow-md transition-all duration-300">
+              <div
+                className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card/80 border border-border shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
+                onClick={() => navigate('/profile-settings')}
+                role="button"
+                tabIndex={0}
+              >
                 <div className="relative">
                   {/* Avatar */}
                   <div className="relative h-9 w-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-sm ring-2 ring-primary/20">
@@ -341,7 +346,7 @@ export const AgentLayoutSidebar = ({ children }: AgentLayoutSidebarProps) => {
         </header>
 
         {/* Mobile Search Bar */}
-        <div className="lg:hidden px-4 mb-2">
+        <div className="lg:hidden px-4 mb-2 z-40">
           <AdvancedSearchDropdown />
         </div>
 

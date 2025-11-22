@@ -28,9 +28,10 @@ import { useNavigate } from 'react-router-dom';
 
 interface BuyerLayoutProps {
   children: ReactNode;
+  showSearchBar?: boolean;
 }
 
-export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
+export const BuyerLayoutImproved = ({ children, showSearchBar = false }: BuyerLayoutProps) => {
   const { profile, signOut } = useAuth();
   const { subscriptionTier, openCustomerPortal } = useSubscription();
   const { viewMode, toggleViewMode, canSwitchToBuyer } = useViewMode();
@@ -349,7 +350,10 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
 
               <NotificationDropdown />
 
-              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card/80 border border-border shadow-sm hover:shadow-md transition-all duration-300">
+            <div
+              className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card/80 border border-border shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
+              onClick={() => navigate('/profile-settings')}
+            >
                 <div className="relative">
                   {/* Avatar */}
                   <div className="relative h-9 w-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-sm ring-2 ring-primary/20">
@@ -365,8 +369,10 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
           </div>
         </header>
 
-        {/* Hero search overlay */}
-        <section className="mx-4 mb-4 relative z-[100]">
+        {showSearchBar && (
+          <>
+            {/* Hero search overlay */}
+            <section className="mx-4 mb-4 relative z-0">
           <div className="relative overflow-visible rounded-3xl border border-gray-200 bg-white/60 shadow-2xl shadow-yellow-500/10 backdrop-blur-sm">
             <div className="pointer-events-none absolute inset-0 rounded-3xl overflow-hidden">
               <img
@@ -411,6 +417,8 @@ export const BuyerLayoutImproved = ({ children }: BuyerLayoutProps) => {
             </div>
           </div>
         </section>
+          </>
+        )}
 
         {/* Content Area - Floating Card Style */}
         <div className="flex-1 px-4 pb-24 md:pb-4 relative z-0">

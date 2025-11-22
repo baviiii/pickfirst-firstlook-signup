@@ -50,9 +50,9 @@ const MyListingsPage = () => {
   const navigate = useNavigate();
 
   const refreshListings = async () => {
-    const { data } = await PropertyService.getMyListings();
-    setListings(data || []);
-  };
+      const { data } = await PropertyService.getMyListings();
+      setListings(data || []);
+    };
 
   useEffect(() => {
     setLoadingListings(true);
@@ -105,9 +105,9 @@ const MyListingsPage = () => {
       const parsedSoldPrice = parseSoldPriceInput(soldForm.sold_price);
       const trimmedNote = typeof soldForm.sold_price === 'string' ? soldForm.sold_price.trim() : soldForm.sold_price?.toString().trim();
       const updates: any = {
-        status: 'sold',
-        sold_date: soldForm.sold_date,
-        sold_to_client_id: soldForm.sold_to_client_id === 'none' ? null : soldForm.sold_to_client_id || null
+      status: 'sold',
+      sold_date: soldForm.sold_date,
+      sold_to_client_id: soldForm.sold_to_client_id === 'none' ? null : soldForm.sold_to_client_id || null
       };
       if (parsedSoldPrice !== null) {
         updates.sold_price = parsedSoldPrice;
@@ -121,12 +121,12 @@ const MyListingsPage = () => {
       }
 
       const { error } = await PropertyService.updateListing(soldListing.id, updates);
-      
-      if (error) {
-        toast.error(error.message || 'Failed to mark as sold');
-      } else {
-        toast.success('Property marked as sold!');
-        setSoldListing(null);
+    
+    if (error) {
+      toast.error(error.message || 'Failed to mark as sold');
+    } else {
+      toast.success('Property marked as sold!');
+      setSoldListing(null);
         await refreshListings();
       }
     } finally {
