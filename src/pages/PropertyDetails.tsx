@@ -492,7 +492,7 @@ const PropertyDetailsComponent = () => {
                     {propertySquareFeet !== null && propertySquareFeet !== undefined && !Number.isNaN(propertySquareFeet) && (
                       <div className="flex items-center gap-2">
                         <Square className="w-5 h-5 text-yellow-400" />
-                        <span className="text-muted-foreground">{propertySquareFeet.toLocaleString()} sq ft</span>
+                        <span className="text-muted-foreground">{propertySquareFeet.toLocaleString()} sq metres</span>
                       </div>
                     )}
                   </div>

@@ -46,6 +46,7 @@ import LoginHistoryManagementPage from './pages/LoginHistoryManagement';
 import OffMarketListings from './pages/OffMarketListings';
 import NotificationsPage from './pages/Notifications';
 import { RoleBasedLayout } from './components/layouts/RoleBasedLayout';
+import RealApp from './pages/RealApp';
 
 const queryClient = new QueryClient();
 
@@ -125,6 +126,7 @@ const App = () => (
               <Route path="/buyer-account-settings" element={<ProtectedRoute requiredRole="buyer"><RoleBasedLayout><BuyerAccountSettingsPage /></RoleBasedLayout></ProtectedRoute>} />
               <Route path="/off-market" element={<ProtectedRoute requiredRole="buyer"><RoleBasedLayout><OffMarketListings /></RoleBasedLayout></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><RoleBasedLayout><NotificationsPage /></RoleBasedLayout></ProtectedRoute>} />
+              <Route path="/home" element={<RealApp />} />
               
               {/* 404 Route */}
               <Route path="*" element={<NotFound />} />

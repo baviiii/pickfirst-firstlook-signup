@@ -12,6 +12,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { PropertyListingForm } from '@/components/property/PropertyListingForm';
 
+const parseSoldPriceInput = (value?: string | number | null): number | null => {
+  if (value === undefined || value === null) return null;
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? value : null;
+  }
+
+  const input = value.toString().trim();
+  if (!input) return null;
+
+  const cleaned = input.replace(/[,$\s]/g, '').toLowerCase();
+
+  if (cleaned.includes('k')) {
+    const num = parseFloat(cleaned.replace('k', ''));
+    if (Number.isFinite(num)) return num * 1000;
+  }
+
+  if (cleaned.includes('m')) {
+    const num = parseFloat(cleaned.replace('m', ''));
+    if (Number.isFinite(num)) return num * 1000000;
+  }
+
+  const num = parseFloat(cleaned);
+  return Number.isFinite(num) && num > 0 ? num : null;
+};
+
 const MyListingsPage = () => {
   const [listings, setListings] = useState<PropertyListing[]>([]);
   const [loadingListings, setLoadingListings] = useState(true);
@@ -57,7 +82,7 @@ const MyListingsPage = () => {
   const handleMarkAsSold = (listing: PropertyListing) => {
     setSoldListing(listing);
     setSoldForm({
-      sold_price: listing.price,
+      sold_price: listing.price ? listing.price.toString() : '',
       sold_date: new Date().toISOString().split('T')[0],
       sold_to_client_id: 'none'
     });
@@ -77,12 +102,25 @@ const MyListingsPage = () => {
     
     setIsUpdating(true);
     try {
-      const { error } = await PropertyService.updateListing(soldListing.id, {
+      const parsedSoldPrice = parseSoldPriceInput(soldForm.sold_price);
+      const trimmedNote = typeof soldForm.sold_price === 'string' ? soldForm.sold_price.trim() : soldForm.sold_price?.toString().trim();
+      const updates: any = {
         status: 'sold',
-        sold_price: parseFloat(soldForm.sold_price),
         sold_date: soldForm.sold_date,
         sold_to_client_id: soldForm.sold_to_client_id === 'none' ? null : soldForm.sold_to_client_id || null
-      });
+      };
+      if (parsedSoldPrice !== null) {
+        updates.sold_price = parsedSoldPrice;
+      } else if ('sold_price' in soldForm) {
+        updates.sold_price = null;
+      }
+      if (trimmedNote && parsedSoldPrice === null) {
+        updates.sold_price_note = trimmedNote;
+      } else if ('sold_price_note' in soldForm || (soldForm.sold_price && typeof soldForm.sold_price === 'string')) {
+        updates.sold_price_note = null;
+      }
+
+      const { error } = await PropertyService.updateListing(soldListing.id, updates);
       
       if (error) {
         toast.error(error.message || 'Failed to mark as sold');
@@ -274,8 +312,8 @@ const MyListingsPage = () => {
                       </p>
                       {selectedListing?.bedrooms !== null && <p><span className="text-gray-400">Bedrooms:</span> {selectedListing.bedrooms}</p>}
                       {selectedListing?.bathrooms !== null && <p><span className="text-gray-400">Bathrooms:</span> {selectedListing.bathrooms}</p>}
-                      {selectedListing?.square_feet !== null && <p><span className="text-gray-400">Square Feet:</span> {selectedListing.square_feet.toLocaleString()}</p>}
-                      {selectedListing?.lot_size !== null && <p><span className="text-gray-400">Lot Size:</span> {selectedListing.lot_size.toLocaleString()} sq ft</p>}
+                      {selectedListing?.square_feet !== null && <p><span className="text-gray-400">Square Metres:</span> {selectedListing.square_feet.toLocaleString()}</p>}
+                      {selectedListing?.lot_size !== null && <p><span className="text-gray-400">Lot Size:</span> {selectedListing.lot_size.toLocaleString()} sq metres</p>}
                       {selectedListing?.year_built !== null && <p><span className="text-gray-400">Year Built:</span> {selectedListing.year_built}</p>}
                     </div>
                   </div>
@@ -360,44 +398,48 @@ const MyListingsPage = () => {
 
       {/* Mark as Sold Modal */}
       <Dialog open={!!soldListing} onOpenChange={() => setSoldListing(null)}>
-        <DialogContent className="max-w-md bg-gradient-to-br from-gray-900/95 to-black/95 border border-yellow-400/20">
+        <DialogContent className="max-w-md bg-white text-foreground border border-pickfirst-yellow/30 shadow-xl shadow-yellow-500/20">
           <DialogHeader>
-            <DialogTitle className="text-yellow-400 text-xl">Mark Property as Sold</DialogTitle>
+            <DialogTitle className="text-yellow-600 text-xl">Mark Property as Sold</DialogTitle>
           </DialogHeader>
           
           {soldListing && (
             <div className="space-y-4">
-              <div className="text-gray-300 text-sm">
-                <strong>{soldListing.title}</strong><br />
+              <div className="text-muted-foreground text-sm">
+                <strong className="text-foreground">{soldListing.title}</strong><br />
                 {soldListing.address}, {soldListing.city}
               </div>
               
               <div>
-                <Label htmlFor="sold_price" className="text-gray-300">Sale Price *</Label>
+                <Label htmlFor="sold_price" className="text-foreground font-medium">Sale Price / Notes *</Label>
                 <Input
                   id="sold_price"
-                  type="number"
+                  type="text"
                   value={soldForm.sold_price || ''}
+                  placeholder="e.g. 1,250,000 or Contracted to Best Buyer"
                   onChange={(e) => setSoldForm({...soldForm, sold_price: e.target.value})}
-                  className="bg-gray-800 border-gray-700 text-white"
+                  className="bg-white border border-gray-200 text-foreground placeholder:text-muted-foreground"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Enter a numeric value to feed analytics; enter text to describe the result without affecting revenue.
+                </p>
               </div>
               
               <div>
-                <Label htmlFor="sold_date" className="text-gray-300">Sale Date *</Label>
+                <Label htmlFor="sold_date" className="text-foreground font-medium">Sale Date *</Label>
                 <Input
                   id="sold_date"
                   type="date"
                   value={soldForm.sold_date || ''}
                   onChange={(e) => setSoldForm({...soldForm, sold_date: e.target.value})}
-                  className="bg-gray-800 border-gray-700 text-white"
+                  className="bg-white border border-gray-200 text-foreground"
                 />
               </div>
               
               <div>
-                <Label htmlFor="sold_to_client" className="text-gray-300">Sold to Client (Optional)</Label>
+                <Label htmlFor="sold_to_client" className="text-foreground font-medium">Sold to Client (Optional)</Label>
                 <Select value={soldForm.sold_to_client_id} onValueChange={(value) => setSoldForm({...soldForm, sold_to_client_id: value})}>
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                  <SelectTrigger className="bg-white border border-gray-200 text-foreground">
                     <SelectValue placeholder="Select client (optional)" />
                   </SelectTrigger>
                   <SelectContent>
@@ -411,18 +453,18 @@ const MyListingsPage = () => {
                 </Select>
               </div>
               
-              <div className="flex gap-2 pt-4">
+              <div className="flex gap-2 pt-4 flex-wrap">
                 <Button 
                   onClick={handleSoldSubmit} 
-                  disabled={isUpdating || !soldForm.sold_price || !soldForm.sold_date}
-                  className="bg-green-600 text-white hover:bg-green-700"
+                  disabled={isUpdating || !soldForm.sold_price?.toString().trim() || !soldForm.sold_date}
+                  className="bg-primary text-primary-foreground hover:bg-pickfirst-amber"
                 >
                   {isUpdating ? 'Marking as Sold...' : 'Mark as Sold'}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => setSoldListing(null)}
-                  className="text-gray-300 border-gray-600 hover:bg-gray-800"
+                  className="text-muted-foreground border-border hover:bg-muted"
                 >
                   Cancel
                 </Button>

@@ -60,6 +60,18 @@ function parseNumericPrice(priceStr: string): number {
   return isNaN(num) ? 0 : num;
 }
 
+function parseSoldPriceForDatabase(value: string | number | null | undefined): number | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? value : null;
+  }
+
+  const parsed = parseNumericPrice(value.toString());
+  return parsed > 0 ? parsed : null;
+}
+
 export interface CreatePropertyListingData {
   title: string;
   description?: string;
@@ -91,7 +103,8 @@ export interface CreatePropertyListingData {
 export interface UpdatePropertyListingData extends Partial<CreatePropertyListingData> {
   status?: string;
   rejection_reason?: string;
-  sold_price?: number;
+  sold_price?: number | string | null;
+  sold_price_note?: string | null;
   sold_date?: string;
   sold_to_client_id?: string;
 }
@@ -141,8 +154,15 @@ export class PropertyService {
     };
 
     const soldPrice = parseNumeric(listing.sold_price);
-    if ((listing.status === 'sold' || listing.status === 'completed') && soldPrice && soldPrice > 0) {
-      return `Sold: $${soldPrice.toLocaleString()}`;
+    const soldNote = typeof listing.sold_price_note === 'string' ? listing.sold_price_note.trim() : listing.sold_price_note;
+    if ((listing.status === 'sold' || listing.status === 'completed')) {
+      if (soldPrice && soldPrice > 0) {
+        const suffix = soldNote ? ` (${soldNote})` : '';
+        return `Sold: $${soldPrice.toLocaleString()}${suffix}`;
+      }
+      if (soldNote) {
+        return `Sold: ${soldNote}`;
+      }
     }
 
     const display = typeof listing.price_display === 'string' ? listing.price_display.trim() : '';
@@ -648,6 +668,12 @@ export class PropertyService {
       if (data.price !== undefined) {
         updateData.price = parsePriceForDatabase(data.price);
       }
+      if (data.sold_price !== undefined) {
+        updateData.sold_price = parseSoldPriceForDatabase(data.sold_price);
+      }
+      if ('sold_price_note' in data) {
+        updateData.sold_price_note = data.sold_price_note ? data.sold_price_note.trim() : null;
+      }
 
       // Update the listing
       const { data: updatedListing, error } = await supabase
@@ -695,7 +721,11 @@ export class PropertyService {
               if (inquiry.buyer?.email) {
                 const buyerName = (inquiry.buyer as any)?.full_name || 'there';
                 const propertyTitle = updatedListing.title || 'the property';
-                const soldPrice = data.sold_price ? `for $${data.sold_price.toLocaleString()}` : '';
+                const soldPrice = updateData.sold_price
+                  ? `for $${updateData.sold_price.toLocaleString()}`
+                  : data.sold_price_note
+                    ? `(${data.sold_price_note})`
+                    : '';
                 
                 // Use a type assertion for the buyer object
                 const buyerEmail = (inquiry.buyer as any)?.email;

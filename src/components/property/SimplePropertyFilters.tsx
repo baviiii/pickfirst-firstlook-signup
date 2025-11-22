@@ -302,19 +302,19 @@ const SimplePropertyFilters: React.FC<SimplePropertyFiltersProps> = ({
             <div>
               <Label className="text-gray-300 mb-2 block text-sm flex items-center gap-1">
                 <Square className="h-4 w-4" />
-                Property Size (sq ft)
+                Property Size (sq metres)
               </Label>
               <div className="grid grid-cols-2 gap-3">
                 <Input
                   type="number"
-                  placeholder="Min sq ft"
+                  placeholder="Min sq metres"
                   value={filters.minSquareFootage || ''}
                   onChange={(e) => handleFilterChange('minSquareFootage', e.target.value ? parseInt(e.target.value) : undefined)}
                   className="bg-card border border-border text-foreground text-sm"
                 />
                 <Input
                   type="number"
-                  placeholder="Max sq ft"
+                  placeholder="Max sq metres"
                   value={filters.maxSquareFootage || ''}
                   onChange={(e) => handleFilterChange('maxSquareFootage', e.target.value ? parseInt(e.target.value) : undefined)}
                   className="bg-card border border-border text-foreground text-sm"

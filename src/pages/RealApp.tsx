@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { PublicPreview } from '@/components/public/PublicPreview';
 import { Button } from '@/components/ui/button';
+import { AdvancedSearchDropdown } from '@/components/search/AdvancedSearchDropdown';
 import { User, LogIn, Menu, X } from 'lucide-react';
 
 const Index = () => {
@@ -183,10 +184,45 @@ const Index = () => {
           )}
         </div>
       </nav>
-      
       {/* Enhanced Main Content */}
       <main className="relative z-10">
-        <PublicPreview onSignUpClick={handleSignUpClick} onSignInClick={handleSignInClick} />
+        <section className="mx-auto max-w-6xl px-4 py-10 space-y-8">
+          <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/70 shadow-2xl shadow-yellow-500/15 backdrop-blur-sm">
+            <div className="pointer-events-none absolute inset-0">
+              <img
+                src="/@syndey-habour.jpg"
+                alt="Sydney Harbour"
+                className="w-full h-full object-cover object-center brightness-90"
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-white/90 via-white/60 to-transparent"></div>
+              <div className="absolute -top-16 right-6 h-28 w-28 rounded-full bg-pickfirst-yellow/40 blur-3xl" />
+              <div className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-primary/30 blur-3xl" />
+            </div>
+            <div className="relative z-10 flex flex-col gap-4 px-6 py-10 lg:px-12 lg:py-16 items-center text-center">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                Guest Access
+              </p>
+              <h2 className="text-2xl sm:text-3xl font-semibold text-foreground">
+                Browse live and off-market listings as a guest
+              </h2>
+              <p className="max-w-2xl text-sm text-muted-foreground">
+                Use the same intelligent search bar as our buyers to explore curated properties with the new white + yellow theme before logging in.
+              </p>
+              <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white p-3 shadow-lg shadow-yellow-500/10">
+                <AdvancedSearchDropdown />
+              </div>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Button onClick={handleSignInClick} className="bg-primary text-primary-foreground hover:bg-pickfirst-amber">
+                  Sign In
+                </Button>
+                <Button variant="outline" className="border border-border text-foreground" onClick={handleSignUpClick}>
+                  Sign Up
+                </Button>
+              </div>
+            </div>
+          </div>
+          <PublicPreview onSignUpClick={handleSignUpClick} onSignInClick={handleSignInClick} />
+        </section>
       </main>
     </div>
   );

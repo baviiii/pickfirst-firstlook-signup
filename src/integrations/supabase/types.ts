@@ -1182,6 +1182,7 @@ export type Database = {
           showing_instructions: string | null
           sold_date: string | null
           sold_price: number | null
+          sold_price_note: string | null
           sold_to_client_id: string | null
           square_feet: number | null
           state: string
@@ -1224,6 +1225,7 @@ export type Database = {
           showing_instructions?: string | null
           sold_date?: string | null
           sold_price?: number | null
+          sold_price_note?: string | null
           sold_to_client_id?: string | null
           square_feet?: number | null
           state: string
@@ -1266,6 +1268,7 @@ export type Database = {
           showing_instructions?: string | null
           sold_date?: string | null
           sold_price?: number | null
+          sold_price_note?: string | null
           sold_to_client_id?: string | null
           square_feet?: number | null
           state?: string
@@ -1785,6 +1788,7 @@ export type Database = {
           longitude: number | null
           lot_size: number | null
           price: number | null
+          sold_price_note: string | null
           property_type: string | null
           showing_instructions: string | null
           square_feet: number | null
@@ -1815,6 +1819,7 @@ export type Database = {
           longitude?: number | null
           lot_size?: number | null
           price?: number | null
+          sold_price_note?: string | null
           property_type?: string | null
           showing_instructions?: string | null
           square_feet?: number | null
@@ -1845,6 +1850,7 @@ export type Database = {
           longitude?: number | null
           lot_size?: number | null
           price?: number | null
+          sold_price_note?: string | null
           property_type?: string | null
           showing_instructions?: string | null
           square_feet?: number | null

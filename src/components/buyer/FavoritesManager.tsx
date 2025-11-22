@@ -226,7 +226,7 @@ export const FavoritesManager: React.FC<FavoritesManagerProps> = ({ className })
                         {property.square_feet !== null && (
                           <div className="flex items-center text-xs bg-green-500/10 text-green-300 px-2 py-1 rounded">
                             <Square className="h-3 w-3 mr-1" />
-                            {property.square_feet.toLocaleString()} sq ft
+                            {property.square_feet.toLocaleString()} sq metres
                           </div>
                         )}
                       </div>

@@ -461,7 +461,7 @@ const AdminPropertyManagementComponent = () => {
                       {selectedListingSquareFeet !== null && selectedListingSquareFeet !== undefined && !Number.isNaN(selectedListingSquareFeet) && (
                         <p><span className="text-gray-400">Square Feet:</span> {selectedListingSquareFeet.toLocaleString()}</p>
                       )}
-                      {selectedListing.lot_size !== null && <p><span className="text-gray-400">Lot Size:</span> {selectedListing.lot_size.toLocaleString()} sq ft</p>}
+                      {selectedListing.lot_size !== null && <p><span className="text-gray-400">Lot Size:</span> {selectedListing.lot_size.toLocaleString()} sq metres</p>}
                       {selectedListing.year_built !== null && <p><span className="text-gray-400">Year Built:</span> {selectedListing.year_built}</p>}
                     </div>
                   </div>

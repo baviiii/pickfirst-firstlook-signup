@@ -480,7 +480,7 @@ const BuyerDashboardComponent = () => {
                         {listing.square_feet !== null && listing.square_feet !== undefined && (
                           <div className="flex items-center text-xs bg-green-500/10 text-green-300 px-2 py-1 rounded">
                             <span className="font-medium">{listing.square_feet.toLocaleString()}</span>
-                            <span className="ml-1 text-green-200">sq ft</span>
+                        <span className="ml-1 text-green-200">sq metres</span>
                           </div>
                         )}
                       </div>

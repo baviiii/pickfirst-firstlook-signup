@@ -378,7 +378,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
                 <div class="flex items-center justify-between text-gray-600 text-sm mb-4 p-3 bg-gray-50 rounded-lg">
                   ${property.bedrooms ? `<div class="flex items-center gap-1"><svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2L3 7v11a2 2 0 002 2h10a2 2 0 002-2V7l-7-5z"/></svg> ${property.bedrooms} bed${property.bedrooms > 1 ? 's' : ''}</div>` : ''}
                   ${property.bathrooms ? `<div class="flex items-center gap-1"><svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v4a2 2 0 01-2 2H7a2 2 0 01-2-2V4z"/></svg> ${property.bathrooms} bath${property.bathrooms > 1 ? 's' : ''}</div>` : ''}
-                  ${property.square_feet ? `<div class="flex items-center gap-1"><svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V4z"/></svg> ${property.square_feet.toLocaleString()}sq ft</div>` : ''}
+                  ${property.square_feet ? `<div class="flex items-center gap-1"><svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V4z"/></svg> ${property.square_feet.toLocaleString()} sq metres</div>` : ''}
                 </div>
               ` : ''}
 

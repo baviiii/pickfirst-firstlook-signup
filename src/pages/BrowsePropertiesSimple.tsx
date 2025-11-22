@@ -390,7 +390,7 @@ const BrowsePropertiesSimple = () => {
             {listing.square_feet && (
               <div className="flex items-center gap-1">
                 <Square className="h-4 w-4" />
-                <span>{listing.square_feet.toLocaleString()} sq ft</span>
+                <span>{listing.square_feet.toLocaleString()} sq metres</span>
               </div>
             )}
           </div>

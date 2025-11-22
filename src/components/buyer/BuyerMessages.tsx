@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Phone, Video, Send, MessageSquare, MoreVertical, User, ArrowLeft, Loader2, Clock } from 'lucide-react';
+import { Search, Phone, Video, Send, MessageSquare, MoreVertical, User, ArrowLeft, Loader2, Clock, ChevronLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FeatureGate } from '@/components/ui/FeatureGate';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useNavigate } from 'react-router-dom';
 
 export const BuyerMessages = () => {
   const { user, profile } = useAuth();
@@ -31,6 +32,7 @@ export const BuyerMessages = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   // Check for mobile screen size
   useEffect(() => {
@@ -214,10 +216,19 @@ export const BuyerMessages = () => {
         </div>
       }
     >
-      <div className="h-screen flex flex-col bg-background">
+      <div className="h-screen flex flex-col bg-background overflow-hidden">
+        <div className="flex items-center gap-3 px-4 py-3 border-b bg-white/80 shadow-sm sticky top-0 z-20">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-foreground">
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <p className="text-sm text-muted-foreground">Messages</p>
+            <h2 className="text-2xl font-semibold text-foreground">Agent Conversations</h2>
+          </div>
+        </div>
         <div className="flex-1 flex overflow-hidden">
           {/* Conversations Sidebar */}
-          <div className={`${showConversations || !isMobile ? 'flex' : 'hidden'} flex-col w-full lg:w-80 border-r bg-card`}>
+          <div className={`${showConversations || !isMobile ? 'flex' : 'hidden'} flex-col w-full lg:w-80 border-r bg-card/80`}>
             <div className="p-4 border-b">
               <h2 className="text-xl font-semibold">Messages</h2>
               {messageHistoryDays !== -1 && messageHistoryDays > 0 && (
@@ -284,17 +295,23 @@ export const BuyerMessages = () => {
           </div>
 
           {/* Chat Area */}
-          <div className={`${!showConversations || !isMobile ? 'flex' : 'hidden'} flex-col flex-1`}>
+          <div className={`${!showConversations || !isMobile ? 'flex' : 'hidden'} flex-col flex-1 min-h-0`}>
             {selectedConversation ? (
               <>
                 {/* Chat Header */}
-                <div className="p-4 border-b bg-card flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
+                <div className="p-4 border-b bg-white/90 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+                  <div
+                    className="flex items-center space-x-3 cursor-pointer"
+                    onClick={() => navigate('/buyer-account-settings')}
+                  >
                     <Button
                       variant="ghost"
                       size="icon"
                       className="lg:hidden"
-                      onClick={handleBackToConversations}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleBackToConversations();
+                      }}
                     >
                       <ArrowLeft className="h-5 w-5" />
                     </Button>
@@ -328,7 +345,7 @@ export const BuyerMessages = () => {
                 {/* Messages Container */}
                 <div 
                   ref={messagesContainerRef}
-                  className="flex-1 overflow-y-auto p-4 space-y-4"
+                  className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
                 >
                   {/* Pending Conversation Notice */}
                   {selectedConversation?.status === 'pending' && messages.length <= 1 && (
@@ -409,7 +426,7 @@ export const BuyerMessages = () => {
                 </div>
 
                 {/* Message Input */}
-                <div className="border-t p-4 bg-card">
+                <div className="border-t p-4 bg-white/90 sticky bottom-0 z-10">
                   {selectedConversation?.status === 'pending' && messages.length <= 1 ? (
                     <div className="text-center py-2 text-sm text-muted-foreground">
                       <p>The agent will activate this conversation when they respond to your inquiry.</p>
