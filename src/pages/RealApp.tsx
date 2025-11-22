@@ -3,12 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { PublicPreview } from '@/components/public/PublicPreview';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { AdvancedSearchDropdown } from '@/components/search/AdvancedSearchDropdown';
 import { User, LogIn, Menu, X } from 'lucide-react';
+import { PropertyService, PropertyListing } from '@/services/propertyService';
+import { Square, Bed, Bath } from 'lucide-react';
 
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [featured, setFeatured] = useState<PropertyListing[]>([]);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   useEffect(() => {
@@ -16,6 +22,25 @@ const Index = () => {
       navigate('/dashboard', { replace: true });
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadListings = async () => {
+      setFeaturedLoading(true);
+      const { data, error } = await PropertyService.getApprovedListings(undefined, { includeOffMarket: true });
+      if (isMounted) {
+        setFeatured(data || []);
+        setFeaturedLoading(false);
+      }
+      if (error) {
+        console.error('Failed to load featured listings:', error);
+      }
+    };
+    loadListings();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSignUpClick = () => {
     navigate('/signup');
@@ -190,7 +215,7 @@ const Index = () => {
           <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/70 shadow-2xl shadow-yellow-500/15 backdrop-blur-sm">
             <div className="pointer-events-none absolute inset-0">
               <img
-                src="/@syndey-habour.jpg"
+                src="https://www.pickfirst.com.au/background.jpg"
                 alt="Sydney Harbour"
                 className="w-full h-full object-cover object-center brightness-90"
               />
@@ -222,6 +247,97 @@ const Index = () => {
             </div>
           </div>
           <PublicPreview onSignUpClick={handleSignUpClick} onSignInClick={handleSignInClick} />
+        </section>
+        <section className="mx-auto max-w-6xl px-4 pb-16 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Featured properties</p>
+              <h3 className="text-2xl font-semibold text-foreground">Explore what’s available</h3>
+            </div>
+            <Button variant="ghost" className="text-muted-foreground border border-border" onClick={() => navigate('/browse-properties')}>
+              View all properties
+            </Button>
+          </div>
+          {featuredLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, idx) => (
+                <div key={idx} className="rounded-2xl bg-card/80 border border-pickfirst-yellow/20 shadow-xl h-72 animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featured.slice(0, 6).map((property) => {
+                const isOffMarket = (property as any).listing_source === 'agent_posted';
+                return (
+                  <Card key={property.id} className="relative pickfirst-glass bg-card/95 text-foreground border border-pickfirst-yellow/30 shadow-xl overflow-hidden">
+                    {isOffMarket && (
+                      <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex items-center justify-center">
+                        <div className="text-center space-y-2">
+                          <Badge className="bg-pickfirst-yellow text-black">Off-market</Badge>
+                          <p className="text-sm text-muted-foreground">Locked for premium members</p>
+                        </div>
+                      </div>
+                    )}
+                    <CardHeader className="p-0">
+                      {property.images && property.images.length > 0 ? (
+                        <img
+                          src={property.images[0]}
+                          alt={property.title}
+                          className="h-36 w-full object-cover"
+                        />
+                      ) : (
+                        <div className="h-36 w-full bg-muted flex items-center justify-center">
+                          <Square className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+                    </CardHeader>
+                    <CardContent className="space-y-3 pb-6">
+                      <div>
+                        <p className="text-foreground font-semibold text-lg leading-tight line-clamp-2">{property.title}</p>
+                        <p className="text-sm text-muted-foreground">{property.address}, {property.city}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        {property.bedrooms !== null && (
+                          <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                            <Bed className="h-3 w-3" />
+                            {property.bedrooms} beds
+                          </div>
+                        )}
+                        {property.bathrooms !== null && (
+                          <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                            <Bath className="h-3 w-3" />
+                            {property.bathrooms} baths
+                          </div>
+                        )}
+                        {property.square_feet !== null && (
+                          <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                            <Square className="h-3 w-3" />
+                            {property.square_feet.toLocaleString()} sq m
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-baseline justify-between">
+                        <p className="text-xl font-semibold text-foreground">
+                          {PropertyService.getDisplayPrice(property)}
+                        </p>
+                        <Button
+                          variant="outline"
+                          disabled={isOffMarket}
+                          className={`text-sm ${isOffMarket ? 'text-muted-foreground border-border' : 'text-primary border-primary hover:bg-primary/10'}`}
+                          onClick={() => navigate(`/property/${property.id}`)}
+                        >
+                          {isOffMarket ? 'Unlock in Premium' : 'View details'}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Log in to enquire with the agent or upgrade to premium for off-market access.
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </section>
       </main>
     </div>
