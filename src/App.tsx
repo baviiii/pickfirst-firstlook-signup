@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
 import { ViewModeProvider } from "@/hooks/useViewMode";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/ComingSoon";
 import Auth from "./pages/Auth";
 import Registration from "./pages/Registration";
@@ -60,9 +61,16 @@ const AuthHashRedirect = () => {
     );
     const onRootPath = window.location.pathname === '/' || window.location.pathname === import.meta.env.BASE_URL;
     if (hasAuthHash && onRootPath) {
+      const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+      const type = hashParams.get('type');
+      const isSignupFlow = type === 'signup' || type === 'invite';
       const base = import.meta.env.BASE_URL || '';
-      const targetPath = `${base.endsWith('/') ? base.slice(0, -1) : base}/dashboard`;
-      const newUrl = `${window.location.origin}${targetPath}${window.location.hash}`;
+      const basePath = `${base.endsWith('/') ? base.slice(0, -1) : base}`;
+      const targetPath = isSignupFlow ? `${basePath}/auth?tab=signin&showConfirm=1` : `${basePath}/dashboard`;
+      const newUrl = `${window.location.origin}${targetPath}${isSignupFlow ? '' : window.location.hash}`;
+      if (isSignupFlow) {
+        supabase.auth.signOut().catch(console.error);
+      }
       window.location.replace(newUrl);
     }
   }, []);

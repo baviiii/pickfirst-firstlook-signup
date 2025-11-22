@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { PublicPreview } from '@/components/public/PublicPreview';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -112,7 +111,7 @@ const Index = () => {
               <Button
                 variant="ghost"
                 onClick={() => navigate('/about')}
-                className="text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-all duration-300 border border-transparent hover:border-pickfirst-yellow/30 rounded-lg"
+                className="text-gray-900 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-all duration-300 border border-transparent hover:border-pickfirst-yellow/30 rounded-lg"
               >
                 About Us
               </Button>
@@ -120,7 +119,7 @@ const Index = () => {
               <Button
                 variant="ghost"
                 onClick={() => navigate('/pricing')}
-                className="text-gray-300 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-all duration-300 border border-transparent hover:border-pickfirst-yellow/30 rounded-lg"
+                className="text-gray-900 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-all duration-300 border border-transparent hover:border-pickfirst-yellow/30 rounded-lg"
               >
                 Pricing
               </Button>
@@ -209,6 +208,7 @@ const Index = () => {
           )}
         </div>
       </nav>
+
       {/* Enhanced Main Content */}
       <main className="relative z-10">
         <section className="mx-auto max-w-6xl px-4 py-10 space-y-8">
@@ -224,120 +224,189 @@ const Index = () => {
               <div className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-primary/30 blur-3xl" />
             </div>
             <div className="relative z-10 flex flex-col gap-4 px-6 py-10 lg:px-12 lg:py-16 items-center text-center">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                Guest Access
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-600">
+                Explore Without Limits
               </p>
-              <h2 className="text-2xl sm:text-3xl font-semibold text-foreground">
-                Browse live and off-market listings as a guest
+              <h2 className="text-2xl sm:text-4xl font-bold text-gray-900 max-w-3xl">
+                Discover Hidden Gems Before They Hit the Market
               </h2>
-              <p className="max-w-2xl text-sm text-muted-foreground">
-                Use the same intelligent search bar as our buyers to explore curated properties with the new white + yellow theme before logging in.
+              <p className="max-w-2xl text-base text-gray-700 leading-relaxed">
+                Experience the power of our intelligent search platform. Browse exclusive off-market properties and public listings in real-time—no login required. See what professional buyers see.
               </p>
               <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white p-3 shadow-lg shadow-yellow-500/10">
                 <AdvancedSearchDropdown />
               </div>
               <div className="flex flex-wrap justify-center gap-3">
-                <Button onClick={handleSignInClick} className="bg-primary text-primary-foreground hover:bg-pickfirst-amber">
+                <Button onClick={handleSignInClick} className="bg-gray-900 text-white hover:bg-gray-800 px-6 py-2.5 text-base font-semibold">
                   Sign In
                 </Button>
-                <Button variant="outline" className="border border-border text-foreground" onClick={handleSignUpClick}>
-                  Sign Up
+                <Button variant="outline" className="border-2 border-gray-900 text-gray-900 hover:bg-gray-50 px-6 py-2.5 text-base font-semibold" onClick={handleSignUpClick}>
+                  Sign Up Free
                 </Button>
               </div>
             </div>
           </div>
-          <PublicPreview onSignUpClick={handleSignUpClick} onSignInClick={handleSignInClick} />
-        </section>
-        <section className="mx-auto max-w-6xl px-4 pb-16 space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Featured properties</p>
-              <h3 className="text-2xl font-semibold text-foreground">Explore what’s available</h3>
+
+          <section className="mx-auto max-w-6xl px-4 pb-16 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.4em] text-gray-600 font-semibold">Featured properties</p>
+                <h3 className="text-2xl font-semibold text-gray-900">Explore what's available</h3>
+              </div>
+              <Button variant="ghost" className="text-gray-700 border border-gray-300 hover:border-pickfirst-yellow/50 hover:bg-pickfirst-yellow/5" onClick={() => navigate('/browse-properties')}>
+                View all properties
+              </Button>
             </div>
-            <Button variant="ghost" className="text-muted-foreground border border-border" onClick={() => navigate('/browse-properties')}>
-              View all properties
-            </Button>
-          </div>
-          {featuredLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(3)].map((_, idx) => (
-                <div key={idx} className="rounded-2xl bg-card/80 border border-pickfirst-yellow/20 shadow-xl h-72 animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featured.slice(0, 6).map((property) => {
+            {featuredLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(3)].map((_, idx) => (
+                  <div key={idx} className="rounded-2xl bg-card/80 border border-pickfirst-yellow/20 shadow-xl h-72 animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featured.slice(0, 6).map((property) => {
                 const isOffMarket = (property as any).listing_source === 'agent_posted';
                 return (
-                  <Card key={property.id} className="relative pickfirst-glass bg-card/95 text-foreground border border-pickfirst-yellow/30 shadow-xl overflow-hidden">
-                    {isOffMarket && (
-                      <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex items-center justify-center">
-                        <div className="text-center space-y-2">
-                          <Badge className="bg-pickfirst-yellow text-black">Off-market</Badge>
-                          <p className="text-sm text-muted-foreground">Locked for premium members</p>
-                        </div>
-                      </div>
-                    )}
-                    <CardHeader className="p-0">
-                      {property.images && property.images.length > 0 ? (
-                        <img
-                          src={property.images[0]}
-                          alt={property.title}
-                          className="h-36 w-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-36 w-full bg-muted flex items-center justify-center">
-                          <Square className="h-8 w-8 text-muted-foreground" />
+                  <Card key={property.id} className="relative group pickfirst-glass bg-card/95 text-foreground border border-pickfirst-yellow/30 shadow-xl overflow-hidden transition-all duration-300">
+                    <div className="pointer-events-none absolute inset-0 rounded-2xl bg-pickfirst-yellow/0 transition duration-500 group-hover:bg-pickfirst-yellow/15" />
+                      {isOffMarket && (
+                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex items-center justify-center">
+                          <div className="text-center space-y-2">
+                            <Badge className="bg-pickfirst-yellow text-black">Off-market</Badge>
+                            <p className="text-sm text-muted-foreground">Locked for premium members</p>
+                          </div>
                         </div>
                       )}
-                    </CardHeader>
-                    <CardContent className="space-y-3 pb-6">
-                      <div>
-                        <p className="text-foreground font-semibold text-lg leading-tight line-clamp-2">{property.title}</p>
-                        <p className="text-sm text-muted-foreground">{property.address}, {property.city}</p>
-                      </div>
-                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                        {property.bedrooms !== null && (
-                          <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
-                            <Bed className="h-3 w-3" />
-                            {property.bedrooms} beds
+                      <CardHeader className="p-0 relative z-10">
+                        {property.images && property.images.length > 0 ? (
+                          <img
+                            src={property.images[0]}
+                            alt={property.title}
+                            className="h-36 w-full object-cover"
+                          />
+                        ) : (
+                          <div className="h-36 w-full bg-muted flex items-center justify-center">
+                            <Square className="h-8 w-8 text-muted-foreground" />
                           </div>
                         )}
-                        {property.bathrooms !== null && (
-                          <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
-                            <Bath className="h-3 w-3" />
-                            {property.bathrooms} baths
-                          </div>
-                        )}
-                        {property.square_feet !== null && (
-                          <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
-                            <Square className="h-3 w-3" />
-                            {property.square_feet.toLocaleString()} sq m
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-baseline justify-between">
-                        <p className="text-xl font-semibold text-foreground">
-                          {PropertyService.getDisplayPrice(property)}
+                      </CardHeader>
+                      <CardContent className="space-y-3 pb-6 relative z-10">
+                        <div>
+                          <p className="text-foreground font-semibold text-lg leading-tight line-clamp-2">{property.title}</p>
+                          <p className="text-sm text-muted-foreground">{property.address}, {property.city}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          {property.bedrooms !== null && (
+                            <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                              <Bed className="h-3 w-3" />
+                              {property.bedrooms} beds
+                            </div>
+                          )}
+                          {property.bathrooms !== null && (
+                            <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                              <Bath className="h-3 w-3" />
+                              {property.bathrooms} baths
+                            </div>
+                          )}
+                          {property.square_feet !== null && (
+                            <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                              <Square className="h-3 w-3" />
+                              {property.square_feet.toLocaleString()} sq m
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-baseline justify-between">
+                          <p className="text-xl font-semibold text-foreground">
+                            {PropertyService.getDisplayPrice(property)}
+                          </p>
+                          <Button
+                            variant="outline"
+                            disabled={isOffMarket}
+                            className={`text-sm ${isOffMarket ? 'text-muted-foreground border-border' : 'text-primary border-primary hover:bg-primary/10'}`}
+                            onClick={() => navigate(`/property/${property.id}`)}
+                          >
+                            {isOffMarket ? 'Unlock in Premium' : 'View details'}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Log in to enquire with the agent or upgrade to premium for off-market access.
                         </p>
-                        <Button
-                          variant="outline"
-                          disabled={isOffMarket}
-                          className={`text-sm ${isOffMarket ? 'text-muted-foreground border-border' : 'text-primary border-primary hover:bg-primary/10'}`}
-                          onClick={() => navigate(`/property/${property.id}`)}
-                        >
-                          {isOffMarket ? 'Unlock in Premium' : 'View details'}
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Log in to enquire with the agent or upgrade to premium for off-market access.
-                      </p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          {/* Feature Cards Section */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="bg-white/95 border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-pickfirst-yellow/40">
+              <CardContent className="p-6 space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-pickfirst-yellow/20 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-pickfirst-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">Advanced Search</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Filter properties by location, price, size, and dozens of other criteria to find your perfect match
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/95 border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-pickfirst-yellow/40">
+              <CardContent className="p-6 space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-pickfirst-yellow/20 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-pickfirst-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">Direct Messaging</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Connect directly with property owners and real estate agents for quick responses and personalized service
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/95 border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-pickfirst-yellow/40">
+              <CardContent className="p-6 space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-pickfirst-yellow/20 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-pickfirst-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">Premium Listings</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Access exclusive off-market properties not available on other platforms before they go public
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Call to Action Section */}
+          <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/90 shadow-2xl">
+            <div className="pointer-events-none absolute inset-0">
+              <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-pickfirst-yellow/20 blur-3xl" />
+              <div className="absolute bottom-0 left-0 h-48 w-48 rounded-full bg-pickfirst-amber/20 blur-2xl" />
             </div>
-          )}
+            <div className="relative z-10 px-6 py-12 lg:px-12 lg:py-16 text-center space-y-6">
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
+                Ready to Get Started?
+              </h2>
+              <p className="max-w-2xl mx-auto text-lg text-gray-700">
+                Join thousands of users who trust PickFirst for their real estate needs
+              </p>
+              <Button 
+                onClick={handleSignUpClick}
+                className="pickfirst-gradient-yellow-amber text-black font-bold text-lg px-8 py-6 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl hover:shadow-pickfirst-yellow/50 rounded-xl"
+              >
+                <User className="h-5 w-5 mr-2" />
+                Sign Up Free Today
+              </Button>
+            </div>
+          </div>
         </section>
       </main>
     </div>

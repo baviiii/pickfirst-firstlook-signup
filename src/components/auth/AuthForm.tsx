@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +18,7 @@ export const AuthForm = () => {
   const { signIn, signUp, updateProfile } = useAuth();
   const navigate = useNavigate();
   const csrf = useCSRFProtection();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [signInData, setSignInData] = useState({
     email: '',
@@ -98,18 +100,20 @@ export const AuthForm = () => {
         toast.error(error.message);
         setLoading(false);
       } else {
-        toast.success('Account created! Please check your email to verify your account before signing in.', {
-          duration: 5000,
-        });
+        const toastId = toast.success(
+          'Account created! Please check your email to verify your account before signing in.',
+          {
+            duration: Infinity,
+            action: {
+              label: 'Dismiss',
+              onClick: () => toast.dismiss(toastId),
+            },
+          },
+        );
         
-        csrf.regenerate(); // Regenerate CSRF token after successful signup
+        csrf.regenerate();
         setLoading(false);
-        
-        // Redirect to sign-in after 2 seconds
-        setTimeout(() => {
-          const signInTab = document.querySelector('[value="signin"]') as HTMLElement;
-          signInTab?.click();
-        }, 2000);
+        navigate('/auth?tab=signin&showConfirm=1');
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -120,6 +124,25 @@ export const AuthForm = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const showConfirm = searchParams.get('showConfirm');
+    if (showConfirm) {
+      const toastId = toast.success(
+        'Check your inbox to confirm your email before signing in.',
+        {
+          duration: Infinity,
+          action: {
+            label: 'Dismiss',
+            onClick: () => toast.dismiss(toastId),
+          },
+        },
+      );
+      const params = new URLSearchParams(searchParams);
+      params.delete('showConfirm');
+      setSearchParams(params, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleSignInInputChange = (field: string, value: string) => {
     setSignInData(prev => ({ ...prev, [field]: value }));
