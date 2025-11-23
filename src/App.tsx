@@ -60,8 +60,9 @@ const AuthHashRedirect = () => {
       window.location.hash.includes('refresh_token') ||
       window.location.hash.includes('type=')
     );
-    const onRootPath = window.location.pathname === '/' || window.location.pathname === import.meta.env.BASE_URL;
-    if (hasAuthHash && onRootPath) {
+    
+    // Check on any path, not just root (Supabase can redirect to different paths)
+    if (hasAuthHash) {
       const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
       const type = hashParams.get('type');
       
@@ -74,9 +75,10 @@ const AuthHashRedirect = () => {
       
       // For verification flows, always redirect to login page and sign out
       if (isVerificationFlow) {
-        // Sign out immediately to prevent auto-login
+        // Sign out immediately to prevent auto-login (synchronous if possible)
         supabase.auth.signOut().then(() => {
           const targetPath = `${basePath}/auth?tab=signin&showConfirm=1`;
+          // Clear hash to prevent Supabase from processing it
           window.location.replace(`${window.location.origin}${targetPath}`);
         }).catch((error) => {
           console.error('Error signing out:', error);

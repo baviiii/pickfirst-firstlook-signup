@@ -133,7 +133,7 @@ export const BuyerLayoutImproved = ({ children, showSearchBar = false }: BuyerLa
       {/* Mobile Overlay */}
       {mobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-[55] lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
@@ -144,7 +144,7 @@ export const BuyerLayoutImproved = ({ children, showSearchBar = false }: BuyerLa
       } ${
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       } 
-      w-80 transition-all duration-500 ease-out flex flex-col h-screen fixed lg:relative top-0 z-40 overflow-hidden`}>
+      w-80 transition-all duration-500 ease-out flex flex-col h-screen fixed lg:relative top-0 z-[60] lg:z-40 overflow-hidden`}>
         {/* Sidebar background */}
         <div className="absolute inset-0 bg-white border-r border-gray-200"></div>
         

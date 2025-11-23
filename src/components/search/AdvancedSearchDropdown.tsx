@@ -200,7 +200,7 @@ export const AdvancedSearchDropdown = ({ onClose }: AdvancedSearchDropdownProps)
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-border rounded-xl shadow-2xl overflow-hidden z-[9999] animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-border rounded-xl shadow-2xl overflow-hidden z-[99999] animate-in fade-in slide-in-from-top-2 duration-200">
           {/* Loading State */}
           {loading && (
             <div className="p-6 flex items-center justify-center">
