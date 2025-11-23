@@ -39,6 +39,7 @@ export const AdvancedSearchDropdown = ({ onClose }: AdvancedSearchDropdownProps)
   ]);
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Load recent searches from localStorage
@@ -60,7 +61,12 @@ export const AdvancedSearchDropdown = ({ onClose }: AdvancedSearchDropdownProps)
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      if (
+        searchRef.current && 
+        !searchRef.current.contains(event.target as Node) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -68,6 +74,28 @@ export const AdvancedSearchDropdown = ({ onClose }: AdvancedSearchDropdownProps)
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Update dropdown position on scroll/resize
+  useEffect(() => {
+    if (!isOpen || !inputRef.current || !dropdownRef.current) return;
+
+    const updatePosition = () => {
+      if (inputRef.current && dropdownRef.current) {
+        const rect = inputRef.current.getBoundingClientRect();
+        dropdownRef.current.style.top = `${rect.bottom + 8}px`;
+        dropdownRef.current.style.left = `${rect.left}px`;
+        dropdownRef.current.style.width = `${rect.width}px`;
+      }
+    };
+
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [isOpen]);
 
   // Search properties with debounce
   useEffect(() => {
@@ -200,7 +228,16 @@ export const AdvancedSearchDropdown = ({ onClose }: AdvancedSearchDropdownProps)
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-border rounded-xl shadow-2xl overflow-hidden z-[99999] animate-in fade-in slide-in-from-top-2 duration-200">
+        <div 
+          ref={dropdownRef}
+          className="fixed bg-white border border-border rounded-xl shadow-2xl overflow-hidden z-[99999] animate-in fade-in slide-in-from-top-2 duration-200"
+          style={{
+            top: inputRef.current ? `${inputRef.current.getBoundingClientRect().bottom + 8}px` : 'auto',
+            left: inputRef.current ? `${inputRef.current.getBoundingClientRect().left}px` : 'auto',
+            width: inputRef.current ? `${inputRef.current.getBoundingClientRect().width}px` : 'auto',
+            maxWidth: '90vw'
+          }}
+        >
           {/* Loading State */}
           {loading && (
             <div className="p-6 flex items-center justify-center">

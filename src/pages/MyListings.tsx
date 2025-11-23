@@ -151,27 +151,27 @@ const MyListingsPage = () => {
       <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-8">
         {/* Page Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" onClick={() => navigate('/dashboard')} className="text-yellow-400 hover:text-amber-500">
+          <Button variant="ghost" onClick={() => navigate('/dashboard')} className="text-foreground hover:text-primary">
             <ArrowLeft className="h-5 w-5 mr-2" />
             Back
           </Button>
-          <h1 className="text-3xl font-bold text-white">My Property Listings</h1>
+          <h1 className="text-3xl font-bold text-foreground">My Property Listings</h1>
         </div>
 
         {loadingListings ? (
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-yellow-400/20">
-            <CardContent className="py-12 text-center text-gray-300 text-lg">Loading your listings...</CardContent>
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+            <CardContent className="py-12 text-center text-muted-foreground text-lg">Loading your listings...</CardContent>
           </Card>
         ) : listings.length === 0 ? (
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-yellow-400/20">
-            <CardContent className="py-12 text-center text-gray-400 text-lg">You have no property listings yet.</CardContent>
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+            <CardContent className="py-12 text-center text-muted-foreground text-lg">You have no property listings yet.</CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map(listing => (
-              <Card key={listing.id} className="bg-white/5 border border-yellow-400/10 flex flex-col h-full">
-                <CardHeader className="pb-2 border-b border-white/10">
-                  <div className="aspect-video bg-gray-700 rounded-md mb-3 overflow-hidden">
+              <Card key={listing.id} className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 flex flex-col h-full">
+                <CardHeader className="pb-2 border-b border-border">
+                  <div className="aspect-video bg-muted rounded-md mb-3 overflow-hidden">
                     {listing.images && listing.images.length > 0 ? (
                       <img
                         src={listing.images[0]}
@@ -184,50 +184,50 @@ const MyListingsPage = () => {
                         }}
                       />
                     ) : null}
-                    <div className={`w-full h-full bg-gray-700 flex items-center justify-center ${listing.images && listing.images.length > 0 ? 'hidden' : ''}`}>
-                      <span className="text-gray-500 text-sm">No Image</span>
+                    <div className={`w-full h-full bg-muted flex items-center justify-center ${listing.images && listing.images.length > 0 ? 'hidden' : ''}`}>
+                      <span className="text-muted-foreground text-sm">No Image</span>
                     </div>
                   </div>
-                  <CardTitle className="text-lg text-yellow-400 mb-1">{listing.title}</CardTitle>
-                  <CardDescription className="text-gray-300">{listing.address}, {listing.city}, {listing.state}</CardDescription>
+                  <CardTitle className="text-lg text-foreground mb-1">{listing.title}</CardTitle>
+                  <CardDescription className="text-muted-foreground">{listing.address}, {listing.city}, {listing.state}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col justify-between py-4">
                   <div>
-                    <div className="text-white font-bold text-xl mb-2">
+                    <div className="text-foreground font-bold text-xl mb-2">
                       {PropertyService.getDisplayPrice(listing)}
                     </div>
-                    <div className="text-gray-400 text-sm mb-2">{listing.property_type.replace(/\b\w/g, l => l.toUpperCase())}</div>
+                    <div className="text-muted-foreground text-sm mb-2">{listing.property_type.replace(/\b\w/g, l => l.toUpperCase())}</div>
                     <div className="flex flex-wrap gap-2 mb-2">
-                      {listing.bedrooms !== null && <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded">{listing.bedrooms} Bed</span>}
-                      {listing.bathrooms !== null && <span className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded">{listing.bathrooms} Bath</span>}
-                      {listing.square_feet !== null && <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded">{listing.square_feet} Sq Ft</span>}
+                      {listing.bedrooms !== null && <span className="bg-blue-500/10 text-blue-600 px-2 py-1 rounded text-xs">{listing.bedrooms} Bed</span>}
+                      {listing.bathrooms !== null && <span className="bg-purple-500/10 text-purple-600 px-2 py-1 rounded text-xs">{listing.bathrooms} Bath</span>}
+                      {listing.square_feet !== null && <span className="bg-green-500/10 text-green-600 px-2 py-1 rounded text-xs">{listing.square_feet} sq metres</span>}
                     </div>
-                    <div className="text-xs text-gray-400 mb-2">Status: <span className={
-                      listing.status === 'approved' ? 'text-green-400' :
-                      listing.status === 'pending' ? 'text-yellow-400' :
-                      listing.status === 'rejected' ? 'text-red-400' :
-                      listing.status === 'sold' ? 'text-blue-400' :
-                      'text-gray-400'
+                    <div className="text-xs text-muted-foreground mb-2">Status: <span className={
+                      listing.status === 'approved' ? 'text-green-600' :
+                      listing.status === 'pending' ? 'text-yellow-600' :
+                      listing.status === 'rejected' ? 'text-red-600' :
+                      listing.status === 'sold' ? 'text-blue-600' :
+                      'text-muted-foreground'
                     }>{listing.status.charAt(0).toUpperCase() + listing.status.slice(1)}</span></div>
                     {listing.status === 'rejected' && listing.rejection_reason && (
-                      <div className="text-xs text-red-400">Reason: {listing.rejection_reason}</div>
+                      <div className="text-xs text-red-600">Reason: {listing.rejection_reason}</div>
                     )}
                   </div>
                   <div className="flex gap-2 mt-4 flex-wrap">
-                    <Button size="sm" variant="outline" className="text-blue-500 border-blue-500 hover:bg-blue-500/10 flex items-center" onClick={() => handleViewDetails(listing)}>
+                    <Button size="sm" variant="outline" className="text-foreground border-border hover:bg-muted flex items-center" onClick={() => handleViewDetails(listing)}>
                       <Eye className="h-4 w-4 mr-1" /> View
                     </Button>
                     {listing.status !== 'sold' && (
                       <>
-                        <Button size="sm" variant="outline" className="text-yellow-500 border-yellow-500 hover:bg-yellow-500/10 flex items-center" onClick={() => handleEditListing(listing)}>
+                        <Button size="sm" variant="outline" className="text-foreground border-border hover:bg-muted flex items-center" onClick={() => handleEditListing(listing)}>
                           <Edit className="h-4 w-4 mr-1" /> Edit
                         </Button>
-                        <Button size="sm" variant="outline" className="text-green-500 border-green-500 hover:bg-green-500/10 flex items-center" onClick={() => handleMarkAsSold(listing)}>
+                        <Button size="sm" variant="outline" className="text-foreground border-border hover:bg-muted flex items-center" onClick={() => handleMarkAsSold(listing)}>
                           <CheckCircle className="h-4 w-4 mr-1" /> Mark Sold
                         </Button>
                       </>
                     )}
-                    <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-500/10 flex items-center" onClick={() => handleDelete(listing.id)}>
+                    <Button size="sm" variant="outline" className="text-red-600 border-red-300 hover:bg-red-50 flex items-center" onClick={() => handleDelete(listing.id)}>
                       <Trash2 className="h-4 w-4 mr-1" /> Delete
                     </Button>
                   </div>
@@ -240,9 +240,9 @@ const MyListingsPage = () => {
 
       {/* View Details Modal */}
       <Dialog open={!!selectedListing} onOpenChange={() => setSelectedListing(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 border border-yellow-400/20">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto pickfirst-glass bg-card text-card-foreground border border-pickfirst-yellow/30">
           <DialogHeader>
-            <DialogTitle className="text-yellow-400 text-xl">{selectedListing?.title}</DialogTitle>
+            <DialogTitle className="text-foreground text-xl">{selectedListing?.title}</DialogTitle>
           </DialogHeader>
           
           {selectedListing && (
@@ -250,13 +250,13 @@ const MyListingsPage = () => {
               {/* Image Gallery */}
               {selectedListing.images && selectedListing.images.length > 0 && (
                 <div className="relative">
-                  <div className="aspect-video bg-gray-700 rounded-lg overflow-hidden">
+                  <div className="aspect-video bg-muted rounded-lg overflow-hidden">
                     <img
                       src={selectedListing.images[currentImageIndex]}
                       alt={`${selectedListing.title} - Image ${currentImageIndex + 1}`}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzc0MTUxIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIE5vdCBGb3VuZDwvdGV4dD48L3N2Zz4=';
+                        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjNGNEY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzY2NjY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIE5vdCBGb3VuZDwvdGV4dD48L3N2Zz4=';
                       }}
                     />
                   </div>
@@ -266,7 +266,7 @@ const MyListingsPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 border-white/20 text-white hover:bg-black/70"
+                        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-card/90 border-border text-foreground hover:bg-card"
                         onClick={prevImage}
                       >
                         <ChevronLeft className="h-4 w-4" />
@@ -274,12 +274,12 @@ const MyListingsPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 border-white/20 text-white hover:bg-black/70"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-card/90 border-border text-foreground hover:bg-card"
                         onClick={nextImage}
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Button>
-                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black/50 px-2 py-1 rounded text-white text-sm">
+                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-card/90 px-2 py-1 rounded text-foreground text-sm border border-border">
                         {currentImageIndex + 1} / {selectedListing.images.length}
                       </div>
                     </>
@@ -291,59 +291,59 @@ const MyListingsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-yellow-400 mb-2">Basic Information</h3>
-                    <div className="space-y-2 text-gray-300">
-                      <p><span className="text-gray-400">Address:</span> {selectedListing?.address}</p>
-                      <p><span className="text-gray-400">City:</span> {selectedListing?.city}</p>
-                      <p><span className="text-gray-400">State:</span> {selectedListing?.state}</p>
-                      <p><span className="text-gray-400">ZIP:</span> {selectedListing?.zip_code}</p>
-                      <p><span className="text-gray-400">Property Type:</span> {selectedListing?.property_type?.replace(/\b\w/g, l => l.toUpperCase())}</p>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">Basic Information</h3>
+                    <div className="space-y-2 text-muted-foreground">
+                      <p><span className="text-muted-foreground/80">Address:</span> <span className="text-foreground">{selectedListing?.address}</span></p>
+                      <p><span className="text-muted-foreground/80">City:</span> <span className="text-foreground">{selectedListing?.city}</span></p>
+                      <p><span className="text-muted-foreground/80">State:</span> <span className="text-foreground">{selectedListing?.state}</span></p>
+                      <p><span className="text-muted-foreground/80">ZIP:</span> <span className="text-foreground">{selectedListing?.zip_code}</span></p>
+                      <p><span className="text-muted-foreground/80">Property Type:</span> <span className="text-foreground">{selectedListing?.property_type?.replace(/\b\w/g, l => l.toUpperCase())}</span></p>
                     </div>
                   </div>
                   
                   <div>
-                    <h3 className="text-lg font-semibold text-yellow-400 mb-2">Pricing & Details</h3>
-                    <div className="space-y-2 text-gray-300">
+                    <h3 className="text-lg font-semibold text-foreground mb-2">Pricing & Details</h3>
+                    <div className="space-y-2 text-muted-foreground">
                       <p>
-                        <span className="text-gray-400">Price:</span>{' '}
-                        <span className="text-white font-bold text-xl">
+                        <span className="text-muted-foreground/80">Price:</span>{' '}
+                        <span className="text-foreground font-bold text-xl">
                           {PropertyService.getDisplayPrice(selectedListing)}
                         </span>
                       </p>
-                      {selectedListing?.bedrooms !== null && <p><span className="text-gray-400">Bedrooms:</span> {selectedListing.bedrooms}</p>}
-                      {selectedListing?.bathrooms !== null && <p><span className="text-gray-400">Bathrooms:</span> {selectedListing.bathrooms}</p>}
-                      {selectedListing?.square_feet !== null && <p><span className="text-gray-400">Square Metres:</span> {selectedListing.square_feet.toLocaleString()}</p>}
-                      {selectedListing?.lot_size !== null && <p><span className="text-gray-400">Lot Size:</span> {selectedListing.lot_size.toLocaleString()} sq metres</p>}
-                      {selectedListing?.year_built !== null && <p><span className="text-gray-400">Year Built:</span> {selectedListing.year_built}</p>}
+                      {selectedListing?.bedrooms !== null && <p><span className="text-muted-foreground/80">Bedrooms:</span> <span className="text-foreground">{selectedListing.bedrooms}</span></p>}
+                      {selectedListing?.bathrooms !== null && <p><span className="text-muted-foreground/80">Bathrooms:</span> <span className="text-foreground">{selectedListing.bathrooms}</span></p>}
+                      {selectedListing?.square_feet !== null && <p><span className="text-muted-foreground/80">Square Metres:</span> <span className="text-foreground">{selectedListing.square_feet.toLocaleString()}</span></p>}
+                      {selectedListing?.lot_size !== null && <p><span className="text-muted-foreground/80">Lot Size:</span> <span className="text-foreground">{selectedListing.lot_size.toLocaleString()} sq metres</span></p>}
+                      {selectedListing?.year_built !== null && <p><span className="text-muted-foreground/80">Year Built:</span> <span className="text-foreground">{selectedListing.year_built}</span></p>}
                     </div>
                   </div>
                 </div>
                 
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-yellow-400 mb-2">Status & Contact</h3>
-                    <div className="space-y-2 text-gray-300">
-                      <p><span className="text-gray-400">Status:</span> <span className={`font-semibold ${
-                        selectedListing?.status === 'approved' ? 'text-green-400' :
-                        selectedListing?.status === 'pending' ? 'text-yellow-400' :
-                        selectedListing?.status === 'rejected' ? 'text-red-400' :
-                        selectedListing?.status === 'sold' ? 'text-blue-400' :
-                        'text-gray-400'
+                    <h3 className="text-lg font-semibold text-foreground mb-2">Status & Contact</h3>
+                    <div className="space-y-2 text-muted-foreground">
+                      <p><span className="text-muted-foreground/80">Status:</span> <span className={`font-semibold ${
+                        selectedListing?.status === 'approved' ? 'text-green-600' :
+                        selectedListing?.status === 'pending' ? 'text-yellow-600' :
+                        selectedListing?.status === 'rejected' ? 'text-red-600' :
+                        selectedListing?.status === 'sold' ? 'text-blue-600' :
+                        'text-foreground'
                       }`}>{selectedListing?.status?.charAt(0).toUpperCase() + selectedListing?.status?.slice(1)}</span></p>
                       {selectedListing?.status === 'rejected' && selectedListing?.rejection_reason && (
-                        <p><span className="text-gray-400">Rejection Reason:</span> <span className="text-red-400">{selectedListing.rejection_reason}</span></p>
+                        <p><span className="text-muted-foreground/80">Rejection Reason:</span> <span className="text-red-600">{selectedListing.rejection_reason}</span></p>
                       )}
-                      {selectedListing?.contact_phone && <p><span className="text-gray-400">Phone:</span> {selectedListing.contact_phone}</p>}
-                      {selectedListing?.contact_email && <p><span className="text-gray-400">Email:</span> {selectedListing.contact_email}</p>}
+                      {selectedListing?.contact_phone && <p><span className="text-muted-foreground/80">Phone:</span> <span className="text-foreground">{selectedListing.contact_phone}</span></p>}
+                      {selectedListing?.contact_email && <p><span className="text-muted-foreground/80">Email:</span> <span className="text-foreground">{selectedListing.contact_email}</span></p>}
                     </div>
                   </div>
                   
                   {selectedListing?.features && selectedListing.features.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-semibold text-yellow-400 mb-2">Features</h3>
+                      <h3 className="text-lg font-semibold text-foreground mb-2">Features</h3>
                       <div className="flex flex-wrap gap-2">
                         {selectedListing.features.map((feature, index) => (
-                          <span key={index} className="bg-blue-500/10 text-blue-400 px-2 py-1 rounded text-sm">
+                          <span key={index} className="bg-primary/10 text-primary px-2 py-1 rounded text-sm border border-primary/20">
                             {feature}
                           </span>
                         ))}
@@ -355,15 +355,15 @@ const MyListingsPage = () => {
               
               {selectedListing?.description && (
                 <div>
-                  <h3 className="text-lg font-semibold text-yellow-400 mb-2">Description</h3>
-                  <p className="text-gray-300 leading-relaxed">{selectedListing.description}</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Description</h3>
+                  <p className="text-muted-foreground leading-relaxed">{selectedListing.description}</p>
                 </div>
               )}
               
               {selectedListing?.showing_instructions && (
                 <div>
-                  <h3 className="text-lg font-semibold text-yellow-400 mb-2">Showing Instructions</h3>
-                  <p className="text-gray-300 leading-relaxed">{selectedListing.showing_instructions}</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Showing Instructions</h3>
+                  <p className="text-muted-foreground leading-relaxed">{selectedListing.showing_instructions}</p>
                 </div>
               )}
             </div>
@@ -373,9 +373,9 @@ const MyListingsPage = () => {
 
       {/* Edit Listing Modal */}
       <Dialog open={!!editingListing} onOpenChange={() => setEditingListing(null)}>
-        <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 border border-yellow-400/20 p-0">
+        <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto pickfirst-glass bg-card text-card-foreground border border-pickfirst-yellow/30 p-0">
           <DialogHeader className="px-6 pt-6 pb-0">
-            <DialogTitle className="text-yellow-400 text-xl">
+            <DialogTitle className="text-foreground text-xl">
               {editingListing ? `Edit Listing: ${editingListing.title}` : 'Edit Listing'}
             </DialogTitle>
           </DialogHeader>

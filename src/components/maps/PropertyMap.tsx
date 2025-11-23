@@ -607,7 +607,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
               variant="outline"
               size="sm"
               onClick={() => navigate('/dashboard')}
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              className="bg-card border-border text-foreground hover:bg-muted"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Back to Dashboard</span>
@@ -622,13 +622,13 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+              className="bg-card border-border text-foreground placeholder:text-muted-foreground"
             />
             <Button
               size="sm"
               onClick={handleSearch}
               disabled={isSearching}
-              className="bg-yellow-500 hover:bg-yellow-600 text-black"
+              className="bg-pickfirst-yellow hover:bg-pickfirst-amber text-black"
             >
               {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
             </Button>
@@ -638,7 +638,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
             variant="outline"
             size="sm"
             onClick={refreshMap}
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            className="bg-card border-border text-foreground hover:bg-muted"
           >
             <RefreshCw className="w-4 h-4" />
           </Button>

@@ -751,13 +751,13 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-pickfirst-yellow/20">
+    <Card className="w-full max-w-4xl mx-auto pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold text-white flex items-center gap-2">
-          <Home className="w-6 h-6 text-pickfirst-yellow" />
+        <CardTitle className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <Home className="w-6 h-6 text-primary" />
           {isEditMode ? 'Update Property Listing' : 'Add New Property Listing'}
         </CardTitle>
-        <CardDescription className="text-gray-300">
+        <CardDescription className="text-muted-foreground">
           {isEditMode
             ? 'Update your property details to keep buyers informed'
             : 'Create a new property listing for potential buyers to discover'}
@@ -767,29 +767,29 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Listing Type Selection */}
-          <div className="p-4 bg-gradient-to-br from-blue-900/20 to-purple-900/20 border border-blue-400/30 rounded-lg">
-            <Label className="text-white font-semibold mb-3 block">Listing Type *</Label>
+          <div className="p-4 bg-primary/10 border border-primary/30 rounded-lg">
+            <Label className="text-foreground font-semibold mb-3 block">Listing Type *</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
                 type="button"
                 onClick={() => setListingType('on-market')}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   listingType === 'on-market'
-                    ? 'border-pickfirst-yellow bg-pickfirst-yellow/10'
-                    : 'border-white/20 bg-white/5 hover:border-white/40'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border bg-card/80 hover:border-primary/40'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    listingType === 'on-market' ? 'border-pickfirst-yellow' : 'border-white/40'
+                    listingType === 'on-market' ? 'border-primary' : 'border-border'
                   }`}>
                     {listingType === 'on-market' && (
-                      <div className="w-3 h-3 rounded-full bg-pickfirst-yellow"></div>
+                      <div className="w-3 h-3 rounded-full bg-primary"></div>
                     )}
                   </div>
                   <div className="text-left">
-                    <div className="text-white font-semibold">On-Market Listing</div>
-                    <div className="text-gray-400 text-sm">Publicly visible to all buyers</div>
+                    <div className="text-foreground font-semibold">On-Market Listing</div>
+                    <div className="text-muted-foreground text-sm">Publicly visible to all buyers</div>
                   </div>
                 </div>
               </button>
@@ -799,21 +799,21 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                 onClick={() => setListingType('off-market')}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   listingType === 'off-market'
-                    ? 'border-pickfirst-yellow bg-pickfirst-yellow/10'
-                    : 'border-white/20 bg-white/5 hover:border-white/40'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border bg-card/80 hover:border-primary/40'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    listingType === 'off-market' ? 'border-pickfirst-yellow' : 'border-white/40'
+                    listingType === 'off-market' ? 'border-primary' : 'border-border'
                   }`}>
                     {listingType === 'off-market' && (
-                      <div className="w-3 h-3 rounded-full bg-pickfirst-yellow"></div>
+                      <div className="w-3 h-3 rounded-full bg-primary"></div>
                     )}
                   </div>
                   <div className="text-left">
-                    <div className="text-white font-semibold">Off-Market Listing</div>
-                    <div className="text-gray-400 text-sm">Exclusive to premium subscribers</div>
+                    <div className="text-foreground font-semibold">Off-Market Listing</div>
+                    <div className="text-muted-foreground text-sm">Exclusive to premium subscribers</div>
                   </div>
                 </div>
               </button>
@@ -823,26 +823,26 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="title" className="text-white font-semibold">Property Title *</Label>
+              <Label htmlFor="title" className="text-foreground font-semibold">Property Title *</Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
                 placeholder="e.g., Beautiful 3BR Family Home"
-                className="bg-white/5 border border-white/20 text-white"
+                className="bg-card border border-border text-foreground placeholder:text-muted-foreground"
                 required
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="property_type" className="text-white font-semibold">Property Type *</Label>
+              <Label htmlFor="property_type" className="text-foreground font-semibold">Property Type *</Label>
               <Select value={formData.property_type} onValueChange={(value) => handleInputChange('property_type', value)}>
-                <SelectTrigger className="bg-white/5 border border-white/20 text-white">
+                <SelectTrigger className="bg-card border border-border text-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border border-white/20">
+                <SelectContent className="bg-popover border border-border">
                   {propertyTypes.map(type => (
-                    <SelectItem key={type.value} value={type.value} className="text-white">
+                    <SelectItem key={type.value} value={type.value} className="text-foreground">
                       {type.label}
                     </SelectItem>
                   ))}
@@ -854,14 +854,14 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
           {/* Description */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="description" className="text-white font-semibold">Description</Label>
+              <Label htmlFor="description" className="text-foreground font-semibold">Description</Label>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={handleAutoDetectFeatures}
                 disabled={analyzingDescription || !formData.description}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0 hover:from-purple-700 hover:to-blue-700"
+                className="bg-primary text-primary-foreground border-0 hover:bg-pickfirst-amber"
               >
                 {analyzingDescription ? (
                   <>
@@ -881,17 +881,17 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               placeholder="Describe the property, its features, and what makes it special... (AI will auto-detect features)"
-              className="bg-white/5 border border-white/20 text-white min-h-[100px]"
+              className="bg-card border border-border text-foreground placeholder:text-muted-foreground min-h-[100px]"
               rows={4}
             />
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted-foreground">
               💡 Tip: Mention features like pool, garage, bedrooms, bathrooms, etc., and click Auto-Detect to fill them automatically
             </p>
           </div>
 
           {/* Price - Allow text, numbers, and ranges */}
           <div className="space-y-2">
-            <Label htmlFor="price" className="text-white font-semibold flex items-center gap-2">
+            <Label htmlFor="price" className="text-foreground font-semibold flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
               Price *
             </Label>
@@ -901,10 +901,10 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
               value={formData.price || ''}
               onChange={(e) => handleInputChange('price', e.target.value)}
               placeholder="e.g., 750,000 or Best Offers or 900,000-1,200,000"
-              className="bg-white/5 border border-white/20 text-white"
+              className="bg-card border border-border text-foreground placeholder:text-muted-foreground"
               required
             />
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted-foreground">
               💡 Examples: 750,000 • 900,000-1,200,000 • 1.2M-1.5M • Best Offers • Price on Application
             </p>
           </div>
@@ -912,7 +912,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
           {/* Property Details */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="bedrooms" className="text-white font-semibold flex items-center gap-2">
+              <Label htmlFor="bedrooms" className="text-foreground font-semibold flex items-center gap-2">
                 <Bed className="h-4 w-4" />
                 Bedrooms
               </Label>
@@ -922,12 +922,12 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                 value={formData.bedrooms || ''}
                 onChange={(e) => handleInputChange('bedrooms', parseInt(e.target.value) || 0)}
                 placeholder="0"
-                className="bg-white/5 border border-white/20 text-white"
+                className="bg-card border border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="bathrooms" className="text-white font-semibold flex items-center gap-2">
+              <Label htmlFor="bathrooms" className="text-foreground font-semibold flex items-center gap-2">
                 <Bath className="h-4 w-4" />
                 Bathrooms
               </Label>
@@ -938,12 +938,12 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                 value={formData.bathrooms || ''}
                 onChange={(e) => handleInputChange('bathrooms', parseFloat(e.target.value) || 0)}
                 placeholder="0"
-                className="bg-white/5 border border-white/20 text-white"
+                className="bg-card border border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="garages" className="text-white font-semibold flex items-center gap-2">
+              <Label htmlFor="garages" className="text-foreground font-semibold flex items-center gap-2">
                 🚗 Garages
               </Label>
               <Input
@@ -952,12 +952,12 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                 value={(formData as any).garages || ''}
                 onChange={(e) => handleInputChange('garages' as any, parseInt(e.target.value) || 0)}
                 placeholder="0"
-                className="bg-white/5 border border-white/20 text-white"
+                className="bg-card border border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="square_feet" className="text-white font-semibold flex items-center gap-2">
+              <Label htmlFor="square_feet" className="text-foreground font-semibold flex items-center gap-2">
                 <Ruler className="h-4 w-4" />
                 Square Meters
               </Label>
@@ -971,7 +971,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                   handleInputChange('square_feet', parsedValue);
                 }}
                 placeholder="0"
-                className="bg-white/5 border border-white/20 text-white"
+                className="bg-card border border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -979,27 +979,27 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
           {/* Address with Auto-Complete */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-white font-semibold flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-pickfirst-yellow" />
+              <Label className="text-foreground font-semibold flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-primary" />
                 Property Address
               </Label>
               
               {/* Geocoding Status Indicator */}
               <div className="flex items-center gap-2">
                 {geocodingStatus === 'loading' && (
-                  <div className="flex items-center gap-2 text-yellow-400">
+                  <div className="flex items-center gap-2 text-yellow-600">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     <span className="text-sm">Finding coordinates...</span>
                   </div>
                 )}
                 {geocodingStatus === 'success' && (
-                  <div className="flex items-center gap-2 text-green-400">
+                  <div className="flex items-center gap-2 text-green-600">
                     <CheckCircle className="h-4 w-4" />
                     <span className="text-sm">Coordinates found!</span>
                   </div>
                 )}
                 {geocodingStatus === 'error' && (
-                  <div className="flex items-center gap-2 text-red-400">
+                  <div className="flex items-center gap-2 text-red-600">
                     <AlertCircle className="h-4 w-4" />
                     <span className="text-sm">Address not found</span>
                   </div>
@@ -1009,7 +1009,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2 relative">
-                <Label htmlFor="address" className="text-white">Street Address *</Label>
+                <Label htmlFor="address" className="text-foreground">Street Address *</Label>
                 <div className="relative">
                   <Input
                     ref={addressInputRef}
@@ -1018,14 +1018,14 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                     onChange={(e) => handleInputChange('address', e.target.value)}
                     onBlur={handleAddressBlur}
                     placeholder="Start typing address (Australia first)"
-                    className="bg-white/5 border border-white/20 text-white pr-10"
+                    className="bg-card border border-border text-foreground placeholder:text-muted-foreground pr-10"
                     required
                   />
                   {searchingAddress && (
-                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                   )}
                   {!searchingAddress && formData.address && (
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   )}
                 </div>
                 
@@ -1055,27 +1055,27 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="city" className="text-white">City *</Label>
+                <Label htmlFor="city" className="text-foreground">City *</Label>
                 <Input
                   id="city"
                   value={formData.city}
                   onChange={(e) => handleInputChange('city', e.target.value)}
                   onBlur={handleAddressBlur}
                   placeholder="City"
-                  className="bg-white/5 border border-white/20 text-white"
+                  className="bg-card border border-border text-foreground placeholder:text-muted-foreground"
                   required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="state" className="text-white">State *</Label>
+                <Label htmlFor="state" className="text-foreground">State *</Label>
                 <Select value={formData.state} onValueChange={(value) => handleInputChange('state', value)}>
-                  <SelectTrigger className="bg-white/5 border border-white/20 text-white">
+                  <SelectTrigger className="bg-card border border-border text-foreground">
                     <SelectValue placeholder="Select State" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border border-white/20">
+                  <SelectContent className="bg-popover border border-border">
                     {australianStates.map(state => (
-                      <SelectItem key={state.value} value={state.value} className="text-white">
+                      <SelectItem key={state.value} value={state.value} className="text-foreground">
                         {state.label}
                       </SelectItem>
                     ))}
@@ -1084,14 +1084,14 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="zip_code" className="text-white">Post Code *</Label>
+                <Label htmlFor="zip_code" className="text-foreground">Post Code *</Label>
                 <Input
                   id="zip_code"
                   value={formData.zip_code}
                   onChange={(e) => handleInputChange('zip_code', e.target.value)}
                   onBlur={handleAddressBlur}
                   placeholder="Post Code"
-                  className="bg-white/5 border border-white/20 text-white"
+                  className="bg-card border border-border text-foreground placeholder:text-muted-foreground"
                   required
                 />
               </div>
@@ -1099,12 +1099,12 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
             
             {/* Coordinates Display */}
             {coordinates && (
-              <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-green-400">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-green-600">
                   <CheckCircle className="h-4 w-4" />
                   <span className="text-sm font-medium">Location Coordinates:</span>
                 </div>
-                <div className="text-sm text-green-300 mt-1">
+                <div className="text-sm text-green-700 mt-1">
                   Latitude: {coordinates.lat.toFixed(6)}, Longitude: {coordinates.lng.toFixed(6)}
                 </div>
               </div>
@@ -1116,7 +1116,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
               variant="outline"
               onClick={autoGeocodeAddress}
               disabled={!formData.address || !formData.city || !formData.state || !formData.zip_code}
-              className="text-white border-white/20 hover:border-pickfirst-yellow/30"
+              className="text-foreground border-border hover:bg-muted"
             >
               <MapPin className="h-4 w-4 mr-2" />
               Find Coordinates
@@ -1125,16 +1125,16 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
 
           {/* Images Upload */}
           <div className="space-y-4">
-            <Label className="text-white font-semibold flex items-center gap-2">
-              <ImageIcon className="w-4 h-4 text-pickfirst-yellow" />
+            <Label className="text-foreground font-semibold flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-primary" />
               Property Images {isEditMode ? '' : '*'}
             </Label>
             <div className="space-y-4">
               <Label htmlFor="images" className="cursor-pointer">
-                <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center hover:border-pickfirst-yellow/40 transition-colors">
-                  <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-gray-400">Click to upload images (max 25){!isEditMode && ' *'}</p>
-                  <p className="text-xs text-gray-500 mt-1">
+                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/40 transition-colors bg-card/50">
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-muted-foreground">Click to upload images (max 25){!isEditMode && ' *'}</p>
+                  <p className="text-xs text-muted-foreground/80 mt-1">
                     JPG, PNG, GIF up to 5MB each - At least one image required
                   </p>
                 </div>
@@ -1152,14 +1152,14 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
 
             {isEditMode && existingImages.length > 0 && (
               <div className="space-y-2">
-                <p className="text-sm text-gray-300 font-medium">Current Images</p>
+                <p className="text-sm text-foreground font-medium">Current Images</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {existingImages.map((imageUrl, index) => (
                     <div key={index} className="relative">
                       <img
                         src={imageUrl}
                         alt={`Existing ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg border border-white/20"
+                        className="w-full h-24 object-cover rounded-lg border border-border"
                       />
                       <Button
                         type="button"
@@ -1184,7 +1184,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                     <img
                       src={preview}
                       alt={`Preview ${index + 1}`}
-                      className="w-full h-24 object-cover rounded-lg border border-white/20"
+                      className="w-full h-24 object-cover rounded-lg border border-border"
                     />
                     <Button
                       type="button"
@@ -1203,16 +1203,16 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
 
           {/* Floor Plans Upload */}
           <div className="space-y-4">
-            <Label className="text-white font-semibold flex items-center gap-2">
-              <FileText className="w-4 h-4 text-pickfirst-yellow" />
+            <Label className="text-foreground font-semibold flex items-center gap-2">
+              <FileText className="w-4 h-4 text-primary" />
               Floor Plans
             </Label>
             <div className="space-y-4">
               <Label htmlFor="floorplans" className="cursor-pointer">
-                <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center hover:border-pickfirst-yellow/40 transition-colors">
-                  <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-gray-400">Click to upload floor plans (max 5)</p>
-                  <p className="text-xs text-gray-500 mt-1">JPG, PNG, PDF up to 10MB each</p>
+                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/40 transition-colors bg-card/50">
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-muted-foreground">Click to upload floor plans (max 5)</p>
+                  <p className="text-xs text-muted-foreground/80 mt-1">JPG, PNG, PDF up to 10MB each</p>
                 </div>
               </Label>
               <Input
@@ -1227,20 +1227,20 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
 
             {isEditMode && existingFloorPlans.length > 0 && (
               <div className="space-y-2">
-                <p className="text-sm text-gray-300 font-medium">Current Floor Plans</p>
+                <p className="text-sm text-foreground font-medium">Current Floor Plans</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {existingFloorPlans.map((planUrl, index) => (
                     <div key={index} className="relative">
                       {planUrl.toLowerCase().includes('.pdf') ? (
-                        <div className="w-full h-32 flex flex-col items-center justify-center rounded-lg border border-white/20 bg-black/60 text-white">
-                          <FileText className="h-8 w-8 mb-2 text-yellow-400" />
-                          <span className="text-xs">PDF Floor Plan {index + 1}</span>
+                        <div className="w-full h-32 flex flex-col items-center justify-center rounded-lg border border-border bg-muted">
+                          <FileText className="h-8 w-8 mb-2 text-primary" />
+                          <span className="text-xs text-foreground">PDF Floor Plan {index + 1}</span>
                         </div>
                       ) : (
                         <img
                           src={planUrl}
                           alt={`Existing Floor Plan ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg border border-white/20"
+                          className="w-full h-32 object-cover rounded-lg border border-border"
                         />
                       )}
                       <Button
@@ -1252,7 +1252,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                       >
                         <X className="h-3 w-3" />
                       </Button>
-                      <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                      <div className="absolute bottom-1 left-1 bg-card/90 text-foreground text-xs px-2 py-1 rounded border border-border">
                         Floor Plan {index + 1}
                       </div>
                     </div>
@@ -1267,15 +1267,15 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                 {floorPlanPreviews.map((preview, index) => (
                   <div key={index} className="relative">
                     {floorPlanFiles[index]?.type === 'application/pdf' ? (
-                      <div className="w-full h-32 flex flex-col items-center justify-center rounded-lg border border-white/20 bg-black/60 text-white">
-                        <FileText className="h-8 w-8 mb-2 text-yellow-400" />
-                        <span className="text-xs">PDF Floor Plan {index + 1}</span>
+                      <div className="w-full h-32 flex flex-col items-center justify-center rounded-lg border border-border bg-muted">
+                        <FileText className="h-8 w-8 mb-2 text-primary" />
+                        <span className="text-xs text-foreground">PDF Floor Plan {index + 1}</span>
                       </div>
                     ) : (
                       <img
                         src={preview}
                         alt={`Floor Plan ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg border border-white/20"
+                        className="w-full h-32 object-cover rounded-lg border border-border"
                       />
                     )}
                     <Button
@@ -1287,7 +1287,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                     >
                       <X className="h-3 w-3" />
                     </Button>
-                    <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                    <div className="absolute bottom-1 left-1 bg-card/90 text-foreground text-xs px-2 py-1 rounded border border-border">
                       Floor Plan {index + 1}
                     </div>
                   </div>
@@ -1299,8 +1299,8 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
           {/* Contact Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="contact_phone" className="text-white font-semibold flex items-center gap-2">
-                <Phone className="w-4 h-4 text-pickfirst-yellow" />
+              <Label htmlFor="contact_phone" className="text-foreground font-semibold flex items-center gap-2">
+                <Phone className="w-4 h-4 text-primary" />
                 Contact Phone
               </Label>
               <PhoneInput
@@ -1312,8 +1312,8 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="contact_email" className="text-white font-semibold flex items-center gap-2">
-                <Mail className="w-4 h-4 text-pickfirst-yellow" />
+              <Label htmlFor="contact_email" className="text-foreground font-semibold flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
                 Contact Email *
               </Label>
               <Input
@@ -1322,11 +1322,11 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                 value={formData.contact_email}
                 onChange={(e) => handleInputChange('contact_email', e.target.value)}
                 placeholder="agent@example.com"
-                className="bg-white/5 border border-white/20 text-white"
+                className="bg-card border border-border text-foreground placeholder:text-muted-foreground"
                 required
               />
               {(user?.email || (profile as any)?.email) && (
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   Pre-filled from your profile. You can update it if needed.
                 </p>
               )}
@@ -1335,7 +1335,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
 
           {/* Features */}
           <div className="space-y-4">
-            <Label className="text-white font-semibold">Property Features</Label>
+            <Label className="text-foreground font-semibold">Property Features</Label>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {commonFeatures.map(feature => (
                 <Button
@@ -1345,8 +1345,8 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                   size="sm"
                   onClick={() => handleFeatureToggle(feature)}
                   className={formData.features?.includes(feature) 
-                    ? "bg-pickfirst-yellow text-black" 
-                    : "bg-black text-white border-white/20 hover:border-pickfirst-yellow/30"
+                    ? "bg-primary text-primary-foreground" 
+                    : "text-foreground border-border hover:bg-muted"
                   }
                 >
                   {feature.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
@@ -1358,8 +1358,8 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
           {/* Open Inspections Scheduler */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-white font-semibold flex items-center gap-2">
-                <Clock className="w-4 h-4 text-pickfirst-yellow" />
+              <Label className="text-foreground font-semibold flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" />
                 Open Inspections
               </Label>
               <Button
@@ -1367,7 +1367,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                 onClick={addOpenInspection}
                 variant="outline"
                 size="sm"
-                className="text-pickfirst-yellow border-pickfirst-yellow/40 hover:bg-pickfirst-yellow/10"
+                className="text-primary border-primary/40 hover:bg-primary/10"
               >
                 <Clock className="w-4 h-4 mr-2" />
                 Add Inspection
@@ -1375,47 +1375,47 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
             </div>
             
             {openInspections.length === 0 ? (
-              <div className="text-center py-8 border-2 border-dashed border-white/20 rounded-lg">
-                <Clock className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-400 mb-2">No open inspections scheduled</p>
-                <p className="text-xs text-gray-500">Click "Add Inspection" to schedule viewing times</p>
+              <div className="text-center py-8 border-2 border-dashed border-border rounded-lg bg-card/50">
+                <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground mb-2">No open inspections scheduled</p>
+                <p className="text-xs text-muted-foreground/80">Click "Add Inspection" to schedule viewing times</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {openInspections.map((inspection, index) => (
-                  <div key={index} className="flex items-center gap-3 p-3 bg-white/5 border border-white/20 rounded-lg">
+                  <div key={index} className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
                       {/* Date Picker */}
                       <div>
-                        <Label className="text-xs text-gray-400 mb-1 block">Date</Label>
+                        <Label className="text-xs text-muted-foreground mb-1 block">Date</Label>
                         <Input
                           type="date"
                           value={inspection.date}
                           onChange={(e) => updateOpenInspection(index, 'date', e.target.value)}
                           min={new Date().toISOString().split('T')[0]}
-                          className="bg-white/5 border border-white/20 text-white"
+                          className="bg-card border border-border text-foreground"
                         />
                       </div>
                       
                       {/* Start Time */}
                       <div>
-                        <Label className="text-xs text-gray-400 mb-1 block">Start Time</Label>
+                        <Label className="text-xs text-muted-foreground mb-1 block">Start Time</Label>
                         <Input
                           type="time"
                           value={inspection.startTime}
                           onChange={(e) => updateOpenInspection(index, 'startTime', e.target.value)}
-                          className="bg-white/5 border border-white/20 text-white"
+                          className="bg-card border border-border text-foreground"
                         />
                       </div>
                       
                       {/* End Time */}
                       <div>
-                        <Label className="text-xs text-gray-400 mb-1 block">End Time</Label>
+                        <Label className="text-xs text-muted-foreground mb-1 block">End Time</Label>
                         <Input
                           type="time"
                           value={inspection.endTime}
                           onChange={(e) => updateOpenInspection(index, 'endTime', e.target.value)}
-                          className="bg-white/5 border border-white/20 text-white"
+                          className="bg-card border border-border text-foreground"
                         />
                       </div>
                     </div>
@@ -1426,7 +1426,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                       variant="ghost"
                       size="sm"
                       onClick={() => removeOpenInspection(index)}
-                      className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -1437,23 +1437,23 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
             
             {/* Preview of formatted inspections */}
             {openInspections.length > 0 && (
-              <div className="p-3 bg-green-900/20 border border-green-500/30 rounded-lg">
-                <Label className="text-green-400 text-sm font-medium mb-2 block">Preview:</Label>
-                <div className="text-green-300 text-sm whitespace-pre-line">
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <Label className="text-green-600 text-sm font-medium mb-2 block">Preview:</Label>
+                <div className="text-green-700 text-sm whitespace-pre-line">
                   {formatOpenInspectionsForSubmission()}
                 </div>
               </div>
             )}
 
             {isEditMode && originalShowingInstructions && openInspections.length === 0 && (
-              <div className="p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-                <Label className="text-blue-300 text-sm font-medium mb-2 block">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <Label className="text-blue-600 text-sm font-medium mb-2 block">
                   Existing Inspection Notes
                 </Label>
-                <div className="text-blue-200 text-sm whitespace-pre-line">
+                <div className="text-blue-700 text-sm whitespace-pre-line">
                   {originalShowingInstructions}
                 </div>
-                <p className="text-xs text-blue-200/80 mt-2">
+                <p className="text-xs text-blue-600/80 mt-2">
                   Add or modify inspections above to replace these existing notes.
                 </p>
               </div>
@@ -1461,12 +1461,12 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
           </div>
 
           {/* Vendor Details - Optional */}
-          <div className="space-y-4 p-4 bg-gradient-to-br from-yellow-900/20 to-amber-900/20 border border-yellow-400/30 rounded-lg">
+          <div className="space-y-4 p-4 bg-primary/10 border border-primary/30 rounded-lg">
             <div className="flex items-center gap-2 mb-4">
-              <Lightbulb className="w-5 h-5 text-yellow-400" />
-              <Label className="text-yellow-400 font-semibold text-lg">Vendor Details (Optional)</Label>
+              <Lightbulb className="w-5 h-5 text-primary" />
+              <Label className="text-foreground font-semibold text-lg">Vendor Details (Optional)</Label>
             </div>
-            <p className="text-yellow-200/80 text-sm mb-4">
+            <p className="text-muted-foreground text-sm mb-4">
               {listingType === 'off-market' 
                 ? 'These details will be visible to Premium subscribers only and help them make informed decisions.'
                 : 'Adding vendor details can help attract serious buyers. Premium subscribers will have priority access to this information.'
@@ -1475,8 +1475,8 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="vendor_ownership_duration" className="text-white font-semibold flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-yellow-400" />
+                <Label htmlFor="vendor_ownership_duration" className="text-foreground font-semibold flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary" />
                   Ownership Duration (years/months)
                 </Label>
                 <Input
@@ -1485,13 +1485,13 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                   value={formData.vendor_ownership_duration}
                   onChange={(e) => handleInputChange('vendor_ownership_duration', e.target.value)}
                   placeholder="e.g., 7 years, 2 months or 18 months or 2.5 years"
-                  className="bg-white/5 border border-white/20 text-white"
+                  className="bg-card border border-border text-foreground placeholder:text-muted-foreground"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="vendor_motivation" className="text-white font-semibold flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-yellow-400" />
+                <Label htmlFor="vendor_motivation" className="text-foreground font-semibold flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-primary" />
                   Vendor Motivation
                 </Label>
                 <Input
@@ -1499,14 +1499,14 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                   value={formData.vendor_motivation}
                   onChange={(e) => handleInputChange('vendor_motivation', e.target.value)}
                   placeholder="Why is the vendor selling? (e.g., relocating, downsizing)"
-                  className="bg-white/5 border border-white/20 text-white"
+                  className="bg-card border border-border text-foreground placeholder:text-muted-foreground"
                 />
               </div>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="vendor_special_conditions" className="text-white font-semibold flex items-center gap-2">
-                <FileText className="w-4 h-4 text-yellow-400" />
+              <Label htmlFor="vendor_special_conditions" className="text-foreground font-semibold flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary" />
                 Special Conditions
               </Label>
               <Textarea
@@ -1514,14 +1514,14 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                 value={formData.vendor_special_conditions}
                 onChange={(e) => handleInputChange('vendor_special_conditions', e.target.value)}
                 placeholder="Any special conditions or requirements from the vendor (e.g., settlement period, inspection requirements)"
-                className="bg-white/5 border border-white/20 text-white"
+                className="bg-card border border-border text-foreground placeholder:text-muted-foreground"
                 rows={3}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="vendor_favorable_contracts" className="text-white font-semibold flex items-center gap-2">
-                <Handshake className="w-4 h-4 text-yellow-400" />
+              <Label htmlFor="vendor_favorable_contracts" className="text-foreground font-semibold flex items-center gap-2">
+                <Handshake className="w-4 h-4 text-primary" />
                 Favorable Contract Terms
               </Label>
               <Textarea
@@ -1529,7 +1529,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
                 value={formData.vendor_favorable_contracts}
                 onChange={(e) => handleInputChange('vendor_favorable_contracts', e.target.value)}
                 placeholder="Any favorable contract terms the vendor is offering (e.g., flexible settlement, included items, price negotiations)"
-                className="bg-white/5 border border-white/20 text-white"
+                className="bg-card border border-border text-foreground placeholder:text-muted-foreground"
                 rows={3}
               />
             </div>
@@ -1541,7 +1541,7 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
               type="button"
               variant="outline"
               onClick={onCancel}
-              className="text-white border-white/20 hover:border-pickfirst-yellow/30"
+              className="text-foreground border-border hover:bg-muted"
             >
               Cancel
             </Button>

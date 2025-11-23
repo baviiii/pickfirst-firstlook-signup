@@ -433,32 +433,32 @@ const BuyerAccountSettingsPage = () => {
             <TabsContent value="appointments" className="space-y-6">
               <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-primary/30">
                 <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
+                  <CardTitle className="text-foreground flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-primary" />
                     My Appointments
                   </CardTitle>
-                  <CardDescription className="text-gray-300">
+                  <CardDescription className="text-muted-foreground">
                     View and respond to your scheduled appointments
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {appointments.length === 0 ? (
                     <div className="text-center py-8">
-                      <Calendar className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                      <p className="text-gray-400">No appointments scheduled yet</p>
-                      <p className="text-gray-500 text-sm">Once an agent schedules, it will appear here</p>
+                      <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">No appointments scheduled yet</p>
+                      <p className="text-muted-foreground/80 text-sm">Once an agent schedules, it will appear here</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {appointments.map((appt: any) => (
-                        <div key={appt.id} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                        <div key={appt.id} className="p-4 bg-card/80 rounded-lg border border-border">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
                                 <Badge variant="secondary" className="uppercase">
                                   {appt.appointment_type?.replace('_',' ') || 'Meeting'}
                                 </Badge>
-                                <span className="text-white font-medium">
+                                <span className="text-foreground font-medium">
                                   {appt.date} @ {appt.time}
                                 </span>
                               </div>
@@ -474,21 +474,21 @@ const BuyerAccountSettingsPage = () => {
                                   } else if (address && !genericAddresses.includes(address)) {
                                     detail = address;
                                   }
-                                  return <div className="text-gray-300 text-sm">{detail}</div>;
+                                  return <div className="text-muted-foreground text-sm">{detail}</div>;
                                 }
 
                                 if (address && !genericAddresses.includes(address)) {
-                                  return <div className="text-gray-300 text-sm">{address}</div>;
+                                  return <div className="text-muted-foreground text-sm">{address}</div>;
                                 }
 
                                 return null;
                               })()}
                               {appt.agent && (
-                                <div className="text-gray-400 text-xs">
+                                <div className="text-muted-foreground/80 text-xs">
                                   With: {appt.agent.full_name}
                                 </div>
                               )}
-                              <div className="text-gray-400 text-xs">
+                              <div className="text-muted-foreground/80 text-xs">
                                 Duration: {appt.duration || 60} min
                               </div>
                             </div>
@@ -529,7 +529,7 @@ const BuyerAccountSettingsPage = () => {
                             </div>
                           </div>
                           {appt.notes && (
-                            <div className="text-gray-400 text-sm mt-2">Notes: {appt.notes}</div>
+                            <div className="text-muted-foreground text-sm mt-2">Notes: {appt.notes}</div>
                           )}
                         </div>
                       ))}
@@ -728,20 +728,20 @@ const BuyerAccountSettingsPage = () => {
             <TabsContent value="favorites" className="space-y-6">
               <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-primary/30">
                 <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
+                  <CardTitle className="text-foreground flex items-center gap-2">
                     <Heart className="h-5 w-5 text-primary" />
                     Favorite Properties
                   </CardTitle>
-                  <CardDescription className="text-gray-300">
+                  <CardDescription className="text-muted-foreground">
                     Manage your saved properties
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {favoriteProperties.length === 0 ? (
                     <div className="text-center py-8">
-                      <Heart className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                      <p className="text-gray-400">No favorite properties yet</p>
-                      <p className="text-gray-500 text-sm">Start browsing properties to add them to your favorites</p>
+                      <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">No favorite properties yet</p>
+                      <p className="text-muted-foreground/80 text-sm">Start browsing properties to add them to your favorites</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -757,20 +757,20 @@ const BuyerAccountSettingsPage = () => {
                                 : '';
 
                         return (
-                          <div key={property.id} className="bg-gray-800/50 p-4 rounded-lg">
+                          <div key={property.id} className="bg-card/80 border border-border p-4 rounded-lg">
                             <div className="flex justify-between items-start mb-2">
-                              <h4 className="text-white font-medium">{property.title}</h4>
+                              <h4 className="text-foreground font-medium">{property.title}</h4>
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleToggleFavorite(property.id)}
-                                className="text-red-400 hover:text-red-300"
+                                className="text-red-500 hover:text-red-600"
                               >
                                 <Heart className="h-4 w-4 fill-current" />
                               </Button>
                             </div>
-                            <p className="text-gray-300">{property.address}</p>
-                            <p className="text-gray-300">{property.city}, {property.state}</p>
+                            <p className="text-muted-foreground">{property.address}</p>
+                            <p className="text-muted-foreground">{property.city}, {property.state}</p>
                             <p className="text-primary font-bold text-lg">
                               {priceDisplay}
                               {rentalSuffix && (
@@ -783,7 +783,7 @@ const BuyerAccountSettingsPage = () => {
                                 <Badge variant="secondary">{property.bathrooms} bath</Badge>
                                 <Badge variant="secondary">{property.square_feet} sqft</Badge>
                               </div>
-                              <Button size="sm" variant="outline" className="text-white border-white/20">
+                              <Button size="sm" variant="outline" className="text-foreground border-border hover:bg-muted">
                                 View Details
                               </Button>
                             </div>
@@ -800,11 +800,11 @@ const BuyerAccountSettingsPage = () => {
             <TabsContent value="notifications" className="space-y-6">
               <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-primary/30">
                 <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
+                  <CardTitle className="text-foreground flex items-center gap-2">
                     <Bell className="h-5 w-5 text-primary" />
                     Notification Preferences  
                   </CardTitle>
-                  <CardDescription className="text-gray-300">
+                  <CardDescription className="text-muted-foreground">
                     Choose what notifications you want to receive
                   </CardDescription>
                 </CardHeader>
@@ -814,10 +814,10 @@ const BuyerAccountSettingsPage = () => {
                     const hasFeatureAccess = isFeatureEnabled('personalized_property_notifications');
                     
                     return (
-                      <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50">
+                      <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-card/80 border border-border">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <h4 className="text-white font-medium">
+                            <h4 className="text-foreground font-medium">
                               {key === 'personalizedPropertyNotifications' ? 'Personalized Property Notifications' :
                                key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                             </h4>
@@ -827,7 +827,7 @@ const BuyerAccountSettingsPage = () => {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-gray-400">
+                          <p className="text-sm text-muted-foreground">
                             {key === 'propertyAlerts' && 'Get email alerts for new on-market properties matching your criteria. Premium members also receive exclusive off-market alerts! 🔐'}
                             {key === 'priceChanges' && 'Alerts when saved properties change price'}
                             {key === 'marketUpdates' && 'Weekly market trends and insights'}
@@ -875,11 +875,11 @@ const BuyerAccountSettingsPage = () => {
                   
                   {/* Feature Information Card */}
                   <div className="mt-6 p-4 bg-gradient-to-r from-pickfirst-yellow/10 to-pickfirst-yellow/5 border border-pickfirst-yellow/20 rounded-lg">
-                    <h4 className="text-white font-medium mb-2 flex items-center gap-2">
+                    <h4 className="text-foreground font-medium mb-2 flex items-center gap-2">
                       <Activity className="h-4 w-4 text-pickfirst-yellow" />
                       Smart Notification Features
                     </h4>
-                    <div className="space-y-2 text-sm text-gray-300">
+                    <div className="space-y-2 text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className="text-xs">All Users</Badge>
                         <span>On-market property alerts and agent messages</span>
@@ -904,22 +904,22 @@ const BuyerAccountSettingsPage = () => {
             <TabsContent value="privacy" className="space-y-6">
               <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-primary/30">
                 <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
+                  <CardTitle className="text-foreground flex items-center gap-2">
                     <Lock className="h-5 w-5 text-primary" />
                     Privacy Settings
                   </CardTitle>
-                  <CardDescription className="text-gray-300">
+                  <CardDescription className="text-muted-foreground">
                     Control your privacy and data sharing preferences
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {Object.entries(settings.privacy).map(([key, value]) => (
-                    <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50">
+                    <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-card/80 border border-border">
                       <div>
-                        <h4 className="text-white font-medium">
+                        <h4 className="text-foreground font-medium">
                           {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                         </h4>
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm text-muted-foreground">
                           {key === 'profileVisible' && 'Allow agents to see your profile information'}
                           {key === 'showActivityStatus' && 'Show when you\'re online and active'}
                           {key === 'allowMarketing' && 'Receive marketing emails about new features'}
