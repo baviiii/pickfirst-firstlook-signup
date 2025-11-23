@@ -2,7 +2,7 @@ name: Dispatch Queued Emails
 
 on:
   schedule:
-    - cron: "*/1 * * * *"   # every minute
+    - cron: "*/5 * * * *"   # every 5 minutes (optimized from 1 minute to reduce GitHub Actions usage)
   workflow_dispatch:
 
 jobs:

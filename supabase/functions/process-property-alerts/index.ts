@@ -539,11 +539,14 @@ async function sendPropertyAlert(
     ? `🔐 Exclusive Off-Market Property: ${match.property.title}`
     : `🏠 New Property Alert: ${match.property.title}`;
   
-  await supabaseClient.functions.invoke('send-email', {
-    body: {
-      to: match.buyerEmail,
-      template,
-      data: {
+  // Queue email instead of sending directly (handles rate limits and massive batches)
+  const { error: queueError } = await supabaseClient
+    .from('email_queue')
+    .insert({
+      email: match.buyerEmail,
+      subject,
+      template: template,
+      payload: {
         name: match.buyerName,
         propertyTitle: match.property.title,
         price: parseFloat(match.property.price.toString()),
@@ -555,10 +558,15 @@ async function sendPropertyAlert(
         matchingFeatures: matchingFeatures.length > 0 ? matchingFeatures : null,
         propertyUrl,
         isOffMarket: alertType === 'off_market'
-      },
-      subject
-    }
-  })
+      }
+    });
+
+  if (queueError) {
+    console.error(`Failed to queue property alert for ${match.buyerEmail}:`, queueError);
+    throw queueError;
+  }
+
+  console.log(`Property alert queued for ${match.buyerEmail}`);
 }
 
 async function createAlertRecord(

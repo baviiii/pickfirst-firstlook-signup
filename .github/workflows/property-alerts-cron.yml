@@ -2,8 +2,8 @@ name: Property Alerts Processing
 
 on:
   schedule:
-    # Run every 15 minutes
-    - cron: '*/15 * * * *'
+    # Run every 30 minutes (optimized - property alerts are processed when properties are approved/added)
+    - cron: '*/30 * * * *'
   workflow_dispatch: # Allow manual triggering
 
 jobs:
@@ -47,4 +47,4 @@ jobs:
         if: always()
         run: |
           echo "📊 Property alerts cron job completed at $(date)"
-          echo "🕐 Next run scheduled for every 15 minutes"
+          echo "🕐 Next run scheduled for every 30 minutes"
