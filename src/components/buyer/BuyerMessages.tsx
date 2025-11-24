@@ -34,13 +34,6 @@ export const BuyerMessages = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // Prevent body scrolling when messages page is active
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, []);
 
   // Check for mobile screen size
   useEffect(() => {
@@ -224,21 +217,12 @@ export const BuyerMessages = () => {
         </div>
       }
     >
-      <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
-        <div className="flex items-center gap-3 px-4 py-3 border-b bg-white/80 shadow-sm z-20 flex-shrink-0 h-16">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-foreground">
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <p className="text-sm text-muted-foreground">Messages</p>
-            <h2 className="text-2xl font-semibold text-foreground">Agent Conversations</h2>
-          </div>
-        </div>
-        <div className="flex-1 flex overflow-hidden min-h-0" style={{ height: 'calc(100vh - 64px)' }}>
+      <div className="h-full flex flex-col bg-background overflow-hidden">
+        <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Conversations Sidebar */}
-          <div className={`${isMobile ? (showConversations ? 'flex' : 'hidden') : 'flex'} flex-col w-full lg:w-80 border-r bg-card/80 min-w-0 h-full`}>
-            <div className="p-4 border-b flex-shrink-0">
-              <h2 className="text-xl font-semibold">Messages</h2>
+          <div className={`${isMobile ? (showConversations ? 'flex' : 'hidden') : 'flex'} flex-col w-full lg:w-80 border-r bg-white min-w-0 h-full`}>
+            <div className="px-3 sm:px-4 py-3 sm:py-4 border-b flex-shrink-0 bg-white sticky top-0 z-10">
+              <h2 className="text-lg sm:text-xl font-semibold text-foreground">Messages</h2>
               {messageHistoryDays !== -1 && messageHistoryDays > 0 && (
                 <Badge variant="outline" className="mt-2 text-xs">
                   {messageHistoryDays} Days History - Upgrade for Full Access
@@ -246,58 +230,71 @@ export const BuyerMessages = () => {
               )}
             </div>
             
-            <div className="p-4 flex-shrink-0 border-b">
+            <div className="px-3 sm:px-4 py-3 border-b flex-shrink-0 bg-white sticky top-[73px] sm:top-[81px] z-10">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Search conversations..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-10 text-sm bg-card border-border"
                 />
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto min-h-0" style={{ height: 'calc(100vh - 200px)' }}>
+            <div className="flex-1 overflow-y-auto min-h-0 bg-white" style={{ WebkitOverflowScrolling: 'touch' }}>
               {filteredConversations.length === 0 ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  <MessageSquare className="h-8 w-8 mx-auto mb-2" />
-                  <p>No conversations yet</p>
+                <div className="p-8 text-center text-muted-foreground">
+                  <MessageSquare className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+                  <p className="text-sm font-medium">No conversations yet</p>
+                  <p className="text-xs mt-1">Start a conversation by inquiring about a property</p>
                 </div>
               ) : (
-                filteredConversations.map((conversation) => (
-                <div
-                  key={conversation.id}
-                  className={`p-4 border-b cursor-pointer hover:bg-muted/50 ${
-                    selectedConversation?.id === conversation.id ? 'bg-muted' : ''
-                  }`}
-                  onClick={() => handleConversationSelect(conversation)}
-                >
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={conversation.agent_profile?.avatar_url} />
-                      <AvatarFallback>
-                        {conversation.agent_profile?.full_name?.charAt(0) || 'A'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium truncate">
-                          {conversation.agent_profile?.full_name || 'Agent'}
-                        </p>
-                        {conversation.status === 'pending' && (
-                          <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
-                            Pending
-                          </Badge>
-                        )}
+                <div className="divide-y divide-border">
+                  {filteredConversations.map((conversation) => (
+                    <div
+                      key={conversation.id}
+                      className={`p-3 sm:p-4 cursor-pointer active:bg-muted/70 transition-colors touch-manipulation ${
+                        selectedConversation?.id === conversation.id ? 'bg-primary/5 border-l-2 border-l-primary' : 'hover:bg-muted/30'
+                      }`}
+                      onClick={() => handleConversationSelect(conversation)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-12 w-12 sm:h-10 sm:w-10 flex-shrink-0">
+                          <AvatarImage src={conversation.agent_profile?.avatar_url} />
+                          <AvatarFallback className="text-base">
+                            {conversation.agent_profile?.full_name?.charAt(0) || 'A'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-sm sm:text-base text-foreground truncate">
+                              {conversation.agent_profile?.full_name || 'Agent'}
+                            </p>
+                            {conversation.status === 'pending' && (
+                              <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/20 flex-shrink-0">
+                                Pending
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate mb-1">
+                            {conversation.property?.title || conversation.subject || 'New conversation'}
+                          </p>
+                          {conversation.last_message_at && (
+                            <p className="text-xs text-muted-foreground/70">
+                              {new Date(conversation.last_message_at).toLocaleDateString([], { 
+                                month: 'short', 
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {conversation.property?.title || conversation.subject || 'New conversation'}
-                      </p>
                     </div>
-                  </div>
+                  ))}
                 </div>
-                ))
               )}
             </div>
           </div>
@@ -307,15 +304,12 @@ export const BuyerMessages = () => {
             {selectedConversation ? (
               <>
                 {/* Chat Header */}
-                <div className="p-4 border-b bg-white/90 flex items-center justify-between flex-shrink-0 shadow-sm h-16">
-                  <div
-                    className="flex items-center space-x-3 cursor-pointer"
-                    onClick={() => navigate('/buyer-account-settings')}
-                  >
+                <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b bg-white flex items-center justify-between flex-shrink-0 shadow-sm min-h-[56px] sm:min-h-[64px] sticky top-0 z-10">
+                  <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="lg:hidden"
+                      className="lg:hidden flex-shrink-0 h-10 w-10 touch-manipulation"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleBackToConversations();
@@ -323,25 +317,31 @@ export const BuyerMessages = () => {
                     >
                       <ArrowLeft className="h-5 w-5" />
                     </Button>
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={selectedConversation.agent_profile?.avatar_url} />
-                      <AvatarFallback>
-                        {selectedConversation.agent_profile?.full_name?.charAt(0) || 'A'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-medium text-foreground">
-                        {selectedConversation.agent_profile?.full_name || 'Agent'}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {selectedConversation.property?.title || 'New conversation'}
-                      </p>
+                    <div
+                      className="flex items-center space-x-2 sm:space-x-3 cursor-pointer flex-1 min-w-0 active:opacity-70 transition-opacity"
+                      onClick={() => navigate('/buyer-account-settings')}
+                    >
+                      <Avatar className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 ring-2 ring-primary/10">
+                        <AvatarImage src={selectedConversation.agent_profile?.avatar_url} />
+                        <AvatarFallback className="text-sm bg-primary text-primary-foreground">
+                          {selectedConversation.agent_profile?.full_name?.charAt(0) || 'A'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-sm sm:text-base text-foreground truncate">
+                          {selectedConversation.agent_profile?.full_name || 'Agent'}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                          {selectedConversation.property?.title || 'New conversation'}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                     <Button 
                       variant="ghost" 
-                      size="icon" 
+                      size="icon"
+                      className="h-10 w-10 sm:h-9 sm:w-9 touch-manipulation"
                       onClick={() => setShowAgentProfile(true)}
                       title="View Profile"
                     >
@@ -353,8 +353,8 @@ export const BuyerMessages = () => {
                 {/* Messages Container */}
                 <div 
                   ref={messagesContainerRef}
-                  className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
-                  style={{ height: 'calc(100vh - 180px)' }}
+                  className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6 space-y-3 sm:space-y-4 min-h-0 bg-gradient-to-b from-gray-50/30 to-white"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
                 >
                   {/* Pending Conversation Notice */}
                   {selectedConversation?.status === 'pending' && messages.length <= 1 && (
@@ -382,14 +382,16 @@ export const BuyerMessages = () => {
                         className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                          className={`max-w-[85%] sm:max-w-xs lg:max-w-md px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl break-words shadow-sm ${
                             msg.sender_id === user?.id 
-                              ? 'bg-primary text-primary-foreground' 
-                              : 'bg-muted'
+                              ? 'bg-primary text-primary-foreground rounded-br-md' 
+                              : 'bg-white text-foreground rounded-bl-md border border-border'
                           }`}
                         >
-                          <div className="text-sm">{msg.content}</div>
-                          <div className="text-xs opacity-70 mt-1">
+                          <div className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words">{msg.content}</div>
+                          <div className={`text-[10px] sm:text-xs mt-1.5 ${
+                            msg.sender_id === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                          }`}>
                             {new Date(msg.created_at).toLocaleTimeString([], { 
                               hour: '2-digit', 
                               minute: '2-digit' 
@@ -435,29 +437,29 @@ export const BuyerMessages = () => {
                 </div>
 
                 {/* Message Input */}
-                <div className="border-t p-4 bg-white/90 flex-shrink-0 h-auto">
+                <div className="border-t px-3 sm:px-4 py-3 bg-white flex-shrink-0 safe-area-inset-bottom">
                   {selectedConversation?.status === 'pending' && messages.length <= 1 ? (
-                    <div className="text-center py-2 text-sm text-muted-foreground">
+                    <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">
                       <p>The agent will activate this conversation when they respond to your inquiry.</p>
                     </div>
                   ) : (
                     <form onSubmit={(e) => {
                       e.preventDefault();
                       handleSendMessage();
-                    }} className="flex items-end space-x-2">
+                    }} className="flex items-end gap-2">
                       <Textarea
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyDown={handleKeyPress}
                         placeholder="Type a message..."
-                        className="flex-1 min-h-[40px] max-h-32 resize-none"
+                        className="flex-1 min-h-[44px] max-h-32 resize-none text-sm sm:text-base rounded-xl border-border focus:ring-2 focus:ring-primary/20 bg-card px-4 py-2.5"
                         rows={1}
                       />
                       <Button 
                         type="submit"
                         size="icon" 
                         disabled={!newMessage.trim() || sending}
-                        className="bg-pickfirst-yellow hover:bg-pickfirst-yellow/90 text-foreground flex-shrink-0 h-10 w-10"
+                        className="bg-primary hover:bg-pickfirst-amber text-primary-foreground flex-shrink-0 h-11 w-11 sm:h-10 sm:w-10 rounded-xl shadow-sm touch-manipulation"
                       >
                         {sending ? (
                           <Loader2 className="h-5 w-5 animate-spin" />

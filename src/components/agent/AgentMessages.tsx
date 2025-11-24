@@ -50,13 +50,6 @@ export const AgentMessages = () => {
     }
   }, []);
 
-  // Prevent body scrolling when messages page is active
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, []);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -301,26 +294,34 @@ export const AgentMessages = () => {
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden">
-      <div className="flex-1 flex overflow-hidden min-h-0" style={{ height: '100vh' }}>
+    <div className="h-full flex flex-col overflow-hidden bg-background">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Sidebar - Conversations List */}
         <div 
-          className={`${isMobile ? (showConversations ? 'flex' : 'hidden') : 'flex'} flex-col w-full lg:w-80 border-r pickfirst-glass bg-card/90 min-w-0 h-full`}
+          className={`${isMobile ? (showConversations ? 'flex' : 'hidden') : 'flex'} flex-col w-full lg:w-80 border-r bg-white min-w-0 h-full`}
         >
-          <div className="p-4 border-b border-border flex-shrink-0">
-            <h2 className="text-xl font-semibold text-foreground">Messages</h2>
+          <div className="p-3 sm:p-4 border-b border-border flex-shrink-0 bg-white">
+            <h2 className="text-lg sm:text-xl font-semibold text-foreground">Messages</h2>
           </div>
-          <div className="flex-1 overflow-y-auto min-h-0" style={{ height: 'calc(100vh - 80px)' }}>
-            {filteredConversations.map((conv) => (
-              <div
-                key={conv.id}
-                className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
-                  selectedConversation?.id === conv.id 
-                    ? 'bg-primary/20 border-primary shadow-md' 
-                    : 'border-border hover:bg-card/80 hover:border-pickfirst-yellow/40'
-                }`}
-                onClick={() => handleConversationSelect(conv)}
-              >
+          <div className="flex-1 overflow-y-auto min-h-0 bg-white" style={{ WebkitOverflowScrolling: 'touch' }}>
+            {filteredConversations.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground">
+                <MessageSquare className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+                <p className="text-sm font-medium">No conversations yet</p>
+                <p className="text-xs mt-1">Messages from buyers will appear here</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {filteredConversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    className={`p-3 sm:p-4 cursor-pointer active:bg-muted/70 transition-colors touch-manipulation ${
+                      selectedConversation?.id === conv.id 
+                        ? 'bg-primary/5 border-l-2 border-l-primary' 
+                        : 'hover:bg-muted/30'
+                    }`}
+                    onClick={() => handleConversationSelect(conv)}
+                  >
                 <div className="flex items-start gap-3">
                   <Avatar className="h-10 w-10 flex-shrink-0">
                     <AvatarImage src={conv.client_profile?.avatar_url} />
@@ -375,38 +376,38 @@ export const AgentMessages = () => {
         <div className={`${isMobile ? (!showConversations ? 'flex' : 'hidden') : 'flex'} flex-col flex-1 min-h-0 min-w-0 h-full`}>
           {selectedConversation ? (
             <>
-              <div className="border-b border-border p-4 flex items-center justify-between pickfirst-glass bg-card/90 flex-shrink-0 h-16">
-                <div className="flex items-center space-x-4">
+              <div className="border-b border-border px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between bg-white flex-shrink-0 min-h-[56px] sm:min-h-[64px] sticky top-0 z-10 shadow-sm">
+                <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     onClick={handleBackToConversations}
-                    className="lg:hidden"
+                    className="lg:hidden flex-shrink-0 h-10 w-10 touch-manipulation"
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="h-10 w-10">
+                  <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                    <Avatar className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 ring-2 ring-primary/10">
                       <AvatarImage src={selectedConversation.client_profile?.avatar_url} />
-                      <AvatarFallback>
+                      <AvatarFallback className="text-sm bg-primary text-primary-foreground">
                         {selectedConversation.client_profile?.full_name?.charAt(0) || 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <h3 className="font-medium text-foreground">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-sm sm:text-base text-foreground truncate">
                         {selectedConversation.client_profile?.full_name || 'Unknown Client'}
                       </h3>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
                         {selectedConversation.property?.title || 'New conversation'}
                       </p>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="icon" onClick={() => setShowBuyerProfile(true)}>
+                <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                  <Button variant="ghost" size="icon" onClick={() => setShowBuyerProfile(true)} className="h-10 w-10 sm:h-9 sm:w-9 touch-manipulation">
                     <User className="h-5 w-5" />
                   </Button>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-9 sm:w-9 touch-manipulation">
                     <Phone className="h-5 w-5" />
                   </Button>
                 </div>
@@ -415,8 +416,8 @@ export const AgentMessages = () => {
               {/* Messages Container */}
               <div 
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
-                style={{ height: 'calc(100vh - 180px)' }}
+                className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6 space-y-3 sm:space-y-4 min-h-0 bg-gradient-to-b from-gray-50/30 to-white"
+                style={{ WebkitOverflowScrolling: 'touch' }}
               >
                 {messages.map((msg) => (
                   <div
@@ -424,10 +425,10 @@ export const AgentMessages = () => {
                     className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[85%] md:max-w-[70%] p-3 rounded-2xl break-words ${
+                      className={`max-w-[85%] sm:max-w-xs md:max-w-[70%] px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl break-words shadow-sm ${
                         msg.sender_id === user?.id
                           ? 'bg-primary text-primary-foreground rounded-br-md'
-                          : 'bg-card/80 text-foreground rounded-bl-md border border-border'
+                          : 'bg-white text-foreground rounded-bl-md border border-border'
                       }`}
                       style={{
                         wordWrap: 'break-word',
@@ -435,10 +436,10 @@ export const AgentMessages = () => {
                         hyphens: 'auto'
                       }}
                     >
-                      <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                      <div className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words">
                         {msg.content}
                       </div>
-                      <div className={`text-xs mt-1 ${
+                      <div className={`text-[10px] sm:text-xs mt-1.5 ${
                         msg.sender_id === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
                       }`}>
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -450,21 +451,21 @@ export const AgentMessages = () => {
               </div>
 
               {/* Message Input */}
-              <div className="border-t border-border p-4 pickfirst-glass bg-card/90 flex-shrink-0 h-auto">
-                <div className="flex items-end space-x-2">
+              <div className="border-t border-border p-3 sm:p-4 bg-white flex-shrink-0 h-auto safe-area-inset-bottom">
+                <div className="flex items-end gap-2">
                   <Textarea
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
                     placeholder="Type a message..."
-                    className="flex-1 min-h-[40px] max-h-32 resize-none bg-card border-border text-foreground placeholder:text-muted-foreground"
+                    className="flex-1 min-h-[44px] max-h-32 resize-none bg-card border-border text-foreground placeholder:text-muted-foreground text-sm sm:text-base rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary/20"
                     rows={1}
                   />
                   <Button 
                     size="icon" 
                     onClick={handleSendMessage}
                     disabled={!newMessage.trim() || sending}
-                    className="bg-primary text-primary-foreground hover:bg-pickfirst-amber flex-shrink-0 h-10 w-10"
+                    className="bg-primary text-primary-foreground hover:bg-pickfirst-amber flex-shrink-0 h-11 w-11 sm:h-10 sm:w-10 rounded-xl shadow-sm touch-manipulation"
                   >
                     <Send className="h-5 w-5" />
                   </Button>
