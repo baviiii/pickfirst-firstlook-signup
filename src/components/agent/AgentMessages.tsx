@@ -50,6 +50,14 @@ export const AgentMessages = () => {
     }
   }, []);
 
+  // Prevent body scrolling when messages page is active
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   useEffect(() => {
     const checkMobile = () => {
       const wasMobile = isMobile;
@@ -293,16 +301,16 @@ export const AgentMessages = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      <div className="flex-1 flex overflow-hidden min-h-0">
+    <div className="fixed inset-0 flex flex-col overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0" style={{ height: '100vh' }}>
         {/* Sidebar - Conversations List */}
         <div 
-          className={`${showConversations ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-80 border-r pickfirst-glass bg-card/90 min-w-0`}
+          className={`${showConversations ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-80 border-r pickfirst-glass bg-card/90 min-w-0 h-full`}
         >
           <div className="p-4 border-b border-border flex-shrink-0">
             <h2 className="text-xl font-semibold text-foreground">Messages</h2>
           </div>
-          <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex-1 overflow-y-auto min-h-0" style={{ height: 'calc(100vh - 80px)' }}>
             {filteredConversations.map((conv) => (
               <div
                 key={conv.id}
@@ -364,10 +372,10 @@ export const AgentMessages = () => {
         </div>
 
         {/* Main Content - Messages */}
-        <div className={`${!showConversations ? 'flex' : 'hidden'} lg:flex flex-col flex-1 min-h-0 min-w-0`}>
+        <div className={`${!showConversations ? 'flex' : 'hidden'} lg:flex flex-col flex-1 min-h-0 min-w-0 h-full`}>
           {selectedConversation ? (
             <>
-              <div className="border-b border-border p-4 flex items-center justify-between pickfirst-glass bg-card/90 flex-shrink-0">
+              <div className="border-b border-border p-4 flex items-center justify-between pickfirst-glass bg-card/90 flex-shrink-0 h-16">
                 <div className="flex items-center space-x-4">
                   <Button 
                     variant="ghost" 
@@ -408,7 +416,7 @@ export const AgentMessages = () => {
               <div 
                 ref={messagesContainerRef}
                 className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
-                style={{ maxHeight: 'calc(100vh - 200px)' }}
+                style={{ height: 'calc(100vh - 180px)' }}
               >
                 {messages.map((msg) => (
                   <div
@@ -442,7 +450,7 @@ export const AgentMessages = () => {
               </div>
 
               {/* Message Input */}
-              <div className="border-t border-border p-4 pickfirst-glass bg-card/90 flex-shrink-0">
+              <div className="border-t border-border p-4 pickfirst-glass bg-card/90 flex-shrink-0 h-auto">
                 <div className="flex items-end space-x-2">
                   <Textarea
                     value={newMessage}
@@ -456,7 +464,7 @@ export const AgentMessages = () => {
                     size="icon" 
                     onClick={handleSendMessage}
                     disabled={!newMessage.trim() || sending}
-                    className="bg-primary text-primary-foreground hover:bg-pickfirst-amber flex-shrink-0"
+                    className="bg-primary text-primary-foreground hover:bg-pickfirst-amber flex-shrink-0 h-10 w-10"
                   >
                     <Send className="h-5 w-5" />
                   </Button>

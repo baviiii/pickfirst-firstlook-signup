@@ -34,6 +34,14 @@ export const BuyerMessages = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
+  // Prevent body scrolling when messages page is active
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   // Check for mobile screen size
   useEffect(() => {
     const checkMobile = () => {
@@ -200,7 +208,7 @@ export const BuyerMessages = () => {
       title="Agent Messaging"
       description="Connect directly with agents through messaging to discuss properties and get responses."
       fallback={
-        <div className="h-screen flex flex-col bg-background">
+        <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center space-y-4 max-w-md p-8">
               <MessageSquare className="h-16 w-16 mx-auto text-muted-foreground" />
@@ -216,8 +224,8 @@ export const BuyerMessages = () => {
         </div>
       }
     >
-      <div className="h-screen flex flex-col bg-background overflow-hidden">
-        <div className="flex items-center gap-3 px-4 py-3 border-b bg-white/80 shadow-sm z-20 flex-shrink-0">
+      <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
+        <div className="flex items-center gap-3 px-4 py-3 border-b bg-white/80 shadow-sm z-20 flex-shrink-0 h-16">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-foreground">
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -226,9 +234,9 @@ export const BuyerMessages = () => {
             <h2 className="text-2xl font-semibold text-foreground">Agent Conversations</h2>
           </div>
         </div>
-        <div className="flex-1 flex overflow-hidden min-h-0">
+        <div className="flex-1 flex overflow-hidden min-h-0" style={{ height: 'calc(100vh - 64px)' }}>
           {/* Conversations Sidebar */}
-          <div className={`${showConversations || !isMobile ? 'flex' : 'hidden'} flex-col w-full lg:w-80 border-r bg-card/80 min-w-0`}>
+          <div className={`${showConversations || !isMobile ? 'flex' : 'hidden'} flex-col w-full lg:w-80 border-r bg-card/80 min-w-0 h-full`}>
             <div className="p-4 border-b flex-shrink-0">
               <h2 className="text-xl font-semibold">Messages</h2>
               {messageHistoryDays !== -1 && messageHistoryDays > 0 && (
@@ -238,7 +246,7 @@ export const BuyerMessages = () => {
               )}
             </div>
             
-            <div className="p-4 flex-shrink-0">
+            <div className="p-4 flex-shrink-0 border-b">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
@@ -250,7 +258,7 @@ export const BuyerMessages = () => {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="flex-1 overflow-y-auto min-h-0" style={{ height: 'calc(100vh - 200px)' }}>
               {filteredConversations.length === 0 ? (
                 <div className="p-4 text-center text-muted-foreground">
                   <MessageSquare className="h-8 w-8 mx-auto mb-2" />
@@ -295,11 +303,11 @@ export const BuyerMessages = () => {
           </div>
 
           {/* Chat Area */}
-          <div className={`${!showConversations || !isMobile ? 'flex' : 'hidden'} flex-col flex-1 min-h-0 min-w-0`}>
+          <div className={`${!showConversations || !isMobile ? 'flex' : 'hidden'} flex-col flex-1 min-h-0 min-w-0 h-full`}>
             {selectedConversation ? (
               <>
                 {/* Chat Header */}
-                <div className="p-4 border-b bg-white/90 flex items-center justify-between flex-shrink-0 shadow-sm">
+                <div className="p-4 border-b bg-white/90 flex items-center justify-between flex-shrink-0 shadow-sm h-16">
                   <div
                     className="flex items-center space-x-3 cursor-pointer"
                     onClick={() => navigate('/buyer-account-settings')}
@@ -346,7 +354,7 @@ export const BuyerMessages = () => {
                 <div 
                   ref={messagesContainerRef}
                   className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
-                  style={{ maxHeight: 'calc(100vh - 200px)' }}
+                  style={{ height: 'calc(100vh - 180px)' }}
                 >
                   {/* Pending Conversation Notice */}
                   {selectedConversation?.status === 'pending' && messages.length <= 1 && (
@@ -427,7 +435,7 @@ export const BuyerMessages = () => {
                 </div>
 
                 {/* Message Input */}
-                <div className="border-t p-4 bg-white/90 flex-shrink-0">
+                <div className="border-t p-4 bg-white/90 flex-shrink-0 h-auto">
                   {selectedConversation?.status === 'pending' && messages.length <= 1 ? (
                     <div className="text-center py-2 text-sm text-muted-foreground">
                       <p>The agent will activate this conversation when they respond to your inquiry.</p>
@@ -449,7 +457,7 @@ export const BuyerMessages = () => {
                         type="submit"
                         size="icon" 
                         disabled={!newMessage.trim() || sending}
-                        className="bg-pickfirst-yellow hover:bg-pickfirst-yellow/90 text-foreground flex-shrink-0"
+                        className="bg-pickfirst-yellow hover:bg-pickfirst-yellow/90 text-foreground flex-shrink-0 h-10 w-10"
                       >
                         {sending ? (
                           <Loader2 className="h-5 w-5 animate-spin" />
