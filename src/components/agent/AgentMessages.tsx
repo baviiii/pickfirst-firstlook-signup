@@ -369,6 +369,8 @@ export const AgentMessages = () => {
                 </div>
               </div>
             ))}
+              </div>
+            )}
           </div>
         </div>
 
