@@ -305,7 +305,7 @@ export const AgentMessages = () => {
       <div className="flex-1 flex overflow-hidden min-h-0" style={{ height: '100vh' }}>
         {/* Sidebar - Conversations List */}
         <div 
-          className={`${showConversations ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-80 border-r pickfirst-glass bg-card/90 min-w-0 h-full`}
+          className={`${isMobile ? (showConversations ? 'flex' : 'hidden') : 'flex'} flex-col w-full lg:w-80 border-r pickfirst-glass bg-card/90 min-w-0 h-full`}
         >
           <div className="p-4 border-b border-border flex-shrink-0">
             <h2 className="text-xl font-semibold text-foreground">Messages</h2>
@@ -372,7 +372,7 @@ export const AgentMessages = () => {
         </div>
 
         {/* Main Content - Messages */}
-        <div className={`${!showConversations ? 'flex' : 'hidden'} lg:flex flex-col flex-1 min-h-0 min-w-0 h-full`}>
+        <div className={`${isMobile ? (!showConversations ? 'flex' : 'hidden') : 'flex'} flex-col flex-1 min-h-0 min-w-0 h-full`}>
           {selectedConversation ? (
             <>
               <div className="border-b border-border p-4 flex items-center justify-between pickfirst-glass bg-card/90 flex-shrink-0 h-16">

@@ -236,7 +236,7 @@ export const BuyerMessages = () => {
         </div>
         <div className="flex-1 flex overflow-hidden min-h-0" style={{ height: 'calc(100vh - 64px)' }}>
           {/* Conversations Sidebar */}
-          <div className={`${showConversations || !isMobile ? 'flex' : 'hidden'} flex-col w-full lg:w-80 border-r bg-card/80 min-w-0 h-full`}>
+          <div className={`${isMobile ? (showConversations ? 'flex' : 'hidden') : 'flex'} flex-col w-full lg:w-80 border-r bg-card/80 min-w-0 h-full`}>
             <div className="p-4 border-b flex-shrink-0">
               <h2 className="text-xl font-semibold">Messages</h2>
               {messageHistoryDays !== -1 && messageHistoryDays > 0 && (
@@ -303,7 +303,7 @@ export const BuyerMessages = () => {
           </div>
 
           {/* Chat Area */}
-          <div className={`${!showConversations || !isMobile ? 'flex' : 'hidden'} flex-col flex-1 min-h-0 min-w-0 h-full`}>
+          <div className={`${isMobile ? (!showConversations ? 'flex' : 'hidden') : 'flex'} flex-col flex-1 min-h-0 min-w-0 h-full`}>
             {selectedConversation ? (
               <>
                 {/* Chat Header */}
