@@ -217,7 +217,7 @@ export const BuyerMessages = () => {
       }
     >
       <div className="h-screen flex flex-col bg-background overflow-hidden">
-        <div className="flex items-center gap-3 px-4 py-3 border-b bg-white/80 shadow-sm sticky top-0 z-20">
+        <div className="flex items-center gap-3 px-4 py-3 border-b bg-white/80 shadow-sm z-20 flex-shrink-0">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-foreground">
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -226,10 +226,10 @@ export const BuyerMessages = () => {
             <h2 className="text-2xl font-semibold text-foreground">Agent Conversations</h2>
           </div>
         </div>
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Conversations Sidebar */}
-          <div className={`${showConversations || !isMobile ? 'flex' : 'hidden'} flex-col w-full lg:w-80 border-r bg-card/80`}>
-            <div className="p-4 border-b">
+          <div className={`${showConversations || !isMobile ? 'flex' : 'hidden'} flex-col w-full lg:w-80 border-r bg-card/80 min-w-0`}>
+            <div className="p-4 border-b flex-shrink-0">
               <h2 className="text-xl font-semibold">Messages</h2>
               {messageHistoryDays !== -1 && messageHistoryDays > 0 && (
                 <Badge variant="outline" className="mt-2 text-xs">
@@ -238,7 +238,7 @@ export const BuyerMessages = () => {
               )}
             </div>
             
-            <div className="p-4">
+            <div className="p-4 flex-shrink-0">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
@@ -250,7 +250,7 @@ export const BuyerMessages = () => {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto min-h-0">
               {filteredConversations.length === 0 ? (
                 <div className="p-4 text-center text-muted-foreground">
                   <MessageSquare className="h-8 w-8 mx-auto mb-2" />
@@ -295,11 +295,11 @@ export const BuyerMessages = () => {
           </div>
 
           {/* Chat Area */}
-          <div className={`${!showConversations || !isMobile ? 'flex' : 'hidden'} flex-col flex-1 min-h-0`}>
+          <div className={`${!showConversations || !isMobile ? 'flex' : 'hidden'} flex-col flex-1 min-h-0 min-w-0`}>
             {selectedConversation ? (
               <>
                 {/* Chat Header */}
-                <div className="p-4 border-b bg-white/90 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+                <div className="p-4 border-b bg-white/90 flex items-center justify-between flex-shrink-0 shadow-sm">
                   <div
                     className="flex items-center space-x-3 cursor-pointer"
                     onClick={() => navigate('/buyer-account-settings')}
@@ -346,6 +346,7 @@ export const BuyerMessages = () => {
                 <div 
                   ref={messagesContainerRef}
                   className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
+                  style={{ maxHeight: 'calc(100vh - 200px)' }}
                 >
                   {/* Pending Conversation Notice */}
                   {selectedConversation?.status === 'pending' && messages.length <= 1 && (
@@ -426,7 +427,7 @@ export const BuyerMessages = () => {
                 </div>
 
                 {/* Message Input */}
-                <div className="border-t p-4 bg-white/90 sticky bottom-0 z-10">
+                <div className="border-t p-4 bg-white/90 flex-shrink-0">
                   {selectedConversation?.status === 'pending' && messages.length <= 1 ? (
                     <div className="text-center py-2 text-sm text-muted-foreground">
                       <p>The agent will activate this conversation when they respond to your inquiry.</p>
@@ -441,14 +442,14 @@ export const BuyerMessages = () => {
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyDown={handleKeyPress}
                         placeholder="Type a message..."
-                        className="flex-1"
+                        className="flex-1 min-h-[40px] max-h-32 resize-none"
                         rows={1}
                       />
                       <Button 
                         type="submit"
                         size="icon" 
                         disabled={!newMessage.trim() || sending}
-                        className="bg-pickfirst-yellow hover:bg-pickfirst-yellow/90 text-foreground"
+                        className="bg-pickfirst-yellow hover:bg-pickfirst-yellow/90 text-foreground flex-shrink-0"
                       >
                         {sending ? (
                           <Loader2 className="h-5 w-5 animate-spin" />
