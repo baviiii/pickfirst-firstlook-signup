@@ -1012,38 +1012,64 @@ export class PropertyService {
 
       let filteredData = data || [];
 
-      if (!options?.includeOffMarket) {
-        let hideOffMarket = true;
+      // Check user's access to off-market properties
+      let hasOffMarketAccess = false;
+      let shouldFilterSensitiveData = false;
 
-        try {
-          const { data: authData } = await supabase.auth.getUser();
-          const user = authData?.user;
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        const user = authData?.user;
 
-          if (user) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('role, subscription_tier')
-              .eq('id', user.id)
-              .single();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role, subscription_tier')
+            .eq('id', user.id)
+            .single();
 
-            const role = profile?.role || null;
-            const tier = (profile?.subscription_tier || '').toLowerCase();
+          const role = profile?.role || null;
+          const tier = (profile?.subscription_tier || '').toLowerCase();
 
-            if (role === 'agent' || role === 'super_admin') {
-              hideOffMarket = false;
-            } else if (role === 'buyer') {
-              hideOffMarket = !(tier && tier !== 'free');
-            }
+          if (role === 'agent' || role === 'super_admin') {
+            hasOffMarketAccess = true;
+          } else if (role === 'buyer') {
+            hasOffMarketAccess = tier && tier !== 'free';
           }
-        } catch (authError) {
-          console.warn('Failed to determine user role for property visibility:', authError);
-          hideOffMarket = true;
-        }
 
-        if (hideOffMarket) {
+          // If user doesn't have premium access, filter sensitive data from off-market properties
+          shouldFilterSensitiveData = !hasOffMarketAccess;
+        }
+      } catch (authError) {
+        console.warn('Failed to determine user role for property visibility:', authError);
+        hasOffMarketAccess = false;
+        shouldFilterSensitiveData = true;
+      }
+
+      // Filter out off-market properties if includeOffMarket is false
+      if (!options?.includeOffMarket) {
+        if (!hasOffMarketAccess) {
           filteredData = filteredData.filter(
             listing => (listing as any).listing_source !== 'agent_posted'
           );
+        }
+      } else {
+        // Even if includeOffMarket is true, filter sensitive data for non-premium users
+        if (shouldFilterSensitiveData) {
+          filteredData = filteredData.map(listing => {
+            // If it's an off-market property and user doesn't have access, hide sensitive fields
+            if ((listing as any).listing_source === 'agent_posted') {
+              return {
+                ...listing,
+                // Keep basic info for UI (title, address, price) but hide sensitive data
+                contact_email: null,
+                contact_phone: null,
+                showing_instructions: null,
+                // Keep description but could truncate if needed
+                // description: listing.description ? listing.description.substring(0, 100) + '...' : null,
+              } as PropertyListing;
+            }
+            return listing;
+          });
         }
       }
 
