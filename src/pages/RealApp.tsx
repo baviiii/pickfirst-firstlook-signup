@@ -28,7 +28,28 @@ const Index = () => {
       setFeaturedLoading(true);
       const { data, error } = await PropertyService.getApprovedListings(undefined, { includeOffMarket: true });
       if (isMounted) {
-        setFeatured(data || []);
+        if (data && data.length > 0) {
+          // Separate off-market and regular properties
+          const offMarketProperties = data.filter((p: any) => p.listing_source === 'agent_posted');
+          const regularProperties = data.filter((p: any) => p.listing_source !== 'agent_posted');
+          
+          // Ensure at least 3 off-market properties if available, then fill with regular properties
+          let featuredProperties: PropertyListing[] = [];
+          
+          // Add up to 3 off-market properties (or all if less than 3)
+          const offMarketCount = Math.min(3, offMarketProperties.length);
+          featuredProperties.push(...offMarketProperties.slice(0, offMarketCount));
+          
+          // Fill remaining slots (up to 6 total) with regular properties
+          const remainingSlots = 6 - featuredProperties.length;
+          if (remainingSlots > 0 && regularProperties.length > 0) {
+            featuredProperties.push(...regularProperties.slice(0, remainingSlots));
+          }
+          
+          setFeatured(featuredProperties);
+        } else {
+          setFeatured([]);
+        }
         setFeaturedLoading(false);
       }
       if (error) {

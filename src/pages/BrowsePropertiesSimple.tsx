@@ -19,7 +19,9 @@ import {
   List,
   Home,
   Eye,
-  X
+  X,
+  Lock,
+  Crown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
@@ -39,7 +41,7 @@ const BrowsePropertiesSimple = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { viewMode: userViewMode } = useViewMode();
-  const { canUseFavorites, getFavoritesLimit } = useSubscription();
+  const { canUseFavorites, getFavoritesLimit, canAccessOffMarketListings } = useSubscription();
   
   // State
   const [listings, setListings] = useState<PropertyListing[]>([]);
@@ -70,8 +72,13 @@ const BrowsePropertiesSimple = () => {
   const fetchListings = async () => {
     setLoading(true);
     try {
-      const { data } = await PropertyService.getApprovedListings();
-      setListings(data || []);
+      // Include off-market listings in the response; we'll lock them in the UI
+      const { data } = await PropertyService.getApprovedListings(undefined, {
+        includeOffMarket: true,
+      });
+      // Keep all approved listings (including agent_posted off-market)
+      const approvedListings = data || [];
+      setListings(approvedListings);
     } catch (error) {
       toast.error('Failed to load properties');
       setListings([]);
@@ -295,21 +302,43 @@ const BrowsePropertiesSimple = () => {
     const isFavorited = favorites.has(listing.id);
     const hasInquired = inquiredProperties.has(listing.id);
     const isSold = listing.status === 'sold';
+    
+    // Identify off-market (agent posted) properties
+    const isOffMarket = (listing as any).listing_source === 'agent_posted';
+    const isPremiumUser = canAccessOffMarketListings();
+    const isLockedOffMarket = isOffMarket && !isPremiumUser;
 
     return (
       <Card 
-        className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-2xl hover:shadow-pickfirst-yellow/30 transition-all duration-300 hover:scale-[1.02] overflow-hidden cursor-pointer"
-        onClick={() => navigate(`/property/${listing.id}`)}
+        className={`pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-2xl hover:shadow-pickfirst-yellow/30 transition-all duration-300 hover:scale-[1.02] overflow-hidden relative ${
+          isLockedOffMarket ? 'cursor-not-allowed opacity-95' : 'cursor-pointer'
+        }`}
+        onClick={() => {
+          if (isLockedOffMarket) {
+            navigate('/pricing');
+          } else {
+            navigate(`/property/${listing.id}`);
+          }
+        }}
       >
         <div className="relative">
           {/* Property Image */}
-          <div className="aspect-video overflow-hidden">
+          <div className="aspect-video overflow-hidden relative">
             {hasImages ? (
-              <img
-                src={listing.images[0]}
-                alt={listing.title}
-                className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
-              />
+              <>
+                <img
+                  src={listing.images[0]}
+                  alt={listing.title}
+                  className={`w-full h-full object-cover transition-transform duration-300 ${
+                    isLockedOffMarket ? 'blur-sm opacity-50' : 'hover:scale-110'
+                  }`}
+                />
+                {isLockedOffMarket && (
+                  <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
+                    <Lock className="h-8 w-8 text-primary" />
+                  </div>
+                )}
+              </>
             ) : (
               <div className="w-full h-full bg-muted flex items-center justify-center">
                 <Home className="h-16 w-16 text-muted-foreground" />
@@ -318,7 +347,12 @@ const BrowsePropertiesSimple = () => {
           </div>
 
           {/* Status Badges */}
-          <div className="absolute top-3 left-3 flex gap-2">
+          <div className="absolute top-3 left-3 flex gap-2 z-10">
+            {isOffMarket && (
+              <Badge className="bg-pickfirst-yellow text-black font-bold border border-pickfirst-yellow/30">
+                Off-Market
+              </Badge>
+            )}
             {isSold && (
               <Badge className="bg-red-500 text-white font-bold">
                 SOLD
@@ -338,11 +372,14 @@ const BrowsePropertiesSimple = () => {
             <Button
               variant="ghost"
               size="sm"
-              className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white"
+              className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white z-10"
               onClick={(e) => {
                 e.stopPropagation();
-                toggleFavorite(listing.id);
+                if (!isLockedOffMarket) {
+                  toggleFavorite(listing.id);
+                }
               }}
+              disabled={isLockedOffMarket}
             >
               <Heart className={`h-4 w-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
             </Button>
@@ -353,7 +390,7 @@ const BrowsePropertiesSimple = () => {
           {/* Price */}
           <div className="flex items-center justify-between mb-3">
             <h3 className={`text-2xl font-bold ${isSold ? 'text-muted-foreground line-through' : 'text-primary'}`}>
-              {formatPriceForDisplay(listing.price, listing.price_display)}
+              {isLockedOffMarket ? 'Premium Off-Market' : formatPriceForDisplay(listing.price, listing.price_display)}
             </h3>
             {isSold && listing.sold_price && (
               <span className="text-green-600 font-semibold">
@@ -399,35 +436,73 @@ const BrowsePropertiesSimple = () => {
 
           {/* Action Buttons */}
           <div className="flex gap-2">
-            <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/property/${listing.id}`);
-              }}
-              className="flex-1 bg-primary hover:bg-pickfirst-amber text-primary-foreground font-medium"
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              View Details
-            </Button>
-            
-            {userViewMode === 'buyer' && !isSold && (
+            {isLockedOffMarket ? (
               <Button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleEnquire(listing);
+                  navigate('/pricing');
                 }}
-                variant="outline"
-                className={`border-primary text-primary hover:bg-primary hover:text-primary-foreground ${
-                  hasInquired ? 'bg-primary/10' : ''
-                }`}
-                disabled={hasInquired}
+                className="flex-1 bg-primary hover:bg-pickfirst-amber text-primary-foreground font-medium"
               >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                {hasInquired ? 'Enquired' : 'Enquire'}
+                <Crown className="h-4 w-4 mr-2" />
+                Unlock with Premium
               </Button>
+            ) : (
+              <>
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/property/${listing.id}`);
+                  }}
+                  className="flex-1 bg-primary hover:bg-pickfirst-amber text-primary-foreground font-medium"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Details
+                </Button>
+                
+                {userViewMode === 'buyer' && !isSold && (
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEnquire(listing);
+                    }}
+                    variant="outline"
+                    className={`border-primary text-primary hover:bg-primary hover:text-primary-foreground ${
+                      hasInquired ? 'bg-primary/10' : ''
+                    }`}
+                    disabled={hasInquired}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    {hasInquired ? 'Enquired' : 'Enquire'}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </CardContent>
+        
+        {/* Premium lock overlay for non-premium buyers on off-market listings */}
+        {isLockedOffMarket && (
+          <div className="absolute inset-0 rounded-lg bg-background/85 backdrop-blur-sm flex flex-col items-center justify-center gap-2 px-4 text-center z-30">
+            <Crown className="h-6 w-6 text-primary mb-1" />
+            <p className="text-sm font-semibold text-foreground">
+              Premium Off-Market Listing
+            </p>
+            <p className="text-xs text-muted-foreground mb-2">
+              Upgrade to unlock full details and contact the agent.
+            </p>
+            <Button
+              size="sm"
+              className="bg-primary hover:bg-pickfirst-amber text-primary-foreground text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate('/pricing');
+              }}
+            >
+              View Premium Plans
+            </Button>
+          </div>
+        )}
       </Card>
     );
   };

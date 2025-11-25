@@ -25,7 +25,8 @@ import {
   Car,
   Crown,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Lock
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -719,15 +720,22 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
                   <CardHeader className="p-0 relative flex-1 flex flex-col">
                     <div className="aspect-video bg-muted rounded-t-md overflow-hidden relative flex-shrink-0">
                       {hasImages ? (
-                        <img
-                          src={imagesArray[0]}
-                          alt={property.title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                          }}
-                        />
+                        <>
+                          <img
+                            src={imagesArray[0]}
+                            alt={property.title}
+                            className={`w-full h-full object-cover transition-transform duration-500 ${isLockedOffMarket ? 'blur-sm opacity-50' : 'group-hover:scale-105'}`}
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                          {isLockedOffMarket && (
+                            <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
+                              <Lock className="h-8 w-8 text-primary" />
+                            </div>
+                          )}
+                        </>
                       ) : null}
                       <div className={`w-full h-full bg-muted flex items-center justify-center ${hasImages ? 'hidden' : ''}`}>
                         <Home className="h-12 w-12 text-muted-foreground" />
