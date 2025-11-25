@@ -26,7 +26,9 @@ import {
   Clock,
   User,
   FileText,
-  Shield
+  Shield,
+  Globe,
+  Building
 } from 'lucide-react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { useAuth } from '@/hooks/useAuth';
@@ -686,7 +688,7 @@ const PropertyDetailsComponent = () => {
               </Card>
             )}
 
-            {/* Agent Details */}
+            {/* Agent Details - Shows all available fields dynamically */}
             {agentDetails && (
               <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
                 <CardHeader>
@@ -697,6 +699,7 @@ const PropertyDetailsComponent = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
+                    {/* Avatar and Name */}
                     <div className="flex items-center gap-4">
                       {agentDetails.avatar_url ? (
                         <img 
@@ -712,42 +715,67 @@ const PropertyDetailsComponent = () => {
                       <div>
                         <h3 className="text-foreground font-semibold text-lg">{agentDetails.full_name}</h3>
                         {agentDetails.company && (
-                          <p className="text-muted-foreground text-sm">{agentDetails.company}</p>
+                          <div className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
+                            <Building className="w-3.5 h-3.5" />
+                            <span>{agentDetails.company}</span>
+                          </div>
                         )}
                       </div>
                     </div>
                     
+                    {/* Bio - if available */}
                     {agentDetails.bio && (
                       <p className="text-muted-foreground text-sm leading-relaxed">{agentDetails.bio}</p>
                     )}
                     
+                    {/* Contact Information - shows all available fields */}
                     <div className="space-y-2">
                       {agentDetails.phone && (
                         <div className="flex items-center text-muted-foreground text-sm">
-                          <Phone className="w-4 h-4 mr-2 text-yellow-400" />
-                          <a href={`tel:${agentDetails.phone}`} className="hover:text-yellow-400 transition-colors">
+                          <Phone className="w-4 h-4 mr-2 text-yellow-400 shrink-0" />
+                          <a href={`tel:${agentDetails.phone}`} className="hover:text-yellow-400 transition-colors break-all">
                             {agentDetails.phone}
                           </a>
                         </div>
                       )}
                       {agentDetails.email && (
                         <div className="flex items-center text-muted-foreground text-sm">
-                          <Mail className="w-4 h-4 mr-2 text-yellow-400" />
-                          <a href={`mailto:${agentDetails.email}`} className="hover:text-yellow-400 transition-colors">
+                          <Mail className="w-4 h-4 mr-2 text-yellow-400 shrink-0" />
+                          <a href={`mailto:${agentDetails.email}`} className="hover:text-yellow-400 transition-colors break-all">
                             {agentDetails.email}
+                          </a>
+                        </div>
+                      )}
+                      {agentDetails.website && (
+                        <div className="flex items-center text-muted-foreground text-sm">
+                          <Globe className="w-4 h-4 mr-2 text-yellow-400 shrink-0" />
+                          <a 
+                            href={agentDetails.website.startsWith('http') ? agentDetails.website : `https://${agentDetails.website}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-yellow-400 transition-colors break-all"
+                          >
+                            {agentDetails.website}
                           </a>
                         </div>
                       )}
                       {agentDetails.location && (
                         <div className="flex items-center text-muted-foreground text-sm">
-                          <MapPin className="w-4 h-4 mr-2 text-yellow-400" />
+                          <MapPin className="w-4 h-4 mr-2 text-yellow-400 shrink-0" />
                           <span>{agentDetails.location}</span>
                         </div>
                       )}
                     </div>
-                    {agentDetails.email && agentDetails.phone && (
+                    
+                    {/* Helper text - only show if multiple contact methods available */}
+                    {(agentDetails.email || agentDetails.phone) && (
                       <p className="text-xs text-muted-foreground/80">
-                        Prefer email or phone? Reach out using whichever suits you best.
+                        {agentDetails.email && agentDetails.phone 
+                          ? 'Prefer email or phone? Reach out using whichever suits you best.'
+                          : agentDetails.email 
+                            ? 'Send an email to get in touch.'
+                            : 'Call to get in touch.'
+                        }
                       </p>
                     )}
                   </div>

@@ -1996,12 +1996,12 @@ export class PropertyService {
     }
   }
 
-  // Get agent details by ID
+  // Get agent details by ID - returns all public fields
   static async getAgentDetails(agentId: string): Promise<{ data: any | null; error: any }> {
     try {
       const { data, error } = await supabase
         .from('agent_public_profiles')
-        .select('id, full_name, email, phone, bio, company, location, avatar_url')
+        .select('id, full_name, email, phone, bio, company, location, avatar_url, website, created_at')
         .eq('id', agentId)
         .single();
 
