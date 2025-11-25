@@ -85,9 +85,15 @@ const PropertyMapPage = () => {
   }
 
   const hasOffMarketAccess = canAccessOffMarketListings();
+  // Filter properties based on premium access: premium users see all properties including off-market
   const visibleProperties = hasOffMarketAccess
-    ? properties
-    : properties.filter(property => (property as any).listing_source !== 'agent_posted');
+    ? properties // Premium users see ALL properties (including off-market with listing_source = 'agent_posted')
+    : properties.filter(property => (property as any).listing_source !== 'agent_posted'); // Non-premium: exclude off-market
+  
+  // Count off-market properties for premium users
+  const offMarketCount = hasOffMarketAccess 
+    ? properties.filter(p => (p as any).listing_source === 'agent_posted').length 
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -100,9 +106,17 @@ const PropertyMapPage = () => {
           }
         </p>
         {visibleProperties.length > 0 && (
-          <div className="mt-4 inline-flex items-center px-4 py-2 bg-pickfirst-yellow/20 text-foreground rounded-full text-sm border border-pickfirst-yellow/30">
-            <span className="w-2 h-2 bg-pickfirst-yellow rounded-full mr-2"></span>
-            {visibleProperties.length} {visibleProperties.length === 1 ? 'property' : 'properties'} available
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+            <div className="inline-flex items-center px-4 py-2 bg-pickfirst-yellow/20 text-foreground rounded-full text-sm border border-pickfirst-yellow/30">
+              <span className="w-2 h-2 bg-pickfirst-yellow rounded-full mr-2"></span>
+              {visibleProperties.length} {visibleProperties.length === 1 ? 'property' : 'properties'} available
+            </div>
+            {hasOffMarketAccess && offMarketCount > 0 && (
+              <div className="inline-flex items-center px-4 py-2 bg-green-500/10 text-foreground rounded-full text-sm border border-green-500/30">
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                {offMarketCount} exclusive off-market {offMarketCount === 1 ? 'listing' : 'listings'}
+              </div>
+            )}
           </div>
         )}
         {!hasOffMarketAccess && (

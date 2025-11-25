@@ -16,16 +16,17 @@ export interface AreaAnalytics {
 }
 
 export class MapAnalyticsService {
-  // Get all approved properties for the map
+  // Get all approved properties for the map (including off-market for premium users)
+  // Note: Off-market filtering is handled in PropertyMap.tsx based on user subscription
   static async getMapProperties(): Promise<{ data: PropertyListing[] | null; error: any }> {
     try {
       const { data, error } = await supabase
         .from('property_listings')
-        .select('*')
+        .select('*') // Includes listing_source field for off-market filtering
         .eq('status', 'approved')
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
-      .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) {
         return { data: null, error };

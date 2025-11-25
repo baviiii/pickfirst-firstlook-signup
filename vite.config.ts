@@ -23,12 +23,13 @@ export default defineConfig(({ mode }) => ({
   },
   // Additional production optimizations
   build: {
-    // Remove console logs in production
+    // Remove console logs in production builds (Terser will strip all console.* statements)
     minify: mode === 'production' ? 'terser' : false,
     terserOptions: mode === 'production' ? {
       compress: {
-        drop_console: true,
-        drop_debugger: true,
+        drop_console: true, // Removes ALL console.log, console.warn, console.info, console.debug
+        drop_debugger: true, // Removes debugger statements
+        pure_funcs: ['console.log', 'console.debug', 'console.info', 'console.warn'], // Additional safety
       },
     } : undefined,
     // Source maps only in development

@@ -20,7 +20,8 @@ import {
   Home,
   X,
   MessageSquare,
-  Share2
+  Share2,
+  CheckCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
@@ -147,29 +148,25 @@ const SavedPropertiesPageComponent = () => {
     }
   };
 
+  const formatPriceForDisplay = (price: number | null, priceDisplay: string | null) => {
+    if (priceDisplay && priceDisplay.trim().length > 0) {
+      return priceDisplay.trim();
+    }
+    if (price && price > 0) {
+      return `$${price.toLocaleString()}`;
+    }
+    return 'Price on request';
+  };
+
   const PropertyCard = ({ property }: { property: PropertyListing }) => {
     const hasImages = property.images && property.images.length > 0;
     const isSold = property.status === 'sold' && !!property.sold_price && property.sold_price > 0;
     const displayPrice = PropertyService.getDisplayPrice(property);
-    const originalPriceText = (() => {
-      if (property.price_display && property.price_display.trim().length > 0) {
-        return property.price_display.trim();
-      }
-      if (property.price && property.price > 0) {
-        return `$${property.price.toLocaleString()}`;
-      }
-      return null;
-    })();
-    const rentalSuffix =
-      property.property_type === 'weekly'
-        ? '/week'
-        : property.property_type === 'monthly'
-          ? '/month'
-          : '';
+    const originalPriceText = formatPriceForDisplay(property.price, property.price_display);
 
     if (viewMode === 'list') {
       return (
-        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg hover:shadow-pickfirst-yellow/40 transition-all duration-300 hover:scale-[1.01]">
+        <Card className="text-card-foreground shadow-2xl transition-all duration-300 hover:scale-[1.01] pickfirst-glass bg-card/90 border border-pickfirst-yellow/30">
           <div className="flex flex-col sm:flex-row">
             <div className="sm:w-80 aspect-video sm:aspect-square overflow-hidden relative">
               {hasImages ? (
@@ -179,18 +176,18 @@ const SavedPropertiesPageComponent = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                  <Camera className="w-12 h-12 text-gray-500" />
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                  <Home className="h-16 w-16 text-muted-foreground" />
                 </div>
               )}
               
               {/* Action Buttons Overlay */}
-              <div className="absolute top-3 right-3 flex gap-2">
+              <div className="absolute top-3 right-3 flex gap-2 z-10">
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => handleShare(property)}
-                  className="bg-black/50 backdrop-blur-sm hover:bg-black/70 text-white rounded-full"
+                  className="bg-black/60 hover:bg-black/80 text-white rounded-full"
                 >
                   <Share2 className="w-4 h-4" />
                 </Button>
@@ -198,73 +195,66 @@ const SavedPropertiesPageComponent = () => {
                   variant="ghost"
                   size="icon"
                   onClick={() => handleRemoveFromFavorites(property)}
-                  className="bg-black/50 backdrop-blur-sm hover:bg-red-500/70 text-red-400 hover:text-white rounded-full"
+                  className="bg-black/60 hover:bg-red-500/80 text-red-400 hover:text-white rounded-full"
                 >
                   <Heart className="w-4 h-4 fill-current" />
                 </Button>
               </div>
             </div>
             
-            <div className="flex-1 p-6">
+            <CardContent className="flex-1 p-6">
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-xl font-bold text-white mb-2">{property.title}</h3>
-                  <div className="flex items-center text-yellow-400/80 mb-3">
+                  <h3 className="text-xl font-bold text-foreground mb-2">{property.title}</h3>
+                  <div className="flex items-center text-muted-foreground mb-3">
                     <MapPin className="w-4 h-4 mr-2" />
                     <span className="text-sm">{property.address}, {property.city}, {property.state}</span>
                   </div>
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <div className="text-2xl font-bold text-yellow-400">
+                  <div className="text-2xl font-bold text-primary">
                     {isSold && originalPriceText ? (
                       <>
-                        <span className="text-lg text-gray-400 line-through">{originalPriceText}</span>
+                        <span className="text-lg text-muted-foreground line-through">{originalPriceText}</span>
                         <br />
-                        <span className="text-red-400">{displayPrice}</span>
+                        <span className="text-green-600">{displayPrice}</span>
                       </>
                     ) : (
-                      <>
-                        {displayPrice}
-                        {rentalSuffix && (
-                          <span className="text-sm font-normal text-yellow-400/70 ml-1">
-                            {rentalSuffix}
-                          </span>
-                        )}
-                      </>
+                      displayPrice
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     {property.bedrooms !== null && (
                       <div className="flex items-center gap-1">
-                        <Bed className="w-4 h-4 text-yellow-400" />
-                        <span className="text-gray-300">{property.bedrooms}</span>
+                        <Bed className="w-4 h-4" />
+                        <span>{property.bedrooms}</span>
                       </div>
                     )}
                     {property.bathrooms !== null && (
                       <div className="flex items-center gap-1">
-                        <Bath className="w-4 h-4 text-yellow-400" />
-                        <span className="text-gray-300">{property.bathrooms}</span>
+                        <Bath className="w-4 h-4" />
+                        <span>{property.bathrooms}</span>
                       </div>
                     )}
                     {property.square_feet !== null && (
                       <div className="flex items-center gap-1">
-                        <Square className="w-4 h-4 text-yellow-400" />
-                        <span className="text-gray-300">{property.square_feet.toLocaleString()}</span>
+                        <Square className="w-4 h-4" />
+                        <span>{property.square_feet.toLocaleString()} sq metres</span>
                       </div>
                     )}
                   </div>
                 </div>
                 
                 {property.description && (
-                  <p className="text-gray-300 text-sm line-clamp-2">{property.description}</p>
+                  <p className="text-muted-foreground text-sm line-clamp-2">{property.description}</p>
                 )}
                 
                 <div className="flex gap-3">
                   <Button
                     onClick={() => navigate(`/property/${property.id}`)}
-                    className="bg-yellow-400 hover:bg-amber-500 text-black"
+                    className="bg-primary hover:bg-pickfirst-amber text-primary-foreground"
                   >
                     <Eye className="w-4 h-4 mr-2" />
                     View Details
@@ -272,52 +262,62 @@ const SavedPropertiesPageComponent = () => {
                   <Button
                     variant="outline"
                     onClick={() => handleRemoveFromFavorites(property)}
-                    className="text-red-400 border-red-400/40 hover:bg-red-400/10"
+                    className="border-red-500/40 text-red-500 hover:bg-red-500/10"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Remove
                   </Button>
                 </div>
               </div>
-            </div>
+            </CardContent>
           </div>
         </Card>
       );
     }
 
     return (
-      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg hover:shadow-pickfirst-yellow/40 transition-all duration-300 hover:scale-[1.02] group cursor-pointer">
-        <div 
-          className="relative aspect-video overflow-hidden rounded-t-lg"
-          onClick={() => navigate(`/property/${property.id}`)}
-        >
-          {hasImages ? (
-            <img
-              src={property.images[0]}
-              alt={property.title}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-            />
-          ) : (
-            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-              <Camera className="w-12 h-12 text-gray-500" />
-            </div>
-          )}
-          
-          {/* Status Badge */}
-          <div className="absolute top-3 left-3">
-            <Badge className={`font-medium ${
-              property.status === 'sold' 
-                ? 'bg-red-500/90 hover:bg-red-500 text-white' 
-                : property.status === 'available' 
-                  ? 'bg-green-500/90 hover:bg-green-500 text-white'
-                  : 'bg-yellow-400/90 hover:bg-yellow-400 text-black'
-            }`}>
-              {property.status === 'sold' ? 'SOLD' : property.status === 'available' ? 'Available' : 'Under Contract'}
-            </Badge>
+      <Card 
+        className="text-card-foreground shadow-2xl transition-all duration-300 hover:scale-[1.02] overflow-hidden relative pickfirst-glass bg-card/90 border border-pickfirst-yellow/30 hover:shadow-pickfirst-yellow/30 cursor-pointer group"
+        onClick={() => navigate(`/property/${property.id}`)}
+      >
+        <div className="relative">
+          {/* Property Image */}
+          <div className="aspect-video overflow-hidden relative">
+            {hasImages ? (
+              <img
+                src={property.images[0]}
+                alt={property.title}
+                className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+              />
+            ) : (
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                <Home className="h-16 w-16 text-muted-foreground" />
+              </div>
+            )}
+          </div>
+
+          {/* Status Badges */}
+          <div className="absolute top-3 left-3 flex gap-2 z-10 flex-wrap">
+            {isSold && (
+              <Badge className="bg-red-500 text-white font-bold">
+                SOLD
+              </Badge>
+            )}
+            {property.status === 'available' && !isSold && (
+              <Badge className="bg-green-500 text-white font-bold">
+                Available
+              </Badge>
+            )}
+            {hasImages && (
+              <Badge className="bg-black/50 text-white flex items-center gap-1">
+                <Camera className="h-3 w-3" />
+                {property.images.length}
+              </Badge>
+            )}
           </div>
           
           {/* Action Buttons */}
-          <div className="absolute top-3 right-3 flex gap-2">
+          <div className="absolute top-3 right-3 flex gap-2 z-10">
             <Button
               variant="ghost"
               size="icon"
@@ -325,7 +325,7 @@ const SavedPropertiesPageComponent = () => {
                 e.stopPropagation();
                 handleShare(property);
               }}
-              className="bg-black/50 backdrop-blur-sm hover:bg-black/70 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              className="bg-black/60 hover:bg-black/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <Share2 className="w-4 h-4" />
             </Button>
@@ -336,96 +336,91 @@ const SavedPropertiesPageComponent = () => {
                 e.stopPropagation();
                 handleRemoveFromFavorites(property);
               }}
-              className="bg-black/50 backdrop-blur-sm hover:bg-red-500/70 text-red-400 hover:text-white rounded-full"
+              className="bg-black/60 hover:bg-red-500/80 text-red-400 hover:text-white rounded-full"
             >
               <Heart className="w-4 h-4 fill-current" />
             </Button>
           </div>
-          
-          {/* Image Count */}
-          {hasImages && property.images.length > 1 && (
-            <div className="absolute bottom-3 right-3 bg-black/70 text-white px-2 py-1 rounded-full text-xs">
-              {property.images.length} photos
-            </div>
-          )}
         </div>
         
         <CardContent className="p-4">
           <div className="space-y-3">
-            <div>
-              <h3 className="text-lg font-bold text-white mb-1 group-hover:text-yellow-400 transition-colors">
-                {property.title}
-              </h3>
-              <div className="flex items-center text-yellow-400/80">
-                <MapPin className="w-3 h-3 mr-1" />
-                <span className="text-xs">{property.address}, {property.city}</span>
-              </div>
-            </div>
-            
+            {/* Price */}
             <div className="flex items-center justify-between">
-              <div className="text-xl font-bold text-yellow-400">
+              <h3 className={`text-2xl font-bold ${isSold ? 'text-muted-foreground line-through' : 'text-primary'}`}>
                 {isSold && originalPriceText ? (
                   <>
-                    <span className="text-sm text-gray-400 line-through">{originalPriceText}</span>
+                    <span className="text-sm text-muted-foreground line-through">{originalPriceText}</span>
                     <br />
-                    <span className="text-red-400">{displayPrice}</span>
+                    <span className="text-green-600">{displayPrice}</span>
                   </>
                 ) : (
-                  <>
-                    {displayPrice}
-                    {rentalSuffix && (
-                      <span className="text-xs font-normal text-yellow-400/70 ml-1">
-                        {rentalSuffix === '/month' ? '/mo' : rentalSuffix === '/week' ? '/wk' : rentalSuffix}
-                      </span>
-                    )}
-                  </>
+                  displayPrice
                 )}
-              </div>
-              <div className="flex items-center gap-3 text-xs">
-                {property.bedrooms !== null && (
-                  <div className="flex items-center gap-1">
-                    <Bed className="w-3 h-3 text-yellow-400" />
-                    <span className="text-gray-300">{property.bedrooms}</span>
-                  </div>
-                )}
-                {property.bathrooms !== null && (
-                  <div className="flex items-center gap-1">
-                    <Bath className="w-3 h-3 text-yellow-400" />
-                    <span className="text-gray-300">{property.bathrooms}</span>
-                  </div>
-                )}
-                {property.square_feet !== null && (
-                  <div className="flex items-center gap-1">
-                    <Square className="w-3 h-3 text-yellow-400" />
-                    <span className="text-gray-300">{Math.round(property.square_feet/1000)}k</span>
-                  </div>
-                )}
-              </div>
+              </h3>
+              {isSold && property.sold_price && (
+                <span className="text-green-600 font-semibold text-sm">
+                  Sold: {formatPriceForDisplay(property.sold_price, null)}
+                </span>
+              )}
+            </div>
+
+            {/* Title */}
+            <h4 className="text-foreground font-semibold text-lg mb-2 line-clamp-1">
+              {property.title}
+            </h4>
+
+            {/* Location */}
+            <div className="flex items-center text-muted-foreground text-sm mb-3">
+              <MapPin className="h-4 w-4 mr-1" />
+              <span className="line-clamp-1">
+                {property.address}, {property.city}, {property.state}
+              </span>
+            </div>
+
+            {/* Property Details */}
+            <div className="flex items-center gap-4 text-muted-foreground text-sm mb-4">
+              {property.bedrooms !== null && (
+                <div className="flex items-center gap-1">
+                  <Bed className="h-4 w-4" />
+                  <span>{property.bedrooms}</span>
+                </div>
+              )}
+              {property.bathrooms !== null && (
+                <div className="flex items-center gap-1">
+                  <Bath className="h-4 w-4" />
+                  <span>{property.bathrooms}</span>
+                </div>
+              )}
+              {property.square_feet !== null && (
+                <div className="flex items-center gap-1">
+                  <Square className="h-4 w-4" />
+                  <span>{property.square_feet.toLocaleString()} sq metres</span>
+                </div>
+              )}
             </div>
             
-            {property.description && (
-              <p className="text-gray-400 text-xs line-clamp-2">{property.description}</p>
-            )}
-            
-            <div className="flex gap-2 pt-2">
+            {/* Action Buttons */}
+            <div className="flex gap-2">
               <Button
-                size="sm"
-                onClick={() => navigate(`/property/${property.id}`)}
-                className="flex-1 bg-yellow-400 hover:bg-amber-500 text-black text-xs py-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/property/${property.id}`);
+                }}
+                className="flex-1 bg-primary hover:bg-pickfirst-amber text-primary-foreground font-medium"
               >
-                <Eye className="w-3 h-3 mr-1" />
-                View
+                <Eye className="h-4 w-4 mr-2" />
+                View Details
               </Button>
               <Button
-                size="sm"
                 variant="outline"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleRemoveFromFavorites(property);
                 }}
-                className="text-red-400 border-red-400/40 hover:bg-red-400/10 text-xs py-2 px-3"
+                className="border-red-500/40 text-red-500 hover:bg-red-500/10"
               >
-                <Trash2 className="w-3 h-3" />
+                <Trash2 className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -434,185 +429,175 @@ const SavedPropertiesPageComponent = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-muted rounded w-1/4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-96 bg-card/70 rounded-lg"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header - Mobile Optimized */}
+        <div className="space-y-4">
+          {/* Back Button and Title */}
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               onClick={() => navigate(-1)}
-              className="text-yellow-400 hover:text-amber-500"
+              className="text-muted-foreground hover:text-primary shrink-0"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+              <ArrowLeft className="h-5 w-5" />
+              <span className="hidden sm:inline ml-2">Back</span>
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                <Heart className="w-8 h-8 text-yellow-400" />
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3 truncate">
+                <Heart className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
                 Saved Properties
               </h1>
+              <p className="text-sm text-muted-foreground">
+                {filteredProperties.length} of {savedProperties.length} {savedProperties.length === 1 ? 'property' : 'properties'}
+                {getFavoritesLimit() !== -1 && (
+                  <span className="ml-2">
+                    (Limit: {getFavoritesLimit()})
+                  </span>
+                )}
+              </p>
             </div>
           </div>
-        </div>
 
-        <div className="space-y-6">
-          {/* Header Subtitle */}
-          <p className="text-gray-300">
-            {filteredProperties.length} of {savedProperties.length} properties
-            {getFavoritesLimit() !== -1 && (
-              <span className="ml-2 text-gray-400">
-                (Limit: {getFavoritesLimit()})
-              </span>
-            )}
-          </p>
-          
-          {/* View Mode Toggle - Hidden if no properties */}
+          {/* Controls Row - Responsive */}
           {savedProperties.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-2 bg-gray-800/50 rounded-lg p-1">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              {/* Sort Options */}
+              <div className="flex items-center gap-2 flex-1">
+                <SortAsc className="h-4 w-4 text-muted-foreground shrink-0" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  className="bg-card border border-border text-foreground rounded px-3 py-2 text-sm w-full sm:w-auto"
+                >
+                  <option value="date-saved">Recently Saved</option>
+                  <option value="title">Property Name</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                </select>
+              </div>
+
+              {/* View Mode Toggle */}
+              <div className="flex border border-border rounded self-end sm:self-auto">
                 <Button
                   variant={viewMode === 'grid' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('grid')}
-                  className={viewMode === 'grid' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
+                  className="rounded-r-none"
                 >
-                  <Grid className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">Grid</span>
+                  <Grid className="h-4 w-4" />
+                  <span className="ml-2 hidden sm:inline">Grid</span>
                 </Button>
                 <Button
                   variant={viewMode === 'list' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('list')}
-                  className={viewMode === 'list' ? 'bg-yellow-400 text-black hover:bg-amber-500' : 'text-gray-400 hover:text-white'}
+                  className="rounded-l-none"
                 >
-                  <List className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">List</span>
+                  <List className="h-4 w-4" />
+                  <span className="ml-2 hidden sm:inline">List</span>
                 </Button>
               </div>
             </div>
           )}
-          
-          {/* Search and Controls - Only show if there are saved properties */}
-          {savedProperties.length > 0 && (
-            <div className="space-y-4">
-              {/* Search Bar */}
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type="text"
-                  placeholder="Search your saved properties..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-12 py-4 bg-gray-900/50 border border-yellow-400/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-transparent backdrop-blur-xl"
-                />
-                {searchTerm && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setSearchTerm('')}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
 
-              {/* Sort Control */}
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="px-4 py-2 bg-gray-900/50 border border-yellow-400/20 rounded-lg text-white focus:ring-2 focus:ring-yellow-400/50 backdrop-blur-xl"
-                  >
-                    <option value="date-saved">Recently Saved</option>
-                    <option value="title">Property Name</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
-                  </select>
-                </div>
-                
-                {searchTerm && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => setSearchTerm('')}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    Clear Search
-                  </Button>
-                )}
-              </div>
+          {/* Search Bar - Only show if there are saved properties */}
+          {savedProperties.length > 0 && (
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+              <input
+                type="text"
+                placeholder="Search your saved properties..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-12 py-4 bg-card border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent"
+              />
+              {searchTerm && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           )}
-
-          {/* Properties Grid/List */}
-          <div className="space-y-6">
-            {loading ? (
-              <div className="flex items-center justify-center py-20">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-                  <p className="text-white">Loading your saved properties...</p>
-                </div>
-              </div>
-            ) : savedProperties.length === 0 ? (
-              <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
-                <CardContent className="text-center py-16">
-                  <Heart className="h-16 w-16 text-gray-500 mx-auto mb-6" />
-                  <h3 className="text-2xl font-bold text-white mb-4">No saved properties yet</h3>
-                  <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                    Start browsing properties and save the ones you love by clicking the heart icon
-                  </p>
-                  <Button 
-                    onClick={() => navigate('/browse-properties')}
-                    className="bg-yellow-400 hover:bg-amber-500 text-black font-medium px-6 py-3"
-                    size="lg"
-                  >
-                    <Search className="w-5 h-5 mr-2" />
-                    Browse Properties
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : filteredProperties.length === 0 ? (
-              <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
-                <CardContent className="text-center py-16">
-                  <Search className="h-16 w-16 text-gray-500 mx-auto mb-6" />
-                  <h3 className="text-xl font-semibold text-white mb-4">No properties match your search</h3>
-                  <p className="text-gray-400 mb-6">Try adjusting your search terms</p>
-                  <Button 
-                    onClick={() => setSearchTerm('')}
-                    variant="outline" 
-                    className="text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10"
-                  >
-                    Clear Search
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className={
-                viewMode === 'grid'
-                  ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
-                  : 'space-y-6'
-              }>
-                {filteredProperties.map(property => (
-                  <PropertyCard key={property.id} property={property} />
-                ))}
-              </div>
-            )}
-          </div>
         </div>
+
+        {/* Properties Grid/List */}
+        {savedProperties.length === 0 ? (
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+            <CardContent className="text-center py-16">
+              <Heart className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
+              <h3 className="text-2xl font-bold text-foreground mb-4">No saved properties yet</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                Start browsing properties and save the ones you love by clicking the heart icon
+              </p>
+              <Button 
+                onClick={() => navigate('/browse-properties')}
+                className="bg-primary hover:bg-pickfirst-amber text-primary-foreground font-medium px-6 py-3"
+                size="lg"
+              >
+                <Search className="w-5 h-5 mr-2" />
+                Browse Properties
+              </Button>
+            </CardContent>
+          </Card>
+        ) : filteredProperties.length === 0 ? (
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+            <CardContent className="text-center py-16">
+              <Search className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
+              <h3 className="text-xl font-semibold text-foreground mb-4">No properties match your search</h3>
+              <p className="text-muted-foreground mb-6">Try adjusting your search terms</p>
+              <Button 
+                onClick={() => setSearchTerm('')}
+                variant="outline" 
+                className="border-border text-muted-foreground hover:bg-muted"
+              >
+                Clear Search
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className={`grid gap-6 ${
+            viewMode === 'grid' 
+              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
+              : 'grid-cols-1'
+          }`}>
+            {filteredProperties.map(property => (
+              <PropertyCard key={property.id} property={property} />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Remove Confirmation Dialog */}
       <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
-        <DialogContent className="w-full max-w-[95vw] sm:max-w-md pickfirst-glass bg-card text-card-foreground">
+        <DialogContent className="w-full max-w-[95vw] sm:max-w-md bg-white border border-pickfirst-yellow/30">
           <DialogHeader>
-            <DialogTitle className="text-red-400 flex items-center gap-2">
-              <Heart className="w-5 h-5" />
+            <DialogTitle className="text-foreground flex items-center gap-2">
+              <Heart className="w-5 h-5 text-red-500" />
               Remove from Favorites
             </DialogTitle>
-            <DialogDescription className="text-gray-300">
+            <DialogDescription className="text-muted-foreground">
               Are you sure you want to remove "{propertyToRemove?.title}" from your saved properties?
             </DialogDescription>
           </DialogHeader>
@@ -620,7 +605,7 @@ const SavedPropertiesPageComponent = () => {
             <Button
               variant="outline"
               onClick={() => setShowRemoveDialog(false)}
-              className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
+              className="flex-1 border-border text-muted-foreground hover:bg-muted"
               disabled={removingProperty}
             >
               Cancel

@@ -838,11 +838,15 @@ const PropertyListingFormComponent = ({ onSuccess, onCancel, mode = 'create', li
               <Label htmlFor="property_type" className="text-foreground font-semibold">Property Type *</Label>
               <Select value={formData.property_type} onValueChange={(value) => handleInputChange('property_type', value)}>
                 <SelectTrigger className="bg-card border border-border text-foreground">
-                  <SelectValue />
+                  <SelectValue placeholder="Select property type" />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border">
+                <SelectContent className="bg-white border border-gray-200 text-gray-900 shadow-lg z-[9999]">
                   {propertyTypes.map(type => (
-                    <SelectItem key={type.value} value={type.value} className="text-foreground">
+                    <SelectItem 
+                      key={type.value} 
+                      value={type.value} 
+                      className="text-gray-900 cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
+                    >
                       {type.label}
                     </SelectItem>
                   ))}
