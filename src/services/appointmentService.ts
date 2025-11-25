@@ -100,7 +100,15 @@ class AppointmentService {
         return { data: data || [], error };
       }
 
-      // Buyers: show only appointments for this client (by user id or email)
+      // Buyers (including agents in buyer mode): show appointments where they are the client
+      // First, find all client records for this user
+      const { data: clientRecords } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', user.id);
+      
+      const clientIds = clientRecords?.map(c => c.id) || [];
+      
       const selectQuery = `
         *,
         property:property_listings!appointments_property_id_fkey (id, title, address),
@@ -109,21 +117,21 @@ class AppointmentService {
       let data: AppointmentWithDetails[] | null = null;
       let error: any = null;
 
+      // Build query: check by client_id (if user has client records) or by email
+      const conditions: string[] = [];
+      if (clientIds.length > 0) {
+        conditions.push(`client_id.in.(${clientIds.join(',')})`);
+      }
       if (userEmail) {
-        const orExpr = `client_id.eq.${user.id},client_email.eq.${userEmail}`;
+        conditions.push(`client_email.eq.${userEmail}`);
+      }
+      
+      if (conditions.length > 0) {
+        const orExpr = conditions.join(',');
         const res = await supabase
           .from('appointments')
           .select(selectQuery)
           .or(orExpr)
-          .order('date', { ascending: true })
-          .order('time', { ascending: true });
-        data = res.data as any;
-        error = res.error;
-      } else {
-        const res = await supabase
-          .from('appointments')
-          .select(selectQuery)
-          .eq('client_id', user.id)
           .order('date', { ascending: true })
           .order('time', { ascending: true });
         data = res.data as any;
@@ -501,7 +509,7 @@ class AppointmentService {
       const finalBuyerName = (buyerName || (inquiry as any)?.buyer?.full_name || 'Unknown').trim();
 
       // Check if the buyer exists in the clients table
-      let clientProfileId: string | null = null;
+      let clientRecordId: string | null = null;
       let clientName = finalBuyerName || 'Unknown';
       
       if (inquiry.buyer_id) {
@@ -514,7 +522,7 @@ class AppointmentService {
         
         if (existingClient) {
           clientName = existingClient.name || finalBuyerName || 'Unknown';
-          clientProfileId = existingClient.user_id || null;
+          clientRecordId = existingClient.id || null; // Use client record id, not user_id
         } else {
           // Client doesn't exist, create one automatically
           console.log('Buyer not found in clients table, creating client automatically...');
@@ -532,7 +540,7 @@ class AppointmentService {
             // Continue without client_id - appointment can still be created
           } else if (newClient) {
             clientName = newClient.name || finalBuyerName || 'Unknown';
-            clientProfileId = newClient.user_id || null;
+            clientRecordId = newClient.id || null; // Use client record id, not user_id
             console.log('Client created successfully:', newClient.id);
           }
         }
@@ -541,7 +549,7 @@ class AppointmentService {
       const newAppointment: AppointmentInsert = {
         agent_id: user.id,
         inquiry_id: inquiryId,
-        client_id: clientProfileId, // Only set when linked to existing buyer profile
+        client_id: clientRecordId, // Use client record id (references clients.id)
         client_name: clientName,
         client_email: normalizedBuyerEmail,
         property_id: inquiry.property_id,

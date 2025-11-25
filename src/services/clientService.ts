@@ -210,9 +210,8 @@ class ClientService {
           .maybeSingle();
 
         if (existingUser) {
-          if (existingUser.role !== 'buyer') {
-            return { data: null, error: { message: 'Only buyers can be added as clients' } };
-          }
+          // Allow both buyers and agents to be added as clients
+          // Agents can act as buyers and be clients of other agents
           userId = existingUser.id;
 
           // Check if already a client
@@ -351,10 +350,8 @@ class ClientService {
         }
       }
 
-      // Check if user is a buyer
-      if (finalUserProfile.role !== 'buyer') {
-        return { data: null, error: { message: 'Only registered buyers can be added as clients.' } };
-      }
+      // Allow both buyers and agents to be added as clients
+      // Agents can act as buyers and be clients of other agents
       
       // Skip checking if client already exists for now to avoid TypeScript issues
       // This will be handled by database constraints if needed
@@ -436,12 +433,13 @@ class ClientService {
 
       // If user is found, validate they can be added as a client
       if (data) {
-        // Check if the user is an agent or admin (they shouldn't be added as clients)
-        if (data.role === 'agent' || data.role === 'admin' || data.role === 'super_admin') {
+        // Allow agents to be added as clients (they can act as buyers)
+        // Only block super_admin from being added as clients
+        if (data.role === 'super_admin') {
           return { 
             data: null, 
             error: { 
-              message: `Cannot add ${data.role} as a client. Only buyers can be added as clients.` 
+              message: `Cannot add ${data.role} as a client.` 
             } 
           };
         }
