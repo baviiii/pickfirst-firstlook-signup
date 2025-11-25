@@ -306,23 +306,29 @@ class EnhancedConversationService {
     }
 
     try {
-      // Get profiles with error handling for each - use public views to bypass RLS
-      const [agentResult, clientResult] = await Promise.allSettled([
-        supabase
-          .from('agent_public_profiles')
-          .select('id, full_name, email, phone, company, avatar_url')
-          .eq('id', conversation.agent_id)
-          .maybeSingle(),
-        supabase
-          .from('buyer_public_profiles')
-          .select('id, full_name, email, phone, avatar_url')
-          .eq('id', conversation.client_id)
-          .maybeSingle()
-      ]);
+      // Get agent profile - try view first, then fallback to RPC function
+      let agentProfile = null;
+      const { data: agentViewData, error: agentViewError } = await supabase
+        .from('agent_public_profiles')
+        .select('id, full_name, email, phone, company, avatar_url')
+        .eq('id', conversation.agent_id)
+        .maybeSingle();
+
+      if (agentViewData && !agentViewError) {
+        agentProfile = agentViewData;
+      } else {
+        // Fallback: Use helper function that bypasses RLS
+        console.log('Agent view query failed, trying helper function:', agentViewError);
+        const { data: agentFunctionData, error: agentFunctionError } = await supabase
+          .rpc('get_agent_public_profile', { agent_id: conversation.agent_id });
+        
+        if (!agentFunctionError && agentFunctionData && agentFunctionData.length > 0) {
+          agentProfile = agentFunctionData[0];
+        }
+      }
 
       // Handle agent profile with fallback
-      if (agentResult.status === 'fulfilled' && agentResult.value.data) {
-        const agentProfile = agentResult.value.data;
+      if (agentProfile) {
         enhanced.agent_profile = {
           id: agentProfile.id,
           full_name: agentProfile.full_name || 'Unknown Agent',
@@ -343,9 +349,29 @@ class EnhancedConversationService {
         };
       }
 
+      // Get client profile - try view first, then fallback to RPC function
+      let clientProfile = null;
+      const { data: clientViewData, error: clientViewError } = await supabase
+        .from('buyer_public_profiles')
+        .select('id, full_name, email, phone, avatar_url')
+        .eq('id', conversation.client_id)
+        .maybeSingle();
+
+      if (clientViewData && !clientViewError) {
+        clientProfile = clientViewData;
+      } else {
+        // Fallback: Use helper function that bypasses RLS
+        console.log('Client view query failed, trying helper function:', clientViewError);
+        const { data: clientFunctionData, error: clientFunctionError } = await supabase
+          .rpc('get_buyer_public_profile', { buyer_id: conversation.client_id });
+        
+        if (!clientFunctionError && clientFunctionData && clientFunctionData.length > 0) {
+          clientProfile = clientFunctionData[0];
+        }
+      }
+
       // Handle client profile with fallback
-      if (clientResult.status === 'fulfilled' && clientResult.value.data) {
-        const clientProfile = clientResult.value.data;
+      if (clientProfile) {
         enhanced.client_profile = {
           full_name: clientProfile.full_name || 'Unknown Client',
           email: clientProfile.email || '',
@@ -354,6 +380,8 @@ class EnhancedConversationService {
         };
       } else {
         console.warn('Client profile not found for conversation:', conversation.id, 'client_id:', conversation.client_id);
+        // This should never happen for buyers who have inquired or messaged
+        // but we'll keep the fallback just in case
         enhanced.client_profile = {
           full_name: 'Client (Profile Missing)',
           email: '',

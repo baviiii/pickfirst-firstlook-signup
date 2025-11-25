@@ -388,7 +388,15 @@ export const AgentMessages = () => {
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
-                  <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                  <button
+                    type="button"
+                    className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity text-left"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setShowBuyerProfile(true);
+                    }}
+                  >
                     <Avatar className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 ring-2 ring-primary/10">
                       <AvatarImage src={selectedConversation.client_profile?.avatar_url} />
                       <AvatarFallback className="text-sm bg-primary text-primary-foreground">
@@ -403,7 +411,7 @@ export const AgentMessages = () => {
                         {selectedConversation.property?.title || 'New conversation'}
                       </p>
                     </div>
-                  </div>
+                  </button>
                 </div>
                 <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                   <Button variant="ghost" size="icon" onClick={() => setShowBuyerProfile(true)} className="h-10 w-10 sm:h-9 sm:w-9 touch-manipulation">
