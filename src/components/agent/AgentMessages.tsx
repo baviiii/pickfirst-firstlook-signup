@@ -287,12 +287,30 @@ export const AgentMessages = () => {
   };
 
   // Get the other party's profile based on view mode
+  // In agent mode: user is the agent, so show client/buyer profile
+  // In buyer mode: user is the client, so show agent profile
   const getOtherPartyProfile = (conv: EnhancedConversation) => {
     if (viewMode === 'agent') {
-      // In agent mode: show the client/buyer profile
+      // User is the agent, show the buyer/client they're talking to
+      // Verify: conv.agent_id should equal user.id
+      if (conv.agent_id !== user?.id) {
+        console.warn('Conversation agent_id mismatch in agent mode:', {
+          conversationAgentId: conv.agent_id,
+          userId: user?.id,
+          conversationId: conv.id
+        });
+      }
       return conv.client_profile;
     } else {
-      // In buyer mode: show the agent profile
+      // User is the buyer/client, show the agent they're talking to
+      // Verify: conv.client_id should equal user.id
+      if (conv.client_id !== user?.id) {
+        console.warn('Conversation client_id mismatch in buyer mode:', {
+          conversationClientId: conv.client_id,
+          userId: user?.id,
+          conversationId: conv.id
+        });
+      }
       return conv.agent_profile;
     }
   };

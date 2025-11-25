@@ -124,8 +124,45 @@ class EnhancedConversationService {
         (conversations || []).map(conv => this.enhanceSingleConversation(conv as Tables<'conversations'>))
       );
 
+      // Additional strict filtering to ensure we only show the correct conversations
+      let filteredConversations = enhancedConversations.filter(conv => {
+        if (filters.viewMode === 'agent' && user) {
+          // In agent mode: only show conversations where user is agent, NOT client
+          const isAgentConversation = conv.agent_id === user.id && conv.client_id !== user.id;
+          if (!isAgentConversation) {
+            console.log('Filtered out conversation in agent mode:', {
+              conversationId: conv.id,
+              agentId: conv.agent_id,
+              clientId: conv.client_id,
+              userId: user.id,
+              reason: conv.client_id === user.id ? 'User is client (own inquiry)' : 'User is not agent'
+            });
+          }
+          return isAgentConversation;
+        } else if (filters.viewMode === 'buyer' && user) {
+          // In buyer mode: only show conversations where user is client, NOT agent
+          const isBuyerConversation = conv.client_id === user.id && conv.agent_id !== user.id;
+          if (!isBuyerConversation) {
+            console.log('Filtered out conversation in buyer mode:', {
+              conversationId: conv.id,
+              agentId: conv.agent_id,
+              clientId: conv.client_id,
+              userId: user.id,
+              reason: conv.agent_id === user.id ? 'User is agent' : 'User is not client'
+            });
+          }
+          return isBuyerConversation;
+        }
+        return true; // Default: show all (for backwards compatibility)
+      });
+      
+      console.log(`Filtered conversations for ${filters.viewMode} mode:`, {
+        totalConversations: enhancedConversations.length,
+        filteredCount: filteredConversations.length,
+        userId: user?.id
+      });
+
       // Apply search filter after enhancement
-      let filteredConversations = enhancedConversations;
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
         filteredConversations = enhancedConversations.filter(conv =>
@@ -339,8 +376,16 @@ class EnhancedConversationService {
         }
       }
 
-      // Handle agent profile with fallback
+      // Handle agent profile with fallback - validate ID matches
       if (agentProfile) {
+        // Verify the profile ID matches the conversation agent_id
+        if (agentProfile.id !== conversation.agent_id) {
+          console.error('Profile ID mismatch for agent!', {
+            conversationId: conversation.id,
+            expectedAgentId: conversation.agent_id,
+            gotProfileId: agentProfile.id
+          });
+        }
         enhanced.agent_profile = {
           id: agentProfile.id,
           full_name: agentProfile.full_name || 'Unknown Agent',
@@ -382,8 +427,16 @@ class EnhancedConversationService {
         }
       }
 
-      // Handle client profile with fallback
+      // Handle client profile with fallback - validate ID matches
       if (clientProfile) {
+        // Verify the profile ID matches the conversation client_id
+        if (clientProfile.id !== conversation.client_id) {
+          console.error('Profile ID mismatch for client!', {
+            conversationId: conversation.id,
+            expectedClientId: conversation.client_id,
+            gotProfileId: clientProfile.id
+          });
+        }
         enhanced.client_profile = {
           full_name: clientProfile.full_name || 'Unknown Client',
           email: clientProfile.email || '',
