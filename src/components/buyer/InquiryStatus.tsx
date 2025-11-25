@@ -85,39 +85,39 @@ export const InquiryStatusComponent = ({ propertyId, onNavigateToMessages }: Inq
   }
 
   return (
-    <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-green-500/30">
-      <CardHeader>
+    <Card className="bg-white border border-green-500/30 shadow-lg">
+      <CardHeader className="bg-gradient-to-r from-green-500/5 to-transparent border-b border-green-500/20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-500" />
-            <CardTitle className="text-green-500 text-lg">Inquiry Sent</CardTitle>
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            <CardTitle className="text-green-600 text-lg font-bold">Inquiry Sent</CardTitle>
           </div>
-          <Badge className="bg-green-500/10 text-green-500">
+          <Badge className="bg-green-500/10 text-green-600 border border-green-500/30 font-semibold">
             {inquiry.agent_response ? 'Responded' : 'Pending'}
           </Badge>
         </div>
-        <CardDescription className="text-gray-300">
-          Your inquiry about {inquiry.property?.title} has been sent to the agent.
+        <CardDescription className="text-foreground mt-2">
+          Your inquiry about <span className="font-semibold">{inquiry.property?.title}</span> has been sent to the agent.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-6">
         {/* Property Details */}
-        <div className="bg-white/5 p-3 rounded-lg">
+        <div className="bg-gradient-to-r from-primary/5 to-transparent p-3 rounded-lg border border-primary/20">
           <div className="flex items-center gap-2 mb-2">
-            <Home className="h-4 w-4 text-pickfirst-yellow" />
-            <span className="text-white font-medium text-sm">
+            <Home className="h-4 w-4 text-primary" />
+            <span className="text-foreground font-semibold text-sm">
               {inquiry.property?.title}
             </span>
           </div>
-          <div className="text-gray-300 text-xs">
+          <div className="text-muted-foreground text-xs">
             {inquiry.property?.address}
           </div>
         </div>
 
         {/* Your Message */}
         <div>
-          <div className="text-white font-medium text-sm mb-2">Your Message:</div>
-          <div className="text-gray-300 text-sm bg-white/5 p-2 rounded">
+          <div className="text-foreground font-semibold text-sm mb-2">Your Message:</div>
+          <div className="text-foreground text-sm bg-muted/50 p-3 rounded border border-border">
             {inquiry.message}
           </div>
         </div>
@@ -125,21 +125,53 @@ export const InquiryStatusComponent = ({ propertyId, onNavigateToMessages }: Inq
         {/* Agent Response if exists */}
         {inquiry.agent_response && (
           <div>
-            <div className="text-white font-medium text-sm mb-2">Agent's Response:</div>
-            <div className="text-gray-300 text-sm bg-green-500/10 p-2 rounded">
+            <div className="text-foreground font-semibold text-sm mb-2">Agent's Response:</div>
+            <div className="text-foreground text-sm bg-green-500/10 p-3 rounded border border-green-500/20">
               {inquiry.agent_response}
             </div>
           </div>
         )}
 
         {/* Timing */}
-        <div className="flex items-center gap-2 text-xs text-gray-400">
-          <Clock className="h-3 w-3" />
-          Sent: {new Date(inquiry.created_at).toLocaleDateString()} at {new Date(inquiry.created_at).toLocaleTimeString()}
+        <div className="flex items-center gap-2 text-xs text-foreground">
+          <Clock className="h-3 w-3 text-muted-foreground" />
+          <span className="text-foreground">
+            Sent: {(() => {
+              try {
+                const date = new Date(inquiry.created_at);
+                if (isNaN(date.getTime())) return 'Recently';
+                return date.toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'short', 
+                  day: 'numeric' 
+                }) + ' at ' + date.toLocaleTimeString('en-US', { 
+                  hour: 'numeric', 
+                  minute: '2-digit',
+                  hour12: true 
+                });
+              } catch {
+                return 'Recently';
+              }
+            })()}
+          </span>
           {inquiry.responded_at && (
             <>
-              <span className="mx-2">•</span>
-              Responded: {new Date(inquiry.responded_at).toLocaleDateString()}
+              <span className="mx-2 text-muted-foreground">•</span>
+              <span className="text-foreground">
+                Responded: {(() => {
+                  try {
+                    const date = new Date(inquiry.responded_at);
+                    if (isNaN(date.getTime())) return 'Recently';
+                    return date.toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    });
+                  } catch {
+                    return 'Recently';
+                  }
+                })()}
+              </span>
             </>
           )}
         </div>
@@ -156,7 +188,7 @@ export const InquiryStatusComponent = ({ propertyId, onNavigateToMessages }: Inq
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           ) : (
-            <div className="text-gray-400 text-sm">
+            <div className="text-muted-foreground text-sm bg-muted/30 p-3 rounded border border-border">
               The agent will respond to your inquiry soon.
             </div>
           )}

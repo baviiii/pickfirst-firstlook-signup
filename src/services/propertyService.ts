@@ -1693,15 +1693,28 @@ export class PropertyService {
       return { data: null, error: new Error('User not authenticated') };
     }
 
+    console.log('getMyInquiries - Current user ID:', user.id);
+
+    // Query with explicit foreign key relationships to avoid ambiguity
     const { data, error } = await supabase
       .from('property_inquiries')
       .select(`
         *,
         property:property_listings(title, address),
-        conversation:conversations(id, subject, last_message_at)
+        conversation:conversations!property_inquiries_conversation_id_fkey(id, subject, last_message_at)
       `)
       .eq('buyer_id', user.id)
       .order('created_at', { ascending: false });
+
+    console.log('getMyInquiries - Query result:', { 
+      dataLength: data?.length, 
+      data: data?.map(i => ({ id: i.id, property_id: i.property_id, buyer_id: i.buyer_id, status: i.status })),
+      error 
+    });
+
+    if (error) {
+      console.error('getMyInquiries - Error details:', error);
+    }
 
     return { data, error };
   }

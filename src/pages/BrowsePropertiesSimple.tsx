@@ -21,7 +21,10 @@ import {
   Eye,
   X,
   Lock,
-  Crown
+  Crown,
+  CheckCircle,
+  Clock,
+  ArrowRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
@@ -50,6 +53,8 @@ const BrowsePropertiesSimple = () => {
   const [selectedProperty, setSelectedProperty] = useState<PropertyListing | null>(null);
   const [inquiryMessage, setInquiryMessage] = useState('');
   const [isInquiryDialogOpen, setIsInquiryDialogOpen] = useState(false);
+  const [isInquirySuccessOpen, setIsInquirySuccessOpen] = useState(false);
+  const [submittedInquiry, setSubmittedInquiry] = useState<any>(null);
   const [submittingInquiry, setSubmittingInquiry] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [inquiredProperties, setInquiredProperties] = useState<Set<string>>(new Set());
@@ -98,9 +103,23 @@ const BrowsePropertiesSimple = () => {
 
   const fetchUserInquiries = async () => {
     try {
-      const { data } = await PropertyService.getMyInquiries();
+      console.log('Fetching user inquiries...', { userViewMode, profile: profile?.id });
+      const { data, error } = await PropertyService.getMyInquiries();
+      console.log('getMyInquiries response:', { data, error, dataLength: data?.length });
+      
+      if (error) {
+        console.error('Error from getMyInquiries:', error);
+        return;
+      }
+      
       const inquiredPropertyIds = data?.map(inquiry => inquiry.property_id) || [];
-      setInquiredProperties(new Set(inquiredPropertyIds));
+      const inquiredSet = new Set(inquiredPropertyIds);
+      console.log('Fetched inquired properties:', {
+        count: inquiredSet.size,
+        propertyIds: Array.from(inquiredSet),
+        inquiries: data?.map(i => ({ id: i.id, property_id: i.property_id, status: i.status }))
+      });
+      setInquiredProperties(inquiredSet);
     } catch (error) {
       console.error('Error fetching user inquiries:', error);
     }
@@ -272,22 +291,40 @@ const BrowsePropertiesSimple = () => {
         return;
       }
 
-      toast.success('Inquiry sent successfully!', {
-        description: data?.conversation_id 
-          ? 'A conversation has been created. You can view it in your messages.'
-          : 'The agent has been notified and will respond soon. You\'ll receive a notification when they respond.',
-        duration: 6000,
-        ...(data?.conversation_id && {
-          action: {
-            label: 'View Conversation',
-            onClick: () => window.location.href = `/buyer-messages?conversation=${data.conversation_id}`
-          }
-        })
+      // Store inquiry data for success modal
+      setSubmittedInquiry({
+        ...data,
+        property: selectedProperty,
+        message: inquiryMessage.trim()
       });
+      
+      // Update inquired properties immediately for visual feedback
+      if (selectedProperty && data) {
+        console.log('Inquiry created successfully:', {
+          inquiryId: data.id,
+          propertyId: selectedProperty.id,
+          propertyTitle: selectedProperty.title,
+          buyerId: data.buyer_id,
+          status: data.status
+        });
+        setInquiredProperties(prev => {
+          const newSet = new Set(prev);
+          newSet.add(selectedProperty.id);
+          console.log('Updated inquired properties state:', {
+            propertyId: selectedProperty.id,
+            newSetSize: newSet.size,
+            newSetList: Array.from(newSet)
+          });
+          return newSet;
+        });
+      } else {
+        console.warn('No inquiry data returned or no selected property:', { data, selectedProperty });
+      }
+      
+      // Close inquiry dialog and show success modal
       setIsInquiryDialogOpen(false);
+      setIsInquirySuccessOpen(true);
       setInquiryMessage('');
-      setSelectedProperty(null);
-      setInquiredProperties(prev => new Set(prev).add(selectedProperty.id));
     } catch (error) {
       console.error('Error submitting inquiry:', error);
       toast.error('Failed to send inquiry. Please try again.');
@@ -303,6 +340,15 @@ const BrowsePropertiesSimple = () => {
     const hasInquired = inquiredProperties.has(listing.id);
     const isSold = listing.status === 'sold';
     
+    // Debug log to verify inquired properties
+    console.log('Property card render:', {
+      id: listing.id,
+      title: listing.title,
+      hasInquired,
+      inquiredPropertiesSize: inquiredProperties.size,
+      inquiredPropertiesList: Array.from(inquiredProperties)
+    });
+    
     // Identify off-market (agent posted) properties
     const isOffMarket = (listing as any).listing_source === 'agent_posted';
     const isPremiumUser = canAccessOffMarketListings();
@@ -310,9 +356,18 @@ const BrowsePropertiesSimple = () => {
 
     return (
       <Card 
-        className={`pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-2xl hover:shadow-pickfirst-yellow/30 transition-all duration-300 hover:scale-[1.02] overflow-hidden relative ${
+        className={`text-card-foreground shadow-2xl transition-all duration-300 hover:scale-[1.02] overflow-hidden relative ${
+          hasInquired 
+            ? '!border-2 !border-green-600 !bg-green-50 dark:!bg-green-900/30 !shadow-green-500/30 ring-2 ring-green-400/40 hover:!shadow-green-500/40' 
+            : 'pickfirst-glass bg-card/90 border border-pickfirst-yellow/30 hover:shadow-pickfirst-yellow/30'
+        } ${
           isLockedOffMarket ? 'cursor-not-allowed opacity-95' : 'cursor-pointer'
         }`}
+        style={hasInquired ? { 
+          borderColor: '#16a34a', 
+          backgroundColor: '#f0fdf4',
+          boxShadow: '0 10px 15px -3px rgba(34, 197, 94, 0.3), 0 4px 6px -2px rgba(34, 197, 94, 0.2)'
+        } : undefined}
         onClick={() => {
           if (isLockedOffMarket) {
             navigate('/pricing');
@@ -347,7 +402,13 @@ const BrowsePropertiesSimple = () => {
           </div>
 
           {/* Status Badges */}
-          <div className="absolute top-3 left-3 flex gap-2 z-10">
+          <div className="absolute top-3 left-3 flex gap-2 z-10 flex-wrap">
+            {hasInquired && (
+              <Badge className="bg-green-600 text-white font-bold border-2 border-green-400 shadow-xl z-20 px-2 py-1 animate-pulse">
+                <CheckCircle className="h-3.5 w-3.5 mr-1.5 fill-white" />
+                Enquired
+              </Badge>
+            )}
             {isOffMarket && (
               <Badge className="bg-pickfirst-yellow text-black font-bold border border-pickfirst-yellow/30">
                 Off-Market
@@ -467,13 +528,22 @@ const BrowsePropertiesSimple = () => {
                       handleEnquire(listing);
                     }}
                     variant="outline"
-                    className={`border-primary text-primary hover:bg-primary hover:text-primary-foreground ${
-                      hasInquired ? 'bg-primary/10' : ''
+                    className={`${
+                      hasInquired 
+                        ? 'bg-green-100 dark:bg-green-900/30 border-green-500 text-green-700 dark:text-green-300 font-semibold cursor-not-allowed' 
+                        : 'border-primary text-primary hover:bg-primary hover:text-primary-foreground'
                     }`}
                     disabled={hasInquired}
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
-                    {hasInquired ? 'Enquired' : 'Enquire'}
+                    {hasInquired ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Enquired
+                      </>
+                    ) : (
+                      'Enquire'
+                    )}
                   </Button>
                 )}
               </>
@@ -616,18 +686,18 @@ const BrowsePropertiesSimple = () => {
 
         {/* Inquiry Dialog */}
         <Dialog open={isInquiryDialogOpen} onOpenChange={setIsInquiryDialogOpen}>
-          <DialogContent className="bg-gray-900 border border-yellow-400/20">
+          <DialogContent className="bg-white border border-pickfirst-yellow/30">
             <DialogHeader>
-              <DialogTitle className="text-white">
+              <DialogTitle className="text-foreground">
                 Enquire About Property
               </DialogTitle>
-              <DialogDescription className="text-gray-300">
+              <DialogDescription className="text-muted-foreground">
                 {selectedProperty && `Send a message about ${selectedProperty.title}`}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="inquiry-message" className="text-gray-300">
+                <Label htmlFor="inquiry-message" className="text-foreground">
                   Your Message
                 </Label>
                 <Textarea
@@ -635,7 +705,7 @@ const BrowsePropertiesSimple = () => {
                   placeholder="I'm interested in this property. Could you provide more information?"
                   value={inquiryMessage}
                   onChange={(e) => setInquiryMessage(e.target.value)}
-                  className="bg-gray-800 border-gray-700 text-white mt-2"
+                  className="bg-card border-border text-foreground placeholder:text-muted-foreground mt-2"
                   rows={4}
                 />
               </div>
@@ -643,16 +713,126 @@ const BrowsePropertiesSimple = () => {
                 <Button
                   variant="outline"
                   onClick={() => setIsInquiryDialogOpen(false)}
-                  className="border-gray-600 text-gray-300"
+                  className="border-border text-muted-foreground hover:bg-muted"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSubmitInquiry}
                   disabled={submittingInquiry || !inquiryMessage.trim()}
-                  className="bg-yellow-400 hover:bg-amber-500 text-black"
+                  className="bg-primary hover:bg-pickfirst-amber text-primary-foreground"
                 >
                   {submittingInquiry ? 'Sending...' : 'Send Inquiry'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Inquiry Success Modal */}
+        <Dialog open={isInquirySuccessOpen} onOpenChange={setIsInquirySuccessOpen}>
+          <DialogContent className="bg-white border border-green-500/30 max-w-2xl">
+            <DialogHeader className="bg-gradient-to-r from-green-500/5 to-transparent border-b border-green-500/20 pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                  <DialogTitle className="text-green-600 text-xl font-bold">Your Inquiry</DialogTitle>
+                </div>
+                <Badge className="bg-green-500/10 text-green-600 border border-green-500/30 font-semibold">
+                  Inquiry Sent
+                </Badge>
+              </div>
+              <DialogDescription className="text-foreground mt-2">
+                <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
+                  Pending
+                </Badge>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Your inquiry about <span className="font-semibold text-foreground">{submittedInquiry?.property?.title}</span> has been sent to the agent.
+                </p>
+              </div>
+
+              {/* Property Details */}
+              {submittedInquiry?.property && (
+                <div className="bg-gradient-to-r from-primary/5 to-transparent p-4 rounded-lg border border-primary/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Home className="h-4 w-4 text-primary" />
+                    <span className="text-foreground font-semibold">
+                      {submittedInquiry.property.title}
+                    </span>
+                  </div>
+                  <div className="text-muted-foreground text-sm">
+                    {submittedInquiry.property.address}
+                  </div>
+                </div>
+              )}
+
+              {/* Your Message */}
+              {submittedInquiry?.message && (
+                <div>
+                  <div className="text-foreground font-semibold text-sm mb-2">Your Message:</div>
+                  <div className="text-foreground text-sm bg-muted/50 p-3 rounded border border-border">
+                    {submittedInquiry.message}
+                  </div>
+                </div>
+              )}
+
+              {/* Timing */}
+              <div className="flex items-center gap-2 text-xs text-foreground bg-muted/30 p-3 rounded border border-border">
+                <Clock className="h-3 w-3 text-muted-foreground" />
+                <span>
+                  Sent: {new Date().toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
+                  })} at {new Date().toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                  })}
+                </span>
+              </div>
+
+              <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded border border-border">
+                The agent will respond to your inquiry soon.
+              </p>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-2">
+                {submittedInquiry?.conversation_id ? (
+                  <Button
+                    onClick={() => {
+                      setIsInquirySuccessOpen(false);
+                      navigate(`/buyer-messages?conversation=${submittedInquiry.conversation_id}`);
+                    }}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    View Conversation
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      setIsInquirySuccessOpen(false);
+                      navigate('/buyer-messages');
+                    }}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Go to Messages
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => setIsInquirySuccessOpen(false)}
+                  className="flex-1"
+                >
+                  Close
                 </Button>
               </div>
             </div>
