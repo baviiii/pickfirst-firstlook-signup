@@ -169,9 +169,9 @@ const MyListingsPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map(listing => (
-              <Card key={listing.id} className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 flex flex-col h-full">
+              <Card key={listing.id} className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 flex flex-col h-full cursor-pointer hover:shadow-lg transition-all" onClick={() => handleViewDetails(listing)}>
                 <CardHeader className="pb-2 border-b border-border">
-                  <div className="aspect-video bg-muted rounded-md mb-3 overflow-hidden">
+                  <div className="aspect-video bg-muted rounded-md mb-3 overflow-hidden hover:opacity-90 transition-opacity">
                     {listing.images && listing.images.length > 0 ? (
                       <img
                         src={listing.images[0]}
@@ -213,7 +213,7 @@ const MyListingsPage = () => {
                       <div className="text-xs text-red-600">Reason: {listing.rejection_reason}</div>
                     )}
                   </div>
-                  <div className="flex gap-2 mt-4 flex-wrap">
+                  <div className="flex gap-2 mt-4 flex-wrap" onClick={(e) => e.stopPropagation()}>
                     <Button size="sm" variant="outline" className="text-foreground border-border hover:bg-muted flex items-center" onClick={() => handleViewDetails(listing)}>
                       <Eye className="h-4 w-4 mr-1" /> View
                     </Button>

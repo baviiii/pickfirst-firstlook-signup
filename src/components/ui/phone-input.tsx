@@ -86,12 +86,12 @@ export const PhoneInput = ({
   return (
     <div className={cn('flex gap-2', className)}>
       <Select value={countryCode} onValueChange={handleCountryCodeChange} disabled={disabled}>
-        <SelectTrigger className="w-[120px] bg-white/5 border border-white/20 text-white">
+        <SelectTrigger className="w-[120px] bg-card border border-border text-foreground">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent className="bg-slate-800 border border-white/20">
+        <SelectContent className="bg-popover border border-border">
           {countryCodes.map(({ code, country, name }) => (
-            <SelectItem key={code} value={code} className="text-white">
+            <SelectItem key={code} value={code} className="text-foreground">
               {country} {code}
             </SelectItem>
           ))}
@@ -105,7 +105,7 @@ export const PhoneInput = ({
         onChange={handlePhoneNumberChange}
         onBlur={validatePhoneOnBlur}
         placeholder={placeholder}
-        className="flex-1 bg-white/5 border border-white/20 text-white"
+        className="flex-1 bg-card border border-border text-foreground placeholder:text-muted-foreground"
         required={required}
         disabled={disabled}
       />

@@ -535,7 +535,7 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
   }
 
   return (
-    <Card className="bg-white border border-gray-200 text-foreground shadow-sm">
+    <Card className="bg-white border border-gray-200 text-foreground shadow-sm relative z-0">
       <CardHeader className="space-y-3 sm:space-y-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2 sm:gap-3">

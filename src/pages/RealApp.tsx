@@ -233,7 +233,7 @@ const Index = () => {
               <p className="max-w-2xl text-base text-gray-700 leading-relaxed">
                 Experience the power of our intelligent search platform. Browse exclusive off-market properties and public listings in real-time—no login required. See what professional buyers see.
               </p>
-              <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white p-3 shadow-lg shadow-yellow-500/10">
+              <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white p-3 shadow-lg shadow-yellow-500/10 overflow-visible">
                 <AdvancedSearchDropdown />
               </div>
               <div className="flex flex-wrap justify-center gap-3">
@@ -291,9 +291,9 @@ const Index = () => {
                           </div>
                         )}
                       </CardHeader>
-                      <CardContent className="space-y-3 pb-6 relative z-10">
+                      <CardContent className="space-y-4 p-5 relative z-10 flex flex-col">
                         <div>
-                          <p className="text-foreground font-semibold text-lg leading-tight line-clamp-2">{property.title}</p>
+                          <p className="text-foreground font-semibold text-lg leading-tight line-clamp-2 mb-1">{property.title}</p>
                           <p className="text-sm text-muted-foreground">{property.address}, {property.city}</p>
                         </div>
                         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
@@ -316,20 +316,20 @@ const Index = () => {
                             </div>
                           )}
                         </div>
-                        <div className="flex items-baseline justify-between">
+                        <div className="space-y-3 pt-2 border-t border-gray-100">
                           <p className="text-xl font-semibold text-foreground">
                             {PropertyService.getDisplayPrice(property)}
                           </p>
                           <Button
                             variant="outline"
                             disabled={isOffMarket}
-                            className={`text-sm ${isOffMarket ? 'text-muted-foreground border-border' : 'text-primary border-primary hover:bg-primary/10'}`}
+                            className={`w-full sm:w-auto text-sm ${isOffMarket ? 'text-muted-foreground border-border' : 'text-primary border-primary hover:bg-primary/10 hover:text-primary'}`}
                             onClick={() => navigate(`/property/${property.id}`)}
                           >
                             {isOffMarket ? 'Unlock in Premium' : 'View details'}
                           </Button>
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground pt-1">
                           Log in to enquire with the agent or upgrade to premium for off-market access.
                         </p>
                       </CardContent>

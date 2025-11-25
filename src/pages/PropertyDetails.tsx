@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { useAuth } from '@/hooks/useAuth';
+import { useViewMode } from '@/hooks/useViewMode';
 import { toast } from 'sonner';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { InquiryStatus } from '@/components/buyer/InquiryStatus';
@@ -41,6 +42,7 @@ const PropertyDetailsComponent = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { viewMode } = useViewMode();
   const { canViewVendorDetails, isFeatureEnabled } = useSubscription();
   
   const [property, setProperty] = useState<PropertyListing | null>(null);
@@ -73,7 +75,7 @@ const PropertyDetailsComponent = () => {
   useEffect(() => {
     if (id) {
       fetchProperty();
-      if (profile?.role === 'buyer') {
+      if (viewMode === 'buyer') {
         checkIfFavorited();
         checkExistingInquiry();
       }
@@ -169,8 +171,8 @@ const PropertyDetailsComponent = () => {
       return;
     }
 
-    if (profile.role !== 'buyer') {
-      toast.error('Only buyers can inquire about properties');
+    if (viewMode !== 'buyer') {
+      toast.error('Please switch to buyer mode to inquire about properties');
       return;
     }
 
@@ -381,11 +383,11 @@ const PropertyDetailsComponent = () => {
                   <Badge className={`font-medium ${
                     property.status === 'sold' 
                       ? 'bg-red-500/90 hover:bg-red-500 text-white' 
-                      : property.status === 'available' 
+                      : property.status === 'approved' 
                         ? 'bg-green-500/90 hover:bg-green-500 text-white'
                         : 'bg-yellow-400/90 hover:bg-yellow-400 text-black'
                   }`}>
-                    {property.status === 'sold' ? 'SOLD' : property.status === 'available' ? 'Available' : 'Under Contract'}
+                    {property.status === 'sold' ? 'SOLD' : property.status === 'approved' ? 'Available' : 'Under Contract'}
                   </Badge>
                 </div>
               </div>
@@ -419,6 +421,90 @@ const PropertyDetailsComponent = () => {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Inquiry Card - Mobile Only (shown above on mobile) */}
+        <div className="lg:hidden mb-6">
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-lg text-foreground">
+                {existingInquiry ? 'Your Inquiry' : 'Contact Agent'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {existingInquiry ? (
+                <div className="space-y-4">
+                  <div className="bg-primary/10 p-4 rounded-lg border border-primary/25">
+                    <InquiryStatus propertyId={id} />
+                    <p className="text-sm text-primary/90 mt-2">
+                      Submitted {new Date(existingInquiry.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  {hasFloorPlans && (
+                    <Button 
+                      variant="outline"
+                      className="w-full border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+                      onClick={() => window.open(floorPlans[0], '_blank', 'noopener')}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      View Floor Plan
+                    </Button>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    Check your messages to continue the conversation with the agent.
+                  </p>
+                </div>
+              ) : property.status === 'sold' ? (
+                <div className="space-y-3">
+                  <div className="bg-red-500/5 p-4 rounded-lg border border-red-500/30 text-center">
+                    <p className="text-red-600 font-medium mb-2">Property Sold</p>
+                    <p className="text-sm text-muted-foreground">
+                      This property is no longer available for inquiries.
+                    </p>
+                    {property.sold_date && (
+                      <p className="text-xs mt-2 text-muted-foreground/80">
+                        Sold on {new Date(property.sold_date).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                  {hasFloorPlans && (
+                    <Button 
+                      variant="outline"
+                      className="w-full border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+                      onClick={() => window.open(floorPlans[0], '_blank', 'noopener')}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      View Floor Plan
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {hasFloorPlans && (
+                    <Button 
+                      variant="outline"
+                      className="w-full border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+                      onClick={() => window.open(floorPlans[0], '_blank', 'noopener')}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      View Floor Plan
+                    </Button>
+                  )}
+                  <Button 
+                    onClick={handleEnquire}
+                    className="w-full bg-primary hover:bg-pickfirst-amber text-primary-foreground font-medium py-4 text-base transition-all duration-300 hover:scale-[1.02] shadow-lg"
+                    size="lg"
+                  >
+                    <MessageSquare className="w-5 h-5 mr-2" />
+                    Make an Enquiry
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Connect directly with the listing agent
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Property Details - Mobile-First Layout */}
@@ -710,8 +796,8 @@ const PropertyDetailsComponent = () => {
             ) : null}
           </div>
 
-          {/* Action Panel - Sticky on desktop */}
-          <div className="lg:sticky lg:top-24 lg:self-start">
+          {/* Action Panel - Sticky on desktop, hidden on mobile */}
+          <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
           <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
               <CardHeader>
               <CardTitle className="text-lg text-foreground">

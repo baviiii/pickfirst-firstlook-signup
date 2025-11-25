@@ -373,7 +373,7 @@ export const BuyerLayoutImproved = ({ children, showSearchBar = false }: BuyerLa
           <>
             {/* Hero search overlay */}
             <section className="mx-4 mb-4 relative z-0">
-          <div className="relative overflow-visible rounded-3xl border border-gray-200 bg-white/60 shadow-2xl shadow-yellow-500/10 backdrop-blur-sm">
+          <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/60 shadow-2xl shadow-yellow-500/10 backdrop-blur-sm">
             <div className="pointer-events-none absolute inset-0 rounded-3xl overflow-hidden">
               <img
                 src="https://www.pickfirst.com.au/background.jpg"
@@ -411,7 +411,7 @@ export const BuyerLayoutImproved = ({ children, showSearchBar = false }: BuyerLa
               <p className="max-w-2xl text-sm text-muted-foreground">
                 Use our smart filters to surface approved, premium, and off-market homes that match your needs. The search runs instantly and stays flexible like the market.
               </p>
-              <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white p-2 shadow-lg shadow-yellow-500/10 relative z-[120]">
+              <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white p-2 shadow-lg shadow-yellow-500/10 relative z-[120] overflow-visible">
                 <AdvancedSearchDropdown />
               </div>
             </div>
