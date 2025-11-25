@@ -106,7 +106,8 @@ export const BuyerMessages = () => {
     
     try {
       const { data, error } = await enhancedConversationService.getConversations({
-        search: searchTerm || undefined
+        search: searchTerm || undefined,
+        viewMode: 'buyer' // Buyers always see conversations where they are the client
       });
       
       if (error) {

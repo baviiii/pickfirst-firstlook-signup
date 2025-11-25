@@ -10,15 +10,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
+import { useViewMode } from '@/hooks/useViewMode';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { BuyerProfileView } from '@/components/buyer/BuyerProfileView';
+import { AgentProfileView } from '@/components/agent/AgentProfileView';
 import { enhancedConversationService } from '@/services/enhancedConversationService';
 import type { EnhancedConversation } from '@/services/enhancedConversationService';
 import { useSearchParams } from 'react-router-dom';
 
 export const AgentMessages = () => {
   const { user, profile } = useAuth();
+  const { viewMode } = useViewMode();
   const [searchParams, setSearchParams] = useSearchParams();
   const [conversations, setConversations] = useState<EnhancedConversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<EnhancedConversation | null>(null);
@@ -132,7 +135,8 @@ export const AgentMessages = () => {
       const { data, error } = await enhancedConversationService.getConversations({
         search: searchTerm || undefined,
         status: filterStatus === 'all' ? undefined : filterStatus as 'active' | 'archived',
-        unread_only: filterStatus === 'unread'
+        unread_only: filterStatus === 'unread',
+        viewMode: viewMode // Filter conversations based on current view mode
       });
       
       if (error) {
@@ -282,6 +286,28 @@ export const AgentMessages = () => {
     return clientConversations.length;
   };
 
+  // Get the other party's profile based on view mode
+  const getOtherPartyProfile = (conv: EnhancedConversation) => {
+    if (viewMode === 'agent') {
+      // In agent mode: show the client/buyer profile
+      return conv.client_profile;
+    } else {
+      // In buyer mode: show the agent profile
+      return conv.agent_profile;
+    }
+  };
+
+  // Get the other party's ID based on view mode
+  const getOtherPartyId = (conv: EnhancedConversation) => {
+    if (viewMode === 'agent') {
+      // In agent mode: return client_id (the buyer)
+      return conv.client_id;
+    } else {
+      // In buyer mode: return agent_id (the agent)
+      return conv.agent_id;
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -324,15 +350,15 @@ export const AgentMessages = () => {
                   >
                 <div className="flex items-start gap-3">
                   <Avatar className="h-10 w-10 flex-shrink-0">
-                    <AvatarImage src={conv.client_profile?.avatar_url} />
+                    <AvatarImage src={getOtherPartyProfile(conv)?.avatar_url} />
                     <AvatarFallback>
-                      {conv.client_profile?.full_name?.charAt(0) || 'U'}
+                      {getOtherPartyProfile(conv)?.full_name?.charAt(0) || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between mb-1">
                       <div className="font-medium text-foreground text-sm truncate">
-                        {conv.client_profile?.full_name || 'Unknown User'}
+                        {getOtherPartyProfile(conv)?.full_name || 'Unknown User'}
                       </div>
                       {conv.unread_count && conv.unread_count > 0 && (
                         <Badge className="bg-primary text-primary-foreground text-xs ml-2 flex-shrink-0">
@@ -349,8 +375,8 @@ export const AgentMessages = () => {
                         📍 {conv.property.title}
                       </div>
                     )}
-                    {/* Show multiple inquiries indicator */}
-                    {getClientInquiryCount(conv.client_profile?.full_name) > 1 && (
+                    {/* Show multiple inquiries indicator - only in agent mode */}
+                    {viewMode === 'agent' && getClientInquiryCount(conv.client_profile?.full_name) > 1 && (
                       <div className="text-xs text-pickfirst-yellow mb-1">
                         🏠 {getClientInquiryCount(conv.client_profile?.full_name)} properties inquired
                       </div>
@@ -398,14 +424,14 @@ export const AgentMessages = () => {
                     }}
                   >
                     <Avatar className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 ring-2 ring-primary/10">
-                      <AvatarImage src={selectedConversation.client_profile?.avatar_url} />
+                      <AvatarImage src={getOtherPartyProfile(selectedConversation)?.avatar_url} />
                       <AvatarFallback className="text-sm bg-primary text-primary-foreground">
-                        {selectedConversation.client_profile?.full_name?.charAt(0) || 'U'}
+                        {getOtherPartyProfile(selectedConversation)?.full_name?.charAt(0) || 'U'}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
                       <h3 className="font-semibold text-sm sm:text-base text-foreground truncate">
-                        {selectedConversation.client_profile?.full_name || 'Unknown Client'}
+                        {getOtherPartyProfile(selectedConversation)?.full_name || (viewMode === 'agent' ? 'Unknown Client' : 'Unknown Agent')}
                       </h3>
                       <p className="text-xs sm:text-sm text-muted-foreground truncate">
                         {selectedConversation.property?.title || 'New conversation'}
@@ -541,10 +567,17 @@ export const AgentMessages = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Buyer Profile Dialog */}
-      {selectedConversation?.client_profile && (
+      {/* Profile Dialog - Show buyer profile in agent mode, agent profile in buyer mode */}
+      {selectedConversation && viewMode === 'agent' && selectedConversation.client_id && (
         <BuyerProfileView
           buyerId={selectedConversation.client_id}
+          isOpen={showBuyerProfile}
+          onClose={() => setShowBuyerProfile(false)}
+        />
+      )}
+      {selectedConversation && viewMode === 'buyer' && selectedConversation.agent_id && (
+        <AgentProfileView
+          agentId={selectedConversation.agent_id}
           isOpen={showBuyerProfile}
           onClose={() => setShowBuyerProfile(false)}
         />

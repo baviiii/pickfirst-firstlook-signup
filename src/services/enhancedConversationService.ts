@@ -67,6 +67,7 @@ export interface ConversationFilters {
   property_id?: string;
   search?: string;
   unread_only?: boolean;
+  viewMode?: 'agent' | 'buyer'; // Filter conversations based on current view mode
 }
 
 class EnhancedConversationService {
@@ -84,9 +85,20 @@ class EnhancedConversationService {
         .from('conversations')
         .select('*');
 
-      // Apply user-specific filters
+      // Apply user-specific filters based on view mode
       if (user) {
-        query = query.or(`agent_id.eq.${user.id},client_id.eq.${user.id}`);
+        // Filter based on view mode: agent mode shows only conversations where user is agent,
+        // buyer mode shows only conversations where user is the client
+        if (filters.viewMode === 'agent') {
+          // In agent mode: only show conversations where this user is the agent
+          query = query.eq('agent_id', user.id);
+        } else if (filters.viewMode === 'buyer') {
+          // In buyer mode: only show conversations where this user is the client/buyer
+          query = query.eq('client_id', user.id);
+        } else {
+          // Default: show all conversations for the user (for backwards compatibility)
+          query = query.or(`agent_id.eq.${user.id},client_id.eq.${user.id}`);
+        }
       }
 
       // Apply status filter
