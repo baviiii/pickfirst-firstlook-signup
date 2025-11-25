@@ -429,11 +429,31 @@ serve(async (req) => {
           }
 
           // Determine agent and client IDs based on user role
+          // SPECIAL CASE: If this is an inquiry conversation (inquiryId present), 
+          // the person creating the inquiry is ALWAYS the client, regardless of their role
           let agentId, actualClientId;
-          if (userProfile.role === 'agent') {
+          
+          if (inquiryId) {
+            // For inquiry conversations: creator is always the client (buyer), property owner is the agent
+            // IMPORTANT: clientId parameter is the property owner's agent_id when creating from inquiry
+            agentId = clientId; // clientId is the property owner's agent_id
+            actualClientId = user.id; // User creating inquiry is the client (even if they're an agent in buyer mode)
+            
+            console.log('Inquiry conversation - agentId (property owner):', agentId, 'clientId (inquirer):', actualClientId);
+            
+            // Verify we have the property owner's ID, not the inquirer's ID
+            if (agentId === actualClientId) {
+              return new Response(
+                JSON.stringify({ error: 'Cannot create inquiry conversation - property owner and inquirer are the same' }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+              )
+            }
+          } else if (userProfile.role === 'agent') {
+            // Regular conversation: agent creates conversation with a client
             agentId = user.id;
             actualClientId = clientId;
           } else if (userProfile.role === 'buyer') {
+            // Regular conversation: buyer creates conversation with an agent
             agentId = clientId; // clientId is actually agentId when buyer creates conversation
             actualClientId = user.id;
           } else {
@@ -442,13 +462,69 @@ serve(async (req) => {
               { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
             )
           }
+          
+          // Prevent self-conversations (agent talking to themselves)
+          if (agentId === actualClientId) {
+            return new Response(
+              JSON.stringify({ error: 'Cannot create conversation with yourself' }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+            )
+          }
+          
+          console.log('Final conversation setup - agentId:', agentId, 'actualClientId:', actualClientId, 'inquiryId:', inquiryId);
 
-          console.log('Creating conversation between agent:', agentId, 'and client:', actualClientId, 'for property:', propertyId);
+          console.log('Creating conversation between agent:', agentId, 'and client:', actualClientId, 'for property:', propertyId, 'inquiry:', inquiryId);
 
-          // Check if conversation already exists for this specific context
+          // For inquiry conversations, check by inquiry_id first (most specific)
+          if (inquiryId) {
+            const { data: existingInquiryConv } = await supabaseClient
+              .from('conversations')
+              .select('id, agent_id, client_id, metadata, subject')
+              .eq('inquiry_id', inquiryId)
+              .maybeSingle();
+            
+            if (existingInquiryConv) {
+              // Verify the conversation has the correct agent_id and client_id
+              if (existingInquiryConv.agent_id === agentId && existingInquiryConv.client_id === actualClientId) {
+                console.log('Found existing inquiry conversation with correct IDs:', existingInquiryConv.id);
+                return new Response(
+                  JSON.stringify({ id: existingInquiryConv.id, existing: true }),
+                  { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+                )
+              } else {
+                // Conversation exists but has wrong IDs - fix it!
+                console.warn('Found inquiry conversation with incorrect agent/client IDs, fixing...', {
+                  existing: { agent_id: existingInquiryConv.agent_id, client_id: existingInquiryConv.client_id },
+                  expected: { agent_id: agentId, client_id: actualClientId }
+                });
+                
+                // Update the conversation with correct IDs
+                const { error: updateError } = await supabaseClient
+                  .from('conversations')
+                  .update({
+                    agent_id: agentId,
+                    client_id: actualClientId
+                  })
+                  .eq('id', existingInquiryConv.id);
+                
+                if (updateError) {
+                  console.error('Error fixing conversation IDs:', updateError);
+                  // Continue to create new conversation if update fails
+                } else {
+                  console.log('Successfully fixed conversation IDs');
+                  return new Response(
+                    JSON.stringify({ id: existingInquiryConv.id, existing: true, fixed: true }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+                  )
+                }
+              }
+            }
+          }
+
+          // Check if conversation already exists for this specific context (by agent_id and client_id)
           let existingQuery = supabaseClient
             .from('conversations')
-            .select('id, metadata, subject')
+            .select('id, metadata, subject, inquiry_id')
             .eq('agent_id', agentId)
             .eq('client_id', actualClientId);
 
@@ -456,7 +532,7 @@ serve(async (req) => {
           console.log('Found existing conversations:', existingConversations);
 
           // For property-specific conversations, check metadata
-          if (propertyId && existingConversations) {
+          if (propertyId && existingConversations && existingConversations.length > 0) {
             const propertyConversation = existingConversations.find(conv => 
               conv.metadata && 
               typeof conv.metadata === 'object' && 
@@ -464,26 +540,14 @@ serve(async (req) => {
             );
             
             if (propertyConversation) {
-              console.log('Found existing property conversation:', propertyConversation.id);
-              return new Response(
-                JSON.stringify({ id: propertyConversation.id, existing: true }),
-                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-              )
-            }
-          }
-
-          // For inquiry-specific conversations
-          if (inquiryId && existingConversations) {
-            const inquiryConversation = existingConversations.find((conv: any) => 
-              conv.inquiry_id === inquiryId
-            );
-            
-            if (inquiryConversation) {
-              console.log('Found existing inquiry conversation:', inquiryConversation.id);
-              return new Response(
-                JSON.stringify({ id: inquiryConversation.id, existing: true }),
-                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-              )
+              // Only return if it's not an inquiry conversation OR if it matches the inquiryId
+              if (!inquiryId || propertyConversation.inquiry_id === inquiryId) {
+                console.log('Found existing property conversation:', propertyConversation.id);
+                return new Response(
+                  JSON.stringify({ id: propertyConversation.id, existing: true }),
+                  { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+                )
+              }
             }
           }
 

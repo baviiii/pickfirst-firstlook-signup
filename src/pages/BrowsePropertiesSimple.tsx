@@ -26,6 +26,7 @@ import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { useViewMode } from '@/hooks/useViewMode';
 import { useSubscription } from '@/hooks/useSubscription';
 import SimplePropertyFilters from '@/components/property/SimplePropertyFilters';
 import { formatPriceForDisplay } from '@/utils/priceUtils';
@@ -37,6 +38,7 @@ type SortOption = 'price-low' | 'price-high' | 'newest' | 'oldest';
 const BrowsePropertiesSimple = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { viewMode: userViewMode } = useViewMode();
   const { canUseFavorites, getFavoritesLimit } = useSubscription();
   
   // State
@@ -55,11 +57,11 @@ const BrowsePropertiesSimple = () => {
 
   useEffect(() => {
     fetchListings();
-    if (profile?.role === 'buyer') {
+    if (userViewMode === 'buyer') {
       fetchFavorites();
       fetchUserInquiries();
     }
-  }, [profile]);
+  }, [profile, userViewMode]);
 
   useEffect(() => {
     applyFiltersAndSort();
@@ -332,7 +334,7 @@ const BrowsePropertiesSimple = () => {
           </div>
 
           {/* Favorite Button */}
-          {profile?.role === 'buyer' && (
+          {userViewMode === 'buyer' && (
             <Button
               variant="ghost"
               size="sm"
@@ -408,7 +410,7 @@ const BrowsePropertiesSimple = () => {
               View Details
             </Button>
             
-            {profile?.role === 'buyer' && !isSold && (
+            {userViewMode === 'buyer' && !isSold && (
               <Button
                 onClick={(e) => {
                   e.stopPropagation();

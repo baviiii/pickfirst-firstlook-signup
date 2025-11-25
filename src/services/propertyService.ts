@@ -1486,6 +1486,11 @@ export class PropertyService {
       return { data: null, error: { message: 'Property not found' } };
     }
 
+    // Prevent agents from inquiring about their own properties
+    if (property.agent_id === user.id) {
+      return { data: null, error: { message: 'You cannot inquire about your own property listing' } };
+    }
+
     // Create the inquiry first (without conversation_id)
     const { data: inquiry, error: inquiryError } = await supabase
       .from('property_inquiries')

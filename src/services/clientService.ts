@@ -69,6 +69,8 @@ class ClientService {
       let query = supabase
         .from('clients')
         .select('*')
+        .eq('agent_id', user.id) // Only get clients for this agent
+        .neq('user_id', user.id) // Exclude the agent themselves (if they were added as a client)
         .order('created_at', { ascending: false });
 
       if (filters?.status && filters.status !== 'all') {

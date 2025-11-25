@@ -25,6 +25,7 @@ import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { useViewMode } from '@/hooks/useViewMode';
 import { useSubscription } from '@/hooks/useSubscription';
 import SimplePropertyFilters from '@/components/property/SimplePropertyFilters';
 
@@ -34,6 +35,7 @@ type SortOption = 'price-low' | 'price-high' | 'newest' | 'oldest';
 const BrowsePropertiesPageComponent = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { viewMode: userViewMode } = useViewMode();
   const { canUseFavorites, getFavoritesLimit, canAccessOffMarketListings } = useSubscription();
   
   // State
@@ -65,7 +67,7 @@ const BrowsePropertiesPageComponent = () => {
     setLoading(true);
     
     fetchListings();
-    if (profile?.role === 'buyer') {
+    if (userViewMode === 'buyer') {
       fetchFavorites();
       fetchUserInquiries();
     }
@@ -488,8 +490,8 @@ const BrowsePropertiesPageComponent = () => {
       return;
     }
 
-    if (profile.role !== 'buyer') {
-      toast.error('Only buyers can inquire about properties');
+    if (userViewMode !== 'buyer') {
+      toast.error('Please switch to buyer mode to inquire about properties');
       return;
     }
 

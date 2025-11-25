@@ -25,6 +25,7 @@ import { PageWrapper } from '@/components/ui/page-wrapper';
 const OffMarketListings = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { viewMode } = useViewMode();
   const { canAccessOffMarketListings, subscriptionTier } = useSubscription();
   
   const [listings, setListings] = useState<PropertyListing[]>([]);
@@ -38,10 +39,10 @@ const OffMarketListings = () => {
       return;
     }
     fetchOffMarketListings();
-    if (profile?.role === 'buyer') {
+    if (viewMode === 'buyer') {
       fetchFavorites();
     }
-  }, [profile, canAccessOffMarketListings]);
+  }, [profile, viewMode, canAccessOffMarketListings]);
 
   const fetchOffMarketListings = async () => {
     setLoading(true);
