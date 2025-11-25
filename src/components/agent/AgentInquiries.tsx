@@ -306,24 +306,24 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
     if (inquiry.appointment) {
       switch (inquiry.appointment.status) {
         case 'confirmed':
-          return 'bg-green-500/10 text-green-500';
+          return 'bg-green-500/10 text-green-600 border-green-500/30';
         case 'scheduled':
-          return 'bg-blue-500/10 text-blue-500';
+          return 'bg-pickfirst-yellow/10 text-pickfirst-yellow border-pickfirst-yellow/30';
         case 'completed':
-          return 'bg-purple-500/10 text-purple-500';
+          return 'bg-purple-500/10 text-purple-600 border-purple-500/30';
         case 'cancelled':
-          return 'bg-red-500/10 text-red-500';
+          return 'bg-red-500/10 text-red-600 border-red-500/30';
         default:
-          return 'bg-blue-500/10 text-blue-500';
+          return 'bg-pickfirst-yellow/10 text-pickfirst-yellow border-pickfirst-yellow/30';
       }
     }
     if (inquiry.client) {
-      return 'bg-yellow-500/10 text-yellow-500';
+      return 'bg-pickfirst-yellow/10 text-pickfirst-yellow border-pickfirst-yellow/30';
     }
     if (inquiry.agent_response) {
-      return 'bg-green-500/10 text-green-500';
+      return 'bg-green-500/10 text-green-600 border-green-500/30';
     }
-    return 'bg-blue-500/10 text-blue-500';
+    return 'bg-blue-500/10 text-blue-600 border-blue-500/30';
   };
 
   const getInquiryStatusText = (inquiry: ExtendedPropertyInquiry) => {
@@ -411,34 +411,34 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
 
       {/* Statistics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 transition-colors">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{inquiries.length}</div>
-            <div className="text-sm text-muted-foreground">Total Inquiries</div>
+            <div className="text-2xl font-bold text-pickfirst-yellow">{inquiries.length}</div>
+            <div className="text-sm text-muted-foreground font-medium">Total Inquiries</div>
           </CardContent>
         </Card>
-        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-green-500/30 hover:border-green-500/50 transition-colors">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-green-600">
               {inquiries.filter(i => i.appointment).length}
             </div>
-            <div className="text-sm text-muted-foreground">Appointments</div>
+            <div className="text-sm text-muted-foreground font-medium">Appointments</div>
           </CardContent>
         </Card>
-        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 transition-colors">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-pickfirst-yellow">
               {inquiries.filter(i => i.client && !i.appointment).length}
             </div>
-            <div className="text-sm text-muted-foreground">Clients Added</div>
+            <div className="text-sm text-muted-foreground font-medium">Clients Added</div>
           </CardContent>
         </Card>
-        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-blue-500/30 hover:border-blue-500/50 transition-colors">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-muted-foreground">
+            <div className="text-2xl font-bold text-blue-600">
               {inquiries.filter(i => !i.agent_response && !i.client && !i.appointment).length}
             </div>
-            <div className="text-sm text-muted-foreground">Pending</div>
+            <div className="text-sm text-muted-foreground font-medium">Pending</div>
           </CardContent>
         </Card>
       </div>
@@ -473,7 +473,7 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
                     </CardDescription>
                   </div>
                 </div>
-                <Badge className={getInquiryStatusColor(inquiry)}>
+                <Badge className={`${getInquiryStatusColor(inquiry)} border`}>
                   <div className="flex items-center gap-1">
                     {getInquiryStatusIcon(inquiry)}
                     {getInquiryStatusText(inquiry)}

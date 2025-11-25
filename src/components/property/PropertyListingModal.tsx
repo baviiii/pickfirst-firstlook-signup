@@ -21,9 +21,9 @@ const PropertyListingModalComponent = ({ open, onOpenChange, onSuccess }: Proper
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 border border-pickfirst-yellow/20 text-white p-0">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="text-2xl pickfirst-gradient-yellow-amber-text">Create New Property Listing</DialogTitle>
+      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto bg-white border border-pickfirst-yellow/30 text-foreground p-0 z-[100]">
+        <DialogHeader className="p-6 pb-0 bg-gradient-to-r from-pickfirst-yellow/5 to-transparent border-b border-pickfirst-yellow/20">
+          <DialogTitle className="text-2xl font-bold text-foreground">Create New Property Listing</DialogTitle>
         </DialogHeader>
 
         <div className="p-6 pt-4">

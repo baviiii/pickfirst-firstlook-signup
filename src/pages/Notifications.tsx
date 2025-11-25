@@ -102,34 +102,34 @@ const NotificationsComponent = () => {
 
   const getNotificationIcon = (type: NotificationType) => {
     const iconMap: Record<NotificationType, React.ReactNode> = {
-      new_message: <MessageSquare className="h-5 w-5 text-blue-400" />,
-      appointment_scheduled: <Calendar className="h-5 w-5 text-yellow-400" />,
-      appointment_confirmed: <Check className="h-5 w-5 text-green-400" />,
-      appointment_cancelled: <X className="h-5 w-5 text-red-400" />,
+      new_message: <MessageSquare className="h-5 w-5 text-blue-500" />,
+      appointment_scheduled: <Calendar className="h-5 w-5 text-pickfirst-yellow" />,
+      appointment_confirmed: <Check className="h-5 w-5 text-green-600" />,
+      appointment_cancelled: <X className="h-5 w-5 text-red-600" />,
       property_alert: <AlertCircle className="h-5 w-5 text-pickfirst-yellow" />,
-      new_listing: <Home className="h-5 w-5 text-green-400" />,
-      price_change: <DollarSign className="h-5 w-5 text-orange-400" />,
-      property_sold: <Home className="h-5 w-5 text-red-400" />,
-      inquiry_response: <Mail className="h-5 w-5 text-purple-400" />,
-      system: <Settings className="h-5 w-5 text-gray-400" />
+      new_listing: <Home className="h-5 w-5 text-green-600" />,
+      price_change: <DollarSign className="h-5 w-5 text-orange-600" />,
+      property_sold: <Home className="h-5 w-5 text-red-600" />,
+      inquiry_response: <Mail className="h-5 w-5 text-purple-600" />,
+      system: <Settings className="h-5 w-5 text-gray-600" />
     };
-    return iconMap[type] || <Bell className="h-5 w-5 text-gray-400" />;
+    return iconMap[type] || <Bell className="h-5 w-5 text-gray-600" />;
   };
 
   const getNotificationColor = (type: NotificationType) => {
     const colorMap: Record<NotificationType, string> = {
-      new_message: 'bg-blue-500/10 border-blue-500/20',
-      appointment_scheduled: 'bg-yellow-500/10 border-yellow-500/20',
-      appointment_confirmed: 'bg-green-500/10 border-green-500/20',
-      appointment_cancelled: 'bg-red-500/10 border-red-500/20',
-      property_alert: 'bg-pickfirst-yellow/10 border-pickfirst-yellow/20',
-      new_listing: 'bg-green-500/10 border-green-500/20',
-      price_change: 'bg-orange-500/10 border-orange-500/20',
-      property_sold: 'bg-red-500/10 border-red-500/20',
-      inquiry_response: 'bg-purple-500/10 border-purple-500/20',
-      system: 'bg-gray-500/10 border-gray-500/20'
+      new_message: 'bg-blue-500/10 border-blue-500/30',
+      appointment_scheduled: 'bg-pickfirst-yellow/10 border-pickfirst-yellow/30',
+      appointment_confirmed: 'bg-green-500/10 border-green-500/30',
+      appointment_cancelled: 'bg-red-500/10 border-red-500/30',
+      property_alert: 'bg-pickfirst-yellow/10 border-pickfirst-yellow/30',
+      new_listing: 'bg-green-500/10 border-green-500/30',
+      price_change: 'bg-orange-500/10 border-orange-500/30',
+      property_sold: 'bg-red-500/10 border-red-500/30',
+      inquiry_response: 'bg-purple-500/10 border-purple-500/30',
+      system: 'bg-gray-500/10 border-gray-500/30'
     };
-    return colorMap[type] || 'bg-gray-500/10 border-gray-500/20';
+    return colorMap[type] || 'bg-gray-500/10 border-gray-500/30';
   };
 
   const filteredNotifications = notifications.filter(notification => {

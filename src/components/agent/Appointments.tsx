@@ -146,12 +146,12 @@ export const Appointments = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'bg-green-500/10 text-green-500 border-green-500/20';
-      case 'scheduled': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
-      case 'completed': return 'bg-purple-500/10 text-purple-500 border-purple-500/20';
-      case 'cancelled': return 'bg-red-500/10 text-red-500 border-red-500/20';
-      case 'no_show': return 'bg-orange-500/10 text-orange-500 border-orange-500/20';
-      default: return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
+      case 'confirmed': return 'bg-green-500/10 text-green-600 border-green-500/30';
+      case 'scheduled': return 'bg-pickfirst-yellow/10 text-pickfirst-yellow border-pickfirst-yellow/30';
+      case 'completed': return 'bg-purple-500/10 text-purple-600 border-purple-500/30';
+      case 'cancelled': return 'bg-red-500/10 text-red-600 border-red-500/30';
+      case 'no_show': return 'bg-orange-500/10 text-orange-600 border-orange-500/30';
+      default: return 'bg-gray-500/10 text-gray-600 border-gray-500/30';
     }
   };
 
@@ -426,28 +426,28 @@ export const Appointments = () => {
 
         {/* Statistics */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 transition-colors">
             <CardContent className="p-3 md:p-4 text-center">
-              <div className="text-xl md:text-2xl font-bold text-blue-600">{stats.today}</div>
-              <div className="text-xs md:text-sm text-muted-foreground">Today</div>
+              <div className="text-xl md:text-2xl font-bold text-pickfirst-yellow">{stats.today}</div>
+              <div className="text-xs md:text-sm text-muted-foreground font-medium">Today</div>
             </CardContent>
           </Card>
-          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 transition-colors">
             <CardContent className="p-3 md:p-4 text-center">
-              <div className="text-xl md:text-2xl font-bold text-purple-600">{stats.week}</div>
-              <div className="text-xs md:text-sm text-muted-foreground">This Week</div>
+              <div className="text-xl md:text-2xl font-bold text-pickfirst-yellow">{stats.week}</div>
+              <div className="text-xs md:text-sm text-muted-foreground font-medium">This Week</div>
             </CardContent>
           </Card>
-          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-green-500/30 hover:border-green-500/50 transition-colors">
             <CardContent className="p-3 md:p-4 text-center">
               <div className="text-xl md:text-2xl font-bold text-green-600">{stats.confirmed}</div>
-              <div className="text-xs md:text-sm text-muted-foreground">Confirmed</div>
+              <div className="text-xs md:text-sm text-muted-foreground font-medium">Confirmed</div>
             </CardContent>
           </Card>
-          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 transition-colors">
             <CardContent className="p-3 md:p-4 text-center">
               <div className="text-xl md:text-2xl font-bold text-pickfirst-yellow">{stats.pending}</div>
-              <div className="text-xs md:text-sm text-muted-foreground">Pending</div>
+              <div className="text-xs md:text-sm text-muted-foreground font-medium">Pending</div>
             </CardContent>
           </Card>
         </div>
@@ -548,23 +548,23 @@ export const Appointments = () => {
                     {/* Info Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                        <Calendar className="h-4 w-4 text-pickfirst-yellow flex-shrink-0" />
                         <span className="truncate">{appointmentDate.toLocaleDateString()}</span>
-                        {isToday && <Badge className="bg-blue-500/10 text-blue-600 text-xs ml-auto border border-blue-500/20">Today</Badge>}
+                        {isToday && <Badge className="bg-pickfirst-yellow/10 text-pickfirst-yellow text-xs ml-auto border border-pickfirst-yellow/30">Today</Badge>}
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Clock className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        <Clock className="h-4 w-4 text-pickfirst-yellow flex-shrink-0" />
                         <span>{appointment.time} ({appointment.duration} min)</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Phone className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                        <Phone className="h-4 w-4 text-pickfirst-yellow flex-shrink-0" />
                         <span className="truncate">{appointment.client_phone}</span>
                       </div>
                     </div>
 
                     {/* Address */}
                     <div className="flex items-start gap-2 text-sm">
-                      <MapPin className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                      <MapPin className="h-4 w-4 text-pickfirst-yellow mt-0.5 flex-shrink-0" />
                       <span className="text-muted-foreground break-words">{appointment.property_address}</span>
                     </div>
 

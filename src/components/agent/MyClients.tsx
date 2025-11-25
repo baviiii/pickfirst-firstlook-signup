@@ -87,11 +87,11 @@ export const MyClients = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-500/10 text-green-500';
-      case 'lead': return 'bg-blue-500/10 text-blue-500';
-      case 'past_client': return 'bg-purple-500/10 text-purple-500';
-      case 'inactive': return 'bg-gray-500/10 text-gray-500';
-      default: return 'bg-gray-500/10 text-gray-500';
+      case 'active': return 'bg-green-500/10 text-green-600 border-green-500/30';
+      case 'lead': return 'bg-pickfirst-yellow/10 text-pickfirst-yellow border-pickfirst-yellow/30';
+      case 'past_client': return 'bg-purple-500/10 text-purple-600 border-purple-500/30';
+      case 'inactive': return 'bg-gray-500/10 text-gray-600 border-gray-500/30';
+      default: return 'bg-gray-500/10 text-gray-600 border-gray-500/30';
     }
   };
 
@@ -325,36 +325,36 @@ export const MyClients = () => {
 
       {/* Client Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-green-500/30 hover:border-green-500/50 transition-colors">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-green-600">
               {clients.filter(c => c.status === 'active').length}
             </div>
-            <div className="text-sm text-muted-foreground">Active Clients</div>
+            <div className="text-sm text-muted-foreground font-medium">Active Clients</div>
           </CardContent>
         </Card>
-        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 transition-colors">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-pickfirst-yellow">
               {clients.filter(c => c.status === 'lead').length}
             </div>
-            <div className="text-sm text-muted-foreground">Leads</div>
+            <div className="text-sm text-muted-foreground font-medium">Leads</div>
           </CardContent>
         </Card>
-        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-purple-500/30 hover:border-purple-500/50 transition-colors">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-purple-600">
               {clients.filter(c => c.status === 'past_client').length}
             </div>
-            <div className="text-sm text-muted-foreground">Past Clients</div>
+            <div className="text-sm text-muted-foreground font-medium">Past Clients</div>
           </CardContent>
         </Card>
-        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 transition-colors">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-pickfirst-yellow">
               {clients.length > 0 ? Math.round(clients.reduce((sum, c) => sum + c.rating, 0) / clients.length * 10) / 10 : 0}
             </div>
-            <div className="text-sm text-muted-foreground">Avg Rating</div>
+            <div className="text-sm text-muted-foreground font-medium">Avg Rating</div>
           </CardContent>
         </Card>
       </div>
@@ -387,7 +387,7 @@ export const MyClients = () => {
                   <CardTitle className="text-foreground text-lg">{client.name}</CardTitle>
                   <CardDescription className="text-muted-foreground">{client.email}</CardDescription>
                 </div>
-                <Badge className={getStatusColor(client.status)}>
+                <Badge className={`${getStatusColor(client.status)} border`}>
                   {client.status.replace('_', ' ')}
                 </Badge>
               </div>

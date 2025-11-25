@@ -451,7 +451,7 @@ const BuyerAccountSettingsPage = () => {
                   ) : (
                     <div className="space-y-3">
                       {appointments.map((appt: any) => (
-                        <div key={appt.id} className="p-4 bg-card/80 rounded-lg border border-border">
+                        <div key={appt.id} className="p-4 bg-card/80 rounded-lg border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 transition-colors">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
@@ -497,7 +497,7 @@ const BuyerAccountSettingsPage = () => {
                                 <>
                                   <Button 
                                     size="sm" 
-                                    className="bg-green-500/20 text-green-300 hover:bg-green-500/30" 
+                                    className="bg-green-500/20 text-green-700 hover:bg-green-500/30 border border-green-500/30" 
                                     onClick={() => handleConfirmAppointment(appt.id)}
                                     disabled={isLoading}
                                   >
@@ -506,7 +506,7 @@ const BuyerAccountSettingsPage = () => {
                                   <Button 
                                     size="sm" 
                                     variant="outline" 
-                                    className="text-red-300 border-red-400/30 hover:bg-red-500/10" 
+                                    className="text-red-600 border-red-500/30 hover:bg-red-500/10" 
                                     onClick={() => handleDeclineAppointment(appt.id)}
                                     disabled={isLoading}
                                   >
@@ -516,12 +516,12 @@ const BuyerAccountSettingsPage = () => {
                               )}
                               {appt.status && appt.status !== 'scheduled' && (
                                 <Badge className={
-                                  appt.status === 'confirmed' ? 'bg-green-500/20 text-green-300' :
-                                  appt.status === 'declined' ? 'bg-red-500/20 text-red-300' :
-                                  appt.status === 'completed' ? 'bg-purple-500/20 text-purple-300' :
-                                  appt.status === 'cancelled' ? 'bg-gray-500/20 text-gray-300' :
-                                  appt.status === 'no_show' ? 'bg-orange-500/20 text-orange-300' :
-                                  'bg-yellow-500/20 text-yellow-300'
+                                  appt.status === 'confirmed' ? 'bg-green-500/20 text-green-600 border-green-500/30' :
+                                  appt.status === 'declined' ? 'bg-red-500/20 text-red-600 border-red-500/30' :
+                                  appt.status === 'completed' ? 'bg-purple-500/20 text-purple-600 border-purple-500/30' :
+                                  appt.status === 'cancelled' ? 'bg-gray-500/20 text-gray-600 border-gray-500/30' :
+                                  appt.status === 'no_show' ? 'bg-orange-500/20 text-orange-600 border-orange-500/30' :
+                                  'bg-pickfirst-yellow/20 text-pickfirst-yellow border-pickfirst-yellow/30'
                                 }>
                                   {appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}
                                 </Badge>
