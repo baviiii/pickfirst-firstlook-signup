@@ -75,7 +75,7 @@ export const AgentMessages = () => {
     if (user) {
       loadConversations();
     }
-  }, [user]);
+  }, [user, viewMode]); // Reload conversations when viewMode changes
 
   useEffect(() => {
     if (selectedConversation) {
@@ -131,12 +131,15 @@ export const AgentMessages = () => {
   const loadConversations = async () => {
     if (!user) return;
     
+    // Ensure viewMode is set - default to 'agent' for agents if not set
+    const currentViewMode = viewMode || (profile?.role === 'agent' ? 'agent' : 'buyer');
+    
     try {
       const { data, error } = await enhancedConversationService.getConversations({
         search: searchTerm || undefined,
         status: filterStatus === 'all' ? undefined : filterStatus as 'active' | 'archived',
         unread_only: filterStatus === 'unread',
-        viewMode: viewMode // Filter conversations based on current view mode
+        viewMode: currentViewMode // Filter conversations based on current view mode
       });
       
       if (error) {

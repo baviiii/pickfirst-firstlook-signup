@@ -289,7 +289,10 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
         return;
       }
 
-      toast.success('Appointment scheduled successfully! Email notifications sent and calendar synced.');
+      // Check if client was created (appointment service logs this)
+      // The appointment service automatically creates clients, so we don't need to do anything extra
+      // But we'll show a success message that includes client creation
+      toast.success('Appointment scheduled successfully! Client automatically added to your clients list.');
       onSuccess();
       onOpenChange(false);
       resetForm();

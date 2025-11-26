@@ -439,12 +439,12 @@ class AppointmentService {
         return { data: null, error: { message: 'User not authenticated' } };
       }
 
-      // Get inquiry details
+      // Get inquiry details with property type
       const { data: inquiry, error: inquiryError } = await supabase
         .from('property_inquiries')
         .select(`
           *,
-          property_listings!property_inquiries_property_id_fkey(title, address)
+          property_listings!property_inquiries_property_id_fkey(title, address, property_type)
         `)
         .eq('id', inquiryId)
         .single();
@@ -460,10 +460,12 @@ class AppointmentService {
       }
 
       // Get buyer information using public profile view (bypasses RLS)
+      // This is the primary method to avoid RLS issues when fetching buyer data
       let buyerEmail: string | undefined;
       let buyerName: string | undefined;
 
       if (inquiry.buyer_id) {
+        // PRIMARY: Use buyer_public_profiles view - agents can access this without RLS issues
         const { data: buyerProfile } = await supabase
           .from('buyer_public_profiles')
           .select('email, full_name')
@@ -524,24 +526,91 @@ class AppointmentService {
           clientName = existingClient.name || finalBuyerName || 'Unknown';
           clientRecordId = existingClient.id || null; // Use client record id, not user_id
         } else {
-          // Client doesn't exist, create one automatically
+          // Client doesn't exist, create one automatically with property details
           console.log('Buyer not found in clients table, creating client automatically...');
           
-          const { data: newClient, error: clientError } = await clientService.createClientByEmail(
-            normalizedBuyerEmail,
-            {
-              status: 'lead', // Default status for leads converted to appointments
+          // Get property type from the inquiry's property (already fetched in query)
+          const propertyType = (inquiry.property_listings as any)?.property_type;
+          
+          // Try to create client directly using buyer_id first (more reliable)
+          let newClient = null;
+          let clientError = null;
+          
+          if (inquiry.buyer_id && finalBuyerName && normalizedBuyerEmail) {
+            // Create client directly using buyer_id and data from buyer_public_profiles view
+            // This avoids RLS issues because:
+            // 1. We fetched buyer data from buyer_public_profiles view (which agents can access)
+            // 2. We're using that data to create the client record
+            // 3. The INSERT works because agents have RLS permission to insert clients where agent_id = their own id
+            const clientInsert = {
+              agent_id: user.id,
+              user_id: inquiry.buyer_id, // Buyer ID from inquiry (we have this from the inquiry itself)
+              name: finalBuyerName, // From buyer_public_profiles view
+              email: normalizedBuyerEmail, // From buyer_public_profiles view
+              status: 'lead' as const,
+              property_type: propertyType || undefined,
               notes: `Auto-created from property inquiry for ${(inquiry.property_listings as any)?.title || 'property'}`
+            };
+            
+            const { data: directClient, error: directError } = await supabase
+              .from('clients')
+              .insert(clientInsert)
+              .select()
+              .single();
+            
+            if (!directError && directClient) {
+              newClient = directClient;
+              console.log('✅ Client created directly using buyer_id:', {
+                clientId: newClient.id,
+                clientName: newClient.name,
+                email: newClient.email,
+                agentId: user.id
+              });
+            } else {
+              clientError = directError;
+              console.warn('Direct client creation failed, trying email lookup method:', directError);
             }
-          );
+          }
+          
+          // Fallback to email-based creation if direct creation failed
+          if (!newClient && !clientError) {
+            const { data: emailClient, error: emailError } = await clientService.createClientByEmail(
+              normalizedBuyerEmail,
+              {
+                status: 'lead', // Default status for leads converted to appointments
+                property_type: propertyType, // Pre-fill with property type from inquiry
+                notes: `Auto-created from property inquiry for ${(inquiry.property_listings as any)?.title || 'property'}`
+              }
+            );
+            
+            newClient = emailClient;
+            clientError = emailError;
+          }
           
           if (clientError) {
             console.error('Error creating client automatically:', clientError);
-            // Continue without client_id - appointment can still be created
+            // Log detailed error for debugging
+            console.error('Client creation error details:', {
+              error: clientError,
+              buyerEmail: normalizedBuyerEmail,
+              buyerId: inquiry.buyer_id,
+              agentId: user.id,
+              propertyType: propertyType
+            });
+            // Don't fail the appointment creation if client creation fails
+            // The appointment can still be created without a client_id
+            // Error will be logged but appointment will proceed
           } else if (newClient) {
             clientName = newClient.name || finalBuyerName || 'Unknown';
             clientRecordId = newClient.id || null; // Use client record id, not user_id
-            console.log('Client created successfully:', newClient.id);
+            console.log('✅ Client created successfully:', {
+              clientId: newClient.id,
+              clientName: newClient.name,
+              email: newClient.email,
+              agentId: user.id
+            });
+          } else {
+            console.warn('Client creation returned no error but also no client data');
           }
         }
       }

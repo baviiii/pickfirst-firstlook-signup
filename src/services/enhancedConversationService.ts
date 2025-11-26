@@ -92,17 +92,27 @@ class EnhancedConversationService {
         if (filters.viewMode === 'agent') {
           // In agent mode: only show conversations where this user is the agent AND NOT the client
           // This prevents showing conversations where the agent inquired as a buyer
+          // Using explicit AND condition to ensure strict filtering
+          console.log('🔍 Filtering conversations for AGENT mode:', {
+            userId: user.id,
+            filter: 'agent_id = user.id AND client_id != user.id'
+          });
           query = query
             .eq('agent_id', user.id)
             .neq('client_id', user.id);
         } else if (filters.viewMode === 'buyer') {
           // In buyer mode: only show conversations where this user is the client/buyer AND NOT the agent
           // This prevents showing conversations where the buyer is also an agent
+          console.log('🔍 Filtering conversations for BUYER mode:', {
+            userId: user.id,
+            filter: 'client_id = user.id AND agent_id != user.id'
+          });
           query = query
             .eq('client_id', user.id)
             .neq('agent_id', user.id);
         } else {
           // Default: show all conversations for the user (for backwards compatibility)
+          // The post-filter will handle excluding conversations where user is both agent and client
           query = query.or(`agent_id.eq.${user.id},client_id.eq.${user.id}`);
         }
       }

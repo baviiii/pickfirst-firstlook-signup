@@ -47,6 +47,41 @@ export const MyClients = () => {
   useEffect(() => {
     fetchClients();
     fetchUserProfile();
+    
+    // Subscribe to real-time updates for new clients
+    const channel = supabase
+      .channel('clients_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'clients'
+        },
+        (payload) => {
+          console.log('New client created:', payload.new);
+          // Refresh clients when a new one is created
+          fetchClients();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'clients'
+        },
+        (payload) => {
+          console.log('Client updated:', payload.new);
+          // Refresh clients when one is updated
+          fetchClients();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
   }, []);
 
   const fetchUserProfile = async () => {

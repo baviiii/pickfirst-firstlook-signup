@@ -203,19 +203,35 @@ class ClientService {
       const sanitizedNotes = clientData.notes ? sanitizeInput(clientData.notes) : null;
 
       // Check if user already exists and link if they do
+      // Use buyer_public_profiles view to avoid RLS issues
       let userId: string | null = null;
       if (sanitizedEmail) {
-        const { data: existingUser } = await supabase
-          .from('profiles')
-          .select('id, role')
+        // PRIMARY: Try buyer_public_profiles view first (agents can access this without RLS issues)
+        const { data: buyerProfile } = await supabase
+          .from('buyer_public_profiles')
+          .select('id')
           .eq('email', sanitizedEmail)
           .maybeSingle();
 
-        if (existingUser) {
-          // Allow both buyers and agents to be added as clients
-          // Agents can act as buyers and be clients of other agents
-          userId = existingUser.id;
+        if (buyerProfile) {
+          userId = buyerProfile.id;
+        } else {
+          // Fallback: Try direct profiles table (may be blocked by RLS for buyers)
+          // This will only work if the user is an agent or if RLS allows it
+          const { data: existingUser } = await supabase
+            .from('profiles')
+            .select('id, role')
+            .eq('email', sanitizedEmail)
+            .maybeSingle();
 
+          if (existingUser) {
+            // Allow both buyers and agents to be added as clients
+            // Agents can act as buyers and be clients of other agents
+            userId = existingUser.id;
+          }
+        }
+
+        if (userId) {
           // Check if already a client
           const { data: existingClient } = await supabase
             .from('clients')
@@ -313,43 +329,61 @@ class ClientService {
         return { data: null, error: { message: 'Invalid phone number format' } };
       }
 
-      // Find the user profile by email
-      const { data: userProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, role')
+      // Find the user profile by email using buyer_public_profiles view to avoid RLS issues
+      // PRIMARY: Try buyer_public_profiles view first (agents can access this without RLS issues)
+      let finalUserProfile: any = null;
+      
+      const { data: buyerProfile, error: buyerProfileError } = await supabase
+        .from('buyer_public_profiles')
+        .select('id, email, full_name')
         .eq('email', sanitizedEmail)
         .maybeSingle();
 
-      // Handle the "no rows" case specifically
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Database error searching for profile:', profileError);
-        return { data: null, error: { message: 'Database error occurred while searching for user.' } };
-      }
-
-      let finalUserProfile = userProfile;
-      
-      if (!finalUserProfile) {
-        // Try the Edge Function for searching users
+      if (buyerProfile && !buyerProfileError) {
+        // Found in buyer_public_profiles view - this is a buyer
+        finalUserProfile = {
+          id: buyerProfile.id,
+          email: buyerProfile.email,
+          full_name: buyerProfile.full_name,
+          role: 'buyer' // Implicit from the view
+        };
+      } else {
+        // Not found in buyer_public_profiles, try RPC function as fallback
         try {
+          // Try to find buyer using RPC function (bypasses RLS)
+          // We need to search by email, but RPC takes buyer_id, so we'll try a different approach
+          // First, let's try the edge function which might have better access
           const { data: searchResult, error: searchError } = await supabase.functions.invoke('search-user', {
             body: { email: sanitizedEmail }
           });
           
-          if (searchError) {
-            console.error('Edge function search error:', searchError);
-            return { data: null, error: { message: `An error occurred while searching for the user.` } };
-          }
+          if (!searchError && searchResult?.data) {
+            finalUserProfile = searchResult.data;
+          } else {
+            // Last resort: try direct profiles table (may be blocked by RLS for buyers)
+            // This will only work if the user is an agent or if RLS allows it
+            const { data: directProfile, error: directError } = await supabase
+              .from('profiles')
+              .select('id, email, full_name, role')
+              .eq('email', sanitizedEmail)
+              .maybeSingle();
 
-          // The edge function returns { data: userProfile }, so we need to unwrap it.
-          if (!searchResult || !searchResult.data) {
-            return { data: null, error: { message: `User not found with email: ${sanitizedEmail}. Please ensure the email is registered in the system.` } };
+            // Handle the "no rows" case specifically
+            if (directError && directError.code !== 'PGRST116') {
+              console.error('Database error searching for profile:', directError);
+              // Don't return error yet, continue to check if it's a buyer issue
+            } else if (directProfile) {
+              finalUserProfile = directProfile;
+            }
           }
-          
-          finalUserProfile = searchResult.data;
         } catch (functionError) {
-          console.error('Edge function search failed:', functionError);
-          return { data: null, error: { message: `User not found with email: ${sanitizedEmail}. Please ensure the email is registered in the system.` } };
+          console.error('Error searching for user:', functionError);
         }
+      }
+
+      // If still no profile found, return error
+      if (!finalUserProfile) {
+        return { data: null, error: { message: `User not found with email: ${sanitizedEmail}. Please ensure the email is registered in the system.` } };
       }
 
       // Allow both buyers and agents to be added as clients
@@ -401,6 +435,7 @@ class ClientService {
   }
 
   // Get client by email (for adding existing users)
+  // Uses buyer_public_profiles view to avoid RLS issues
   async getUserByEmail(email: string): Promise<{ data: any; error: any }> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -426,12 +461,40 @@ class ClientService {
 
       const sanitizedEmail = email.trim().toLowerCase();
       
-      // First, try to find the user by email (without role restriction)
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, role, created_at')
+      // PRIMARY: Try buyer_public_profiles view first (agents can access this without RLS issues)
+      let data: any = null;
+      let error: any = null;
+      
+      const { data: buyerProfile, error: buyerError } = await supabase
+        .from('buyer_public_profiles')
+        .select('id, email, full_name, created_at')
         .eq('email', sanitizedEmail)
-        .single();
+        .maybeSingle();
+
+      if (buyerProfile && !buyerError) {
+        // Found in buyer_public_profiles view - this is a buyer
+        data = {
+          id: buyerProfile.id,
+          email: buyerProfile.email,
+          full_name: buyerProfile.full_name,
+          role: 'buyer', // Implicit from the view
+          created_at: buyerProfile.created_at
+        };
+      } else {
+        // Fallback: Try direct profiles table (may be blocked by RLS for buyers)
+        // This will only work if the user is an agent or if RLS allows it
+        const { data: directProfile, error: directError } = await supabase
+          .from('profiles')
+          .select('id, email, full_name, role, created_at')
+          .eq('email', sanitizedEmail)
+          .maybeSingle();
+        
+        if (directProfile && !directError) {
+          data = directProfile;
+        } else {
+          error = directError;
+        }
+      }
 
       // If user is found, validate they can be added as a client
       if (data) {
