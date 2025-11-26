@@ -90,11 +90,17 @@ class EnhancedConversationService {
         // Filter based on view mode: agent mode shows only conversations where user is agent,
         // buyer mode shows only conversations where user is the client
         if (filters.viewMode === 'agent') {
-          // In agent mode: only show conversations where this user is the agent
-          query = query.eq('agent_id', user.id);
+          // In agent mode: only show conversations where this user is the agent AND NOT the client
+          // This prevents showing conversations where the agent inquired as a buyer
+          query = query
+            .eq('agent_id', user.id)
+            .neq('client_id', user.id);
         } else if (filters.viewMode === 'buyer') {
-          // In buyer mode: only show conversations where this user is the client/buyer
-          query = query.eq('client_id', user.id);
+          // In buyer mode: only show conversations where this user is the client/buyer AND NOT the agent
+          // This prevents showing conversations where the buyer is also an agent
+          query = query
+            .eq('client_id', user.id)
+            .neq('agent_id', user.id);
         } else {
           // Default: show all conversations for the user (for backwards compatibility)
           query = query.or(`agent_id.eq.${user.id},client_id.eq.${user.id}`);
@@ -124,36 +130,42 @@ class EnhancedConversationService {
         (conversations || []).map(conv => this.enhanceSingleConversation(conv as Tables<'conversations'>))
       );
 
-      // Additional strict filtering to ensure we only show the correct conversations
+      // Additional strict filtering as a safety net to ensure we only show the correct conversations
+      // This catches any edge cases that might slip through the database query
       let filteredConversations = enhancedConversations.filter(conv => {
-        if (filters.viewMode === 'agent' && user) {
-          // In agent mode: only show conversations where user is agent, NOT client
+        if (!user) return false; // No user, no conversations
+        
+        if (filters.viewMode === 'agent') {
+          // In agent mode: ONLY show conversations where user is agent AND NOT client
+          // This prevents showing conversations where the agent inquired as a buyer
           const isAgentConversation = conv.agent_id === user.id && conv.client_id !== user.id;
           if (!isAgentConversation) {
-            console.log('Filtered out conversation in agent mode:', {
+            console.warn('Filtered out conversation in agent mode (safety filter):', {
               conversationId: conv.id,
               agentId: conv.agent_id,
               clientId: conv.client_id,
               userId: user.id,
-              reason: conv.client_id === user.id ? 'User is client (own inquiry)' : 'User is not agent'
+              reason: conv.client_id === user.id ? 'User is client (own inquiry - should not show in agent mode)' : 'User is not agent'
             });
           }
           return isAgentConversation;
-        } else if (filters.viewMode === 'buyer' && user) {
-          // In buyer mode: only show conversations where user is client, NOT agent
+        } else if (filters.viewMode === 'buyer') {
+          // In buyer mode: ONLY show conversations where user is client AND NOT agent
+          // This prevents showing conversations where the buyer is also an agent
           const isBuyerConversation = conv.client_id === user.id && conv.agent_id !== user.id;
           if (!isBuyerConversation) {
-            console.log('Filtered out conversation in buyer mode:', {
+            console.warn('Filtered out conversation in buyer mode (safety filter):', {
               conversationId: conv.id,
               agentId: conv.agent_id,
               clientId: conv.client_id,
               userId: user.id,
-              reason: conv.agent_id === user.id ? 'User is agent' : 'User is not client'
+              reason: conv.agent_id === user.id ? 'User is agent (should not show in buyer mode)' : 'User is not client'
             });
           }
           return isBuyerConversation;
         }
-        return true; // Default: show all (for backwards compatibility)
+        // If no viewMode specified, show all (for backwards compatibility)
+        return true;
       });
       
       console.log(`Filtered conversations for ${filters.viewMode} mode:`, {

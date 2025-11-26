@@ -67,10 +67,10 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
     notes: '',
   });
 
-  // Check if this buyer is already a client for this agent
+  // Check if this buyer is already a client for this agent and preload property type
   useEffect(() => {
-    const checkExistingClient = async () => {
-      if (!open || !profile?.id) return;
+    const checkExistingClientAndPreload = async () => {
+      if (!open || !profile?.id || !inquiry) return;
       
       // Get buyer email - try from inquiry object first, then fetch if needed
       let buyerEmail = inquiry?.buyer?.email;
@@ -94,20 +94,37 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
         }
       }
       
-      if (!buyerEmail) return;
+      // Check if buyer is already a client
+      if (buyerEmail && inquiry.buyer_id) {
+        const { data: existingClient } = await supabase
+          .from('clients')
+          .select('id, name, status, email, user_id')
+          .eq('user_id', inquiry.buyer_id)
+          .eq('agent_id', profile.id)
+          .maybeSingle();
+        const exists = !!existingClient;
+        setHasClient(exists);
+        if (exists) setActiveTab('appointment');
+      }
       
-      const { data: existingClient } = await supabase
-        .from('clients')
-        .select('id, name, status, email, user_id')
-        .eq('user_id', inquiry.buyer_id)
-        .eq('agent_id', profile.id)
-        .maybeSingle();
-      const exists = !!data;
-      setHasClient(exists);
-      if (exists) setActiveTab('appointment');
+      // Preload property type from the inquiry's property
+      if (inquiry.property_id) {
+        const { data: property } = await supabase
+          .from('property_listings')
+          .select('property_type')
+          .eq('id', inquiry.property_id)
+          .maybeSingle();
+        
+        if (property?.property_type) {
+          setClientData(prev => ({
+            ...prev,
+            property_type: property.property_type
+          }));
+        }
+      }
     };
-    checkExistingClient();
-  }, [open, inquiry?.buyer_id, inquiry?.buyer?.email, profile?.id]);
+    checkExistingClientAndPreload();
+  }, [open, inquiry?.buyer_id, inquiry?.buyer?.email, inquiry?.property_id, profile?.id]);
 
   const handleConvertToClient = async () => {
     if (!inquiry) {
@@ -308,17 +325,17 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-pickfirst-yellow/20 text-white max-w-2xl">
+      <DialogContent className="bg-card text-card-foreground border border-pickfirst-yellow/30 shadow-xl max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-pickfirst-yellow">Convert Lead</DialogTitle>
-          <DialogDescription className="text-gray-300">
+          <DialogTitle className="text-foreground">Convert Lead</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
             Convert this inquiry from {inquiry.buyer?.full_name} into a client or schedule an appointment
           </DialogDescription>
         </DialogHeader>
 
-        <div className="bg-white/5 p-3 rounded-lg mb-4">
-          <div className="text-sm font-medium text-white mb-2">Property Inquiry</div>
-          <div className="text-xs text-gray-300">
+        <div className="bg-muted/50 p-3 rounded-lg mb-4">
+          <div className="text-sm font-medium text-foreground mb-2">Property Inquiry</div>
+          <div className="text-xs text-muted-foreground">
             <div><strong>Property:</strong> {inquiry.property?.title}</div>
             <div><strong>Address:</strong> {inquiry.property?.address}</div>
             <div><strong>Price:</strong> ${inquiry.property?.price?.toLocaleString()}</div>
@@ -327,7 +344,7 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full bg-white/10" style={{ gridTemplateColumns: hasClient ? '1fr' : '1fr 1fr' }}>
+          <TabsList className="grid w-full bg-muted" style={{ gridTemplateColumns: hasClient ? '1fr' : '1fr 1fr' }}>
             {!hasClient && (
               <TabsTrigger value="client" className="flex items-center gap-2">
                 <UserPlus className="h-4 w-4" />
@@ -344,31 +361,31 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
           <TabsContent value="client" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="phone" className="text-white">Phone Number</Label>
+                <Label htmlFor="phone" className="text-foreground">Phone Number</Label>
                 <div className="flex gap-2">
                   <Input
                     id="countryCode"
                     value={clientData.countryCode}
                     onChange={(e) => setClientData(prev => ({ ...prev, countryCode: e.target.value }))}
-                    className="bg-white/5 border-white/20 text-white w-24"
+                    className="bg-background border-border text-foreground w-24"
                     placeholder="+61"
                   />
                   <Input
                     id="phone"
                     value={clientData.phone}
                     onChange={(e) => setClientData(prev => ({ ...prev, phone: e.target.value }))}
-                    className="bg-white/5 border-white/20 text-white flex-1"
+                    className="bg-background border-border text-foreground flex-1"
                     placeholder="(555) 123-4567"
                   />
                 </div>
               </div>
               <div>
-                <Label htmlFor="status" className="text-white">Status</Label>
+                <Label htmlFor="status" className="text-foreground">Status</Label>
                 <Select value={clientData.status} onValueChange={(value) => setClientData(prev => ({ ...prev, status: value }))}>
-                  <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                  <SelectTrigger className="bg-background border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[110] bg-popover text-popover-foreground border border-border">
                     <SelectItem value="lead">Lead</SelectItem>
                     <SelectItem value="prospect">Prospect</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
@@ -380,12 +397,12 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="budget_range" className="text-white">Budget Range</Label>
+                <Label htmlFor="budget_range" className="text-foreground">Budget Range</Label>
                 <Select value={clientData.budget_range} onValueChange={(value) => setClientData(prev => ({ ...prev, budget_range: value }))}>
-                  <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                  <SelectTrigger className="bg-background border-border text-foreground">
                     <SelectValue placeholder="Select budget range" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[110] bg-popover text-popover-foreground border border-border">
                     <SelectItem value="under_200k">Under $200k</SelectItem>
                     <SelectItem value="200k_400k">$200k - $400k</SelectItem>
                     <SelectItem value="400k_600k">$400k - $600k</SelectItem>
@@ -396,12 +413,12 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
                 </Select>
               </div>
               <div>
-                <Label htmlFor="property_type" className="text-white">Property Type</Label>
+                <Label htmlFor="property_type" className="text-foreground">Property Type</Label>
                 <Select value={clientData.property_type} onValueChange={(value) => setClientData(prev => ({ ...prev, property_type: value }))}>
-                  <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                  <SelectTrigger className="bg-background border-border text-foreground">
                     <SelectValue placeholder="Select property type" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[110] bg-popover text-popover-foreground border border-border">
                     <SelectItem value="house">House</SelectItem>
                     <SelectItem value="condo">Condo</SelectItem>
                     <SelectItem value="townhouse">Townhouse</SelectItem>
@@ -414,23 +431,23 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
             </div>
 
             <div>
-              <Label htmlFor="preferred_areas" className="text-white">Preferred Areas (comma separated)</Label>
+              <Label htmlFor="preferred_areas" className="text-foreground">Preferred Areas (comma separated)</Label>
               <Input
                 id="preferred_areas"
                 value={clientData.preferred_areas}
                 onChange={(e) => setClientData(prev => ({ ...prev, preferred_areas: e.target.value }))}
-                className="bg-white/5 border-white/20 text-white"
+                className="bg-background border-border text-foreground"
                 placeholder="Downtown, Midtown, Suburbs"
               />
             </div>
 
             <div>
-              <Label htmlFor="client_notes" className="text-white">Notes</Label>
+              <Label htmlFor="client_notes" className="text-foreground">Notes</Label>
               <Textarea
                 id="client_notes"
                 value={clientData.notes}
                 onChange={(e) => setClientData(prev => ({ ...prev, notes: e.target.value }))}
-                className="bg-white/5 border-white/20 text-white"
+                className="bg-background border-border text-foreground"
                 placeholder="Additional notes about this client..."
                 rows={3}
               />
@@ -449,12 +466,12 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
           <TabsContent value="appointment" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="appointment_type" className="text-white">Appointment Type</Label>
+                <Label htmlFor="appointment_type" className="text-foreground">Appointment Type</Label>
                 <Select value={appointmentData.appointment_type} onValueChange={(value) => setAppointmentData(prev => ({ ...prev, appointment_type: value }))}>
-                  <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                  <SelectTrigger className="bg-background border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[110] bg-popover text-popover-foreground border border-border">
                     <SelectItem value="property_showing">Property Showing</SelectItem>
                     <SelectItem value="consultation">Consultation</SelectItem>
                     <SelectItem value="contract_review">Contract Review</SelectItem>
@@ -464,13 +481,13 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
                 </Select>
               </div>
               <div>
-                <Label htmlFor="duration" className="text-white">Duration (minutes)</Label>
+                <Label htmlFor="duration" className="text-foreground">Duration (minutes)</Label>
                 <Input
                   id="duration"
                   type="number"
                   value={appointmentData.duration}
                   onChange={(e) => setAppointmentData(prev => ({ ...prev, duration: parseInt(e.target.value) || 60 }))}
-                  className="bg-white/5 border-white/20 text-white"
+                  className="bg-background border-border text-foreground"
                   min="15"
                   max="480"
                 />
@@ -479,18 +496,18 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-white">Date</Label>
+                <Label className="text-foreground">Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className="w-full justify-start text-left font-normal bg-white/5 border-white/20 text-white"
+                      className="w-full justify-start text-left font-normal bg-background border-border text-foreground"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {appointmentData.date ? format(appointmentData.date, "PPP") : "Pick a date"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto p-0 z-[110] bg-popover text-popover-foreground" align="start">
                     <Calendar
                       mode="single"
                       selected={appointmentData.date}
@@ -502,24 +519,24 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
                 </Popover>
               </div>
               <div>
-                <Label htmlFor="time" className="text-white">Time</Label>
+                <Label htmlFor="time" className="text-foreground">Time</Label>
                 <Input
                   id="time"
                   type="time"
                   value={appointmentData.time}
                   onChange={(e) => setAppointmentData(prev => ({ ...prev, time: e.target.value }))}
-                  className="bg-white/5 border-white/20 text-white"
+                  className="bg-background border-border text-foreground"
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="appointment_notes" className="text-white">Notes</Label>
+              <Label htmlFor="appointment_notes" className="text-foreground">Notes</Label>
               <Textarea
                 id="appointment_notes"
                 value={appointmentData.notes}
                 onChange={(e) => setAppointmentData(prev => ({ ...prev, notes: e.target.value }))}
-                className="bg-white/5 border-white/20 text-white"
+                className="bg-background border-border text-foreground"
                 placeholder="Additional notes for this appointment..."
                 rows={3}
               />
