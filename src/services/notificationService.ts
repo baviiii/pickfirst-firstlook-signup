@@ -140,6 +140,7 @@ class NotificationService {
 
   /**
    * Create a notification (typically called by backend/triggers)
+   * Uses RPC function to bypass RLS and allow creating notifications for other users
    */
   async createNotification(
     userId: string,
@@ -150,23 +151,65 @@ class NotificationService {
     metadata?: Record<string, any>
   ): Promise<{ data: Notification | null; error: any }> {
     try {
-      const { data, error } = await (supabase as any)
+      // Use RPC function to bypass RLS - allows creating notifications for other users
+      const { data: notificationId, error: rpcError } = await supabase
+        .rpc('create_notification', {
+          target_user_id: userId,
+          notification_type: type,
+          notification_title: title,
+          notification_message: message,
+          notification_link: link || null,
+          notification_metadata: metadata || null
+        });
+
+      if (rpcError) {
+        console.error('RPC create_notification error:', rpcError);
+        // Fallback to direct insert (may fail due to RLS)
+        const { data, error } = await (supabase as any)
+          .from('notifications')
+          .insert({
+            user_id: userId,
+            type,
+            title,
+            message,
+            link,
+            metadata,
+            read: false
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return { data: data as Notification, error: null };
+      }
+
+      // Fetch the created notification to return full data
+      const { data: notification, error: fetchError } = await supabase
         .from('notifications')
-        .insert({
-          user_id: userId,
-          type,
-          title,
-          message,
-          link,
-          metadata,
-          read: false
-        })
-        .select()
+        .select('*')
+        .eq('id', notificationId)
         .single();
 
-      if (error) throw error;
+      if (fetchError) {
+        console.warn('Created notification but failed to fetch it:', fetchError);
+        // Return minimal data
+        return { 
+          data: { 
+            id: notificationId, 
+            user_id: userId, 
+            type, 
+            title, 
+            message, 
+            link, 
+            read: false, 
+            created_at: new Date().toISOString(),
+            metadata 
+          } as Notification, 
+          error: null 
+        };
+      }
 
-      return { data: data as Notification, error: null };
+      return { data: notification as Notification, error: null };
     } catch (error) {
       console.error('Error creating notification:', error);
       return { data: null, error };

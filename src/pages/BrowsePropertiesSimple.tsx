@@ -742,11 +742,11 @@ const BrowsePropertiesSimple = () => {
                   Inquiry Sent
                 </Badge>
               </div>
-              <DialogDescription className="text-foreground mt-2">
+              <div className="text-foreground mt-2">
                 <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
                   Pending
                 </Badge>
-              </DialogDescription>
+              </div>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <div>

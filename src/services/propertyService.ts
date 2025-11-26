@@ -1571,14 +1571,26 @@ export class PropertyService {
 
     // Create in-app notification for agent about new inquiry
     try {
-      // Get buyer name for notification
-      const { data: buyerProfile } = await supabase
-        .from('profiles')
+      // Get buyer name for notification - use public profile view to avoid RLS issues
+      let buyerName = 'A potential buyer';
+      
+      const { data: buyerViewData } = await supabase
+        .from('buyer_public_profiles')
         .select('full_name')
         .eq('id', user.id)
         .single();
 
-      const buyerName = buyerProfile?.full_name || 'A potential buyer';
+      if (buyerViewData?.full_name) {
+        buyerName = buyerViewData.full_name;
+      } else {
+        // Fallback: Try RPC function
+        const { data: buyerFunctionData } = await supabase
+          .rpc('get_buyer_public_profile', { buyer_id: user.id });
+        
+        if (buyerFunctionData && buyerFunctionData.length > 0 && buyerFunctionData[0]?.full_name) {
+          buyerName = buyerFunctionData[0].full_name;
+        }
+      }
 
       await notificationService.createNotification(
         property.agent_id,
@@ -1918,25 +1930,61 @@ export class PropertyService {
         throw new Error('Property not found');
       }
 
-      // Get agent details
-      const { data: agent, error: agentError } = await supabase
-        .from('profiles')
+      // Get agent details - use public profile view to avoid RLS issues
+      let agent = null;
+      
+      // Try agent_public_profiles view first
+      const { data: viewData, error: viewError } = await supabase
+        .from('agent_public_profiles')
         .select('full_name, email, phone')
         .eq('id', agentId)
         .single();
 
-      if (agentError || !agent) {
+      if (viewError || !viewData) {
+        // Fallback: Use RPC function that bypasses RLS
+        console.log('Agent public view query failed, trying RPC function:', viewError);
+        const { data: functionData, error: functionError } = await supabase
+          .rpc('get_agent_public_profile', { agent_id: agentId });
+
+        if (functionError || !functionData || functionData.length === 0) {
+          console.error('Agent profile error:', functionError || viewError);
+          throw new Error(`Agent not found: ${(functionError || viewError)?.message || 'Unknown error'}`);
+        }
+        agent = functionData[0];
+      } else {
+        agent = viewData;
+      }
+
+      if (!agent) {
         throw new Error('Agent not found');
       }
 
-      // Get buyer details
-      const { data: buyer, error: buyerError } = await supabase
-        .from('profiles')
+      // Get buyer details - use public profile view to avoid RLS issues
+      let buyer = null;
+      
+      // Try buyer_public_profiles view first
+      const { data: buyerViewData, error: buyerViewError } = await supabase
+        .from('buyer_public_profiles')
         .select('full_name, email, phone')
         .eq('id', buyerId)
         .single();
 
-      if (buyerError || !buyer) {
+      if (buyerViewError || !buyerViewData) {
+        // Fallback: Use RPC function that bypasses RLS
+        console.log('Buyer public view query failed, trying RPC function:', buyerViewError);
+        const { data: buyerFunctionData, error: buyerFunctionError } = await supabase
+          .rpc('get_buyer_public_profile', { buyer_id: buyerId });
+
+        if (buyerFunctionError || !buyerFunctionData || buyerFunctionData.length === 0) {
+          console.error('Buyer profile error:', buyerFunctionError || buyerViewError);
+          throw new Error(`Buyer not found: ${(buyerFunctionError || buyerViewError)?.message || 'Unknown error'}`);
+        }
+        buyer = buyerFunctionData[0];
+      } else {
+        buyer = buyerViewData;
+      }
+
+      if (!buyer) {
         throw new Error('Buyer not found');
       }
 
