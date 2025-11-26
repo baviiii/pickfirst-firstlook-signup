@@ -388,9 +388,9 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                     <SelectTrigger className="bg-white/5 border-white/20 text-white">
                       <SelectValue placeholder="Select appointment type" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-gray-800 border-gray-700 text-white z-[110]">
                       {appointmentTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
+                        <SelectItem key={type.value} value={type.value} className="text-white focus:bg-gray-700">
                           <div className="flex items-center gap-2">
                             <span>{type.icon}</span>
                             <span>{type.label}</span>
@@ -415,13 +415,14 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                           {formData.date ? format(formData.date, "PPP") : "Pick a date"}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700 text-white z-[110]" align="start">
                         <Calendar
                           mode="single"
                           selected={formData.date}
                           onSelect={(date) => setFormData({...formData, date})}
                           disabled={(date) => date < new Date()}
                           initialFocus
+                          className="rounded-md border"
                         />
                       </PopoverContent>
                     </Popover>
@@ -433,9 +434,9 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                       <SelectTrigger className="bg-white/5 border-white/20 text-white">
                         <SelectValue placeholder="Select time" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-gray-800 border-gray-700 text-white z-[110]">
                         {timeSlots.map((time) => (
-                          <SelectItem key={time} value={time}>
+                          <SelectItem key={time} value={time} className="text-white focus:bg-gray-700">
                             <div className="flex items-center gap-2">
                               <Clock className="h-4 w-4" />
                               {time}
@@ -454,12 +455,12 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                     <SelectTrigger className="bg-white/5 border-white/20 text-white">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="30">30 minutes</SelectItem>
-                      <SelectItem value="45">45 minutes</SelectItem>
-                      <SelectItem value="60">1 hour</SelectItem>
-                      <SelectItem value="90">1.5 hours</SelectItem>
-                      <SelectItem value="120">2 hours</SelectItem>
+                    <SelectContent className="bg-gray-800 border-gray-700 text-white z-[110]">
+                      <SelectItem value="30" className="text-white focus:bg-gray-700">30 minutes</SelectItem>
+                      <SelectItem value="45" className="text-white focus:bg-gray-700">45 minutes</SelectItem>
+                      <SelectItem value="60" className="text-white focus:bg-gray-700">1 hour</SelectItem>
+                      <SelectItem value="90" className="text-white focus:bg-gray-700">1.5 hours</SelectItem>
+                      <SelectItem value="120" className="text-white focus:bg-gray-700">2 hours</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -478,14 +479,14 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                     <SelectTrigger className="bg-white/5 border-white/20 text-white">
                       <SelectValue placeholder="Select property or leave empty for virtual meeting" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-gray-800 border-gray-700 text-white z-[110]">
                       {properties.map((property) => (
-                        <SelectItem key={property.id} value={property.id}>
+                        <SelectItem key={property.id} value={property.id} className="text-white focus:bg-gray-700">
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4" />
                             <div>
                               <div className="font-medium">{property.title}</div>
-                              <div className="text-sm text-gray-500">{property.address}</div>
+                              <div className="text-sm text-gray-400">{property.address}</div>
                             </div>
                           </div>
                         </SelectItem>

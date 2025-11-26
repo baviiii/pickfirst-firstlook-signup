@@ -142,12 +142,15 @@ export const ClientHistory = ({ client, isOpen, onClose }: ClientHistoryProps) =
       const transformedAppointments = appointmentsData?.map(appt => ({
         id: appt.id,
         interaction_type: 'appointment',
-        subject: `${appt.appointment_type} - ${appt.property_address}`,
-        content: appt.notes || '',
+        subject: `${appt.appointment_type?.replace('_', ' ') || 'Appointment'}${appt.property_address ? ` - ${appt.property_address}` : ''}`,
+        content: appt.notes || `Scheduled for ${appt.date} at ${appt.time}`,
         outcome: appt.status,
         duration_minutes: appt.duration,
-        created_at: appt.created_at,
-        next_follow_up: null
+        created_at: appt.created_at || appt.date,
+        next_follow_up: null,
+        appointment_date: appt.date,
+        appointment_time: appt.time,
+        appointment_type: appt.appointment_type
       })) || [];
 
       // Combine interactions and appointments
@@ -294,10 +297,32 @@ export const ClientHistory = ({ client, isOpen, onClose }: ClientHistoryProps) =
                   {interaction.content}
                 </div>
               )}
+              {(interaction as any).appointment_date && (interaction as any).appointment_time && (
+                <div className="bg-white/5 p-2 rounded mb-2">
+                  <div className="text-xs font-medium text-white mb-1">Appointment Details:</div>
+                  <div className="text-xs text-gray-300">
+                    Date: {new Date((interaction as any).appointment_date).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
+                  </div>
+                  <div className="text-xs text-gray-300">
+                    Time: {(interaction as any).appointment_time}
+                  </div>
+                  {(interaction as any).appointment_type && (
+                    <div className="text-xs text-gray-400 mt-1">
+                      Type: {(interaction as any).appointment_type.replace('_', ' ')}
+                    </div>
+                  )}
+                </div>
+              )}
               {interaction.outcome && (
                 <div className="bg-white/5 p-3 rounded">
-                  <div className="text-xs font-medium text-white mb-1">Outcome:</div>
-                  <div className="text-xs text-gray-300">{interaction.outcome}</div>
+                  <div className="text-xs font-medium text-white mb-1">Status:</div>
+                  <Badge variant="outline" className="text-xs border-pickfirst-yellow/20 text-pickfirst-yellow capitalize">
+                    {interaction.outcome}
+                  </Badge>
                 </div>
               )}
               {interaction.next_follow_up && (
