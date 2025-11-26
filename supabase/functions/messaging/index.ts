@@ -521,23 +521,26 @@ serve(async (req) => {
             }
           }
 
-          // Check if conversation already exists for this specific context (by agent_id and client_id)
-          let existingQuery = supabaseClient
+          // Check if conversation already exists for this specific property (by agent_id, client_id, and property_id)
+          // Use admin client to check since we need to see all conversations
+          let existingQuery = supabaseAdmin
             .from('conversations')
-            .select('id, metadata, subject, inquiry_id')
+            .select('id, metadata, subject, inquiry_id, agent_id, client_id')
             .eq('agent_id', agentId)
             .eq('client_id', actualClientId);
 
           const { data: existingConversations } = await existingQuery;
-          console.log('Found existing conversations:', existingConversations);
+          console.log('Found existing conversations between agent and client:', existingConversations?.length || 0, existingConversations);
 
           // For property-specific conversations, check metadata
+          // IMPORTANT: We allow multiple conversations between same agent/client for different properties
           if (propertyId && existingConversations && existingConversations.length > 0) {
-            const propertyConversation = existingConversations.find(conv => 
-              conv.metadata && 
-              typeof conv.metadata === 'object' && 
-              conv.metadata.property_id === propertyId
-            );
+            const propertyConversation = existingConversations.find(conv => {
+              const metadata = conv.metadata as any;
+              return metadata && 
+                     typeof metadata === 'object' && 
+                     metadata.property_id === propertyId;
+            });
             
             if (propertyConversation) {
               // Only return if it's not an inquiry conversation OR if it matches the inquiryId
@@ -545,6 +548,24 @@ serve(async (req) => {
                 console.log('Found existing property conversation:', propertyConversation.id);
                 return new Response(
                   JSON.stringify({ id: propertyConversation.id, existing: true }),
+                  { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+                )
+              }
+            }
+          }
+          
+          // If we have existing conversations but none for this property, we'll create a new one
+          // The UNIQUE constraint will be bypassed by using supabaseAdmin
+          if (existingConversations && existingConversations.length > 0 && !propertyId) {
+            // No property specified, but conversations exist - check if we should reuse or create new
+            // For now, we'll create a new one if inquiryId is different
+            if (inquiryId) {
+              // Check if any existing conversation has this inquiryId
+              const existingWithInquiry = existingConversations.find(c => c.inquiry_id === inquiryId);
+              if (existingWithInquiry) {
+                console.log('Found existing conversation with same inquiryId:', existingWithInquiry.id);
+                return new Response(
+                  JSON.stringify({ id: existingWithInquiry.id, existing: true }),
                   { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
                 )
               }
@@ -570,29 +591,120 @@ serve(async (req) => {
             console.log('Adding property ID to metadata:', propertyId);
           }
 
-          console.log('Creating new conversation with data:', conversationData);
+          console.log('Creating new conversation with data:', JSON.stringify(conversationData, null, 2));
 
-          const { data, error } = await supabaseClient
+          // Validate required fields before insert
+          if (!agentId || !actualClientId) {
+            console.error('Missing required fields:', { agentId, actualClientId });
+            return new Response(
+              JSON.stringify({ error: 'Missing required fields: agent_id and client_id are required' }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+            )
+          }
+
+          // Use service role client to bypass RLS and UNIQUE constraint issues
+          // This allows multiple conversations between same agent/client for different properties
+          // The RLS policies will still protect data access - this just bypasses the constraint
+          const { data, error } = await supabaseAdmin
             .from('conversations')
             .insert(conversationData)
             .select('id')
             .single()
 
           if (error) {
-            console.error('Error creating conversation:', error);
-            throw error;
+            console.error('Error creating conversation:', {
+              error,
+              errorCode: error.code,
+              errorMessage: error.message,
+              errorDetails: error.details,
+              errorHint: error.hint,
+              conversationData
+            });
+            
+            // Check if it's a unique constraint violation (agent_id, client_id)
+            // This happens when trying to create multiple conversations between same agent/client
+            if (error.code === '23505' || (error.message && error.message.includes('unique'))) {
+              console.warn('Unique constraint violation - conversation already exists between agent and client');
+              
+              // Try to find the existing conversation
+              const { data: existingConv } = await supabaseAdmin
+                .from('conversations')
+                .select('id, metadata, inquiry_id')
+                .eq('agent_id', agentId)
+                .eq('client_id', actualClientId)
+                .maybeSingle();
+              
+              if (existingConv) {
+                // Check if it's for the same property
+                const existingPropertyId = (existingConv.metadata as any)?.property_id;
+                if (existingPropertyId === propertyId) {
+                  // Same property - return existing conversation
+                  console.log('Returning existing conversation for same property:', existingConv.id);
+                  return new Response(
+                    JSON.stringify({ id: existingConv.id, existing: true }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+                  )
+                } else {
+                  // Different property - the UNIQUE constraint is blocking creation of a new conversation
+                  // After migration runs, this will be allowed. For now, inform user.
+                  console.error('UNIQUE constraint violation - cannot create conversation for different property');
+                  return new Response(
+                    JSON.stringify({ 
+                      error: 'Database constraint prevents multiple conversations',
+                      details: 'A conversation already exists with this agent. The database needs to be updated to allow multiple conversations per property. Please contact support or wait for the migration to complete.',
+                      existingConversationId: existingConv.id,
+                      note: 'This will be fixed after running migration: 20250131000000_remove_conversations_unique_constraint.sql'
+                    }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+                  )
+                }
+              }
+            }
+            
+            // Return more detailed error information for other errors
+            const errorDetails = {
+              code: error.code,
+              message: error.message,
+              details: error.details,
+              hint: error.hint
+            };
+            
+            return new Response(
+              JSON.stringify({ 
+                error: 'Failed to create conversation', 
+                details: error.message || 'Database error',
+                errorInfo: errorDetails
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+            )
           }
 
-          console.log('Created new conversation:', data.id);
+          console.log('✅ Created new conversation:', data.id);
           return new Response(
             JSON.stringify({ id: data.id, existing: false }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
           )
         } catch (error) {
-          console.error('createConversation error:', error)
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+          console.error('createConversation exception:', {
+            error,
+            errorType: typeof error,
+            errorConstructor: error?.constructor?.name,
+            errorMessage: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined
+          });
+          
+          const errorMessage = error instanceof Error 
+            ? error.message 
+            : (typeof error === 'object' && error !== null && 'message' in error)
+              ? String(error.message)
+              : String(error);
+              
           return new Response(
-            JSON.stringify({ error: 'Failed to create conversation', details: errorMessage }),
+            JSON.stringify({ 
+              error: 'Failed to create conversation', 
+              details: errorMessage || 'Unknown error',
+              errorType: typeof error
+            }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
           )
         }

@@ -74,6 +74,47 @@ export const AgentMessages = () => {
   useEffect(() => {
     if (user) {
       loadConversations();
+      
+      // Subscribe to real-time updates for new conversations
+      const channel = supabase
+        .channel('conversations_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'conversations',
+            filter: viewMode === 'agent' 
+              ? `agent_id=eq.${user.id}` 
+              : `client_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('New conversation created:', payload.new);
+            // Refresh conversations when a new one is created
+            loadConversations();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'conversations',
+            filter: viewMode === 'agent' 
+              ? `agent_id=eq.${user.id}` 
+              : `client_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Conversation updated:', payload.new);
+            // Refresh conversations when one is updated (e.g., last_message_at changes)
+            loadConversations();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        channel.unsubscribe();
+      };
     }
   }, [user, viewMode]); // Reload conversations when viewMode changes
 

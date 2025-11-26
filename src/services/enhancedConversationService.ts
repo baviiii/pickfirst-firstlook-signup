@@ -92,28 +92,29 @@ class EnhancedConversationService {
         if (filters.viewMode === 'agent') {
           // In agent mode: only show conversations where this user is the agent AND NOT the client
           // This prevents showing conversations where the agent inquired as a buyer
-          // Using explicit AND condition to ensure strict filtering
+          // CRITICAL: Use .eq() for agent_id, then filter out client_id matches in pre-filter
+          // Supabase's .neq() may not work reliably, so we'll do strict filtering in pre-filter
           console.log('🔍 Filtering conversations for AGENT mode:', {
             userId: user.id,
-            filter: 'agent_id = user.id AND client_id != user.id'
+            filter: 'agent_id = user.id (client_id != user.id will be enforced in pre-filter)'
           });
-          query = query
-            .eq('agent_id', user.id)
-            .neq('client_id', user.id);
+          // Only filter by agent_id at database level - client_id check happens in pre-filter
+          query = query.eq('agent_id', user.id);
         } else if (filters.viewMode === 'buyer') {
           // In buyer mode: only show conversations where this user is the client/buyer AND NOT the agent
           // This prevents showing conversations where the buyer is also an agent
+          // CRITICAL: Use .eq() for client_id, then filter out agent_id matches in pre-filter
+          // Supabase's .neq() may not work reliably, so we'll do strict filtering in pre-filter
           console.log('🔍 Filtering conversations for BUYER mode:', {
             userId: user.id,
-            filter: 'client_id = user.id AND agent_id != user.id'
+            filter: 'client_id = user.id (agent_id != user.id will be enforced in pre-filter)'
           });
-          query = query
-            .eq('client_id', user.id)
-            .neq('agent_id', user.id);
+          // Only filter by client_id at database level - agent_id check happens in pre-filter
+          query = query.eq('client_id', user.id);
         } else {
           // Default: show all conversations for the user (for backwards compatibility)
           // The post-filter will handle excluding conversations where user is both agent and client
-          query = query.or(`agent_id.eq.${user.id},client_id.eq.${user.id}`);
+        query = query.or(`agent_id.eq.${user.id},client_id.eq.${user.id}`);
         }
       }
 
@@ -132,49 +133,155 @@ class EnhancedConversationService {
         .limit(100);
 
       if (error) {
+        console.error('Error fetching conversations:', error);
         return { data: [], error };
       }
 
-      // Enhance conversations with property and inquiry data
-      const enhancedConversations = await Promise.all(
-        (conversations || []).map(conv => this.enhanceSingleConversation(conv as Tables<'conversations'>))
-      );
+      console.log(`📥 Raw conversations from database (${conversations?.length || 0}):`, {
+        viewMode: filters.viewMode,
+        userId: user?.id,
+        conversations: conversations?.map(c => ({
+          id: c.id,
+          agent_id: c.agent_id,
+          client_id: c.client_id,
+          subject: c.subject,
+          inquiry_id: c.inquiry_id,
+          metadata: c.metadata,
+          property_id: (c.metadata as any)?.property_id
+        }))
+      });
 
-      // Additional strict filtering as a safety net to ensure we only show the correct conversations
-      // This catches any edge cases that might slip through the database query
-      let filteredConversations = enhancedConversations.filter(conv => {
-        if (!user) return false; // No user, no conversations
+      // CRITICAL: Pre-filter conversations BEFORE enhancement to avoid unnecessary processing
+      // This ensures we only enhance conversations that should be shown
+      // This is the PRIMARY filtering mechanism since Supabase .neq() may not work reliably
+      let preFilteredConversations = (conversations || []).filter(conv => {
+        if (!user) {
+          console.warn('🚫 No user, filtering out conversation');
+          return false;
+        }
+        
+        // Convert IDs to strings for reliable comparison
+        const convAgentId = String(conv.agent_id || '');
+        const convClientId = String(conv.client_id || '');
+        const userId = String(user.id || '');
         
         if (filters.viewMode === 'agent') {
           // In agent mode: ONLY show conversations where user is agent AND NOT client
-          // This prevents showing conversations where the agent inquired as a buyer
+          const isAgent = convAgentId === userId;
+          const isNotClient = convClientId !== userId;
+          const isAgentConv = isAgent && isNotClient;
+          
+          if (!isAgentConv) {
+            console.warn('🚫 Pre-filtered out conversation in agent mode:', {
+              conversationId: conv.id,
+              agentId: convAgentId,
+              clientId: convClientId,
+              userId: userId,
+              matches: {
+                isAgent: isAgent,
+                isNotClient: isNotClient,
+                bothMatch: isAgent && isNotClient
+              },
+              reason: !isAgent ? 'User is not agent' : (convClientId === userId ? 'User is client (own inquiry - MUST BE FILTERED)' : 'Unknown reason')
+            });
+          } else {
+            console.log('✅ Keeping conversation in agent mode:', {
+              conversationId: conv.id,
+              agentId: convAgentId,
+              clientId: convClientId
+            });
+          }
+          return isAgentConv;
+        } else if (filters.viewMode === 'buyer') {
+          // In buyer mode: ONLY show conversations where user is client AND NOT agent
+          const isClient = convClientId === userId;
+          const isNotAgent = convAgentId !== userId;
+          const isBuyerConv = isClient && isNotAgent;
+          
+          if (!isBuyerConv) {
+            console.warn('🚫 Pre-filtered out conversation in buyer mode:', {
+              conversationId: conv.id,
+              agentId: convAgentId,
+              clientId: convClientId,
+              userId: userId,
+              matches: {
+                isClient: isClient,
+                isNotAgent: isNotAgent,
+                bothMatch: isClient && isNotAgent
+              },
+              reason: !isClient ? 'User is not client' : (convAgentId === userId ? 'User is agent (MUST BE FILTERED)' : 'Unknown reason')
+            });
+          } else {
+            console.log('✅ Keeping conversation in buyer mode:', {
+              conversationId: conv.id,
+              agentId: convAgentId,
+              clientId: convClientId
+            });
+          }
+          return isBuyerConv;
+        }
+        return true; // No viewMode specified
+      });
+
+      console.log(`✅ Pre-filtered conversations (${preFilteredConversations.length}):`, {
+        viewMode: filters.viewMode,
+        userId: user?.id,
+        before: conversations?.length || 0,
+        after: preFilteredConversations.length,
+        filteredOut: (conversations?.length || 0) - preFilteredConversations.length,
+        remainingIds: preFilteredConversations.map(c => ({
+          id: c.id,
+          agent_id: c.agent_id,
+          client_id: c.client_id
+        }))
+      });
+      
+      // CRITICAL CHECK: If we're in agent mode and still have conversations where user is client, something is wrong
+      if (filters.viewMode === 'agent' && preFilteredConversations.some(c => String(c.client_id) === String(user?.id))) {
+        console.error('❌ CRITICAL ERROR: Pre-filter failed! Conversations where user is client still present in agent mode:', 
+          preFilteredConversations.filter(c => String(c.client_id) === String(user?.id))
+        );
+      }
+      
+      // CRITICAL CHECK: If we're in buyer mode and still have conversations where user is agent, something is wrong
+      if (filters.viewMode === 'buyer' && preFilteredConversations.some(c => String(c.agent_id) === String(user?.id))) {
+        console.error('❌ CRITICAL ERROR: Pre-filter failed! Conversations where user is agent still present in buyer mode:', 
+          preFilteredConversations.filter(c => String(c.agent_id) === String(user?.id))
+        );
+      }
+
+      // Enhance conversations with property and inquiry data (only the filtered ones)
+      const enhancedConversations = await Promise.all(
+        preFilteredConversations.map(conv => this.enhanceSingleConversation(conv as Tables<'conversations'>))
+      );
+
+      // Additional strict filtering as a safety net (shouldn't filter anything if pre-filter worked)
+      let filteredConversations = enhancedConversations.filter(conv => {
+        if (!user) return false;
+        
+        if (filters.viewMode === 'agent') {
           const isAgentConversation = conv.agent_id === user.id && conv.client_id !== user.id;
           if (!isAgentConversation) {
-            console.warn('Filtered out conversation in agent mode (safety filter):', {
+            console.error('❌ CRITICAL: Conversation passed pre-filter but failed safety filter in agent mode:', {
               conversationId: conv.id,
               agentId: conv.agent_id,
               clientId: conv.client_id,
-              userId: user.id,
-              reason: conv.client_id === user.id ? 'User is client (own inquiry - should not show in agent mode)' : 'User is not agent'
+              userId: user.id
             });
           }
           return isAgentConversation;
         } else if (filters.viewMode === 'buyer') {
-          // In buyer mode: ONLY show conversations where user is client AND NOT agent
-          // This prevents showing conversations where the buyer is also an agent
           const isBuyerConversation = conv.client_id === user.id && conv.agent_id !== user.id;
           if (!isBuyerConversation) {
-            console.warn('Filtered out conversation in buyer mode (safety filter):', {
+            console.error('❌ CRITICAL: Conversation passed pre-filter but failed safety filter in buyer mode:', {
               conversationId: conv.id,
               agentId: conv.agent_id,
               clientId: conv.client_id,
-              userId: user.id,
-              reason: conv.agent_id === user.id ? 'User is agent (should not show in buyer mode)' : 'User is not client'
+              userId: user.id
             });
           }
           return isBuyerConversation;
         }
-        // If no viewMode specified, show all (for backwards compatibility)
         return true;
       });
       
@@ -380,9 +487,9 @@ class EnhancedConversationService {
       // Get agent profile - try view first, then fallback to RPC function
       let agentProfile = null;
       const { data: agentViewData, error: agentViewError } = await supabase
-        .from('agent_public_profiles')
-        .select('id, full_name, email, phone, company, avatar_url')
-        .eq('id', conversation.agent_id)
+          .from('agent_public_profiles')
+          .select('id, full_name, email, phone, company, avatar_url')
+          .eq('id', conversation.agent_id)
         .maybeSingle();
 
       if (agentViewData && !agentViewError) {
