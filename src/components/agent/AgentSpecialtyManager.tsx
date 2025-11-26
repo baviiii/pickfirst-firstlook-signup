@@ -176,10 +176,10 @@ export const AgentSpecialtyManager: React.FC<AgentSpecialtyManagerProps> = ({
 
   if (loading) {
     return (
-      <Card className={`bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20 ${className}`}>
+      <Card className={`bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-pickfirst-yellow/20 ${className}`}>
         <CardContent className="p-6">
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pickfirst-yellow"></div>
           </div>
         </CardContent>
       </Card>
@@ -187,11 +187,11 @@ export const AgentSpecialtyManager: React.FC<AgentSpecialtyManagerProps> = ({
   }
 
   return (
-    <Card className={`bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20 ${className}`}>
+    <Card className={`bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-pickfirst-yellow/20 ${className}`}>
       {showTitle && (
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
-            <Briefcase className="h-5 w-5 text-primary" />
+            <Briefcase className="h-5 w-5 text-pickfirst-yellow" />
             {compact ? 'Specialties' : 'Real Estate Specialties'}
           </CardTitle>
           <CardDescription className="text-gray-300">
@@ -217,12 +217,12 @@ export const AgentSpecialtyManager: React.FC<AgentSpecialtyManagerProps> = ({
               onFocus={() => setShowSuggestions(newSpecialty.length > 0)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               placeholder="e.g., Luxury Properties, First-Time Buyers..."
-              className="bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-primary"
+              className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-pickfirst-yellow/50"
             />
             
             {/* Suggestions Dropdown */}
             {showSuggestions && (
-              <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg max-h-48 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg max-h-48 overflow-y-auto">
                 {COMMON_SPECIALTIES
                   .filter(s => s.toLowerCase().includes(newSpecialty.toLowerCase()))
                   .slice(0, 8)
@@ -230,7 +230,7 @@ export const AgentSpecialtyManager: React.FC<AgentSpecialtyManagerProps> = ({
                     <button
                       key={index}
                       onClick={() => handleSuggestionClick(suggestion)}
-                      className="w-full px-3 py-2 text-left text-white hover:bg-gray-700 flex items-center gap-2"
+                      className="w-full px-3 py-2 text-left text-white hover:bg-gray-700 hover:text-pickfirst-yellow flex items-center gap-2 transition-colors"
                     >
                       {getSpecialtyIcon(suggestion)}
                       {suggestion}
@@ -242,7 +242,7 @@ export const AgentSpecialtyManager: React.FC<AgentSpecialtyManagerProps> = ({
           <Button 
             onClick={handleAddSpecialty}
             disabled={!newSpecialty.trim()}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Specialty
@@ -284,7 +284,7 @@ export const AgentSpecialtyManager: React.FC<AgentSpecialtyManagerProps> = ({
                   ) : (
                     <Badge 
                       variant="secondary" 
-                      className="bg-primary/20 text-primary hover:bg-primary/30 flex items-center gap-1 px-3 py-1"
+                      className="bg-pickfirst-yellow/20 text-pickfirst-yellow border-pickfirst-yellow/30 hover:bg-pickfirst-yellow/30 flex items-center gap-1 px-3 py-1"
                     >
                       {getSpecialtyIcon(specialty.specialty)}
                       <span>{specialty.specialty}</span>
@@ -292,7 +292,7 @@ export const AgentSpecialtyManager: React.FC<AgentSpecialtyManagerProps> = ({
                         size="sm"
                         variant="ghost"
                         onClick={() => handleEditSpecialty(specialty)}
-                        className="h-4 w-4 p-0 ml-1 hover:bg-primary/20"
+                        className="h-4 w-4 p-0 ml-1 hover:bg-pickfirst-yellow/20 text-pickfirst-yellow hover:text-pickfirst-amber"
                       >
                         <Edit2 className="h-3 w-3" />
                       </Button>
