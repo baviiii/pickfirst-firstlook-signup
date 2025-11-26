@@ -69,6 +69,7 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
     property_address: '',
     notes: ''
   });
+  const [timePickerOpen, setTimePickerOpen] = useState(false);
 
   const appointmentTypes = [
     { value: 'property_showing', label: 'Property Showing', icon: '🏠' },
@@ -106,7 +107,7 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
           .from('property_listings')
           .select('id, title, address, price')
           .eq('agent_id', user.id)
-          .eq('status', 'active')
+          .in('status', ['active', 'approved'])
           .limit(50)
       ]);
 
@@ -298,7 +299,7 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
   return (
     <ErrorBoundary>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-full max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border-pickfirst-yellow/20">
+        <DialogContent className="w-full max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-pickfirst-yellow/20 text-white">
           <DialogHeader>
             <DialogTitle className="text-white text-xl">Schedule New Appointment</DialogTitle>
           </DialogHeader>
@@ -430,21 +431,56 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
 
                   <div className="space-y-2">
                     <Label className="text-white">Time *</Label>
-                    <Select value={formData.time} onValueChange={(value) => setFormData({...formData, time: value})}>
-                      <SelectTrigger className="bg-white/5 border-white/20 text-white">
-                        <SelectValue placeholder="Select time" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-700 text-white z-[110]">
-                        {timeSlots.map((time) => (
-                          <SelectItem key={time} value={time} className="text-white focus:bg-gray-700">
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4" />
-                              {time}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={timePickerOpen} onOpenChange={setTimePickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal bg-white/5 border-white/20 text-white hover:bg-white/10"
+                        >
+                          <Clock className="mr-2 h-4 w-4" />
+                          {formData.time || "Select time"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-4 bg-gray-800 border-gray-700 text-white z-[110]" align="start">
+                        <div className="space-y-4">
+                          <div className="text-sm font-medium text-white mb-3">Select Time</div>
+                          <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+                            {timeSlots.map((time) => (
+                              <button
+                                key={time}
+                                type="button"
+                                onClick={() => {
+                                  setFormData({...formData, time});
+                                  setTimePickerOpen(false);
+                                }}
+                                className={`px-3 py-2 rounded-md text-sm transition-colors ${
+                                  formData.time === time
+                                    ? 'bg-pickfirst-yellow text-black font-semibold'
+                                    : 'bg-white/5 text-white hover:bg-pickfirst-yellow/20 hover:text-pickfirst-yellow'
+                                }`}
+                              >
+                                {time}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="pt-2 border-t border-gray-700">
+                            <Label className="text-xs text-gray-400 mb-2 block">Or enter custom time:</Label>
+                            <Input
+                              type="time"
+                              value={formData.time}
+                              onChange={(e) => {
+                                setFormData({...formData, time: e.target.value});
+                                if (e.target.value) {
+                                  setTimePickerOpen(false);
+                                }
+                              }}
+                              className="bg-white/5 border-white/20 text-white"
+                            />
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
 
@@ -468,31 +504,42 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                 {/* Property Selection */}
                 <div className="space-y-2">
                   <Label className="text-white">Property (Optional)</Label>
-                  <Select value={formData.property_id} onValueChange={(value) => {
-                    const property = properties.find(p => p.id === value);
-                    setFormData({
-                      ...formData, 
-                      property_id: value,
-                      property_address: property?.address || ''
-                    });
-                  }}>
-                    <SelectTrigger className="bg-white/5 border-white/20 text-white">
-                      <SelectValue placeholder="Select property or leave empty for virtual meeting" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700 text-white z-[110]">
-                      {properties.map((property) => (
-                        <SelectItem key={property.id} value={property.id} className="text-white focus:bg-gray-700">
+                  {properties.length === 0 ? (
+                    <div className="text-sm text-gray-400 bg-white/5 p-3 rounded border border-white/10">
+                      No properties available. You can enter a custom location below.
+                    </div>
+                  ) : (
+                    <Select value={formData.property_id} onValueChange={(value) => {
+                      const property = properties.find(p => p.id === value);
+                      setFormData({
+                        ...formData, 
+                        property_id: value,
+                        property_address: property?.address || ''
+                      });
+                    }}>
+                      <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                        <SelectValue placeholder="Select property or leave empty for virtual meeting" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-700 text-white z-[110] max-h-[300px]">
+                        <SelectItem value="" className="text-white focus:bg-gray-700">
                           <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
-                            <div>
-                              <div className="font-medium">{property.title}</div>
-                              <div className="text-sm text-gray-400">{property.address}</div>
-                            </div>
+                            <span>No property (Virtual/Office Meeting)</span>
                           </div>
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        {properties.map((property) => (
+                          <SelectItem key={property.id} value={property.id} className="text-white focus:bg-gray-700">
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4 flex-shrink-0" />
+                              <div className="min-w-0">
+                                <div className="font-medium truncate">{property.title}</div>
+                                <div className="text-sm text-gray-400 truncate">{property.address}</div>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
 
                 {/* Custom Location */}
