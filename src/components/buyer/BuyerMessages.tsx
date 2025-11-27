@@ -169,12 +169,23 @@ export const BuyerMessages = () => {
     }
   };
 
-  const filteredConversations = conversations.filter(conv =>
-    conv.agent_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conv.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conv.property?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conv.property?.address?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredConversations = conversations.filter(conv => {
+    // Filter out conversations with missing agent profiles
+    if (!conv.agent_profile || !conv.agent_profile.full_name || 
+        conv.agent_profile.full_name.includes('Profile Missing') ||
+        conv.agent_profile.full_name.includes('(Profile Missing)')) {
+      return false;
+    }
+
+    // Apply search filter
+    const matchesSearch = !searchTerm || 
+      conv.agent_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      conv.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      conv.property?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      conv.property?.address?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesSearch;
+  });
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
