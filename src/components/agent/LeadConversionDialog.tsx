@@ -157,7 +157,7 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
     if (inquiry.buyer_id) {
       console.log('Fetching buyer email from buyer_id:', inquiry.buyer_id);
       try {
-        // Preferred: use public profile view (bypasses RLS)
+        // PRIMARY: use buyer_public_profiles view (bypasses RLS)
         const { data: buyerProfile } = await supabase
           .from('buyer_public_profiles')
           .select('email, full_name')
@@ -171,9 +171,25 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
             email: buyerProfile.email,
             full_name: buyerProfile.full_name || inquiry.buyer?.full_name || 'Unknown'
           };
+        } else {
+          // SECONDARY: Check if the buyer is actually an agent (agents can inquire in buyer mode)
+          const { data: agentProfile } = await supabase
+            .from('agent_public_profiles')
+            .select('email, full_name')
+            .eq('id', inquiry.buyer_id)
+            .maybeSingle();
+
+          if (agentProfile?.email) {
+            buyerEmail = agentProfile.email;
+            inquiry.buyer = {
+              ...inquiry.buyer,
+              email: agentProfile.email,
+              full_name: agentProfile.full_name || inquiry.buyer?.full_name || 'Unknown'
+            };
+          }
         }
 
-        // Fallback: RPC helper
+        // FALLBACK 1: RPC helper for buyer
         if (!buyerEmail) {
           const { data: rpcProfile } = await supabase
             .rpc('get_buyer_public_profile', { buyer_id: inquiry.buyer_id });
@@ -185,6 +201,19 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
               email: rpcProfile[0].email,
               full_name: rpcProfile[0].full_name || inquiry.buyer?.full_name || 'Unknown'
             };
+          } else {
+            // FALLBACK 2: RPC helper for agent
+            const { data: agentRpcProfile } = await supabase
+              .rpc('get_agent_public_profile', { agent_id: inquiry.buyer_id });
+
+            if (agentRpcProfile && agentRpcProfile.length > 0 && agentRpcProfile[0].email) {
+              buyerEmail = agentRpcProfile[0].email;
+              inquiry.buyer = {
+                ...inquiry.buyer,
+                email: agentRpcProfile[0].email,
+                full_name: agentRpcProfile[0].full_name || inquiry.buyer?.full_name || 'Unknown'
+              };
+            }
           }
         }
 

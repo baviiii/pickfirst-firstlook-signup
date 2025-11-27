@@ -535,7 +535,7 @@ class EnhancedConversationService {
         };
       }
 
-      // Get client profile - try view first, then fallback to RPC function
+      // Get client profile - try buyer view first, then agent view (since agents can inquire in buyer mode)
       let clientProfile = null;
       const { data: clientViewData, error: clientViewError } = await supabase
         .from('buyer_public_profiles')
@@ -546,13 +546,33 @@ class EnhancedConversationService {
       if (clientViewData && !clientViewError) {
         clientProfile = clientViewData;
       } else {
-        // Fallback: Use helper function that bypasses RLS
-        console.log('Client view query failed, trying helper function:', clientViewError);
-        const { data: clientFunctionData, error: clientFunctionError } = await supabase
-          .rpc('get_buyer_public_profile', { buyer_id: conversation.client_id });
-        
-        if (!clientFunctionError && clientFunctionData && clientFunctionData.length > 0) {
-          clientProfile = clientFunctionData[0];
+        // SECONDARY: Check if the client is actually an agent (agents can inquire in buyer mode)
+        const { data: agentAsClientViewData, error: agentAsClientViewError } = await supabase
+          .from('agent_public_profiles')
+          .select('id, full_name, email, phone, avatar_url')
+          .eq('id', conversation.client_id)
+          .maybeSingle();
+
+        if (agentAsClientViewData && !agentAsClientViewError) {
+          clientProfile = agentAsClientViewData;
+        } else {
+          // FALLBACK 1: Use buyer helper function that bypasses RLS
+          console.log('Client view query failed, trying helper function:', clientViewError);
+          const { data: clientFunctionData, error: clientFunctionError } = await supabase
+            .rpc('get_buyer_public_profile', { buyer_id: conversation.client_id });
+          
+          if (!clientFunctionError && clientFunctionData && clientFunctionData.length > 0) {
+            clientProfile = clientFunctionData[0];
+          } else {
+            // FALLBACK 2: Use agent helper function (since agents can inquire in buyer mode)
+            console.log('Buyer RPC failed, trying agent RPC function for client:', conversation.client_id);
+            const { data: agentFunctionData, error: agentFunctionError } = await supabase
+              .rpc('get_agent_public_profile', { agent_id: conversation.client_id });
+            
+            if (!agentFunctionError && agentFunctionData && agentFunctionData.length > 0) {
+              clientProfile = agentFunctionData[0];
+            }
+          }
         }
       }
 

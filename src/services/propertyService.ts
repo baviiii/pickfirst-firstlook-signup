@@ -1667,11 +1667,12 @@ export class PropertyService {
       }
 
       // Fetch buyer profiles using the public view to bypass RLS
+      // Also check agent_public_profiles in case an agent inquired in buyer mode
       const inquiriesWithBuyers = await Promise.all(
         inquiries.map(async (inquiry) => {
           let buyerData = null;
           
-          // Try to get buyer from public profile view
+          // PRIMARY: Try to get buyer from buyer_public_profiles view
           const { data: buyerProfile } = await supabase
             .from('buyer_public_profiles')
             .select('id, full_name, email')
@@ -1684,28 +1685,53 @@ export class PropertyService {
               email: buyerProfile.email || ''
             };
           } else {
-            // Fallback: try RPC function
-            const { data: buyerFromRPC } = await supabase
-              .rpc('get_buyer_public_profile', { buyer_id: inquiry.buyer_id });
-            
-            if (buyerFromRPC && buyerFromRPC.length > 0) {
+            // SECONDARY: Check if the buyer is actually an agent (agents can inquire in buyer mode)
+            const { data: agentProfile } = await supabase
+              .from('agent_public_profiles')
+              .select('id, full_name, email')
+              .eq('id', inquiry.buyer_id)
+              .maybeSingle();
+
+            if (agentProfile) {
               buyerData = {
-                full_name: buyerFromRPC[0].full_name || 'Unknown Buyer',
-                email: buyerFromRPC[0].email || ''
+                full_name: agentProfile.full_name || 'Unknown Buyer',
+                email: agentProfile.email || ''
               };
             } else {
-              // Last resort: fetch directly from profiles (might fail due to RLS)
-              const { data: buyerDirect } = await supabase
-                .from('profiles')
-                .select('full_name, email')
-                .eq('id', inquiry.buyer_id)
-                .maybeSingle();
+              // FALLBACK 1: Try RPC function for buyer
+              const { data: buyerFromRPC } = await supabase
+                .rpc('get_buyer_public_profile', { buyer_id: inquiry.buyer_id });
               
-              if (buyerDirect) {
+              if (buyerFromRPC && buyerFromRPC.length > 0) {
                 buyerData = {
-                  full_name: buyerDirect.full_name || 'Unknown Buyer',
-                  email: buyerDirect.email || ''
+                  full_name: buyerFromRPC[0].full_name || 'Unknown Buyer',
+                  email: buyerFromRPC[0].email || ''
                 };
+              } else {
+                // FALLBACK 2: Try RPC function for agent
+                const { data: agentFromRPC } = await supabase
+                  .rpc('get_agent_public_profile', { agent_id: inquiry.buyer_id });
+                
+                if (agentFromRPC && agentFromRPC.length > 0) {
+                  buyerData = {
+                    full_name: agentFromRPC[0].full_name || 'Unknown Buyer',
+                    email: agentFromRPC[0].email || ''
+                  };
+                } else {
+                  // LAST RESORT: fetch directly from profiles (might fail due to RLS)
+                  const { data: buyerDirect } = await supabase
+                    .from('profiles')
+                    .select('full_name, email')
+                    .eq('id', inquiry.buyer_id)
+                    .maybeSingle();
+                  
+                  if (buyerDirect) {
+                    buyerData = {
+                      full_name: buyerDirect.full_name || 'Unknown Buyer',
+                      email: buyerDirect.email || ''
+                    };
+                  }
+                }
               }
             }
           }
