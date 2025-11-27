@@ -319,7 +319,7 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <h4 className={`text-sm font-medium ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
-                            {notification.title}
+                            {notification.title.replace(/inquiry/gi, 'enquiry').replace(/Inquiry/gi, 'Enquiry')}
                           </h4>
                           <Button
                             variant="ghost"
@@ -332,7 +332,7 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
                           </Button>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {notification.message}
+                          {notification.message.replace(/inquiry/gi, 'enquiry').replace(/Inquiry/gi, 'Enquiry')}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <span className="text-xs text-muted-foreground/80">

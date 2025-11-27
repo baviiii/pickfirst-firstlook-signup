@@ -110,7 +110,7 @@ const NotificationsComponent = () => {
       new_listing: <Home className="h-5 w-5 text-green-600" />,
       price_change: <DollarSign className="h-5 w-5 text-orange-600" />,
       property_sold: <Home className="h-5 w-5 text-red-600" />,
-      inquiry_response: <Mail className="h-5 w-5 text-purple-600" />,
+      inquiry_response: <Mail className="h-5 w-5 text-purple-500" />,
       system: <Settings className="h-5 w-5 text-gray-600" />
     };
     return iconMap[type] || <Bell className="h-5 w-5 text-gray-600" />;
@@ -144,16 +144,16 @@ const NotificationsComponent = () => {
     <PageWrapper title="Notifications" showBackButton={true}>
       <div className="space-y-6">
         {/* Header Stats & Actions */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+        <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-pickfirst-yellow/10 border border-pickfirst-yellow/20">
+                <div className="p-3 rounded-lg bg-pickfirst-yellow/10 border border-pickfirst-yellow/30">
                   <Bell className="h-6 w-6 text-pickfirst-yellow" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-white">All Notifications</h2>
-                  <p className="text-sm text-gray-400 mt-1">
+                  <h2 className="text-xl font-bold text-foreground">All Notifications</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
                     {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'All caught up!'}
                   </p>
                 </div>
@@ -162,7 +162,7 @@ const NotificationsComponent = () => {
               {unreadCount > 0 && (
                 <Button
                   onClick={handleMarkAllAsRead}
-                  className="bg-pickfirst-yellow hover:bg-amber-500 text-black font-medium"
+                  className="bg-pickfirst-yellow hover:bg-pickfirst-amber text-black font-semibold shadow-lg shadow-pickfirst-yellow/20"
                 >
                   <CheckCheck className="h-4 w-4 mr-2" />
                   Mark All as Read
@@ -178,7 +178,7 @@ const NotificationsComponent = () => {
             variant={filter === 'all' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setFilter('all')}
-            className={filter === 'all' ? 'bg-pickfirst-yellow text-black' : 'border-gray-700 text-gray-300'}
+            className={filter === 'all' ? 'bg-pickfirst-yellow text-black hover:bg-pickfirst-amber font-semibold' : 'border-pickfirst-yellow/30 text-muted-foreground hover:bg-pickfirst-yellow/10 hover:border-pickfirst-yellow/50'}
           >
             All ({notifications.length})
           </Button>
@@ -186,7 +186,7 @@ const NotificationsComponent = () => {
             variant={filter === 'unread' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setFilter('unread')}
-            className={filter === 'unread' ? 'bg-pickfirst-yellow text-black' : 'border-gray-700 text-gray-300'}
+            className={filter === 'unread' ? 'bg-pickfirst-yellow text-black hover:bg-pickfirst-amber font-semibold' : 'border-pickfirst-yellow/30 text-gray-300 hover:bg-pickfirst-yellow/10 hover:border-pickfirst-yellow/50'}
           >
             Unread ({unreadCount})
           </Button>
@@ -194,7 +194,7 @@ const NotificationsComponent = () => {
             variant={filter === 'new_message' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setFilter('new_message')}
-            className={filter === 'new_message' ? 'bg-pickfirst-yellow text-black' : 'border-gray-700 text-gray-300'}
+            className={filter === 'new_message' ? 'bg-pickfirst-yellow text-black hover:bg-pickfirst-amber font-semibold' : 'border-pickfirst-yellow/30 text-gray-300 hover:bg-pickfirst-yellow/10 hover:border-pickfirst-yellow/50'}
           >
             <MessageSquare className="h-3 w-3 mr-1" />
             Messages
@@ -203,7 +203,7 @@ const NotificationsComponent = () => {
             variant={filter === 'appointment_scheduled' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setFilter('appointment_scheduled')}
-            className={filter === 'appointment_scheduled' ? 'bg-pickfirst-yellow text-black' : 'border-gray-700 text-gray-300'}
+            className={filter === 'appointment_scheduled' ? 'bg-pickfirst-yellow text-black hover:bg-pickfirst-amber font-semibold' : 'border-pickfirst-yellow/30 text-gray-300 hover:bg-pickfirst-yellow/10 hover:border-pickfirst-yellow/50'}
           >
             <Calendar className="h-3 w-3 mr-1" />
             Appointments
@@ -212,27 +212,36 @@ const NotificationsComponent = () => {
             variant={filter === 'property_alert' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setFilter('property_alert')}
-            className={filter === 'property_alert' ? 'bg-pickfirst-yellow text-black' : 'border-gray-700 text-gray-300'}
+            className={filter === 'property_alert' ? 'bg-pickfirst-yellow text-black hover:bg-pickfirst-amber font-semibold' : 'border-pickfirst-yellow/30 text-gray-300 hover:bg-pickfirst-yellow/10 hover:border-pickfirst-yellow/50'}
           >
             <Home className="h-3 w-3 mr-1" />
             Properties
+          </Button>
+          <Button
+            variant={filter === 'new_inquiry' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('new_inquiry')}
+            className={filter === 'new_inquiry' ? 'bg-pickfirst-yellow text-black hover:bg-pickfirst-amber font-semibold' : 'border-pickfirst-yellow/30 text-gray-300 hover:bg-pickfirst-yellow/10 hover:border-pickfirst-yellow/50'}
+          >
+            <Mail className="h-3 w-3 mr-1" />
+            Enquiries
           </Button>
         </div>
 
         {/* Notifications List */}
         {loading ? (
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
             <CardContent className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pickfirst-yellow"></div>
-              <span className="ml-3 text-gray-400">Loading notifications...</span>
+              <span className="ml-3 text-muted-foreground">Loading notifications...</span>
             </CardContent>
           </Card>
         ) : filteredNotifications.length === 0 ? (
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+          <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
             <CardContent className="text-center py-12">
               <Bell className="h-16 w-16 text-gray-600 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-semibold text-white mb-2">No Notifications</h3>
-              <p className="text-gray-400 text-sm">
+              <h3 className="text-lg font-semibold text-foreground mb-2">No Notifications</h3>
+              <p className="text-muted-foreground text-sm">
                 {filter === 'all' 
                   ? "You don't have any notifications yet" 
                   : `No ${filter === 'unread' ? 'unread' : filter.replace('_', ' ')} notifications`}
@@ -245,10 +254,10 @@ const NotificationsComponent = () => {
               <Card 
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
-                className={`bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border transition-all cursor-pointer group hover:scale-[1.01] ${
+                className={`pickfirst-glass bg-card/90 text-card-foreground border transition-all cursor-pointer group hover:scale-[1.01] hover:shadow-lg ${
                   !notification.read 
-                    ? 'border-pickfirst-yellow/40 shadow-lg shadow-pickfirst-yellow/10' 
-                    : 'border-yellow-400/20 hover:border-yellow-400/30'
+                    ? 'border-pickfirst-yellow/50 shadow-lg shadow-pickfirst-yellow/20' 
+                    : 'border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 hover:shadow-pickfirst-yellow/10'
                 }`}
               >
                 <CardContent className="p-5">
@@ -262,8 +271,8 @@ const NotificationsComponent = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className={`text-base font-semibold ${!notification.read ? 'text-white' : 'text-gray-300'}`}>
-                            {notification.title}
+                          <h4 className={`text-base font-semibold ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
+                            {notification.title.replace(/inquiry/gi, 'enquiry').replace(/Inquiry/gi, 'Enquiry')}
                           </h4>
                           {!notification.read && (
                             <Badge className="bg-pickfirst-yellow/20 text-pickfirst-yellow border-pickfirst-yellow/30 text-xs">
@@ -282,12 +291,12 @@ const NotificationsComponent = () => {
                         </Button>
                       </div>
                       
-                      <p className="text-sm text-gray-400 mb-3">
-                        {notification.message}
+                      <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                        {notification.message.replace(/inquiry/gi, 'enquiry').replace(/Inquiry/gi, 'Enquiry')}
                       </p>
                       
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">
+                          <span className="text-xs text-muted-foreground/80 font-medium">
                           {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                         </span>
                         {notification.link && (

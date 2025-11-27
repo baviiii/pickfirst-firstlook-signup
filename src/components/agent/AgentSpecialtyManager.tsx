@@ -176,7 +176,7 @@ export const AgentSpecialtyManager: React.FC<AgentSpecialtyManagerProps> = ({
 
   if (loading) {
     return (
-      <Card className={`bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-pickfirst-yellow/20 ${className}`}>
+      <Card className={`pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 ${className}`}>
         <CardContent className="p-6">
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pickfirst-yellow"></div>
@@ -187,14 +187,14 @@ export const AgentSpecialtyManager: React.FC<AgentSpecialtyManagerProps> = ({
   }
 
   return (
-    <Card className={`bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-pickfirst-yellow/20 ${className}`}>
+    <Card className={`pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 ${className}`}>
       {showTitle && (
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
+          <CardTitle className="text-foreground flex items-center gap-2">
             <Briefcase className="h-5 w-5 text-pickfirst-yellow" />
             {compact ? 'Specialties' : 'Real Estate Specialties'}
           </CardTitle>
-          <CardDescription className="text-gray-300">
+          <CardDescription className="text-muted-foreground">
             {compact 
               ? 'Manage your areas of expertise' 
               : 'Add and manage your real estate specialties to help clients find the right agent'
@@ -205,7 +205,7 @@ export const AgentSpecialtyManager: React.FC<AgentSpecialtyManagerProps> = ({
       <CardContent className="space-y-4">
         {/* Add New Specialty */}
         <div className="space-y-2">
-          <Label htmlFor="new-specialty" className="text-white">Add New Specialty</Label>
+          <Label htmlFor="new-specialty" className="text-foreground">Add New Specialty</Label>
           <div className="relative">
             <Input
               id="new-specialty"
@@ -217,12 +217,12 @@ export const AgentSpecialtyManager: React.FC<AgentSpecialtyManagerProps> = ({
               onFocus={() => setShowSuggestions(newSpecialty.length > 0)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               placeholder="e.g., Luxury Properties, First-Time Buyers..."
-              className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-pickfirst-yellow/50"
+              className="bg-background/50 border-border text-foreground placeholder:text-muted-foreground focus:border-pickfirst-yellow/50"
             />
             
             {/* Suggestions Dropdown */}
             {showSuggestions && (
-              <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg max-h-48 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 z-10 mt-1 pickfirst-glass bg-card/95 border border-pickfirst-yellow/30 rounded-md shadow-lg max-h-48 overflow-y-auto">
                 {COMMON_SPECIALTIES
                   .filter(s => s.toLowerCase().includes(newSpecialty.toLowerCase()))
                   .slice(0, 8)
@@ -230,7 +230,7 @@ export const AgentSpecialtyManager: React.FC<AgentSpecialtyManagerProps> = ({
                     <button
                       key={index}
                       onClick={() => handleSuggestionClick(suggestion)}
-                      className="w-full px-3 py-2 text-left text-white hover:bg-gray-700 hover:text-pickfirst-yellow flex items-center gap-2 transition-colors"
+                      className="w-full px-3 py-2 text-left text-foreground hover:bg-pickfirst-yellow/10 hover:text-pickfirst-yellow flex items-center gap-2 transition-colors"
                     >
                       {getSpecialtyIcon(suggestion)}
                       {suggestion}
@@ -252,16 +252,16 @@ export const AgentSpecialtyManager: React.FC<AgentSpecialtyManagerProps> = ({
         {/* Current Specialties */}
         {specialties.length > 0 ? (
           <div className="space-y-2">
-            <Label className="text-white">Your Specialties ({specialties.length})</Label>
+            <Label className="text-foreground">Your Specialties ({specialties.length})</Label>
             <div className="flex flex-wrap gap-2">
               {specialties.map((specialty) => (
                 <div key={specialty.id} className="flex items-center gap-2">
                   {editingId === specialty.id ? (
-                    <div className="flex items-center gap-1 bg-gray-800 rounded-md px-2 py-1">
+                    <div className="flex items-center gap-1 bg-background/50 rounded-md px-2 py-1 border border-border">
                       <Input
                         value={editingValue}
                         onChange={(e) => setEditingValue(e.target.value)}
-                        className="h-6 text-sm bg-transparent border-none text-white p-0"
+                        className="h-6 text-sm bg-transparent border-none text-foreground p-0"
                         autoFocus
                       />
                       <Button
@@ -311,7 +311,7 @@ export const AgentSpecialtyManager: React.FC<AgentSpecialtyManagerProps> = ({
             </div>
           </div>
         ) : (
-          <div className="text-center py-6 text-gray-400">
+          <div className="text-center py-6 text-muted-foreground">
             <Briefcase className="h-12 w-12 mx-auto mb-3 opacity-50" />
             <p>No specialties added yet</p>
             <p className="text-sm">Add your first specialty above</p>

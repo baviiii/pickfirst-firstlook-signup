@@ -1595,8 +1595,8 @@ export class PropertyService {
       await notificationService.createNotification(
         property.agent_id,
         'new_inquiry',
-        'New Property Inquiry',
-        `${buyerName} has inquired about "${property.title}"`,
+        'New Property Enquiry',
+        `${buyerName} has enquired about "${property.title}"`,
         conversationId ? `/agent-messages?conversation=${conversationId}` : '/agent-leads',
         {
           inquiry_id: inquiry.id,
