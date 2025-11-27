@@ -84,7 +84,7 @@ export const AgentInquiriesComponent = () => {
           table: 'property_inquiries'
         },
         (payload) => {
-          console.log('New inquiry received:', payload.new);
+          console.log('New ‘enquiry received:', payload.new);
           // Refresh inquiries when a new one is created
           fetchInquiries();
         }
@@ -97,7 +97,7 @@ export const AgentInquiriesComponent = () => {
           table: 'property_inquiries'
         },
         (payload) => {
-          console.log('Inquiry updated:', payload.new);
+          console.log('‘enquiry updated:', payload.new);
           // Refresh inquiries when one is updated
           fetchInquiries();
         }
@@ -268,7 +268,7 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
         action: 'createConversation',
         agentId: profile.id,
         clientId: inquiry.buyer_id,
-        subject: `Property Inquiry: ${inquiry.property?.title}`,
+        subject: `Property Enquiry: ${inquiry.property?.title}`,
         inquiryId: inquiry.id,
         propertyId: inquiry.property_id
       }
@@ -377,7 +377,7 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-muted-foreground">Loading inquiries...</div>
+        <div className="text-muted-foreground">Loading enquiries...</div>
       </div>
     );
   }
@@ -386,8 +386,8 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
     return (
       <div className="text-center py-12">
         <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-foreground mb-2">No Inquiries Yet</h3>
-        <p className="text-muted-foreground">Property inquiries from buyers will appear here.</p>
+        <h3 className="text-lg font-medium text-foreground mb-2">No Enquiries Yet</h3>
+        <p className="text-muted-foreground">Property enquiries from buyers will appear here.</p>
       </div>
     );
   }
@@ -414,7 +414,7 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
         <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 transition-colors">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-pickfirst-yellow">{inquiries.length}</div>
-            <div className="text-sm text-muted-foreground font-medium">Total Inquiries</div>
+            <div className="text-sm text-muted-foreground font-medium">Total Enquiries</div>
           </CardContent>
         </Card>
         <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-green-500/30 hover:border-green-500/50 transition-colors">
@@ -443,7 +443,7 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
         </Card>
       </div>
 
-      {/* Inquiries List */}
+      {/* Enquiries List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {inquiries.map((inquiry) => {
           // Check if inquiry is new/unviewed
@@ -659,7 +659,7 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
                       : 'text-muted-foreground bg-card/80 border-border'
                   }`}>
                     <Clock className="h-3 w-3" />
-                    {isNew ? '🆕 New inquiry - awaiting response' : 'New inquiry - awaiting response'}
+                    {isNew ? '🆕 New enquiry - awaiting response' : 'New enquiry - awaiting response'}
                   </div>
                 )}
               </div>
@@ -673,7 +673,7 @@ const handleStartConversation = async (inquiry: ExtendedPropertyInquiry) => {
       <Dialog open={isResponseDialogOpen} onOpenChange={setIsResponseDialogOpen}>
         <DialogContent className="pickfirst-glass bg-card text-card-foreground border border-pickfirst-yellow/30">
           <DialogHeader>
-            <DialogTitle className="text-foreground">Respond to Inquiry</DialogTitle>
+            <DialogTitle className="text-foreground">Respond to Enquiry</DialogTitle>
             <DialogDescription className="text-muted-foreground">
               Send a response to {selectedInquiry?.buyer?.full_name} about {selectedInquiry?.property?.title}
             </DialogDescription>

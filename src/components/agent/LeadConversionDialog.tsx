@@ -332,12 +332,12 @@ const LeadConversionDialogComponent = ({ inquiry, open, onOpenChange, onSuccess 
         <DialogHeader>
           <DialogTitle className="text-foreground">Convert Lead</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Convert this inquiry from {inquiry.buyer?.full_name} into a client or schedule an appointment
+            Convert this enquiry from {inquiry.buyer?.full_name} into a client or schedule an appointment
           </DialogDescription>
         </DialogHeader>
 
         <div className="bg-muted/50 p-3 rounded-lg mb-4">
-          <div className="text-sm font-medium text-foreground mb-2">Property Inquiry</div>
+          <div className="text-sm font-medium text-foreground mb-2">Property Enquiry</div>
           <div className="text-xs text-muted-foreground">
             <div><strong>Property:</strong> {inquiry.property?.title}</div>
             <div><strong>Address:</strong> {inquiry.property?.address}</div>

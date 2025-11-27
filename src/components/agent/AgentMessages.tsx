@@ -301,6 +301,14 @@ export const AgentMessages = () => {
   };
 
   const filteredConversations = conversations.filter(conv => {
+    // Filter out conversations with missing profiles
+    const otherPartyProfile = getOtherPartyProfile(conv);
+    if (!otherPartyProfile || !otherPartyProfile.full_name || 
+        otherPartyProfile.full_name.includes('Profile Missing') ||
+        otherPartyProfile.full_name.includes('(Profile Missing)')) {
+      return false;
+    }
+
     const conversationTitle = enhancedConversationService.getConversationTitle(conv, user?.id || '');
     const conversationSubtitle = enhancedConversationService.getConversationSubtitle(conv);
     
@@ -325,7 +333,7 @@ export const AgentMessages = () => {
     }
   };
 
-  const getClientInquiryCount = (clientName: string | undefined) => {
+  const getClientEnquiryCount = (clientName: string | undefined) => {
     const clientConversations = conversations.filter(conv => conv.client_profile?.full_name === clientName);
     return clientConversations.length;
   };
@@ -431,16 +439,16 @@ export const AgentMessages = () => {
                     <div className="text-sm font-medium mb-1 text-muted-foreground truncate">
                       {conv.subject}
                     </div>
-                    {/* Enhanced property inquiry display */}
+                    {/* Enhanced property enquiry display */}
                     {conv.property && (
                       <div className="text-xs text-blue-600 mb-1 truncate">
                         📍 {conv.property.title}
                       </div>
                     )}
-                    {/* Show multiple inquiries indicator - only in agent mode */}
-                    {viewMode === 'agent' && getClientInquiryCount(conv.client_profile?.full_name) > 1 && (
+                    {/* Show multiple enquiries indicator - only in agent mode */}
+                    {viewMode === 'agent' && getClientEnquiryCount(conv.client_profile?.full_name) > 1 && (
                       <div className="text-xs text-pickfirst-yellow mb-1">
-                        🏠 {getClientInquiryCount(conv.client_profile?.full_name)} properties inquired
+                        🏠 {getClientEnquiryCount(conv.client_profile?.full_name)} properties enquired
                       </div>
                     )}
                     {conv.last_message_at && (

@@ -203,10 +203,11 @@ class ClientService {
       const sanitizedNotes = clientData.notes ? sanitizeInput(clientData.notes) : null;
 
       // Check if user already exists and link if they do
-      // Use buyer_public_profiles view to avoid RLS issues
+      // Use public profiles views to avoid RLS issues
+      // Check both buyer and agent public profiles since agents can also be clients
       let userId: string | null = null;
       if (sanitizedEmail) {
-        // PRIMARY: Try buyer_public_profiles view first (agents can access this without RLS issues)
+        // PRIMARY: Try buyer_public_profiles view first
         const { data: buyerProfile } = await supabase
           .from('buyer_public_profiles')
           .select('id')
@@ -216,18 +217,29 @@ class ClientService {
         if (buyerProfile) {
           userId = buyerProfile.id;
         } else {
-          // Fallback: Try direct profiles table (may be blocked by RLS for buyers)
-          // This will only work if the user is an agent or if RLS allows it
-          const { data: existingUser } = await supabase
-            .from('profiles')
-            .select('id, role')
+          // SECONDARY: Try agent_public_profiles view (agents can also be clients)
+          const { data: agentProfile } = await supabase
+            .from('agent_public_profiles')
+            .select('id')
             .eq('email', sanitizedEmail)
             .maybeSingle();
 
-          if (existingUser) {
-            // Allow both buyers and agents to be added as clients
-            // Agents can act as buyers and be clients of other agents
-            userId = existingUser.id;
+          if (agentProfile) {
+            userId = agentProfile.id;
+          } else {
+            // FALLBACK: Try direct profiles table (may be blocked by RLS)
+            // This will work if the user is an agent or if RLS allows it
+            const { data: existingUser } = await supabase
+              .from('profiles')
+              .select('id, role')
+              .eq('email', sanitizedEmail)
+              .maybeSingle();
+
+            if (existingUser) {
+              // Allow both buyers and agents to be added as clients
+              // Agents can act as buyers and be clients of other agents
+              userId = existingUser.id;
+            }
           }
         }
 
@@ -330,7 +342,8 @@ class ClientService {
       }
 
       // Find the user profile by email using buyer_public_profiles view to avoid RLS issues
-      // PRIMARY: Try buyer_public_profiles view first (agents can access this without RLS issues)
+      // PRIMARY: Try buyer_public_profiles view first
+      // Also check agent_public_profiles since agents can be clients too
       let finalUserProfile: any = null;
       
       const { data: buyerProfile, error: buyerProfileError } = await supabase
@@ -348,7 +361,26 @@ class ClientService {
           role: 'buyer' // Implicit from the view
         };
       } else {
-        // Not found in buyer_public_profiles, try RPC function as fallback
+        // SECONDARY: Try agent_public_profiles view (agents can also be clients)
+        const { data: agentProfile, error: agentProfileError } = await supabase
+          .from('agent_public_profiles')
+          .select('id, email, full_name')
+          .eq('email', sanitizedEmail)
+          .maybeSingle();
+
+        if (agentProfile && !agentProfileError) {
+          // Found in agent_public_profiles view - this is an agent
+          finalUserProfile = {
+            id: agentProfile.id,
+            email: agentProfile.email,
+            full_name: agentProfile.full_name,
+            role: 'agent' // Implicit from the view
+          };
+        }
+      }
+
+      // If still not found, try RPC function as fallback
+      if (!finalUserProfile) {
         try {
           // Try to find buyer using RPC function (bypasses RLS)
           // We need to search by email, but RPC takes buyer_id, so we'll try a different approach
@@ -461,7 +493,8 @@ class ClientService {
 
       const sanitizedEmail = email.trim().toLowerCase();
       
-      // PRIMARY: Try buyer_public_profiles view first (agents can access this without RLS issues)
+      // PRIMARY: Try buyer_public_profiles view first
+      // Also check agent_public_profiles since agents can be clients too
       let data: any = null;
       let error: any = null;
       
@@ -481,18 +514,36 @@ class ClientService {
           created_at: buyerProfile.created_at
         };
       } else {
-        // Fallback: Try direct profiles table (may be blocked by RLS for buyers)
-        // This will only work if the user is an agent or if RLS allows it
-        const { data: directProfile, error: directError } = await supabase
-          .from('profiles')
-          .select('id, email, full_name, role, created_at')
+        // SECONDARY: Try agent_public_profiles view (agents can also be clients)
+        const { data: agentProfile, error: agentError } = await supabase
+          .from('agent_public_profiles')
+          .select('id, email, full_name, created_at')
           .eq('email', sanitizedEmail)
           .maybeSingle();
-        
-        if (directProfile && !directError) {
-          data = directProfile;
+
+        if (agentProfile && !agentError) {
+          // Found in agent_public_profiles view - this is an agent
+          data = {
+            id: agentProfile.id,
+            email: agentProfile.email,
+            full_name: agentProfile.full_name,
+            role: 'agent', // Implicit from the view
+            created_at: agentProfile.created_at
+          };
         } else {
-          error = directError;
+          // FALLBACK: Try direct profiles table (may be blocked by RLS)
+          // This will only work if the user is an agent or if RLS allows it
+          const { data: directProfile, error: directError } = await supabase
+            .from('profiles')
+            .select('id, email, full_name, role, created_at')
+            .eq('email', sanitizedEmail)
+            .maybeSingle();
+          
+          if (directProfile && !directError) {
+            data = directProfile;
+          } else {
+            error = directError;
+          }
         }
       }
 

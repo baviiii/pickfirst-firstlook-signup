@@ -299,12 +299,12 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
   return (
     <ErrorBoundary>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-full max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-pickfirst-yellow/20 text-white">
-          <DialogHeader>
-            <DialogTitle className="text-white text-xl">Schedule New Appointment</DialogTitle>
+        <DialogContent className="w-full max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-pickfirst-yellow/20 text-white shadow-2xl">
+          <DialogHeader className="border-b border-pickfirst-yellow/20 pb-4">
+            <DialogTitle className="text-white text-xl font-bold">Schedule New Appointment</DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6 pt-4">
             {/* Contact Selection */}
             {showContactSelector ? (
               <div className="space-y-4">
@@ -318,59 +318,67 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                     className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                   />
                 </div>
-                <div className="max-h-32 sm:max-h-48 overflow-y-auto space-y-2">
-                  {filteredContacts.map((contact) => (
-                    <Card 
-                      key={`${contact.type}-${contact.id}`}
-                      className="cursor-pointer hover:bg-white/5 transition-colors bg-white/5 border-white/10"
-                      onClick={() => handleContactSelect({
-                        id: contact.id,
-                        type: contact.type,
-                        name: contact.name,
-                        phone: contact.phone || '',
-                        email: contact.email
-                      })}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-white font-medium">{contact.name}</span>
-                              <Badge className={contact.type === 'client' ? 'bg-green-500/10 text-green-500' : 'bg-blue-500/10 text-blue-500'}>
-                                {contact.type}
-                              </Badge>
+                <div className="max-h-48 sm:max-h-64 overflow-y-auto space-y-2 bg-black/20 rounded-lg p-2 border border-white/10">
+                  {filteredContacts.length === 0 ? (
+                    <div className="text-center py-4 text-gray-400 text-sm">
+                      No clients or leads found matching "{searchTerm}"
+                    </div>
+                  ) : (
+                    filteredContacts.map((contact) => (
+                      <Card 
+                        key={`${contact.type}-${contact.id}`}
+                        className="cursor-pointer hover:bg-pickfirst-yellow/10 hover:border-pickfirst-yellow/30 transition-all bg-white/5 border-white/20"
+                        onClick={() => handleContactSelect({
+                          id: contact.id,
+                          type: contact.type,
+                          name: contact.name,
+                          phone: contact.phone || '',
+                          email: contact.email
+                        })}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-white font-semibold">{contact.name}</span>
+                                <Badge className={`${contact.type === 'client' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30'} text-xs border`}>
+                                  {contact.type.toUpperCase()}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-gray-300 truncate">{contact.email}</div>
+                              {contact.phone && <div className="text-sm text-gray-400">{contact.phone}</div>}
                             </div>
-                            <div className="text-sm text-gray-400">{contact.email}</div>
-                            {contact.phone && <div className="text-sm text-gray-400">{contact.phone}</div>}
+                            <User className="h-5 w-5 text-pickfirst-yellow flex-shrink-0 ml-2" />
                           </div>
-                          <User className="h-5 w-5 text-gray-400" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
                 </div>
               </div>
             ) : (
               <div className="space-y-2">
-                <Label className="text-white">Selected Contact</Label>
-                <Card className="bg-white/5 border-white/10">
-                  <CardContent className="p-3">
+                <Label className="text-white font-semibold">Selected Contact</Label>
+                <Card className="bg-pickfirst-yellow/10 border-pickfirst-yellow/30">
+                  <CardContent className="p-4">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-white font-medium">{selectedContact?.name}</span>
-                          <Badge className={selectedContact?.type === 'client' ? 'bg-green-500/10 text-green-500' : 'bg-blue-500/10 text-blue-500'}>
-                            {selectedContact?.type}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <User className="h-4 w-4 text-pickfirst-yellow" />
+                          <span className="text-white font-semibold text-lg">{selectedContact?.name}</span>
+                          <Badge className={`${selectedContact?.type === 'client' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30'} text-xs border`}>
+                            {selectedContact?.type?.toUpperCase()}
                           </Badge>
                         </div>
-                        <div className="text-sm text-gray-400">{selectedContact?.email}</div>
+                        <div className="text-sm text-gray-300">{selectedContact?.email}</div>
+                        {selectedContact?.phone && <div className="text-sm text-gray-400">{selectedContact?.phone}</div>}
                       </div>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => setShowContactSelector(true)}
-                        className="text-gray-400 hover:text-white"
+                        className="text-gray-400 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -384,7 +392,7 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
               <>
                 {/* Appointment Type */}
                 <div className="space-y-2">
-                  <Label className="text-white">Appointment Type *</Label>
+                  <Label className="text-white font-semibold">Appointment Type *</Label>
                   <Select value={formData.appointment_type} onValueChange={(value) => setFormData({...formData, appointment_type: value})}>
                     <SelectTrigger className="bg-white/5 border-white/20 text-white">
                       <SelectValue placeholder="Select appointment type" />
@@ -405,7 +413,7 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                 {/* Date and Time */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-white">Date *</Label>
+                    <Label className="text-white font-semibold">Date *</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -430,7 +438,7 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-white">Time *</Label>
+                    <Label className="text-white font-semibold">Time *</Label>
                     <Popover open={timePickerOpen} onOpenChange={setTimePickerOpen}>
                       <PopoverTrigger asChild>
                         <Button
@@ -486,7 +494,7 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
 
                 {/* Duration */}
                 <div className="space-y-2">
-                  <Label className="text-white">Duration (minutes)</Label>
+                  <Label className="text-white font-semibold">Duration (minutes)</Label>
                   <Select value={formData.duration.toString()} onValueChange={(value) => setFormData({...formData, duration: parseInt(value)})}>
                     <SelectTrigger className="bg-white/5 border-white/20 text-white">
                       <SelectValue />
@@ -503,25 +511,36 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
 
                 {/* Property Selection */}
                 <div className="space-y-2">
-                  <Label className="text-white">Property (Optional)</Label>
+                  <Label className="text-white font-semibold">Property (Optional)</Label>
                   {properties.length === 0 ? (
                     <div className="text-sm text-gray-400 bg-white/5 p-3 rounded border border-white/10">
                       No properties available. You can enter a custom location below.
                     </div>
                   ) : (
-                    <Select value={formData.property_id} onValueChange={(value) => {
-                      const property = properties.find(p => p.id === value);
-                      setFormData({
-                        ...formData, 
-                        property_id: value,
-                        property_address: property?.address || ''
-                      });
-                    }}>
+                    <Select 
+                      value={formData.property_id ? formData.property_id : "__none__"} 
+                      onValueChange={(value) => {
+                        if (value === "__none__") {
+                          setFormData({
+                            ...formData, 
+                            property_id: '',
+                            property_address: ''
+                          });
+                          return;
+                        }
+                        const property = properties.find(p => p.id === value);
+                        setFormData({
+                          ...formData, 
+                          property_id: value,
+                          property_address: property?.address || ''
+                        });
+                      }}
+                    >
                       <SelectTrigger className="bg-white/5 border-white/20 text-white">
                         <SelectValue placeholder="Select property or leave empty for virtual meeting" />
                       </SelectTrigger>
                       <SelectContent className="bg-gray-800 border-gray-700 text-white z-[110] max-h-[300px]">
-                        <SelectItem value="" className="text-white focus:bg-gray-700">
+                        <SelectItem value="__none__" className="text-white focus:bg-gray-700">
                           <div className="flex items-center gap-2">
                             <span>No property (Virtual/Office Meeting)</span>
                           </div>
@@ -543,9 +562,9 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                 </div>
 
                 {/* Custom Location */}
-                {!formData.property_id && (
+                {!formData.property_id && formData.property_id !== '__none__' && (
                   <div className="space-y-2">
-                    <Label className="text-white">Meeting Location</Label>
+                    <Label className="text-white font-semibold">Meeting Location</Label>
                     <Input
                       placeholder="Enter meeting location or leave empty for virtual meeting"
                       value={formData.property_address}
@@ -557,7 +576,7 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
 
                 {/* Notes */}
                 <div className="space-y-2">
-                  <Label className="text-white">Notes</Label>
+                  <Label className="text-white font-semibold">Notes</Label>
                   <Textarea
                     placeholder="Add any additional notes about this appointment..."
                     value={formData.notes}
@@ -569,19 +588,19 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
               </>
             )}
 
-            <DialogFooter>
+            <DialogFooter className="border-t border-pickfirst-yellow/20 pt-4 mt-6">
               <Button
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="text-gray-300 border-white/20 hover:bg-white/5"
+                className="text-gray-300 border-white/20 hover:bg-white/10 hover:text-white"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={loading || showContactSelector || !selectedContact || !formData.date || !formData.time || !formData.appointment_type}
-                className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber"
+                className="bg-pickfirst-yellow text-black hover:bg-pickfirst-amber font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Scheduling...' : 'Schedule Appointment'}
               </Button>

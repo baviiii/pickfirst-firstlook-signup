@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -70,20 +70,30 @@ export const ClientHistory = ({ client, isOpen, onClose }: ClientHistoryProps) =
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'conversations' | 'interactions' | 'notes'>('conversations');
 
-  useEffect(() => {
-    if (client && isOpen) {
-      fetchClientHistory();
-    }
-  }, [client, isOpen]);
-
-  const fetchClientHistory = async () => {
+  const fetchClientHistory = useCallback(async () => {
     if (!client) return;
     
     setLoading(true);
     try {
+      // Get current agent ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      const currentAgentId = user.id;
+
       // Use user_id for tables that reference profiles (appointments, conversations)
       // Use client.id for tables that reference clients table directly
       const profileId = client.user_id || client.id;
+      
+      console.log('🔍 Fetching client history:', {
+        clientId: client.id,
+        clientEmail: client.email,
+        userId: client.user_id,
+        profileId,
+        agentId: currentAgentId
+      });
 
       // Fetch conversations (references profiles.id as client_id)
       const { data: conversationsData, error: convError } = await supabase
@@ -128,11 +138,55 @@ export const ClientHistory = ({ client, isOpen, onClose }: ClientHistoryProps) =
       }
 
       // Fetch appointments (references profiles.id as client_id)
-      const { data: appointmentsData, error: apptError } = await supabase
+      // Also check by email as fallback for clients without user_id
+      // Build query to find appointments for this client
+      // Match by: client_id (if user_id exists) OR client_email (fallback for clients without user_id)
+      let appointmentsQuery = supabase
         .from('appointments')
         .select('*')
-        .eq('client_id', profileId)
+        .eq('agent_id', currentAgentId) // Ensure we only get appointments for this agent
         .order('created_at', { ascending: false });
+
+      // Try multiple matching strategies:
+      // 1. Match by client_id (user_id) if it exists
+      // 2. Match by client_email as fallback (for clients without user_id)
+      // 3. Match by client_id = client.id (in case appointments use client record ID)
+      const conditions: string[] = [];
+      
+      if (profileId && profileId !== client.id) {
+        // Client has user_id, match by it
+        conditions.push(`client_id.eq.${profileId}`);
+      }
+      
+      // Always try matching by email (handles cases where client_id is null)
+      if (client.email) {
+        conditions.push(`client_email.eq.${client.email}`);
+      }
+      
+      // Also try matching by client record ID (just in case)
+      conditions.push(`client_id.eq.${client.id}`);
+
+      if (conditions.length > 0) {
+        appointmentsQuery = appointmentsQuery.or(conditions.join(','));
+      }
+
+      const { data: appointmentsData, error: apptError } = await appointmentsQuery;
+      
+      console.log('🔍 Fetched appointments for client:', {
+        clientId: client.id,
+        clientEmail: client.email,
+        userId: client.user_id,
+        profileId,
+        agentId: currentAgentId,
+        appointmentsCount: appointmentsData?.length || 0,
+        appointments: appointmentsData?.map(a => ({ 
+          id: a.id, 
+          client_id: a.client_id, 
+          client_email: a.client_email, 
+          date: a.date,
+          client_name: a.client_name
+        }))
+      });
 
       if (apptError) {
         console.error('Appointments error:', apptError);
@@ -177,7 +231,81 @@ export const ClientHistory = ({ client, isOpen, onClose }: ClientHistoryProps) =
     } finally {
       setLoading(false);
     }
-  };
+  }, [client]);
+
+  useEffect(() => {
+    if (client && isOpen) {
+      fetchClientHistory();
+    }
+  }, [client, isOpen, fetchClientHistory]);
+
+  // Real-time subscription for appointments and interactions
+  useEffect(() => {
+    if (!client || !isOpen) return;
+
+    const profileId = client.user_id || client.id;
+    let appointmentsSubscription: any = null;
+    let interactionsSubscription: any = null;
+    
+    // Get current agent ID for subscription filter
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      
+      // Subscribe to appointments table changes
+      // Listen for appointments matching either client_id or client_email
+      appointmentsSubscription = supabase
+        .channel(`client-appointments-${client.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'appointments',
+            filter: `agent_id=eq.${user.id}`
+          },
+          (payload) => {
+            // Check if the appointment matches this client (by client_id or email)
+            const appointment = (payload.new || payload.old) as any;
+            if (appointment && (
+              appointment.client_id === profileId || 
+              appointment.client_id === client.id ||
+              appointment.client_email === client.email
+            )) {
+              // Refresh client history when appointments change
+              setTimeout(() => fetchClientHistory(), 500); // Small delay to ensure DB is updated
+            }
+          }
+        )
+        .subscribe();
+
+      // Subscribe to client_interactions table changes
+      interactionsSubscription = supabase
+        .channel(`client-interactions-${client.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'client_interactions',
+            filter: `client_id=eq.${client.id}`
+          },
+          () => {
+            // Refresh client history when interactions change
+            setTimeout(() => fetchClientHistory(), 500); // Small delay to ensure DB is updated
+          }
+        )
+        .subscribe();
+    });
+
+    return () => {
+      if (appointmentsSubscription) {
+        appointmentsSubscription.unsubscribe();
+      }
+      if (interactionsSubscription) {
+        interactionsSubscription.unsubscribe();
+      }
+    };
+  }, [client?.id, client?.user_id, client?.email, isOpen, fetchClientHistory]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
