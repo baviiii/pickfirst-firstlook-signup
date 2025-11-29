@@ -17,11 +17,13 @@ import { BuyerProfileView } from '@/components/buyer/BuyerProfileView';
 import { AgentProfileView } from '@/components/agent/AgentProfileView';
 import { enhancedConversationService } from '@/services/enhancedConversationService';
 import type { EnhancedConversation } from '@/services/enhancedConversationService';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 
 export const AgentMessages = () => {
   const { user, profile } = useAuth();
   const { viewMode } = useViewMode();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [conversations, setConversations] = useState<EnhancedConversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<EnhancedConversation | null>(null);
@@ -53,6 +55,16 @@ export const AgentMessages = () => {
     }
   }, []);
 
+
+  // Redirect if viewMode doesn't match the route
+  useEffect(() => {
+    if (profile?.role === 'agent' && viewMode === 'buyer' && location.pathname === '/agent-messages') {
+      // Preserve conversation query param if present
+      const conversationId = searchParams.get('conversation');
+      const redirectPath = conversationId ? `/buyer-messages?conversation=${conversationId}` : '/buyer-messages';
+      navigate(redirectPath, { replace: true });
+    }
+  }, [viewMode, location.pathname, navigate, profile?.role, searchParams]);
 
   useEffect(() => {
     const checkMobile = () => {

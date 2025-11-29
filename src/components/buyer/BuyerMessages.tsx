@@ -15,11 +15,16 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FeatureGate } from '@/components/ui/FeatureGate';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useViewMode } from '@/hooks/useViewMode';
 
 export const BuyerMessages = () => {
   const { user, profile } = useAuth();
+  const { viewMode } = useViewMode();
   const { getMessageHistoryDays } = useSubscription();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState<EnhancedConversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<EnhancedConversation | null>(null);
   const [messages, setMessages] = useState([]);
@@ -32,8 +37,16 @@ export const BuyerMessages = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
 
+  // Redirect if viewMode doesn't match the route (agent switching to agent mode)
+  useEffect(() => {
+    if (profile?.role === 'agent' && viewMode === 'agent' && location.pathname === '/buyer-messages') {
+      // Preserve conversation query param if present
+      const conversationId = searchParams.get('conversation');
+      const redirectPath = conversationId ? `/agent-messages?conversation=${conversationId}` : '/agent-messages';
+      navigate(redirectPath, { replace: true });
+    }
+  }, [viewMode, location.pathname, navigate, profile?.role, searchParams]);
 
   // Check for mobile screen size
   useEffect(() => {

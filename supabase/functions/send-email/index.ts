@@ -1097,7 +1097,7 @@ PickFirst Real Estate Team`,
           ` : ''}
           
           <div style="text-align: center;">
-            ${getButton((data.platformUrl || 'https://pickfirst.com.au') + '/messages/' + data.conversationId, 'View Full Conversation')}
+            ${getButton((data.platformUrl || 'https://pickfirst.com.au') + '/dashboard/', 'View Full Conversation')}
           </div>
         </div>
         ${getEmailFooter()}

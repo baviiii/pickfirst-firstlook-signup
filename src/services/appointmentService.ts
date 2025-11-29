@@ -461,6 +461,7 @@ class AppointmentService {
 
       // Get buyer information using public profile view (bypasses RLS)
       // This is the primary method to avoid RLS issues when fetching buyer data
+      // Also check agent_public_profiles since agents can act as buyers too
       let buyerEmail: string | undefined;
       let buyerName: string | undefined;
 
@@ -475,9 +476,21 @@ class AppointmentService {
         if (buyerProfile) {
           buyerEmail = buyerProfile.email || undefined;
           buyerName = buyerProfile.full_name || undefined;
+        } else {
+          // SECONDARY: Check if the buyer is actually an agent (agents can inquire in buyer mode)
+          const { data: agentProfile } = await supabase
+            .from('agent_public_profiles')
+            .select('email, full_name')
+            .eq('id', inquiry.buyer_id)
+            .maybeSingle();
+
+          if (agentProfile) {
+            buyerEmail = agentProfile.email || undefined;
+            buyerName = agentProfile.full_name || undefined;
+          }
         }
 
-        // Fallback: use RPC helper if view didn't return data
+        // FALLBACK 1: use RPC helper for buyer if view didn't return data
         if (!buyerEmail) {
           const { data: rpcProfile } = await supabase
             .rpc('get_buyer_public_profile', { buyer_id: inquiry.buyer_id });
@@ -485,6 +498,17 @@ class AppointmentService {
           if (rpcProfile && rpcProfile.length > 0) {
             buyerEmail = rpcProfile[0].email || undefined;
             buyerName = rpcProfile[0].full_name || buyerName;
+          }
+        }
+
+        // FALLBACK 2: use RPC helper for agent if buyer RPC didn't return data
+        if (!buyerEmail) {
+          const { data: agentRpcProfile } = await supabase
+            .rpc('get_agent_public_profile', { agent_id: inquiry.buyer_id });
+
+          if (agentRpcProfile && agentRpcProfile.length > 0) {
+            buyerEmail = agentRpcProfile[0].email || undefined;
+            buyerName = agentRpcProfile[0].full_name || buyerName;
           }
         }
 
