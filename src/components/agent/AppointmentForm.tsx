@@ -199,15 +199,27 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
         }
       } else if (selectedContact.type === 'lead' && selectedContact.email) {
         // For leads, try to find if they have a profile by email
-        // This handles cases where a lead is actually a registered user
-        const { data: profileByEmail } = await supabase
-          .from('profiles')
+        // This handles cases where a lead is actually a registered user (buyer or agent)
+        // PRIMARY: Check buyer_public_profiles first
+        const { data: buyerProfileByEmail } = await supabase
+          .from('buyer_public_profiles')
           .select('id')
           .eq('email', selectedContact.email.toLowerCase())
           .maybeSingle();
         
-        if (profileByEmail) {
-          clientId = profileByEmail.id;
+        if (buyerProfileByEmail) {
+          clientId = buyerProfileByEmail.id;
+        } else {
+          // SECONDARY: Check agent_public_profiles (agents can also be clients)
+          const { data: agentProfileByEmail } = await supabase
+            .from('agent_public_profiles')
+            .select('id')
+            .eq('email', selectedContact.email.toLowerCase())
+            .maybeSingle();
+          
+          if (agentProfileByEmail) {
+            clientId = agentProfileByEmail.id;
+          }
         }
         // Otherwise clientId remains null (for non-registered leads)
       }
