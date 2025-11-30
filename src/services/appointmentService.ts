@@ -73,6 +73,7 @@ class AppointmentService {
 
   /**
    * Get appointments visible to the current user (buyer sees their own, agent sees all)
+   * For agents in buyer mode, shows appointments where they are the client
    */
   async getMyAppointments(): Promise<{ data: AppointmentWithDetails[]; error: any }> {
     try {
@@ -89,11 +90,24 @@ class AppointmentService {
 
       const userEmail = user.email?.toLowerCase() || profile?.email?.toLowerCase();
 
-      // Agents: show all their agent-owned appointments
-      if (profile?.role === 'agent') {
+      // Check if agent is in buyer mode (check localStorage)
+      let isInBuyerMode = false;
+      if (profile?.role === 'agent' && typeof window !== 'undefined') {
+        const savedViewMode = localStorage.getItem('viewMode');
+        isInBuyerMode = savedViewMode === 'buyer';
+      }
+
+      const selectQuery = `
+        *,
+        property:property_listings!appointments_property_id_fkey (id, title, address),
+        agent:profiles!appointments_agent_id_fkey (id, full_name)
+      `;
+
+      // Agents in agent mode: show all their agent-owned appointments
+      if (profile?.role === 'agent' && !isInBuyerMode) {
         const { data, error } = await supabase
           .from('appointments')
-          .select('*')
+          .select(selectQuery)
           .eq('agent_id', user.id)
           .order('date', { ascending: true })
           .order('time', { ascending: true });
@@ -101,31 +115,23 @@ class AppointmentService {
       }
 
       // Buyers (including agents in buyer mode): show appointments where they are the client
-      // First, find all client records for this user
-      const { data: clientRecords } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('user_id', user.id);
-      
-      const clientIds = clientRecords?.map(c => c.id) || [];
-      
-      const selectQuery = `
-        *,
-        property:property_listings!appointments_property_id_fkey (id, title, address),
-        agent:profiles!appointments_agent_id_fkey (id, full_name)
-      `;
-      let data: AppointmentWithDetails[] | null = null;
-      let error: any = null;
-
-      // Build query: check by client_id (if user has client records) or by email
+      // IMPORTANT: appointments.client_id references profiles.id, NOT clients.id
+      // So we need to match by profile ID directly
       const conditions: string[] = [];
-      if (clientIds.length > 0) {
-        conditions.push(`client_id.in.(${clientIds.join(',')})`);
+      
+      // Primary: Match by client_id (profile ID) - this is the correct way now
+      if (profile?.id) {
+        conditions.push(`client_id.eq.${profile.id}`);
       }
+      
+      // Fallback: Match by email (for appointments created before the schema change)
       if (userEmail) {
         conditions.push(`client_email.eq.${userEmail}`);
       }
       
+      let data: AppointmentWithDetails[] | null = null;
+      let error: any = null;
+
       if (conditions.length > 0) {
         const orExpr = conditions.join(',');
         const res = await supabase
@@ -138,15 +144,22 @@ class AppointmentService {
         error = res.error;
       }
 
-      // Fallback: attempt email ilike if nothing returned and email present
+      // Additional fallback: attempt email ilike if nothing returned and email present
       if ((!data || data.length === 0) && userEmail) {
         const res2 = await supabase
           .from('appointments')
           .select(selectQuery)
-          .ilike('client_email', userEmail)
+          .ilike('client_email', `%${userEmail}%`)
           .order('date', { ascending: true })
           .order('time', { ascending: true });
-        data = res2.data as any;
+        
+        // Merge results if any found
+        if (res2.data && res2.data.length > 0) {
+          data = data ? [...data, ...(res2.data as any)] : (res2.data as any);
+          // Remove duplicates based on appointment ID
+          const uniqueData = Array.from(new Map((data || []).map((item: any) => [item.id, item])).values());
+          data = uniqueData as any;
+        }
         error = error || res2.error;
       }
 
@@ -535,20 +548,61 @@ class AppointmentService {
       const finalBuyerName = (buyerName || (inquiry as any)?.buyer?.full_name || 'Unknown').trim();
 
       // Check if the buyer exists in the clients table
-      let clientRecordId: string | null = null;
+      // The client_id in appointments should reference profiles.id (user_id), not clients.id
+      let clientId: string | null = null; // This should be the profile ID (user_id), not client record ID
       let clientName = finalBuyerName || 'Unknown';
       
+      // Verify the buyer_id exists in profiles table first (required for foreign key)
+      // Check both buyer and agent profiles since agents can inquire in buyer mode
+      let buyerProfileId: string | null = null;
       if (inquiry.buyer_id) {
+        // PRIMARY: Check buyer_public_profiles view
+        const { data: buyerProfileCheck } = await supabase
+          .from('buyer_public_profiles')
+          .select('id')
+          .eq('id', inquiry.buyer_id)
+          .maybeSingle();
+        
+        if (buyerProfileCheck) {
+          buyerProfileId = inquiry.buyer_id;
+        } else {
+          // SECONDARY: Check agent_public_profiles view (agents can inquire in buyer mode)
+          const { data: agentProfileCheck } = await supabase
+            .from('agent_public_profiles')
+            .select('id')
+            .eq('id', inquiry.buyer_id)
+            .maybeSingle();
+          
+          if (agentProfileCheck) {
+            buyerProfileId = inquiry.buyer_id;
+          } else {
+            // FALLBACK: Check profiles table directly
+            const { data: profileCheck } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', inquiry.buyer_id)
+              .maybeSingle();
+            
+            if (profileCheck) {
+              buyerProfileId = inquiry.buyer_id;
+            }
+          }
+        }
+      }
+      
+      if (buyerProfileId) {
+        // Check if buyer is already a client
         const { data: existingClient } = await supabase
           .from('clients')
           .select('id, name, user_id')
-          .eq('user_id', inquiry.buyer_id)
+          .eq('user_id', buyerProfileId)
           .eq('agent_id', user.id)
-          .single();
+          .maybeSingle();
         
         if (existingClient) {
           clientName = existingClient.name || finalBuyerName || 'Unknown';
-          clientRecordId = existingClient.id || null; // Use client record id, not user_id
+          // Use user_id (profile ID) for appointments.client_id, not client record ID
+          clientId = buyerProfileId;
         } else {
           // Client doesn't exist, create one automatically with property details
           console.log('Buyer not found in clients table, creating client automatically...');
@@ -626,23 +680,37 @@ class AppointmentService {
             // Error will be logged but appointment will proceed
           } else if (newClient) {
             clientName = newClient.name || finalBuyerName || 'Unknown';
-            clientRecordId = newClient.id || null; // Use client record id, not user_id
+            // Use the profile ID (buyerProfileId) for appointments.client_id, not client record ID
+            // The foreign key constraint expects profiles(id), not clients(id)
+            // buyerProfileId is already validated to exist in profiles table
+            clientId = buyerProfileId; // Always use the validated profile ID
             console.log('✅ Client created successfully:', {
-              clientId: newClient.id,
+              clientRecordId: newClient.id,
               clientName: newClient.name,
               email: newClient.email,
-              agentId: user.id
+              agentId: user.id,
+              profileId: newClient.user_id,
+              appointmentClientId: clientId
             });
           } else {
             console.warn('Client creation returned no error but also no client data');
+            // Even if client creation failed, if we have a valid profile ID, we can still create the appointment
+            // The appointment can reference the profile directly
+            if (buyerProfileId) {
+              clientId = buyerProfileId;
+            }
           }
         }
+      } else {
+        // buyer_id doesn't exist in profiles table, can't set client_id
+        console.warn(`Buyer ID ${inquiry.buyer_id} not found in profiles table, setting client_id to null`);
+        clientId = null;
       }
 
       const newAppointment: AppointmentInsert = {
         agent_id: user.id,
         inquiry_id: inquiryId,
-        client_id: clientRecordId, // Use client record id (references clients.id)
+        client_id: clientId, // Use profile ID (references profiles.id), or null if not found
         client_name: clientName,
         client_email: normalizedBuyerEmail,
         property_id: inquiry.property_id,
