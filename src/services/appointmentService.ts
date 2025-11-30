@@ -21,10 +21,22 @@ export interface AppointmentWithDetails extends Appointment {
     id: string;
     title: string;
     address: string;
+    city?: string;
+    state?: string;
+    price?: number;
+    images?: string[];
+    property_type?: string;
   } | null;
   agent?: {
     id: string;
     full_name: string;
+    email?: string;
+    phone?: string;
+    avatar_url?: string;
+    company?: string;
+    bio?: string;
+    location?: string;
+    website?: string;
   } | null;
 }
 
@@ -97,21 +109,34 @@ class AppointmentService {
         isInBuyerMode = savedViewMode === 'buyer';
       }
 
+      // Enhanced query with property and agent details
+      // Use direct property_listings join for property info
       const selectQuery = `
         *,
-        property:property_listings!appointments_property_id_fkey (id, title, address),
-        agent:profiles!appointments_agent_id_fkey (id, full_name)
+        property:property_listings!appointments_property_id_fkey (
+          id,
+          title,
+          address,
+          city,
+          state,
+          price,
+          images,
+          property_type
+        )
       `;
 
       // Agents in agent mode: show all their agent-owned appointments
       if (profile?.role === 'agent' && !isInBuyerMode) {
-        const { data, error } = await supabase
+        const { data: appointments, error } = await supabase
           .from('appointments')
           .select(selectQuery)
           .eq('agent_id', user.id)
           .order('date', { ascending: true })
           .order('time', { ascending: true });
-        return { data: data || [], error };
+
+        // Enhance with agent profile details
+        const enhancedData = await this.enhanceAppointmentsWithAgentDetails(appointments || []);
+        return { data: enhancedData, error };
       }
 
       // Buyers (including agents in buyer mode): show appointments where they are the client
@@ -163,10 +188,81 @@ class AppointmentService {
         error = error || res2.error;
       }
 
-      return { data: data || [], error };
+      // Enhance with agent profile details using public profile views
+      const enhancedData = await this.enhanceAppointmentsWithAgentDetails(data || []);
+      return { data: enhancedData, error };
     } catch (error) {
       return { data: [], error };
     }
+  }
+
+  /**
+   * Enhance appointments with agent profile details from public views
+   * This ensures buyers can see agent information even with RLS restrictions
+   */
+  private async enhanceAppointmentsWithAgentDetails(
+    appointments: any[]
+  ): Promise<AppointmentWithDetails[]> {
+    if (!appointments || appointments.length === 0) {
+      return [];
+    }
+
+    // Get unique agent IDs from appointments
+    const agentIds = [...new Set(appointments.map(apt => apt.agent_id).filter(Boolean))];
+
+    if (agentIds.length === 0) {
+      return appointments.map(apt => ({
+        ...apt,
+        agent: null
+      }));
+    }
+
+    // Fetch agent profiles from public views (bypasses RLS)
+    const agentProfiles = new Map<string, any>();
+
+    // Try to fetch from agent_public_profiles view first
+    for (const agentId of agentIds) {
+      try {
+        // PRIMARY: Try agent_public_profiles view
+        const { data: agentProfile } = await supabase
+          .from('agent_public_profiles')
+          .select('id, full_name, email, phone, avatar_url, company, bio, location, website')
+          .eq('id', agentId)
+          .maybeSingle();
+
+        if (agentProfile) {
+          agentProfiles.set(agentId, agentProfile);
+        } else {
+          // FALLBACK: Try RPC function if view doesn't have the agent
+          const { data: rpcProfile } = await supabase
+            .rpc('get_agent_public_profile', { agent_id: agentId });
+
+          if (rpcProfile && rpcProfile.length > 0) {
+            agentProfiles.set(agentId, rpcProfile[0]);
+          }
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch agent profile for ${agentId}:`, error);
+      }
+    }
+
+    // Enhance each appointment with agent details
+    return appointments.map(apt => ({
+      ...apt,
+      agent: apt.agent_id && agentProfiles.has(apt.agent_id)
+        ? {
+            id: agentProfiles.get(apt.agent_id).id,
+            full_name: agentProfiles.get(apt.agent_id).full_name || 'Unknown Agent',
+            email: agentProfiles.get(apt.agent_id).email,
+            phone: agentProfiles.get(apt.agent_id).phone,
+            avatar_url: agentProfiles.get(apt.agent_id).avatar_url,
+            company: agentProfiles.get(apt.agent_id).company,
+            bio: agentProfiles.get(apt.agent_id).bio,
+            location: agentProfiles.get(apt.agent_id).location,
+            website: agentProfiles.get(apt.agent_id).website,
+          }
+        : apt.agent || null
+    }));
   }
 
   async createAppointment(appointmentData: Omit<AppointmentInsert, 'agent_id'>): Promise<{ data: Appointment | null; error: any }> {
