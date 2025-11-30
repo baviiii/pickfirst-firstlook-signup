@@ -332,35 +332,35 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
   return (
     <ErrorBoundary>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-full max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl border border-pickfirst-yellow/20 text-white shadow-2xl">
-          <DialogHeader className="border-b border-pickfirst-yellow/20 pb-4">
-            <DialogTitle className="text-white text-xl font-bold">Schedule New Appointment</DialogTitle>
+        <DialogContent className="w-full max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto pickfirst-glass bg-card/90 backdrop-blur-xl border border-pickfirst-yellow/30 text-foreground shadow-2xl">
+          <DialogHeader className="border-b border-pickfirst-yellow/30 pb-4">
+            <DialogTitle className="text-foreground text-xl font-bold">Schedule New Appointment</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-6 pt-4">
             {/* Contact Selection */}
             {showContactSelector ? (
               <div className="space-y-4">
-                <Label className="text-white">Select Client or Lead</Label>
+                <Label className="text-foreground font-semibold">Select Client or Lead</Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search clients and leads..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
+                    className="pl-10 bg-background/50 border-border text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
-                <div className="max-h-48 sm:max-h-64 overflow-y-auto space-y-2 bg-black/20 rounded-lg p-2 border border-white/10">
+                <div className="max-h-48 sm:max-h-64 overflow-y-auto space-y-2 bg-muted/30 rounded-lg p-2 border border-border">
                   {filteredContacts.length === 0 ? (
-                    <div className="text-center py-4 text-gray-400 text-sm">
+                    <div className="text-center py-4 text-muted-foreground text-sm">
                       No clients or leads found matching "{searchTerm}"
                     </div>
                   ) : (
                     filteredContacts.map((contact) => (
                       <Card 
                         key={`${contact.type}-${contact.id}`}
-                        className="cursor-pointer hover:bg-pickfirst-yellow/10 hover:border-pickfirst-yellow/30 transition-all bg-white/5 border-white/20"
+                        className="cursor-pointer hover:bg-pickfirst-yellow/10 hover:border-pickfirst-yellow/50 transition-all bg-card/80 border-border"
                         onClick={() => handleContactSelect({
                           id: contact.id,
                           type: contact.type,
@@ -373,13 +373,13 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-white font-semibold">{contact.name}</span>
-                                <Badge className={`${contact.type === 'client' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30'} text-xs border`}>
+                                <span className="text-foreground font-semibold">{contact.name}</span>
+                                <Badge className={`${contact.type === 'client' ? 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/50' : 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/50'} text-xs border`}>
                                   {contact.type.toUpperCase()}
                                 </Badge>
                               </div>
-                              <div className="text-sm text-gray-300 truncate">{contact.email}</div>
-                              {contact.phone && <div className="text-sm text-gray-400">{contact.phone}</div>}
+                              <div className="text-sm text-muted-foreground truncate">{contact.email}</div>
+                              {contact.phone && <div className="text-sm text-muted-foreground/80">{contact.phone}</div>}
                             </div>
                             <User className="h-5 w-5 text-pickfirst-yellow flex-shrink-0 ml-2" />
                           </div>
@@ -391,27 +391,27 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
               </div>
             ) : (
               <div className="space-y-2">
-                <Label className="text-white font-semibold">Selected Contact</Label>
-                <Card className="bg-pickfirst-yellow/10 border-pickfirst-yellow/30">
+                <Label className="text-foreground font-semibold">Selected Contact</Label>
+                <Card className="bg-pickfirst-yellow/10 border-pickfirst-yellow/50">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <User className="h-4 w-4 text-pickfirst-yellow" />
-                          <span className="text-white font-semibold text-lg">{selectedContact?.name}</span>
-                          <Badge className={`${selectedContact?.type === 'client' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30'} text-xs border`}>
+                          <span className="text-foreground font-semibold text-lg">{selectedContact?.name}</span>
+                          <Badge className={`${selectedContact?.type === 'client' ? 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/50' : 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/50'} text-xs border`}>
                             {selectedContact?.type?.toUpperCase()}
                           </Badge>
                         </div>
-                        <div className="text-sm text-gray-300">{selectedContact?.email}</div>
-                        {selectedContact?.phone && <div className="text-sm text-gray-400">{selectedContact?.phone}</div>}
+                        <div className="text-sm text-muted-foreground">{selectedContact?.email}</div>
+                        {selectedContact?.phone && <div className="text-sm text-muted-foreground/80">{selectedContact?.phone}</div>}
                       </div>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => setShowContactSelector(true)}
-                        className="text-gray-400 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
+                        className="text-muted-foreground hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -425,14 +425,14 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
               <>
                 {/* Appointment Type */}
                 <div className="space-y-2">
-                  <Label className="text-white font-semibold">Appointment Type *</Label>
+                  <Label className="text-foreground font-semibold">Appointment Type *</Label>
                   <Select value={formData.appointment_type} onValueChange={(value) => setFormData({...formData, appointment_type: value})}>
-                    <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                    <SelectTrigger className="bg-background/50 border-border text-foreground">
                       <SelectValue placeholder="Select appointment type" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700 text-white z-[110]">
+                    <SelectContent className="bg-popover text-popover-foreground border-border z-[110]">
                       {appointmentTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value} className="text-white focus:bg-gray-700">
+                        <SelectItem key={type.value} value={type.value} className="text-foreground focus:bg-pickfirst-yellow/20 focus:text-foreground">
                           <div className="flex items-center gap-2">
                             <span>{type.icon}</span>
                             <span>{type.label}</span>
@@ -446,18 +446,18 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                 {/* Date and Time */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-white font-semibold">Date *</Label>
+                    <Label className="text-foreground font-semibold">Date *</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-start text-left font-normal bg-white/5 border-white/20 text-white"
+                          className="w-full justify-start text-left font-normal bg-background/50 border-border text-foreground"
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {formData.date ? format(formData.date, "PPP") : "Pick a date"}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700 text-white z-[110]" align="start">
+                      <PopoverContent className="w-auto p-0 bg-popover text-popover-foreground border-border z-[110]" align="start">
                         <Calendar
                           mode="single"
                           selected={formData.date}
@@ -471,21 +471,21 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-white font-semibold">Time *</Label>
+                    <Label className="text-foreground font-semibold">Time *</Label>
                     <Popover open={timePickerOpen} onOpenChange={setTimePickerOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           type="button"
                           variant="outline"
-                          className="w-full justify-start text-left font-normal bg-white/5 border-white/20 text-white hover:bg-white/10"
+                          className="w-full justify-start text-left font-normal bg-background/50 border-border text-foreground hover:bg-pickfirst-yellow/10"
                         >
                           <Clock className="mr-2 h-4 w-4" />
                           {formData.time || "Select time"}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-4 bg-gray-800 border-gray-700 text-white z-[110]" align="start">
+                      <PopoverContent className="w-auto p-4 bg-popover text-popover-foreground border-border z-[110]" align="start">
                         <div className="space-y-4">
-                          <div className="text-sm font-medium text-white mb-3">Select Time</div>
+                          <div className="text-sm font-medium text-foreground mb-3">Select Time</div>
                           <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">
                             {timeSlots.map((time) => (
                               <button
@@ -498,15 +498,15 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                                 className={`px-3 py-2 rounded-md text-sm transition-colors ${
                                   formData.time === time
                                     ? 'bg-pickfirst-yellow text-black font-semibold'
-                                    : 'bg-white/5 text-white hover:bg-pickfirst-yellow/20 hover:text-pickfirst-yellow'
+                                    : 'bg-background/50 text-foreground hover:bg-pickfirst-yellow/20 hover:text-foreground border border-border'
                                 }`}
                               >
                                 {time}
                               </button>
                             ))}
                           </div>
-                          <div className="pt-2 border-t border-gray-700">
-                            <Label className="text-xs text-gray-400 mb-2 block">Or enter custom time:</Label>
+                          <div className="pt-2 border-t border-border">
+                            <Label className="text-xs text-muted-foreground mb-2 block">Or enter custom time:</Label>
                             <Input
                               type="time"
                               value={formData.time}
@@ -516,7 +516,7 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                                   setTimePickerOpen(false);
                                 }
                               }}
-                              className="bg-white/5 border-white/20 text-white"
+                              className="bg-background/50 border-border text-foreground"
                             />
                           </div>
                         </div>
@@ -527,26 +527,26 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
 
                 {/* Duration */}
                 <div className="space-y-2">
-                  <Label className="text-white font-semibold">Duration (minutes)</Label>
+                  <Label className="text-foreground font-semibold">Duration (minutes)</Label>
                   <Select value={formData.duration.toString()} onValueChange={(value) => setFormData({...formData, duration: parseInt(value)})}>
-                    <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                    <SelectTrigger className="bg-background/50 border-border text-foreground">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700 text-white z-[110]">
-                      <SelectItem value="30" className="text-white focus:bg-gray-700">30 minutes</SelectItem>
-                      <SelectItem value="45" className="text-white focus:bg-gray-700">45 minutes</SelectItem>
-                      <SelectItem value="60" className="text-white focus:bg-gray-700">1 hour</SelectItem>
-                      <SelectItem value="90" className="text-white focus:bg-gray-700">1.5 hours</SelectItem>
-                      <SelectItem value="120" className="text-white focus:bg-gray-700">2 hours</SelectItem>
+                    <SelectContent className="bg-popover text-popover-foreground border-border z-[110]">
+                      <SelectItem value="30" className="text-foreground focus:bg-pickfirst-yellow/20">30 minutes</SelectItem>
+                      <SelectItem value="45" className="text-foreground focus:bg-pickfirst-yellow/20">45 minutes</SelectItem>
+                      <SelectItem value="60" className="text-foreground focus:bg-pickfirst-yellow/20">1 hour</SelectItem>
+                      <SelectItem value="90" className="text-foreground focus:bg-pickfirst-yellow/20">1.5 hours</SelectItem>
+                      <SelectItem value="120" className="text-foreground focus:bg-pickfirst-yellow/20">2 hours</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 {/* Property Selection */}
                 <div className="space-y-2">
-                  <Label className="text-white font-semibold">Property (Optional)</Label>
+                  <Label className="text-foreground font-semibold">Property (Optional)</Label>
                   {properties.length === 0 ? (
-                    <div className="text-sm text-gray-400 bg-white/5 p-3 rounded border border-white/10">
+                    <div className="text-sm text-muted-foreground bg-muted/30 p-3 rounded border border-border">
                       No properties available. You can enter a custom location below.
                     </div>
                   ) : (
@@ -569,22 +569,22 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                         });
                       }}
                     >
-                      <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                      <SelectTrigger className="bg-background/50 border-border text-foreground">
                         <SelectValue placeholder="Select property or leave empty for virtual meeting" />
                       </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-700 text-white z-[110] max-h-[300px]">
-                        <SelectItem value="__none__" className="text-white focus:bg-gray-700">
+                      <SelectContent className="bg-popover text-popover-foreground border-border z-[110] max-h-[300px]">
+                        <SelectItem value="__none__" className="text-foreground focus:bg-pickfirst-yellow/20">
                           <div className="flex items-center gap-2">
                             <span>No property (Virtual/Office Meeting)</span>
                           </div>
                         </SelectItem>
                         {properties.map((property) => (
-                          <SelectItem key={property.id} value={property.id} className="text-white focus:bg-gray-700">
+                          <SelectItem key={property.id} value={property.id} className="text-foreground focus:bg-pickfirst-yellow/20">
                             <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4 flex-shrink-0" />
+                              <MapPin className="h-4 w-4 flex-shrink-0 text-pickfirst-yellow" />
                               <div className="min-w-0">
                                 <div className="font-medium truncate">{property.title}</div>
-                                <div className="text-sm text-gray-400 truncate">{property.address}</div>
+                                <div className="text-sm text-muted-foreground truncate">{property.address}</div>
                               </div>
                             </div>
                           </SelectItem>
@@ -597,36 +597,36 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
                 {/* Custom Location */}
                 {!formData.property_id && formData.property_id !== '__none__' && (
                   <div className="space-y-2">
-                    <Label className="text-white font-semibold">Meeting Location</Label>
+                    <Label className="text-foreground font-semibold">Meeting Location</Label>
                     <Input
                       placeholder="Enter meeting location or leave empty for virtual meeting"
                       value={formData.property_address}
                       onChange={(e) => setFormData({...formData, property_address: e.target.value})}
-                      className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
+                      className="bg-background/50 border-border text-foreground placeholder:text-muted-foreground"
                     />
                   </div>
                 )}
 
                 {/* Notes */}
                 <div className="space-y-2">
-                  <Label className="text-white font-semibold">Notes</Label>
+                  <Label className="text-foreground font-semibold">Notes</Label>
                   <Textarea
                     placeholder="Add any additional notes about this appointment..."
                     value={formData.notes}
                     onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                    className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
+                    className="bg-background/50 border-border text-foreground placeholder:text-muted-foreground"
                     rows={3}
                   />
                 </div>
               </>
             )}
 
-            <DialogFooter className="border-t border-pickfirst-yellow/20 pt-4 mt-6">
+            <DialogFooter className="border-t border-pickfirst-yellow/30 pt-4 mt-6">
               <Button
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="text-gray-300 border-white/20 hover:bg-white/10 hover:text-white"
+                className="text-muted-foreground border-border hover:bg-muted hover:text-foreground"
               >
                 Cancel
               </Button>
