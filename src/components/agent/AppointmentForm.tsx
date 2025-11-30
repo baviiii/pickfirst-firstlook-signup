@@ -175,29 +175,50 @@ export const AppointmentForm = ({ isOpen, onClose, onSuccess, preselectedContact
 
     setLoading(true);
     try {
-      const appointmentData = {
-        agent_id: user?.id,
-        client_id: selectedContact.type === 'client' ? selectedContact.user_id || null : null,
-        inquiry_id: selectedContact.type === 'lead' ? selectedContact.id : null,
-        client_name: selectedContact.name,
-        client_phone: selectedContact.phone,
-        client_email: selectedContact.email,
-        appointment_type: formData.appointment_type,
-        date: format(formData.date, 'yyyy-MM-dd'),
-        time: formData.time,
-        duration: formData.duration,
-        property_id: formData.property_id || null,
-        property_address: formData.property_address || 'Virtual/Office Meeting',
-        notes: formData.notes,
-        status: 'scheduled'
-      };
+      // Determine client_id - must reference profiles.id if set, otherwise null
+      // The foreign key constraint expects client_id to reference profiles(id), not clients(id)
+      let clientId: string | null = null;
+      
+      if (selectedContact.type === 'client' && selectedContact.user_id) {
+        // Verify the user_id exists in profiles table before using it
+        // user_id should be the profile ID, but we need to validate it exists
+        const { data: profileCheck, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', selectedContact.user_id)
+          .maybeSingle();
+        
+        if (profileCheck && !profileError) {
+          // user_id exists in profiles table, safe to use
+          clientId = selectedContact.user_id;
+        } else {
+          // user_id doesn't exist in profiles (non-registered client or invalid reference)
+          // Set to null which is allowed by the foreign key constraint
+          console.warn(`Client user_id ${selectedContact.user_id} not found in profiles table, setting client_id to null`);
+          clientId = null;
+        }
+      } else if (selectedContact.type === 'lead' && selectedContact.email) {
+        // For leads, try to find if they have a profile by email
+        // This handles cases where a lead is actually a registered user
+        const { data: profileByEmail } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', selectedContact.email.toLowerCase())
+          .maybeSingle();
+        
+        if (profileByEmail) {
+          clientId = profileByEmail.id;
+        }
+        // Otherwise clientId remains null (for non-registered leads)
+      }
 
       // Use the appointment service to create the appointment
       const { data: newAppointment, error } = await supabase
         .from('appointments')
         .insert([{
           agent_id: user?.id,
-          client_id: selectedContact.type === 'client' ? selectedContact.user_id || null : null,
+          client_id: clientId,
+          inquiry_id: selectedContact.type === 'lead' ? selectedContact.id : null,
           client_name: selectedContact.name,
           client_phone: selectedContact.phone,
           client_email: selectedContact.email,

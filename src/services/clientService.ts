@@ -92,12 +92,18 @@ class ClientService {
 
       const { data, error } = await query;
 
+      // Normalize client data - ensure arrays are never null
+      const normalizedData = (data || []).map(client => ({
+        ...client,
+        preferred_areas: Array.isArray(client.preferred_areas) ? client.preferred_areas : []
+      }));
+
       // Log the action
       await auditService.log(user.id, 'VIEW', 'clients', {
-        newValues: { filters, count: data?.length || 0 }
+        newValues: { filters, count: normalizedData.length }
       });
 
-      return { data: data || [], error };
+      return { data: normalizedData, error };
     } catch (error) {
       return { data: [], error };
     }

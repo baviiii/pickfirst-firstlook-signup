@@ -439,11 +439,13 @@ export const MyClients = () => {
                   <span className="text-foreground font-medium">Property:</span> {client.property_type}
                 </div>
                 <div className="text-muted-foreground">
-                  <span className="text-foreground font-medium">Areas:</span> {client.preferred_areas.join(', ')}
+                  <span className="text-foreground font-medium">Areas:</span> {client.preferred_areas && Array.isArray(client.preferred_areas) ? client.preferred_areas.join(', ') : 'None specified'}
                 </div>
-                <div className="text-muted-foreground">
-                  <span className="text-foreground font-medium">Last Contact:</span> {new Date(client.last_contact).toLocaleDateString()}
-                </div>
+                {client.last_contact && (
+                  <div className="text-muted-foreground">
+                    <span className="text-foreground font-medium">Last Contact:</span> {new Date(client.last_contact).toLocaleDateString()}
+                  </div>
+                )}
               </div>
               
               {client.notes && (
