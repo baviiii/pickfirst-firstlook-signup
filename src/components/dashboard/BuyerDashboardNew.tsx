@@ -121,12 +121,17 @@ const BuyerDashboardNewComponent = () => {
   // Handle appointment actions
   const handleConfirmAppointment = async (id: string) => {
     try {
-      await appointmentService.updateAppointment(id, { status: 'confirmed' } as any);
+      const result = await appointmentService.updateAppointment(id, { status: 'confirmed' } as any);
+      if (result.error) {
+        console.error('Error confirming appointment:', result.error);
+        toast.error(result.error.message || 'Failed to confirm appointment');
+        return;
+      }
       await refreshAppointments();
       toast.success('Appointment confirmed');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error confirming appointment:', error);
-      toast.error('Failed to confirm appointment');
+      toast.error(error?.message || 'Failed to confirm appointment');
     }
   };
 
@@ -134,14 +139,15 @@ const BuyerDashboardNewComponent = () => {
     try {
       const result = await appointmentService.updateAppointment(id, { status: 'declined' } as any);
       if (result.error) {
-        toast.error('Failed to decline appointment');
+        console.error('Error declining appointment:', result.error);
+        toast.error(result.error.message || 'Failed to decline appointment');
         return;
       }
       await refreshAppointments();
       toast.success('Appointment declined');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error declining appointment:', error);
-      toast.error('Failed to decline appointment');
+      toast.error(error?.message || 'Failed to decline appointment');
     }
   };
 

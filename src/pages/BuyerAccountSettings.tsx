@@ -364,12 +364,18 @@ const BuyerAccountSettingsPage = () => {
   const handleConfirmAppointment = async (id: string) => {
     setIsLoading(true);
     try {
-      await appointmentService.updateAppointment(id, { status: 'confirmed' } as any);
+      const result = await appointmentService.updateAppointment(id, { status: 'confirmed' } as any);
+      if (result.error) {
+        console.error('Error confirming appointment:', result.error);
+        toast.error(result.error.message || 'Failed to confirm appointment');
+        setIsLoading(false);
+        return;
+      }
       await refreshAppointments();
       toast.success('Appointment confirmed');
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      toast.error('Failed to confirm appointment');
+      toast.error(e?.message || 'Failed to confirm appointment');
     } finally {
       setIsLoading(false);
     }
@@ -383,15 +389,16 @@ const BuyerAccountSettingsPage = () => {
       // Check if the service returned an error
       if (result.error) {
         console.error('Error declining appointment:', result.error);
-        toast.error('Failed to decline appointment');
+        toast.error(result.error.message || 'Failed to decline appointment');
+        setIsLoading(false);
         return;
       }
       
       await refreshAppointments();
       toast.success('Appointment declined');
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      toast.error('Failed to decline appointment');
+      toast.error(e?.message || 'Failed to decline appointment');
     } finally {
       setIsLoading(false);
     }

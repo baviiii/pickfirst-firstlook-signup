@@ -432,20 +432,31 @@ class AppointmentService {
 
       const isAgent = profile?.role === 'agent';
       const isBuyer = profile?.role === 'buyer';
+      
+      // Check if agent is in buyer mode (for agents acting as buyers)
+      let isInBuyerMode = false;
+      if (isAgent && typeof window !== 'undefined') {
+        const savedViewMode = localStorage.getItem('viewMode');
+        isInBuyerMode = savedViewMode === 'buyer';
+      }
+
       const isAppointmentOwner = currentAppointment.agent_id === user.id;
+      const userEmail = user.email?.toLowerCase() || profile?.email?.toLowerCase();
+      const appointmentEmail = currentAppointment.client_email?.toLowerCase();
       const isAppointmentClient = currentAppointment.client_id === user.id || 
-                                 currentAppointment.client_email === profile?.email;
+                                 (appointmentEmail && userEmail && appointmentEmail === userEmail);
 
       // Validate permissions based on status change
       if (updates.status) {
-        if (isBuyer && isAppointmentClient) {
+        // Allow buyers (or agents in buyer mode) to confirm/decline their appointments
+        if ((isBuyer || (isAgent && isInBuyerMode)) && isAppointmentClient) {
           // Buyers can only confirm or decline scheduled appointments
           if (!['confirmed', 'declined'].includes(updates.status) || 
               currentAppointment.status !== 'scheduled') {
             throw new Error('Invalid status change for buyer');
           }
-        } else if (isAgent && isAppointmentOwner) {
-          // Agents can manage all statuses except buyer-specific actions
+        } else if (isAgent && isAppointmentOwner && !isInBuyerMode) {
+          // Agents (not in buyer mode) can manage all statuses except buyer-specific actions
           if (!['scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'].includes(updates.status)) {
             throw new Error('Invalid status for agent');
           }
@@ -476,6 +487,27 @@ class AppointmentService {
 
         // Create notifications for status changes
         if (updates.status && updates.status !== currentAppointment.status) {
+          // Notify agent when buyer confirms/declines
+          if (updates.status === 'confirmed' && data.agent_id) {
+            await notificationService.createNotification(
+              data.agent_id,
+              'appointment_confirmed',
+              'Appointment Confirmed',
+              `${data.client_name || 'Client'} confirmed the appointment on ${data.date} at ${data.time}`,
+              '/appointments',
+              { appointment_id: data.id }
+            ).catch(err => console.error('Failed to create notification:', err));
+          } else if (updates.status === 'declined' && data.agent_id) {
+            await notificationService.createNotification(
+              data.agent_id,
+              'appointment_cancelled', // Use cancelled type as declined is similar
+              'Appointment Declined',
+              `${data.client_name || 'Client'} declined the appointment on ${data.date} at ${data.time}`,
+              '/appointments',
+              { appointment_id: data.id }
+            ).catch(err => console.error('Failed to create notification:', err));
+          }
+          
           // Notify buyer/client about status changes
           if (data.client_id && updates.status === 'confirmed') {
             await notificationService.createNotification(
