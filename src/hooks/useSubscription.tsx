@@ -82,20 +82,27 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
         subscription_tier: profile.subscription_tier,
         subscription_expires_at: profile.subscription_expires_at,
         profile_id: profile.id,
-        profile_email: profile.email
+        profile_email: profile.email,
+        willUnlockFeatures: tier === 'premium' || tier === 'basic'
       });
-    } else if (!profile && !loading) {
-      // No profile yet, but not loading - wait a bit
-      setLoading(true);
     } else if (!profile) {
       // Profile is null, reset to free
       setSubscriptionTier('free');
       setSubscribed(false);
       setSubscriptionEnd(null);
       setProductId(null);
-      setLoading(false);
+      // Only set loading to false if we're sure there's no profile (not just waiting)
+      if (loading) {
+        // Wait a bit for profile to load
+        const timer = setTimeout(() => {
+          setLoading(false);
+        }, 1000);
+        return () => clearTimeout(timer);
+      } else {
+        setLoading(false);
+      }
     }
-  }, [profile, loading]);
+  }, [profile]); // Remove loading from dependencies to avoid loops
 
   const checkSubscription = useCallback(async () => {
     // Get current session directly from supabase
@@ -374,17 +381,46 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
 
   const isFeatureEnabled = (feature: string): boolean => {
     const config = featureConfigs[feature];
-    if (!config) return false; // Unknown feature, default to disabled
+    if (!config) {
+      console.warn(`⚠️ Feature config not found for: ${feature}`);
+      return false; // Unknown feature, default to disabled
+    }
+    
+    // FALLBACK: If subscriptionTier is still 'free' but profile shows premium, use profile directly
+    // This handles race conditions where profile loads before subscription state updates
+    let effectiveTier = subscriptionTier;
+    if (profile && subscriptionTier === 'free') {
+      const profileTier = profile.subscription_tier;
+      if (profileTier === 'premium' || profileTier === 'basic') {
+        effectiveTier = profileTier as 'free' | 'basic' | 'premium';
+        console.log('🔄 Using profile tier as fallback:', { 
+          subscriptionTier, 
+          profileTier: profile.subscription_tier,
+          effectiveTier 
+        });
+      }
+    }
     
     // Check subscription tier directly - if tier is premium, user has premium access
     // subscribed flag is secondary check, but tier from profile is primary
-    if (subscriptionTier === 'premium') {
-      return config.premium;
-    } else if (subscriptionTier === 'basic') {
-      return config.basic;
-    } else {
-      return config.free;
+    const enabled = effectiveTier === 'premium' 
+      ? config.premium 
+      : effectiveTier === 'basic' 
+        ? config.basic 
+        : config.free;
+    
+    // Debug logging for premium features
+    if (feature.includes('off_market') || feature.includes('vendor') || feature.includes('advanced') || feature.includes('schedule')) {
+      console.log(`🔓 Feature check: ${feature}`, {
+        subscriptionTier,
+        effectiveTier,
+        profileTier: profile?.subscription_tier,
+        enabled,
+        config: { free: config.free, basic: config.basic, premium: config.premium }
+      });
     }
+    
+    return enabled;
   };
 
   // SIMPLIFIED HELPER FUNCTIONS
