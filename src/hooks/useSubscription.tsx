@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from './useAuth';
 
 interface SubscriptionContextType {
   subscribed: boolean;
@@ -46,6 +47,7 @@ interface SubscriptionProviderProps {
 }
 
 export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) => {
+  const { profile } = useAuth(); // Get profile directly from useAuth - this is the source of truth
   const [user, setUser] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
   const [subscribed, setSubscribed] = useState(false);
@@ -53,6 +55,27 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [productId, setProductId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Initialize subscription state from profile immediately on mount/refresh
+  useEffect(() => {
+    if (profile) {
+      const tier = (profile.subscription_tier === 'premium' || profile.subscription_tier === 'basic') 
+        ? profile.subscription_tier 
+        : 'free' as 'free' | 'basic' | 'premium';
+      
+      const isSubscribed = profile.subscription_status === 'active' && tier !== 'free';
+      
+      // Set state immediately from profile (no async wait)
+      setSubscriptionTier(tier);
+      setSubscribed(isSubscribed);
+      setSubscriptionEnd(profile.subscription_expires_at || null);
+      setProductId(profile.subscription_product_id || null);
+      setLoading(false); // Stop loading once we have profile data
+    } else if (!profile && !loading) {
+      // No profile yet, but not loading - wait a bit
+      setLoading(true);
+    }
+  }, [profile]);
 
   const checkSubscription = useCallback(async () => {
     // Get current session directly from supabase
@@ -415,6 +438,7 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     return isFeatureEnabled('instant_notifications');
   };
 
+
   // Set up auth state listener
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -442,7 +466,11 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        checkSubscription();
+        // Check subscription in background, but don't block on it
+        // Profile state is already set from useEffect above
+        checkSubscription().catch(() => {
+          // Ignore errors - profile is source of truth
+        });
       } else {
         setLoading(false);
       }
