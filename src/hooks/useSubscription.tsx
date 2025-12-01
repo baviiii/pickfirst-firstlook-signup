@@ -70,18 +70,31 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     try {
       setLoading(true);
       
+      // First, get profile directly to check current subscription status
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('subscription_tier, subscription_status, subscription_expires_at, subscription_product_id')
+        .eq('id', currentSession.user.id)
+        .single();
+
+      // Then check with Stripe to sync/update if needed
       const { data, error } = await supabase.functions.invoke('check-subscription', {
         headers: {
           Authorization: `Bearer ${currentSession.access_token}`,
         },
       });
 
-      if (error) throw error;
+      // Use Stripe response if available, otherwise fall back to profile
+      const rawTier = data?.subscription_tier || profileData?.subscription_tier || 'free';
+      const tier = (rawTier === 'premium' || rawTier === 'basic') ? rawTier : 'free' as 'free' | 'basic' | 'premium';
+      const subscribed = data?.subscribed !== undefined ? data.subscribed : (profileData?.subscription_status === 'active' && tier !== 'free');
+      const endDate = data?.subscription_end || profileData?.subscription_expires_at || null;
+      const prodId = data?.product_id || profileData?.subscription_product_id || null;
 
-      setSubscribed(data?.subscribed || false);
-      setSubscriptionTier(data?.subscription_tier || 'free');
-      setSubscriptionEnd(data?.subscription_end || null);
-      setProductId(data?.product_id || null);
+      setSubscribed(subscribed);
+      setSubscriptionTier(tier);
+      setSubscriptionEnd(endDate);
+      setProductId(prodId);
       
       // Refresh feature configs when subscription status changes
       try {
@@ -104,12 +117,37 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
         // Feature config refresh failed silently
       }
     } catch (error) {
-      toast.error('Failed to check subscription status');
-      // Default to free tier on error
-      setSubscribed(false);
-      setSubscriptionTier('free');
-      setSubscriptionEnd(null);
-      setProductId(null);
+      console.error('Subscription check error:', error);
+      // Fallback to profile on error
+      try {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('subscription_tier, subscription_status, subscription_expires_at, subscription_product_id')
+          .eq('id', currentSession.user.id)
+          .single();
+        
+        if (profileData) {
+          const tier = (profileData.subscription_tier === 'premium' || profileData.subscription_tier === 'basic') 
+            ? profileData.subscription_tier 
+            : 'free' as 'free' | 'basic' | 'premium';
+          const subscribed = profileData.subscription_status === 'active' && tier !== 'free';
+          setSubscribed(subscribed);
+          setSubscriptionTier(tier);
+          setSubscriptionEnd(profileData.subscription_expires_at || null);
+          setProductId(profileData.subscription_product_id || null);
+        } else {
+          setSubscribed(false);
+          setSubscriptionTier('free');
+          setSubscriptionEnd(null);
+          setProductId(null);
+        }
+      } catch (fallbackError) {
+        toast.error('Failed to check subscription status');
+        setSubscribed(false);
+        setSubscriptionTier('free');
+        setSubscriptionEnd(null);
+        setProductId(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -291,9 +329,11 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     const config = featureConfigs[feature];
     if (!config) return false; // Unknown feature, default to disabled
     
-    if (subscriptionTier === 'premium' && subscribed) {
+    // Check subscription tier directly - if tier is premium, user has premium access
+    // subscribed flag is secondary check, but tier from profile is primary
+    if (subscriptionTier === 'premium') {
       return config.premium;
-    } else if (subscriptionTier === 'basic' && subscribed) {
+    } else if (subscriptionTier === 'basic') {
       return config.basic;
     } else {
       return config.free;

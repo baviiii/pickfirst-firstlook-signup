@@ -94,9 +94,21 @@ serve(async (req) => {
       const subscription = subscriptions.data[0];
       subscriptionId = subscription.id;
 
-      // Safely compute subscription end date
-      const rawPeriodEnd: unknown = (subscription as any)?.current_period_end;
-      logStep("Raw period end value", { rawPeriodEnd, type: typeof rawPeriodEnd });
+      // Safely compute subscription end date from multiple sources
+      // Try current_period_end first, then cancel_at, then fallback to profile
+      let rawPeriodEnd: unknown = subscription.current_period_end;
+      
+      // If current_period_end is missing, try cancel_at (for canceled subscriptions)
+      if (!rawPeriodEnd && subscription.cancel_at) {
+        rawPeriodEnd = subscription.cancel_at;
+      }
+      
+      // Also check the subscription object structure
+      if (!rawPeriodEnd && (subscription as any).period_end) {
+        rawPeriodEnd = (subscription as any).period_end;
+      }
+      
+      logStep("Raw period end value", { rawPeriodEnd, type: typeof rawPeriodEnd, subscriptionKeys: Object.keys(subscription) });
       
       if (rawPeriodEnd && typeof rawPeriodEnd === 'number' && rawPeriodEnd > 0) {
         try {
@@ -113,22 +125,55 @@ serve(async (req) => {
               logStep("Subscription end date computed", { subscriptionEnd });
             } else {
               logStep("Invalid date created from timestamp", { rawPeriodEnd, date });
-              subscriptionEnd = null;
+              // Try to get from profile as fallback
+              const { data: profileData } = await supabaseClient
+                .from('profiles')
+                .select('subscription_expires_at')
+                .eq('id', user.id)
+                .single();
+              subscriptionEnd = profileData?.subscription_expires_at || null;
             }
           } else {
             logStep("Timestamp out of reasonable range", { rawPeriodEnd, now, minPast, maxFuture });
-            subscriptionEnd = null;
+            // Try to get from profile as fallback
+            const { data: profileData } = await supabaseClient
+              .from('profiles')
+              .select('subscription_expires_at')
+              .eq('id', user.id)
+              .single();
+            subscriptionEnd = profileData?.subscription_expires_at || null;
           }
         } catch (error) {
           logStep("Error parsing subscription end date", { 
             error: error instanceof Error ? error.message : String(error), 
             rawPeriodEnd 
           });
-          subscriptionEnd = null;
+          // Try to get from profile as fallback
+          try {
+            const { data: profileData } = await supabaseClient
+              .from('profiles')
+              .select('subscription_expires_at')
+              .eq('id', user.id)
+              .single();
+            subscriptionEnd = profileData?.subscription_expires_at || null;
+          } catch {
+            subscriptionEnd = null;
+          }
         }
       } else {
-        logStep("Invalid or missing period end", { rawPeriodEnd });
-        subscriptionEnd = null;
+        logStep("Invalid or missing period end from Stripe, checking profile", { rawPeriodEnd });
+        // Fallback: check profile for subscription_expires_at
+        try {
+          const { data: profileData } = await supabaseClient
+            .from('profiles')
+            .select('subscription_expires_at')
+            .eq('id', user.id)
+            .single();
+          subscriptionEnd = profileData?.subscription_expires_at || null;
+          logStep("Got subscription end from profile", { subscriptionEnd });
+        } catch {
+          subscriptionEnd = null;
+        }
       }
 
       // Safely determine product id
