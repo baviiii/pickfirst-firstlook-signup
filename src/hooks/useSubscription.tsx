@@ -381,7 +381,63 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
 
   const isFeatureEnabled = (feature: string): boolean => {
     const config = featureConfigs[feature];
+    
+    // If no config found, check tier directly as fallback for premium users
     if (!config) {
+      // For premium users, allow access to premium features even if config is missing
+      const userTier = subscriptionTier === 'premium' || subscriptionTier === 'basic' 
+        ? subscriptionTier 
+        : (profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'basic')
+          ? profile.subscription_tier
+          : 'free';
+      
+      if (userTier === 'premium' || userTier === 'basic') {
+        // Comprehensive list of premium/basic feature keywords
+        // This handles features that exist in DB and aliases that don't
+        const isPremiumFeature = 
+          feature.includes('off_market') || 
+          feature.includes('vendor') || 
+          feature.includes('exclusive') ||
+          feature.includes('advanced') ||  // Matches both 'advanced_search' and 'advanced_search_filters'
+          feature.includes('schedule') ||
+          feature.includes('priority') ||
+          feature.includes('insight') ||
+          feature.includes('early_access') ||
+          feature.includes('investor') ||
+          feature.includes('unlimited') ||
+          feature === 'market_insights' ||
+          feature === 'property_insights' ||
+          feature === 'vendor_details' ||
+          feature === 'off_market_properties' ||  // Exists in DB
+          feature === 'exclusive_offmarket' ||    // Alias, doesn't exist in DB
+          feature === 'advanced_search' ||        // Exists in DB
+          feature === 'advanced_search_filters' || // Alias, doesn't exist in DB
+          feature === 'schedule_appointments' ||
+          feature === 'priority_support' ||
+          feature === 'early_access_listings' ||
+          feature === 'property_comparison_unlimited';
+        
+        // Basic tier features
+        const isBasicFeature = 
+          feature.includes('early_access') ||
+          feature.includes('insight') ||
+          feature.includes('investor') ||
+          feature === 'market_insights' ||
+          feature === 'property_insights' ||
+          feature === 'investor_filters' ||
+          feature === 'early_access_listings' ||
+          feature === 'advanced_search_filters';
+        
+        if (userTier === 'premium' && isPremiumFeature) {
+          console.log(`✅ Premium feature access granted: ${feature} (config missing, but user is premium)`);
+          return true;
+        }
+        
+        if ((userTier === 'premium' || userTier === 'basic') && isBasicFeature) {
+          console.log(`✅ ${userTier} feature access granted: ${feature} (config missing, but user is ${userTier})`);
+          return true;
+        }
+      }
       console.warn(`⚠️ Feature config not found for: ${feature}`);
       return false; // Unknown feature, default to disabled
     }
@@ -435,7 +491,12 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
   };
 
   const canUseAdvancedSearch = (): boolean => {
-    // Check both 'advanced_search' and 'advanced_search_filters' for compatibility
+    // Check 'advanced_search' (exists in DB) first, then 'advanced_search_filters' as alias/fallback
+    // If user is premium and either exists, grant access
+    if (subscriptionTier === 'premium' || profile?.subscription_tier === 'premium') {
+      // Premium users get access to advanced search features
+      return isFeatureEnabled('advanced_search') || isFeatureEnabled('advanced_search_filters') || true;
+    }
     return isFeatureEnabled('advanced_search') || isFeatureEnabled('advanced_search_filters');
   };
 
@@ -459,10 +520,35 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
     return subscriptionTier === 'premium' ? -1 : 30; // Premium: unlimited, Free: 30 days
   };
 
-  const canAccessOffMarketListings = (): boolean => {
-    // Check both 'exclusive_offmarket' and 'off_market_properties' for compatibility
-    return isFeatureEnabled('exclusive_offmarket') || isFeatureEnabled('off_market_properties');
-  };
+  const canAccessOffMarketListings = useCallback((): boolean => {
+    // Primary check: off_market_properties (this is the actual feature key in database)
+    // Fallback: exclusive_offmarket (alias, may not exist in DB)
+    const hasOffMarket = isFeatureEnabled('off_market_properties');
+    const hasExclusive = isFeatureEnabled('exclusive_offmarket');
+    const hasFeature = hasOffMarket || hasExclusive;
+    
+    // If user is premium, grant access even if feature configs are missing
+    const userTier = subscriptionTier === 'premium' || subscriptionTier === 'basic' 
+      ? subscriptionTier 
+      : (profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'basic')
+        ? profile.subscription_tier
+        : 'free';
+    
+    // Premium users always get access to off-market listings
+    const result = hasFeature || (userTier === 'premium');
+    
+    console.log('🔓 canAccessOffMarketListings check:', {
+      hasOffMarket,
+      hasExclusive,
+      hasFeature,
+      subscriptionTier,
+      userTier,
+      profileTier: profile?.subscription_tier,
+      finalResult: result
+    });
+    
+    return result;
+  }, [subscriptionTier, profile, isFeatureEnabled]);
 
   const canChatWithAgents = (): boolean => {
     // Check both 'agent_messaging' and 'direct_chat_agents' for compatibility
