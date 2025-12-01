@@ -59,11 +59,14 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
   // Initialize subscription state from profile immediately on mount/refresh
   useEffect(() => {
     if (profile) {
+      // Determine tier from profile - tier is the PRIMARY source of truth
       const tier = (profile.subscription_tier === 'premium' || profile.subscription_tier === 'basic') 
         ? profile.subscription_tier 
         : 'free' as 'free' | 'basic' | 'premium';
       
-      const isSubscribed = profile.subscription_status === 'active' && tier !== 'free';
+      // User is subscribed if tier is premium/basic OR subscription_status is 'active'
+      // This ensures if tier is set to premium, features unlock even if status is null
+      const isSubscribed = tier !== 'free' || profile.subscription_status === 'active';
       
       // Set state immediately from profile (no async wait)
       setSubscriptionTier(tier);
@@ -71,11 +74,28 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
       setSubscriptionEnd(profile.subscription_expires_at || null);
       setProductId(profile.subscription_product_id || null);
       setLoading(false); // Stop loading once we have profile data
+      
+      console.log('🔔 Subscription state updated from profile:', {
+        tier,
+        isSubscribed,
+        subscription_status: profile.subscription_status,
+        subscription_tier: profile.subscription_tier,
+        subscription_expires_at: profile.subscription_expires_at,
+        profile_id: profile.id,
+        profile_email: profile.email
+      });
     } else if (!profile && !loading) {
       // No profile yet, but not loading - wait a bit
       setLoading(true);
+    } else if (!profile) {
+      // Profile is null, reset to free
+      setSubscriptionTier('free');
+      setSubscribed(false);
+      setSubscriptionEnd(null);
+      setProductId(null);
+      setLoading(false);
     }
-  }, [profile]);
+  }, [profile, loading]);
 
   const checkSubscription = useCallback(async () => {
     // Get current session directly from supabase
@@ -110,7 +130,10 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
       // Use Stripe response if available, otherwise fall back to profile
       const rawTier = data?.subscription_tier || profileData?.subscription_tier || 'free';
       const tier = (rawTier === 'premium' || rawTier === 'basic') ? rawTier : 'free' as 'free' | 'basic' | 'premium';
-      const subscribed = data?.subscribed !== undefined ? data.subscribed : (profileData?.subscription_status === 'active' && tier !== 'free');
+      // Prioritize tier from profile - if tier is premium/basic, user is subscribed
+      const subscribed = data?.subscribed !== undefined 
+        ? data.subscribed 
+        : (tier !== 'free' || profileData?.subscription_status === 'active');
       const endDate = data?.subscription_end || profileData?.subscription_expires_at || null;
       const prodId = data?.product_id || profileData?.subscription_product_id || null;
 
@@ -153,7 +176,8 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
           const tier = (profileData.subscription_tier === 'premium' || profileData.subscription_tier === 'basic') 
             ? profileData.subscription_tier 
             : 'free' as 'free' | 'basic' | 'premium';
-          const subscribed = profileData.subscription_status === 'active' && tier !== 'free';
+          // Prioritize tier - if tier is premium/basic, user is subscribed
+          const subscribed = tier !== 'free' || profileData.subscription_status === 'active';
           setSubscribed(subscribed);
           setSubscriptionTier(tier);
           setSubscriptionEnd(profileData.subscription_expires_at || null);

@@ -32,7 +32,9 @@ export const BuyerSubscriptionStatus = () => {
   }
 
   const tier = profile?.subscription_tier || subscriptionTier || 'free';
-  const isFree = tier === 'free' || !subscribed;
+  // User is free only if tier is free AND not subscribed
+  // But if tier is premium/basic, they're not free regardless of subscribed flag
+  const isFree = tier === 'free' && (!subscribed || !profile?.subscription_tier);
 
   return (
     <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">

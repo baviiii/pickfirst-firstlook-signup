@@ -55,9 +55,10 @@ export const SubscriptionManagement = () => {
           subscription_expires_at,
           stripe_customer_id,
           stripe_subscription_id,
-          created_at
+          created_at,
+          role
         `)
-        .eq('role', 'buyer')
+        .in('role', ['buyer', 'agent']) // Include both buyers and agents (agents can also have subscriptions)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -74,14 +75,18 @@ export const SubscriptionManagement = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('subscription_tier, subscription_status')
-        .eq('role', 'buyer');
+        .select('subscription_tier, subscription_status, role')
+        .in('role', ['buyer', 'agent']); // Include both buyers and agents
 
       if (error) throw error;
 
       const totalUsers = data?.length || 0;
-      const activeSubscriptions = data?.filter(u => u.subscription_status === 'active').length || 0;
-      const freeUsers = data?.filter(u => u.subscription_tier === 'free').length || 0;
+      // Count active subscriptions: either subscription_status is 'active' OR tier is premium/basic
+      const activeSubscriptions = data?.filter(u => 
+        u.subscription_status === 'active' || 
+        (u.subscription_tier === 'premium' || u.subscription_tier === 'basic')
+      ).length || 0;
+      const freeUsers = data?.filter(u => !u.subscription_tier || u.subscription_tier === 'free').length || 0;
       
       // For demo purposes, calculate estimated revenue (in production, get from Stripe)
       const totalRevenue = activeSubscriptions * 29.99;
