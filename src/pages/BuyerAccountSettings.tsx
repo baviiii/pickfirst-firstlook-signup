@@ -548,8 +548,23 @@ const BuyerAccountSettingsPage = () => {
 
             {/* Profile Tab */}
             <TabsContent value="profile" className="space-y-6">
-              {/* Premium Upgrade Teaser - Only show if not premium */}
-              {subscriptionTier !== 'premium' && (
+              {/* Premium Upgrade Teaser - Show for free users */}
+              {(() => {
+                // Check subscription tier - show teaser if user is free or tier is not premium/basic
+                const currentTier = subscriptionTier || profile?.subscription_tier || 'free';
+                const isFreeUser = currentTier === 'free' || (!currentTier);
+                
+                // Debug: Log to help troubleshoot (check browser console)
+                console.log('[BuyerSettings Profile Tab] Premium teaser check:', {
+                  subscriptionTier,
+                  profileTier: profile?.subscription_tier,
+                  currentTier,
+                  isFreeUser,
+                  willShow: isFreeUser
+                });
+                
+                return isFreeUser;
+              })() && (
                 <Card className="bg-gradient-to-br from-pickfirst-yellow/10 via-pickfirst-amber/5 to-pickfirst-yellow/10 border-2 border-pickfirst-yellow/30 shadow-xl overflow-hidden relative">
                   {/* Decorative background pattern */}
                   <div className="absolute inset-0 opacity-5">

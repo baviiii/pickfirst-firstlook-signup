@@ -531,7 +531,16 @@ class AppointmentService {
 
           // Send email notifications for status changes
           // Pass isAppointmentClient to correctly identify if buyer is making the change (even if they're an agent in buyer mode)
+          console.log('[AppointmentService] About to send status change notifications:', {
+            appointmentId: data.id,
+            oldStatus: currentAppointment.status,
+            newStatus: updates.status,
+            isAppointmentClient,
+            clientId: data.client_id,
+            agentId: data.agent_id
+          });
           await this.sendStatusChangeNotifications(data, currentAppointment.status, updates.status as string, isAppointmentClient);
+          console.log('[AppointmentService] Status change notifications sent (or attempted)');
         }
       }
 
@@ -998,22 +1007,31 @@ class AppointmentService {
           if (isBuyerMakingChange) {
             // Buyer confirmed - ALWAYS notify agent
             console.log('[AppointmentService] Buyer confirmed appointment - sending email to agent:', agentProfile.email);
-            await EmailService.sendAppointmentStatusUpdate(
-              agentProfile.email,
-              agentProfile.full_name,
-              {
-                clientName: appointment.client_name,
-                clientEmail: appointment.client_email,
-                appointmentType: appointment.appointment_type.replace('_', ' ').toUpperCase(),
-                date: appointment.date,
-                time: appointment.time,
-                location: appointment.property_address,
-                status: 'confirmed',
-                statusMessage: 'Your client has confirmed the appointment'
-              }
-            ).catch(err => {
-              console.error('[AppointmentService] Failed to send confirmed email to agent:', err);
-            });
+            try {
+              await EmailService.sendAppointmentStatusUpdate(
+                agentProfile.email,
+                agentProfile.full_name,
+                {
+                  clientName: appointment.client_name,
+                  clientEmail: appointment.client_email,
+                  appointmentType: appointment.appointment_type.replace('_', ' ').toUpperCase(),
+                  date: appointment.date,
+                  time: appointment.time,
+                  location: appointment.property_address,
+                  status: 'confirmed',
+                  statusMessage: 'Your client has confirmed the appointment'
+                }
+              );
+              console.log('[AppointmentService] ✅ Confirmed email sent successfully to agent:', agentProfile.email);
+            } catch (err) {
+              console.error('[AppointmentService] ❌ CRITICAL: Failed to send confirmed email to agent:', err);
+              console.error('[AppointmentService] Error details:', {
+                error: err,
+                agentEmail: agentProfile.email,
+                appointmentId: appointment.id,
+                status: 'confirmed'
+              });
+            }
           } else if (isAgentMakingChange) {
             // Agent confirmed - notify client
             console.log('[AppointmentService] Agent confirmed appointment - sending email to client:', appointment.client_email);
@@ -1039,22 +1057,31 @@ class AppointmentService {
         case 'declined':
           // Always notify agent when buyer declines (regardless of who made the change)
           console.log('[AppointmentService] Buyer declined appointment - sending email to agent:', agentProfile.email);
-          await EmailService.sendAppointmentStatusUpdate(
-            agentProfile.email,
-            agentProfile.full_name,
-            {
-              clientName: appointment.client_name,
-              clientEmail: appointment.client_email,
-              appointmentType: appointment.appointment_type.replace('_', ' ').toUpperCase(),
-              date: appointment.date,
-              time: appointment.time,
-              location: appointment.property_address,
-              status: 'declined',
-              statusMessage: 'Your client has declined the appointment'
-            }
-          ).catch(err => {
-            console.error('[AppointmentService] Failed to send declined email to agent:', err);
-          });
+          try {
+            await EmailService.sendAppointmentStatusUpdate(
+              agentProfile.email,
+              agentProfile.full_name,
+              {
+                clientName: appointment.client_name,
+                clientEmail: appointment.client_email,
+                appointmentType: appointment.appointment_type.replace('_', ' ').toUpperCase(),
+                date: appointment.date,
+                time: appointment.time,
+                location: appointment.property_address,
+                status: 'declined',
+                statusMessage: 'Your client has declined the appointment'
+              }
+            );
+            console.log('[AppointmentService] ✅ Declined email sent successfully to agent:', agentProfile.email);
+          } catch (err) {
+            console.error('[AppointmentService] ❌ CRITICAL: Failed to send declined email to agent:', err);
+            console.error('[AppointmentService] Error details:', {
+              error: err,
+              agentEmail: agentProfile.email,
+              appointmentId: appointment.id,
+              status: 'declined'
+            });
+          }
           break;
 
         case 'scheduled':
@@ -1146,7 +1173,17 @@ class AppointmentService {
           break;
       }
     } catch (error) {
-      console.error('Error sending status change notifications:', error);
+      console.error('[AppointmentService] ❌ CRITICAL ERROR in sendStatusChangeNotifications:', error);
+      console.error('[AppointmentService] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      console.error('[AppointmentService] Full error details:', {
+        error,
+        appointmentId: appointment?.id,
+        oldStatus,
+        newStatus,
+        isClientMakingChange
+      });
+      // Don't throw - we don't want email failures to block appointment updates
+      // But log extensively for debugging
     }
   }
 

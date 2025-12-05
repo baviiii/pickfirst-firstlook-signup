@@ -437,29 +437,72 @@ export class EmailService {
       });
 
       if (error) {
-        console.error('[EmailService] Error sending appointment status update email:', error);
-        // Fallback: queue the email if direct send fails
-        await this.queueEmail({
+        console.error('[EmailService] ❌ Error sending appointment status update email:', error);
+        console.error('[EmailService] Error details:', {
+          error,
+          errorMessage: error?.message,
+          errorStack: error?.stack,
           to: userEmail,
-          template: 'appointmentStatusUpdate',
-          subject: `Appointment ${appointmentData.status.charAt(0).toUpperCase() + appointmentData.status.slice(1)} - ${appointmentData.appointmentType}`,
-          data: {
-            name: userName,
-            clientName: appointmentData.clientName,
-            clientEmail: appointmentData.clientEmail,
-            agentName: appointmentData.agentName,
-            appointmentType: appointmentData.appointmentType,
-            date: appointmentData.date,
-            time: appointmentData.time,
-            location: appointmentData.location,
-            status: appointmentData.status,
-            statusMessage: appointmentData.statusMessage,
-            platformName: 'PickFirst Real Estate',
-            platformUrl: 'https://pickfirst.com.au'
-          }
+          status: appointmentData.status
         });
+        // Fallback: queue the email if direct send fails
+        try {
+          await this.queueEmail({
+            to: userEmail,
+            template: 'appointmentStatusUpdate',
+            subject: `Appointment ${appointmentData.status.charAt(0).toUpperCase() + appointmentData.status.slice(1)} - ${appointmentData.appointmentType}`,
+            data: {
+              name: userName,
+              clientName: appointmentData.clientName,
+              clientEmail: appointmentData.clientEmail,
+              agentName: appointmentData.agentName,
+              appointmentType: appointmentData.appointmentType,
+              date: appointmentData.date,
+              time: appointmentData.time,
+              location: appointmentData.location,
+              status: appointmentData.status,
+              statusMessage: appointmentData.statusMessage,
+              platformName: 'PickFirst Real Estate',
+              platformUrl: 'https://pickfirst.com.au'
+            }
+          });
+          console.log('[EmailService] ✅ Email queued as fallback for:', userEmail);
+        } catch (queueError) {
+          console.error('[EmailService] ❌ CRITICAL: Failed to queue email as fallback:', queueError);
+          throw queueError; // Re-throw so caller knows email failed
+        }
+      } else if (data?.error) {
+        // Check if response body contains an error
+        console.error('[EmailService] ❌ Edge function returned error in response:', data.error);
+        // Fallback: queue the email
+        try {
+          await this.queueEmail({
+            to: userEmail,
+            template: 'appointmentStatusUpdate',
+            subject: `Appointment ${appointmentData.status.charAt(0).toUpperCase() + appointmentData.status.slice(1)} - ${appointmentData.appointmentType}`,
+            data: {
+              name: userName,
+              clientName: appointmentData.clientName,
+              clientEmail: appointmentData.clientEmail,
+              agentName: appointmentData.agentName,
+              appointmentType: appointmentData.appointmentType,
+              date: appointmentData.date,
+              time: appointmentData.time,
+              location: appointmentData.location,
+              status: appointmentData.status,
+              statusMessage: appointmentData.statusMessage,
+              platformName: 'PickFirst Real Estate',
+              platformUrl: 'https://pickfirst.com.au'
+            }
+          });
+          console.log('[EmailService] ✅ Email queued as fallback for:', userEmail);
+        } catch (queueError) {
+          console.error('[EmailService] ❌ CRITICAL: Failed to queue email as fallback:', queueError);
+          throw new Error(`Failed to send or queue email: ${data.error}`);
+        }
       } else {
-        console.log('[EmailService] Appointment status update email sent successfully to:', userEmail);
+        console.log('[EmailService] ✅ Appointment status update email sent successfully to:', userEmail);
+        console.log('[EmailService] Response data:', data);
       }
     } catch (error) {
       console.error('[EmailService] Exception sending appointment status update email:', error);
