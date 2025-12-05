@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar, Clock, MapPin, User, Phone, Plus, Search, Filter, ChevronRight, Edit3, MessageSquare, Undo2, Check, X, CalendarIcon } from 'lucide-react';
+import { Calendar, Clock, MapPin, User, Phone, Plus, Search, Filter, ChevronRight, Edit3, MessageSquare, Undo2, Check, X, CalendarIcon, Mail, AlertTriangle, Home } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -36,6 +36,25 @@ interface Appointment {
   notes: string;
   property_id?: string;
   created_at: string;
+  client?: {
+    id: string;
+    full_name: string;
+    email: string;
+    phone?: string;
+    location?: string;
+    company?: string;
+    bio?: string;
+  } | null;
+  clientDeleted?: boolean; // Flag to indicate if client account was deleted
+  property?: {
+    id: string;
+    title: string;
+    address: string;
+    price?: number;
+    property_type?: string;
+    bedrooms?: number;
+    bathrooms?: number;
+  };
 }
 
 interface StatusChangeDialog {
@@ -108,7 +127,7 @@ export const Appointments = () => {
         .from('appointments')
         .select(`
           *,
-          property_listings!appointments_property_id_fkey(title, address)
+          property_listings!appointments_property_id_fkey(id, title, address, price, property_type, bedrooms, bathrooms)
         `)
         .eq('agent_id', user.id)
         .order('date', { ascending: true })
@@ -116,29 +135,76 @@ export const Appointments = () => {
 
       if (error) throw error;
       
-      // Transform the data to match our interface
-      const appointmentsData = (data || []).map(appointment => ({
-        id: appointment.id,
-        agent_id: appointment.agent_id,
-        client_id: appointment.client_id,
-        inquiry_id: appointment.inquiry_id,
-        client_name: appointment.client_name || 'Unknown Client',
-        client_phone: appointment.client_phone || '',
-        client_email: appointment.client_email || '',
-        property_address: appointment.property_address || appointment.property_listings?.address || 'Virtual/Office Meeting',
-        appointment_type: appointment.appointment_type as any,
-        date: appointment.date,
-        time: appointment.time,
-        duration: appointment.duration,
-        status: appointment.status as any,
-        notes: appointment.notes || '',
-        property_id: appointment.property_id,
-        created_at: appointment.created_at
+      // Transform the data and check if clients exist
+      const appointmentsData = await Promise.all((data || []).map(async (appointment) => {
+        let client = null;
+        let clientDeleted = false;
+        
+        // If client_id exists, try to fetch client profile details
+        if (appointment.client_id) {
+          try {
+            const { data: clientProfile, error: profileError } = await supabase
+              .from('profiles')
+              .select('id, full_name, email, phone, location, company, bio')
+              .eq('id', appointment.client_id)
+              .maybeSingle();
+            
+            if (profileError || !clientProfile) {
+              // Profile doesn't exist - client account was deleted
+              clientDeleted = true;
+              console.log(`[Appointments] Client profile not found for client_id: ${appointment.client_id} - account was deleted`);
+            } else {
+              client = {
+                id: clientProfile.id,
+                full_name: clientProfile.full_name || appointment.client_name || 'Unknown',
+                email: clientProfile.email || appointment.client_email || '',
+                phone: clientProfile.phone || appointment.client_phone || '',
+                location: clientProfile.location || undefined,
+                company: clientProfile.company || undefined,
+                bio: clientProfile.bio || undefined
+              };
+            }
+          } catch (err) {
+            console.error(`[Appointments] Error checking client profile for ${appointment.client_id}:`, err);
+            clientDeleted = true; // Assume deleted if we can't check
+          }
+        }
+        
+        return {
+          id: appointment.id,
+          agent_id: appointment.agent_id,
+          client_id: appointment.client_id,
+          inquiry_id: appointment.inquiry_id,
+          client_name: appointment.client_name || client?.full_name || 'Unknown Client',
+          client_phone: appointment.client_phone || client?.phone || '',
+          client_email: appointment.client_email || client?.email || '',
+          property_address: appointment.property_address || appointment.property_listings?.address || 'Virtual/Office Meeting',
+          appointment_type: appointment.appointment_type as any,
+          date: appointment.date,
+          time: appointment.time,
+          duration: appointment.duration,
+          status: appointment.status as any,
+          notes: appointment.notes || '',
+          property_id: appointment.property_id,
+          created_at: appointment.created_at,
+          client: client,
+          clientDeleted: clientDeleted,
+          property: appointment.property_listings ? {
+            id: appointment.property_listings.id,
+            title: appointment.property_listings.title || appointment.property_listings.address,
+            address: appointment.property_listings.address,
+            price: appointment.property_listings.price,
+            property_type: appointment.property_listings.property_type,
+            bedrooms: appointment.property_listings.bedrooms,
+            bathrooms: appointment.property_listings.bathrooms
+          } : undefined
+        };
       }));
 
       setAppointments(appointmentsData);
     } catch (error) {
       toast.error('Failed to load appointments');
+      console.error('Error fetching appointments:', error);
     } finally {
       setLoading(false);
     }
@@ -528,14 +594,27 @@ export const Appointments = () => {
                   <div className="flex flex-col space-y-4">
                     {/* Header Section */}
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
                         <div className="text-2xl flex-shrink-0">{getTypeIcon(appointment.appointment_type)}</div>
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-lg font-semibold text-foreground truncate">{appointment.client_name}</h3>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-lg font-semibold text-foreground truncate">{appointment.client_name}</h3>
+                            {appointment.clientDeleted && (
+                              <Badge className="bg-red-500/10 text-red-600 border-red-500/30 text-xs shrink-0">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                Account Deleted
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-primary font-medium text-sm">{formatAppointmentType(appointment.appointment_type)}</p>
+                          {appointment.clientDeleted && (
+                            <p className="text-xs text-muted-foreground mt-1 italic">
+                              User no longer in the system - Appointment records preserved for historical purposes
+                            </p>
+                          )}
                         </div>
                       </div>
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 shrink-0">
                         <Badge className={`${getStatusColor(appointment.status)} border text-xs`}>
                           {appointment.status.replace('_', ' ')}
                         </Badge>
@@ -545,7 +624,69 @@ export const Appointments = () => {
                       </div>
                     </div>
 
-                    {/* Info Grid */}
+                    {/* Client Details Section - Comprehensive Display */}
+                    <div className="bg-card/50 border border-border rounded-lg p-4 space-y-3">
+                      <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <User className="h-4 w-4 text-pickfirst-yellow" />
+                        Client Information
+                      </h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        {/* Email */}
+                        {appointment.client_email && (
+                          <div className="flex items-start gap-2 text-muted-foreground">
+                            <Mail className="h-4 w-4 text-pickfirst-yellow flex-shrink-0 mt-0.5" />
+                            <div className="min-w-0 flex-1">
+                              <span className="text-xs text-muted-foreground/70 block">Email:</span>
+                              <span className="text-foreground truncate block">{appointment.client_email}</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Phone */}
+                        {appointment.client_phone && (
+                          <div className="flex items-start gap-2 text-muted-foreground">
+                            <Phone className="h-4 w-4 text-pickfirst-yellow flex-shrink-0 mt-0.5" />
+                            <div className="min-w-0 flex-1">
+                              <span className="text-xs text-muted-foreground/70 block">Phone:</span>
+                              <span className="text-foreground truncate block">{appointment.client_phone}</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Location (if available from client profile) */}
+                        {appointment.client?.location && (
+                          <div className="flex items-start gap-2 text-muted-foreground">
+                            <MapPin className="h-4 w-4 text-pickfirst-yellow flex-shrink-0 mt-0.5" />
+                            <div className="min-w-0 flex-1">
+                              <span className="text-xs text-muted-foreground/70 block">Location:</span>
+                              <span className="text-foreground truncate block">{appointment.client.location}</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Company (if available from client profile) */}
+                        {appointment.client?.company && (
+                          <div className="flex items-start gap-2 text-muted-foreground">
+                            <User className="h-4 w-4 text-pickfirst-yellow flex-shrink-0 mt-0.5" />
+                            <div className="min-w-0 flex-1">
+                              <span className="text-xs text-muted-foreground/70 block">Company:</span>
+                              <span className="text-foreground truncate block">{appointment.client.company}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Bio (if available) */}
+                      {appointment.client?.bio && (
+                        <div className="pt-2 border-t border-border">
+                          <span className="text-xs text-muted-foreground/70 block mb-1">Bio:</span>
+                          <p className="text-sm text-foreground">{appointment.client.bio}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Appointment Details Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Calendar className="h-4 w-4 text-pickfirst-yellow flex-shrink-0" />
@@ -556,16 +697,83 @@ export const Appointments = () => {
                         <Clock className="h-4 w-4 text-pickfirst-yellow flex-shrink-0" />
                         <span>{appointment.time} ({appointment.duration} min)</span>
                       </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Phone className="h-4 w-4 text-pickfirst-yellow flex-shrink-0" />
-                        <span className="truncate">{appointment.client_phone}</span>
-                      </div>
                     </div>
 
-                    {/* Address */}
-                    <div className="flex items-start gap-2 text-sm">
-                      <MapPin className="h-4 w-4 text-pickfirst-yellow mt-0.5 flex-shrink-0" />
-                      <span className="text-muted-foreground break-words">{appointment.property_address}</span>
+                    {/* Property/Appointment Location Section */}
+                    <div className="bg-card/50 border border-border rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                        <MapPin className="h-4 w-4 text-pickfirst-yellow" />
+                        {appointment.appointment_type === 'property_showing' ? 'Property Details' : 'Appointment Location'}
+                      </h4>
+                      <div className="space-y-3">
+                        {appointment.property_id && appointment.property ? (
+                          <>
+                            <div className="text-sm space-y-2">
+                              <div>
+                                <span className="text-xs text-muted-foreground/70 block mb-1">Property Title:</span>
+                                <span className="text-foreground font-semibold break-words block">
+                                  {appointment.property.title || appointment.property_address}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-xs text-muted-foreground/70 block mb-1">Address:</span>
+                                <span className="text-foreground break-words block">
+                                  {appointment.property.address || appointment.property_address || 'Address not specified'}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-3 pt-2 border-t border-border">
+                                {appointment.property.price && (
+                                  <div>
+                                    <span className="text-xs text-muted-foreground/70 block">Price:</span>
+                                    <span className="text-foreground font-medium">
+                                      ${appointment.property.price.toLocaleString()}
+                                    </span>
+                                  </div>
+                                )}
+                                {appointment.property.property_type && (
+                                  <div>
+                                    <span className="text-xs text-muted-foreground/70 block">Type:</span>
+                                    <span className="text-foreground font-medium">
+                                      {appointment.property.property_type}
+                                    </span>
+                                  </div>
+                                )}
+                                {appointment.property.bedrooms && (
+                                  <div>
+                                    <span className="text-xs text-muted-foreground/70 block">Bedrooms:</span>
+                                    <span className="text-foreground font-medium">
+                                      {appointment.property.bedrooms}
+                                    </span>
+                                  </div>
+                                )}
+                                {appointment.property.bathrooms && (
+                                  <div>
+                                    <span className="text-xs text-muted-foreground/70 block">Bathrooms:</span>
+                                    <span className="text-foreground font-medium">
+                                      {appointment.property.bathrooms}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="link"
+                              className="text-pickfirst-yellow hover:text-pickfirst-amber p-0 h-auto text-xs"
+                              onClick={() => window.open(`/property/${appointment.property_id}`, '_blank')}
+                            >
+                              View Full Property Details →
+                            </Button>
+                          </>
+                        ) : (
+                          <div className="text-sm">
+                            <span className="text-xs text-muted-foreground/70 block">Location:</span>
+                            <span className="text-foreground font-medium break-words">
+                              {appointment.property_address || 'Location not specified'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Notes */}
