@@ -456,107 +456,117 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
           
           <div className="space-y-4 pl-7">
             {/* Property Alerts */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-primary" />
-                  <span className="font-medium">Property Alerts</span>
-                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 rounded-lg bg-muted/20 border">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <Bell className="h-4 w-4 text-primary shrink-0" />
+                  <span className="font-medium text-sm sm:text-base">Property Alerts</span>
+                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs shrink-0">
                     Unlimited
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Get notified when new on-market properties match your criteria. Premium members also get exclusive off-market alerts! 🔐
                 </p>
               </div>
-              <Switch
-                checked={preferences.property_alerts || false}
-                onCheckedChange={(checked) => handlePreferenceChange('property_alerts', checked)}
-              />
+              <div className="flex items-center justify-end sm:justify-start shrink-0">
+                <Switch
+                  checked={preferences.property_alerts || false}
+                  onCheckedChange={(checked) => handlePreferenceChange('property_alerts', checked)}
+                />
+              </div>
             </div>
 
             {/* New Listings */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Home className="h-4 w-4 text-primary" />
-                  <span className="font-medium">New Listings</span>
-                  <Badge variant="outline" className="text-xs">Free + Premium</Badge>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 rounded-lg bg-muted/20 border">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <Home className="h-4 w-4 text-primary shrink-0" />
+                  <span className="font-medium text-sm sm:text-base">New Listings</span>
+                  <Badge variant="outline" className="text-xs shrink-0">Free + Premium</Badge>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Weekly digest of new properties in your preferred areas
                 </p>
               </div>
-              <Switch
-                checked={preferences.new_listings || false}
-                onCheckedChange={(checked) => handlePreferenceChange('new_listings', checked)}
-              />
+              <div className="flex items-center justify-end sm:justify-start shrink-0">
+                <Switch
+                  checked={preferences.new_listings || false}
+                  onCheckedChange={(checked) => handlePreferenceChange('new_listings', checked)}
+                />
+              </div>
             </div>
 
             {/* Price Changes */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-primary" />
-                  <span className="font-medium">Price Changes</span>
-                  <Badge className="bg-primary text-primary-foreground text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 rounded-lg bg-muted/20 border">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <DollarSign className="h-4 w-4 text-primary shrink-0" />
+                  <span className="font-medium text-sm sm:text-base">Price Changes</span>
+                  <Badge className="bg-primary text-primary-foreground text-xs shrink-0">
                     <Crown className="h-3 w-3 mr-1" />
                     Premium
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Get notified when saved properties change price
                 </p>
               </div>
-              <Switch
-                checked={preferences.price_changes || false}
-                onCheckedChange={(checked) => handlePreferenceChange('price_changes', checked)}
-              />
+              <div className="flex items-center justify-end sm:justify-start shrink-0">
+                <Switch
+                  checked={preferences.price_changes || false}
+                  onCheckedChange={(checked) => handlePreferenceChange('price_changes', checked)}
+                />
+              </div>
             </div>
 
             {/* Market Updates */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-primary" />
-                  <span className="font-medium">Market Updates</span>
-                  <Badge className="bg-primary text-primary-foreground text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 rounded-lg bg-muted/20 border">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <Target className="h-4 w-4 text-primary shrink-0" />
+                  <span className="font-medium text-sm sm:text-base">Market Updates</span>
+                  <Badge className="bg-primary text-primary-foreground text-xs shrink-0">
                     <Crown className="h-3 w-3 mr-1" />
                     Premium
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Monthly market insights and trends for your areas
                 </p>
               </div>
-              <Switch
-                checked={preferences.market_updates || false}
-                onCheckedChange={(checked) => handlePreferenceChange('market_updates', checked)}
-              />
+              <div className="flex items-center justify-end sm:justify-start shrink-0">
+                <Switch
+                  checked={preferences.market_updates || false}
+                  onCheckedChange={(checked) => handlePreferenceChange('market_updates', checked)}
+                />
+              </div>
             </div>
 
             {/* Master Email Toggle */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-primary" />
-                  <span className="font-medium">All Email Notifications</span>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <Mail className="h-4 w-4 text-primary shrink-0" />
+                  <span className="font-medium text-sm sm:text-base">All Email Notifications</span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Master toggle for all email notifications
                 </p>
               </div>
-              <Switch
-                checked={preferences.email_notifications || false}
-                onCheckedChange={(checked) => handlePreferenceChange('email_notifications', checked)}
-              />
+              <div className="flex items-center justify-end sm:justify-start shrink-0">
+                <Switch
+                  checked={preferences.email_notifications || false}
+                  onCheckedChange={(checked) => handlePreferenceChange('email_notifications', checked)}
+                />
+              </div>
             </div>
           </div>
         </div>
 
         {/* Save and Reset Buttons */}
-        <div className="flex items-center justify-between pt-4 border-t border-border">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <Button 
               variant="outline"
               onClick={() => {
@@ -578,19 +588,19 @@ export const BuyerPreferencesManager: React.FC<BuyerPreferencesManagerProps> = (
                 });
                 setHasChanges(true);
               }}
-              className="text-muted-foreground"
+              className="text-muted-foreground w-full sm:w-auto text-sm sm:text-base"
             >
               <X className="h-4 w-4 mr-2" />
               Reset All
             </Button>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
               {hasChanges ? 'You have unsaved changes' : 'All changes saved'}
             </div>
           </div>
           <Button 
             onClick={handleSave} 
             disabled={!hasChanges || isLoading}
-            className="min-w-[100px]"
+            className="w-full sm:w-auto min-w-[100px] text-sm sm:text-base"
           >
             {isLoading ? 'Saving...' : 'Save Preferences'}
           </Button>

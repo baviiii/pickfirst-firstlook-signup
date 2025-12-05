@@ -550,20 +550,9 @@ const BuyerAccountSettingsPage = () => {
             <TabsContent value="profile" className="space-y-6">
               {/* Premium Upgrade Teaser - Show for free users */}
               {(() => {
-                // Check subscription tier - show teaser if user is free or tier is not premium/basic
-                const currentTier = subscriptionTier || profile?.subscription_tier || 'free';
-                const isFreeUser = currentTier === 'free' || (!currentTier);
-                
-                // Debug: Log to help troubleshoot (check browser console)
-                console.log('[BuyerSettings Profile Tab] Premium teaser check:', {
-                  subscriptionTier,
-                  profileTier: profile?.subscription_tier,
-                  currentTier,
-                  isFreeUser,
-                  willShow: isFreeUser
-                });
-                
-                return isFreeUser;
+                // Simply check if status is "free" or not
+                const currentTier = profile?.subscription_tier || subscriptionTier || 'free';
+                return currentTier === 'free';
               })() && (
                 <Card className="bg-gradient-to-br from-pickfirst-yellow/10 via-pickfirst-amber/5 to-pickfirst-yellow/10 border-2 border-pickfirst-yellow/30 shadow-xl overflow-hidden relative">
                   {/* Decorative background pattern */}
@@ -715,13 +704,15 @@ const BuyerAccountSettingsPage = () => {
                     </div>
                   </div>
 
-                  <Button 
-                    onClick={handleSaveBuyerPreferences}
-                    disabled={isLoading}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
-                  >
-                    {isLoading ? 'Saving...' : 'Save Profile'}
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
+                    <Button 
+                      onClick={handleSaveBuyerPreferences}
+                      disabled={isLoading}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto text-sm sm:text-base"
+                    >
+                      {isLoading ? 'Saving...' : 'Save Preferences'}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -897,20 +888,20 @@ const BuyerAccountSettingsPage = () => {
                     const hasFeatureAccess = isFeatureEnabled('personalized_property_notifications');
                     
                     return (
-                      <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-card/80 border border-border">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-foreground font-medium">
+                      <div key={key} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 rounded-lg bg-card/80 border border-border">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h4 className="text-foreground font-medium text-sm sm:text-base">
                               {key === 'personalizedPropertyNotifications' ? 'Personalized Property Notifications' :
                                key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                             </h4>
                             {isPersonalizedNotifications && !hasFeatureAccess && (
-                              <Badge variant="outline" className="text-xs text-pickfirst-yellow border-pickfirst-yellow">
+                              <Badge variant="outline" className="text-xs text-pickfirst-yellow border-pickfirst-yellow shrink-0">
                                 Premium
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs sm:text-sm text-muted-foreground">
                             {key === 'propertyAlerts' && 'Get email alerts for new on-market properties matching your criteria. Premium members also receive exclusive off-market alerts! 🔐'}
                             {key === 'priceChanges' && 'Alerts when saved properties change price'}
                             {key === 'marketUpdates' && 'Weekly market trends and insights'}
@@ -919,39 +910,41 @@ const BuyerAccountSettingsPage = () => {
                             {key === 'personalizedPropertyNotifications' && 'Enhanced property recommendations based on your search history and location preferences'}
                           </p>
                         </div>
-                        {isPersonalizedNotifications && !hasFeatureAccess ? (
-                          <FeatureGate 
-                            feature="personalized_property_notifications"
-                            showUpgrade={false}
-                            fallback={
-                              <div className="flex items-center gap-2">
-                                <Switch
-                                  checked={false}
-                                  disabled={true}
-                                  className="opacity-50"
-                                />
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => navigate('/pricing')}
-                                  className="text-pickfirst-yellow border-pickfirst-yellow hover:bg-pickfirst-yellow hover:text-black text-xs px-2 py-1 h-6"
-                                >
-                                  Upgrade
-                                </Button>
-                              </div>
-                            }
-                          >
+                        <div className="flex items-center justify-end sm:justify-start shrink-0">
+                          {isPersonalizedNotifications && !hasFeatureAccess ? (
+                            <FeatureGate 
+                              feature="personalized_property_notifications"
+                              showUpgrade={false}
+                              fallback={
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Switch
+                                    checked={false}
+                                    disabled={true}
+                                    className="opacity-50"
+                                  />
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => navigate('/pricing')}
+                                    className="text-pickfirst-yellow border-pickfirst-yellow hover:bg-pickfirst-yellow hover:text-black text-xs px-2 sm:px-3 py-1 h-7 sm:h-8 shrink-0"
+                                  >
+                                    Upgrade
+                                  </Button>
+                                </div>
+                              }
+                            >
+                              <Switch
+                                checked={value}
+                                onCheckedChange={(checked) => handleNotificationChange(key, checked)}
+                              />
+                            </FeatureGate>
+                          ) : (
                             <Switch
                               checked={value}
                               onCheckedChange={(checked) => handleNotificationChange(key, checked)}
                             />
-                          </FeatureGate>
-                        ) : (
-                          <Switch
-                            checked={value}
-                            onCheckedChange={(checked) => handleNotificationChange(key, checked)}
-                          />
-                        )}
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -975,7 +968,11 @@ const BuyerAccountSettingsPage = () => {
                   </div>
                   
                   <div className="pt-2">
-                    <Button onClick={handleSaveNotificationsPrivacy} disabled={isLoading} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                    <Button 
+                      onClick={handleSaveNotificationsPrivacy} 
+                      disabled={isLoading} 
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto text-sm sm:text-base"
+                    >
                       {isLoading ? 'Saving...' : 'Save Notification Preferences'}
                     </Button>
                   </div>
@@ -997,25 +994,31 @@ const BuyerAccountSettingsPage = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {Object.entries(settings.privacy).map(([key, value]) => (
-                    <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-card/80 border border-border">
-                      <div>
-                        <h4 className="text-foreground font-medium">
+                    <div key={key} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 rounded-lg bg-card/80 border border-border">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-foreground font-medium text-sm sm:text-base mb-1">
                           {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                         </h4>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           {key === 'profileVisible' && 'Allow agents to see your profile information'}
                           {key === 'showActivityStatus' && 'Show when you\'re online and active'}
                           {key === 'allowMarketing' && 'Receive marketing emails about new features'}
                         </p>
                       </div>
-                      <Switch
-                        checked={value}
-                        onCheckedChange={(checked) => handlePrivacyChange(key, checked)}
-                      />
+                      <div className="flex items-center justify-end sm:justify-start shrink-0">
+                        <Switch
+                          checked={value}
+                          onCheckedChange={(checked) => handlePrivacyChange(key, checked)}
+                        />
+                      </div>
                     </div>
                   ))}
                   <div className="pt-2">
-                    <Button onClick={handleSaveNotificationsPrivacy} disabled={isLoading} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                    <Button 
+                      onClick={handleSaveNotificationsPrivacy} 
+                      disabled={isLoading} 
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto text-sm sm:text-base"
+                    >
                       {isLoading ? 'Saving...' : 'Save Privacy Settings'}
                     </Button>
                   </div>
