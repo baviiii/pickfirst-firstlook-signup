@@ -407,10 +407,18 @@ export class EmailService {
     }
   ): Promise<void> {
     try {
-      await supabase.functions.invoke('send-email', {
+      console.log('[EmailService] Sending appointment status update email:', {
+        to: userEmail,
+        status: appointmentData.status,
+        appointmentType: appointmentData.appointmentType
+      });
+
+      // Send directly via Edge Function for immediate delivery (appointment status updates need to be immediate)
+      const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
           to: userEmail,
           template: 'appointmentStatusUpdate',
+          subject: `Appointment ${appointmentData.status.charAt(0).toUpperCase() + appointmentData.status.slice(1)} - ${appointmentData.appointmentType}`,
           data: {
             name: userName,
             clientName: appointmentData.clientName,
@@ -424,37 +432,65 @@ export class EmailService {
             statusMessage: appointmentData.statusMessage,
             platformName: 'PickFirst Real Estate',
             platformUrl: 'https://pickfirst.com.au'
-          },
-          subject: `Appointment ${appointmentData.status.charAt(0).toUpperCase() + appointmentData.status.slice(1)} - ${appointmentData.appointmentType}`
+          }
         }
       });
+
+      if (error) {
+        console.error('[EmailService] Error sending appointment status update email:', error);
+        // Fallback: queue the email if direct send fails
+        await this.queueEmail({
+          to: userEmail,
+          template: 'appointmentStatusUpdate',
+          subject: `Appointment ${appointmentData.status.charAt(0).toUpperCase() + appointmentData.status.slice(1)} - ${appointmentData.appointmentType}`,
+          data: {
+            name: userName,
+            clientName: appointmentData.clientName,
+            clientEmail: appointmentData.clientEmail,
+            agentName: appointmentData.agentName,
+            appointmentType: appointmentData.appointmentType,
+            date: appointmentData.date,
+            time: appointmentData.time,
+            location: appointmentData.location,
+            status: appointmentData.status,
+            statusMessage: appointmentData.statusMessage,
+            platformName: 'PickFirst Real Estate',
+            platformUrl: 'https://pickfirst.com.au'
+          }
+        });
+      } else {
+        console.log('[EmailService] Appointment status update email sent successfully to:', userEmail);
+      }
     } catch (error) {
-      console.error('Error sending appointment status update email:', error);
+      console.error('[EmailService] Exception sending appointment status update email:', error);
+      // Fallback: try to queue the email even if there's an exception
+      try {
+        await this.queueEmail({
+          to: userEmail,
+          template: 'appointmentStatusUpdate',
+          subject: `Appointment ${appointmentData.status.charAt(0).toUpperCase() + appointmentData.status.slice(1)} - ${appointmentData.appointmentType}`,
+          data: {
+            name: userName,
+            clientName: appointmentData.clientName,
+            clientEmail: appointmentData.clientEmail,
+            agentName: appointmentData.agentName,
+            appointmentType: appointmentData.appointmentType,
+            date: appointmentData.date,
+            time: appointmentData.time,
+            location: appointmentData.location,
+            status: appointmentData.status,
+            statusMessage: appointmentData.statusMessage,
+            platformName: 'PickFirst Real Estate',
+            platformUrl: 'https://pickfirst.com.au'
+          }
+        });
+        console.log('[EmailService] Appointment status update email queued as fallback');
+      } catch (queueError) {
+        console.error('[EmailService] Failed to queue appointment status update email:', queueError);
+      }
     }
   }
 
-  /**
-   * Send password reset email
-   */
-  static async sendPasswordResetEmail(userEmail: string, resetUrl?: string): Promise<void> {
-    try {
-      await supabase.functions.invoke('send-email', {
-        body: {
-          to: userEmail,
-          template: 'passwordReset',
-          data: {
-            email: userEmail,
-            resetUrl: resetUrl || 'https://www.pickfirst.com.au/reset-password',
-            platformName: 'PickFirst Real Estate',
-            platformUrl: 'https://www.pickfirst.com.au'
-          },
-          subject: 'Reset Your Password - PickFirst Real Estate'
-        }
-      });
-    } catch (error) {
-      console.error('Error sending password reset email:', error);
-    }
-  }
 
   /**
    * Send agent-specific welcome email

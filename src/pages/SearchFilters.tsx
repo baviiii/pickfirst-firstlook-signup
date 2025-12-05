@@ -53,8 +53,8 @@ const EnhancedSearchFiltersPage = () => {
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-              <span className="text-gray-500">No Image</span>
+            <div className="w-full h-full bg-muted/30 flex items-center justify-center">
+              <span className="text-muted-foreground">No Image</span>
             </div>
           )}
         </div>
@@ -62,20 +62,20 @@ const EnhancedSearchFiltersPage = () => {
         <CardContent className="p-4 space-y-3">
           <div className="space-y-2">
             <h3 
-              className="text-lg font-bold text-white line-clamp-1 cursor-pointer hover:text-yellow-400 transition-colors"
+              className="text-lg font-bold text-foreground line-clamp-1 cursor-pointer hover:text-pickfirst-yellow transition-colors"
               onClick={() => navigate(`/property/${property.id}`)}
             >
               {property.title}
             </h3>
-            <p className="text-yellow-400/80 text-sm line-clamp-1">{property.address}, {property.city}</p>
+            <p className="text-pickfirst-yellow/90 text-sm line-clamp-1 font-medium">{property.address}, {property.city}</p>
             <div className="flex items-center justify-between pt-2">
-              <div className="text-xl font-bold text-yellow-400">
+              <div className="text-xl font-bold text-pickfirst-yellow">
                 {displayPrice}
                 {showRentalSuffix && (
-                  <span className="text-sm font-normal text-yellow-400/70 ml-1">{rentalSuffix}</span>
+                  <span className="text-sm font-normal text-pickfirst-yellow/80 ml-1">{rentalSuffix}</span>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-xs text-gray-300">
+              <div className="flex items-center gap-2 text-xs text-foreground font-medium">
                 {property.bedrooms && <span>{property.bedrooms} bed</span>}
                 {property.bathrooms && <span>{property.bathrooms} bath</span>}
                 {property.square_feet && <span>{property.square_feet.toLocaleString()} sqft</span>}
@@ -89,7 +89,7 @@ const EnhancedSearchFiltersPage = () => {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="w-full mt-3 text-yellow-400 border-yellow-400/40 hover:bg-yellow-400/10"
+                  className="w-full mt-3 text-pickfirst-yellow border-pickfirst-yellow/40 hover:bg-pickfirst-yellow/10"
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
                   {isExpanded ? 'Hide' : 'Show'} Neighborhood Insights

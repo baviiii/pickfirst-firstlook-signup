@@ -39,6 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [error, setError] = useState({
     signUp: null,
     signIn: null,
@@ -48,15 +49,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   });
   const [isRecoverySession, setIsRecoverySession] = useState(false);
 
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (!error && data) {
-      setProfile(data);
+  const fetchProfile = async (userId: string): Promise<Profile | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (!error && data) {
+        setProfile(data);
+        return data;
+      } else if (error) {
+        if (error.code === 'PGRST116') {
+          // Profile not found - user might have been deleted
+          console.warn('[useAuth] Profile not found for user:', userId);
+        } else {
+          // Other error - log it
+          console.error('[useAuth] Error fetching profile:', error);
+        }
+        setProfile(null);
+        return null;
+      }
+      return null;
+    } catch (error) {
+      console.error('[useAuth] Exception in fetchProfile:', error);
+      setProfile(null);
+      return null;
     }
   };
 
@@ -67,30 +86,84 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [user]);
 
   useEffect(() => {
+    let mounted = true;
+    
+    // Safety timeout - ensure loading is always set to false after 5 seconds maximum
+    const safetyTimeout = setTimeout(() => {
+      if (mounted) {
+        console.warn('[useAuth] Safety timeout - forcing loading to false after 5 seconds');
+        setLoading(false);
+      }
+    }, 5000);
+
     // Set up auth state listener with error handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+        
         try {
+          // Check if we're in a recovery session (password reset flow)
+          const isOnResetPasswordPage = window.location.pathname.includes('/reset-password');
+          
+          if (isOnResetPasswordPage && isRecoverySession) {
+            setLoading(false);
+            return;
+          }
+          
+          if (isRecoverySession && !isOnResetPasswordPage) {
+            console.log('Recovery session detected outside reset password flow, signing out...');
+            await supabase.auth.signOut();
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            setLoading(false);
+            return;
+          }
+          
           setSession(session);
           setUser(session?.user ?? null);
           
-          if (session?.user) {
-            setTimeout(() => {
-              fetchProfile(session.user.id);
-            }, 0);
+          if (session?.user && !isRecoverySession) {
+            // Fetch profile with timeout (3 seconds max)
+            try {
+              const profileData = await Promise.race([
+                fetchProfile(session.user.id),
+                new Promise<null>((resolve) => setTimeout(() => {
+                  console.warn('[useAuth] Profile fetch timeout after 3 seconds');
+                  resolve(null);
+                }, 3000))
+              ]);
+              
+              // Always set loading to false after profile fetch attempt
+              if (mounted) {
+                setLoading(false);
+              }
+            } catch (error) {
+              console.error('[useAuth] Error in profile fetch:', error);
+              if (mounted) {
+                setLoading(false);
+              }
+            }
           } else {
             setProfile(null);
+            if (mounted) {
+              setLoading(false);
+            }
           }
-          setLoading(false);
         } catch (error) {
-          await handleAuthError(error);
-          setLoading(false);
+          console.error('[useAuth] Error in auth state change:', error);
+          if (mounted) {
+            await handleAuthError(error);
+            setLoading(false);
+          }
         }
       }
     );
 
     // Check for existing session with error handling
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      if (!mounted) return;
+      
       try {
         if (error) {
           await handleAuthError(error);
@@ -98,17 +171,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         setSession(session);
         setUser(session?.user ?? null);
+        
         if (session?.user) {
-          fetchProfile(session.user.id);
+          // Fetch profile with timeout (3 seconds max)
+          try {
+            const profileData = await Promise.race([
+              fetchProfile(session.user.id),
+              new Promise<null>((resolve) => setTimeout(() => {
+                console.warn('[useAuth] Profile fetch timeout after 3 seconds');
+                resolve(null);
+              }, 3000))
+            ]);
+            
+            // Always set loading to false after profile fetch attempt
+            if (mounted) {
+              setLoading(false);
+              clearTimeout(safetyTimeout);
+            }
+          } catch (error) {
+            console.error('[useAuth] Error in profile fetch:', error);
+            if (mounted) {
+              setLoading(false);
+              clearTimeout(safetyTimeout);
+            }
+          }
+        } else {
+          if (mounted) {
+            setLoading(false);
+            clearTimeout(safetyTimeout);
+          }
         }
-        setLoading(false);
       } catch (error) {
-        await handleAuthError(error);
-        setLoading(false);
+        console.error('[useAuth] Error in getSession:', error);
+        if (mounted) {
+          await handleAuthError(error);
+          setLoading(false);
+          clearTimeout(safetyTimeout);
+        }
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(safetyTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string, userType?: string) => {
@@ -260,7 +367,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return { error: new Error('No user logged in') };
     
     // Sanitize profile updates
-    const sanitizedUpdates: Partial<Profile> = {};
+    const sanitizedUpdates: Partial<Profile> = {} as Partial<Profile>;
     
     for (const [key, value] of Object.entries(updates)) {
       if (typeof value === 'string') {
@@ -269,9 +376,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setError(prev => ({ ...prev, updateProfile: new Error(`Invalid ${key}: ${validation.error}`) }));
           return { error: new Error(`Invalid ${key}: ${validation.error}`) };
         }
-        sanitizedUpdates[key as keyof Profile] = validation.sanitizedValue as any;
+        (sanitizedUpdates as Record<string, any>)[key] = validation.sanitizedValue;
       } else {
-        sanitizedUpdates[key as keyof Profile] = value;
+        (sanitizedUpdates as Record<string, any>)[key] = value;
       }
     }
     

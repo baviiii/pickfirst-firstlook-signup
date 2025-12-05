@@ -288,26 +288,59 @@ export class ProfileService {
   }
 
   /**
-   * Delete user profile and all associated data
+   * Delete user profile and all associated data, including auth user
+   * This uses the Edge Function to ensure complete deletion
    */
   static async deleteProfile(userId: string): Promise<{ success: boolean; error?: string }> {
     try {
-      // This will cascade delete due to foreign key constraints
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
+      // Use Edge Function to delete account completely (including auth user)
+      const { data, error } = await supabase.functions.invoke('delete-account', {
+        body: {}
+      });
 
       if (error) {
-        console.error('Error deleting profile:', error);
-        return { success: false, error: error.message };
+        console.error('Error deleting account:', error);
+        return { success: false, error: error.message || 'Failed to delete account' };
       }
 
-      toast.success('Profile deleted successfully');
+      if (data && data.error) {
+        console.error('Account deletion error:', data.error);
+        return { success: false, error: data.error };
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Profile deletion error:', error);
-      toast.error('Failed to delete profile');
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Admin deletion of any user profile and all associated data, including auth user
+   * This uses the admin Edge Function to ensure complete deletion by super admins
+   */
+  static async deleteUserAsAdmin(targetUserId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Use admin Edge Function to delete account completely (including auth user)
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: {
+          userId: targetUserId
+        }
+      });
+
+      if (error) {
+        console.error('Error deleting user as admin:', error);
+        return { success: false, error: error.message || 'Failed to delete user' };
+      }
+
+      if (data && data.error) {
+        console.error('Admin user deletion error:', data.error);
+        return { success: false, error: data.error };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Admin user deletion error:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }

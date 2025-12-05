@@ -10,6 +10,7 @@ import { ArrowLeft, Trash2, Shield, User, Activity, Loader2 } from 'lucide-react
 import { auditService } from '@/services/auditService';
 import { rateLimitService } from '@/services/rateLimitService';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
+import ProfileService from '@/services/profileService';
 
 const AdminUserManagementComponent = () => {
   const [users, setUsers] = useState<Tables<'profiles'>[]>([]);
@@ -59,6 +60,7 @@ const AdminUserManagementComponent = () => {
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+    if (!window.confirm('This will permanently delete all user data including their authentication account. Are you absolutely sure?')) return;
     
     setDeletingUser(id);
     try {
@@ -79,11 +81,12 @@ const AdminUserManagementComponent = () => {
       // Get user data before deletion for audit
       const userToDelete = users.find(u => u.id === id);
       
-      const { error } = await supabase.from('profiles').delete().eq('id', id);
-      if (error) {
-        toast.error(error.message || 'Failed to delete user');
-      } else {
-        toast.success('User deleted successfully.');
+      // Use admin deletion method (Edge Function) for complete account deletion
+      // This ensures all user data is properly deleted including auth user
+      const result = await ProfileService.deleteUserAsAdmin(id);
+      
+      if (result.success) {
+        toast.success('User and all associated data deleted successfully.');
         setUsers(users => users.filter(u => u.id !== id));
         
         // Audit logging
@@ -91,6 +94,8 @@ const AdminUserManagementComponent = () => {
           recordId: id,
           oldValues: userToDelete
         });
+      } else {
+        toast.error(result.error || 'Failed to delete user');
       }
     } catch (error) {
       toast.error('Failed to delete user');

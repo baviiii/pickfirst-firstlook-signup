@@ -535,8 +535,8 @@ export const AgentMessages = () => {
               {/* Messages Container */}
               <div 
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6 space-y-3 sm:space-y-4 min-h-0 bg-gradient-to-b from-gray-50/30 to-white"
-                style={{ WebkitOverflowScrolling: 'touch' }}
+                className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6 space-y-3 sm:space-y-4 min-h-0 bg-gradient-to-b from-gray-50/30 to-white scrollbar-thin scrollbar-thumb-pickfirst-yellow/30 scrollbar-track-transparent"
+                style={{ WebkitOverflowScrolling: 'touch', maxHeight: 'calc(100vh - 250px)' }}
               >
                 {messages.map((msg) => (
                   <div

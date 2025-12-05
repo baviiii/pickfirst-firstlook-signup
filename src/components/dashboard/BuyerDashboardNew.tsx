@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { PersonalizedPropertyRecommendations } from '@/components/buyer/PersonalizedPropertyRecommendations';
 import { PropertyComparisonTool } from '@/components/property/PropertyComparisonTool';
 import PropertyAlerts from '@/components/buyer/PropertyAlerts';
@@ -18,7 +19,9 @@ import {
   Check, 
   X,
   Clock,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { withErrorBoundary } from '@/components/ui/error-boundary';
@@ -67,6 +70,7 @@ const BuyerDashboardNewComponent = () => {
   const [loadingMetrics, setLoadingMetrics] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(true);
+  const [appointmentsExpanded, setAppointmentsExpanded] = useState(false);
 
   // Fetch all data on component mount
   useEffect(() => {
@@ -176,13 +180,13 @@ const BuyerDashboardNewComponent = () => {
         {/* Upcoming Appointments */}
         <Card className="bg-white text-card-foreground border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 dashboard-animate-fade-up dashboard-delay-200">
           <CardHeader className="border-b border-gray-100 bg-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-foreground">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  Upcoming Appointments
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <CardTitle className="flex items-center gap-2 text-foreground text-base sm:text-lg">
+                  <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
+                  <span className="truncate">Upcoming Appointments</span>
                 </CardTitle>
-                <CardDescription className="text-muted-foreground">
+                <CardDescription className="text-muted-foreground text-xs sm:text-sm mt-1">
                   Your scheduled property viewings
                 </CardDescription>
               </div>
@@ -190,9 +194,10 @@ const BuyerDashboardNewComponent = () => {
                 variant="outline" 
                 size="sm"
                 onClick={() => navigate('/buyer-account-settings?tab=appointments')}
-                className="text-muted-foreground hover:text-foreground border-border hover:bg-muted transition-all duration-300"
+                className="text-muted-foreground hover:text-foreground border-border hover:bg-muted transition-all duration-300 shrink-0 text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3"
               >
-                View All
+                <span className="hidden sm:inline">View All</span>
+                <span className="sm:hidden">All</span>
               </Button>
             </div>
           </CardHeader>
@@ -206,66 +211,195 @@ const BuyerDashboardNewComponent = () => {
               <div className="text-center py-8">
                 <Calendar className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
                 <div className="text-foreground font-medium">No appointments scheduled yet</div>
-                <div className="text-muted-foreground text-sm mt-1">Agents will schedule appointments with you here</div>
+                <div className="text-muted-foreground text-sm mt-1">Contact agents or inquire for appointments</div>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {appointments.slice(0, 3).map((appt) => (
+            ) : (() => {
+              // Sort appointments: scheduled/pending first, then by date
+              const sortedAppointments = [...appointments].sort((a, b) => {
+                // Priority: scheduled > confirmed > others
+                const statusPriority: Record<string, number> = {
+                  'scheduled': 1,
+                  'confirmed': 2,
+                  'pending': 1
+                };
+                const aPriority = statusPriority[a.status] || 99;
+                const bPriority = statusPriority[b.status] || 99;
+                
+                if (aPriority !== bPriority) {
+                  return aPriority - bPriority;
+                }
+                
+                // Then sort by date (earliest first)
+                const dateA = new Date(`${a.date} ${a.time || '00:00'}`).getTime();
+                const dateB = new Date(`${b.date} ${b.time || '00:00'}`).getTime();
+                return dateA - dateB;
+              });
+              
+              const initialAppointments = sortedAppointments.slice(0, 4);
+              const remainingAppointments = sortedAppointments.slice(4);
+              
+              return (
+                <Collapsible open={appointmentsExpanded} onOpenChange={setAppointmentsExpanded}>
+                  <div className="space-y-3">
+                    {initialAppointments.map((appt) => (
                   <div
                     key={appt.id}
-                    className="p-4 rounded-xl border border-border bg-card/80 hover:bg-card transition-all duration-300 hover:shadow-lg"
+                    className="p-3 sm:p-4 rounded-xl border border-border bg-card/80 hover:bg-card transition-all duration-300 hover:shadow-lg"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="secondary" className="uppercase text-xs bg-primary/10 text-primary border-primary/20">
+                    <div className="flex flex-col gap-3">
+                      {/* Top Row: Badge, Time, Status */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+                          <Badge variant="secondary" className="uppercase text-[10px] sm:text-xs bg-primary/10 text-primary border-primary/20 shrink-0">
                             {appt.appointment_type?.replace('_', ' ') || 'Meeting'}
                           </Badge>
-                          <span className="font-semibold text-sm flex items-center gap-1 text-foreground">
-                            <Clock className="h-3.5 w-3.5 text-primary" />
-                            {appt.date} @ {appt.time}
+                          <span className="font-semibold text-xs sm:text-sm flex items-center gap-1 text-foreground min-w-0">
+                            <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary shrink-0" />
+                            <span className="truncate">{appt.date} @ {appt.time}</span>
                           </span>
                         </div>
-                        {appt.property?.title && (
-                          <div className="text-sm font-medium text-foreground">{appt.property.title}</div>
-                        )}
-                        {appt.agent && (
-                          <div className="text-xs text-muted-foreground">
-                            With: <span className="font-medium">{appt.agent.full_name}</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {appt.status === 'scheduled' && (
-                          <>
-                            <Button 
-                              size="sm" 
-                              className="bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl transition-all duration-300" 
-                              onClick={() => handleConfirmAppointment(appt.id)}
-                            >
-                              <Check className="h-4 w-4 mr-1" /> Confirm
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="text-red-700 border-red-600/40 hover:bg-red-600/10 hover:border-red-600/60 transition-all duration-300" 
-                              onClick={() => handleDeclineAppointment(appt.id)}
-                            >
-                              <X className="h-4 w-4 mr-1" /> Decline
-                            </Button>
-                          </>
-                        )}
                         {appt.status && appt.status !== 'scheduled' && (
-                          <Badge className={getAppointmentStatusBadge(appt.status)}>
+                          <Badge className={`${getAppointmentStatusBadge(appt.status)} shrink-0 text-[10px] sm:text-xs`}>
                             {appt.status.charAt(0).toUpperCase() + appt.status.slice(1).replace('_', ' ')}
                           </Badge>
                         )}
                       </div>
+                      
+                      {/* Property & Agent Info */}
+                      <div className="space-y-1">
+                        {appt.property?.title && (
+                          <div className="text-xs sm:text-sm font-medium text-foreground line-clamp-1">{appt.property.title}</div>
+                        )}
+                        {appt.agent && (
+                          <div className="text-[10px] sm:text-xs text-muted-foreground">
+                            With: <span className="font-medium">{appt.agent.full_name}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Action Buttons - Mobile optimized */}
+                      {appt.status === 'scheduled' && (
+                        <div className="flex items-center gap-2 pt-1">
+                          <Button 
+                            size="sm" 
+                            className="flex-1 sm:flex-initial bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm h-8 sm:h-9" 
+                            onClick={() => handleConfirmAppointment(appt.id)}
+                          >
+                            <Check className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" /> 
+                            <span className="hidden sm:inline">Confirm</span>
+                            <span className="sm:hidden">Yes</span>
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="flex-1 sm:flex-initial text-red-700 border-red-600/40 hover:bg-red-600/10 hover:border-red-600/60 transition-all duration-300 text-xs sm:text-sm h-8 sm:h-9" 
+                            onClick={() => handleDeclineAppointment(appt.id)}
+                          >
+                            <X className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" /> 
+                            <span className="hidden sm:inline">Decline</span>
+                            <span className="sm:hidden">No</span>
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                    ))}
+                  </div>
+                  
+                  {/* Expand/Collapse Button and Remaining Appointments */}
+                  {remainingAppointments.length > 0 && (
+                    <>
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full mt-4 text-muted-foreground hover:text-foreground border-border hover:bg-muted"
+                        >
+                          {appointmentsExpanded ? (
+                            <>
+                              <ChevronUp className="h-4 w-4 mr-2" />
+                              Show Less
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-4 w-4 mr-2" />
+                              Show All ({appointments.length} appointments)
+                            </>
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+                      
+                      <CollapsibleContent>
+                        <div className="space-y-3 mt-4">
+                          {remainingAppointments.map((appt) => (
+                            <div
+                              key={appt.id}
+                              className="p-3 sm:p-4 rounded-xl border border-border bg-card/80 hover:bg-card transition-all duration-300 hover:shadow-lg"
+                            >
+                              <div className="flex flex-col gap-3">
+                                {/* Top Row: Badge, Time, Status */}
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+                                    <Badge variant="secondary" className="uppercase text-[10px] sm:text-xs bg-primary/10 text-primary border-primary/20 shrink-0">
+                                      {appt.appointment_type?.replace('_', ' ') || 'Meeting'}
+                                    </Badge>
+                                    <span className="font-semibold text-xs sm:text-sm flex items-center gap-1 text-foreground min-w-0">
+                                      <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary shrink-0" />
+                                      <span className="truncate">{appt.date} @ {appt.time}</span>
+                                    </span>
+                                  </div>
+                                  {appt.status && appt.status !== 'scheduled' && (
+                                    <Badge className={`${getAppointmentStatusBadge(appt.status)} shrink-0 text-[10px] sm:text-xs`}>
+                                      {appt.status.charAt(0).toUpperCase() + appt.status.slice(1).replace('_', ' ')}
+                                    </Badge>
+                                  )}
+                                </div>
+                                
+                                {/* Property & Agent Info */}
+                                <div className="space-y-1">
+                                  {appt.property?.title && (
+                                    <div className="text-xs sm:text-sm font-medium text-foreground line-clamp-1">{appt.property.title}</div>
+                                  )}
+                                  {appt.agent && (
+                                    <div className="text-[10px] sm:text-xs text-muted-foreground">
+                                      With: <span className="font-medium">{appt.agent.full_name}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Action Buttons - Mobile optimized */}
+                                {appt.status === 'scheduled' && (
+                                  <div className="flex items-center gap-2 pt-1">
+                                    <Button 
+                                      size="sm" 
+                                      className="flex-1 sm:flex-initial bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm h-8 sm:h-9" 
+                                      onClick={() => handleConfirmAppointment(appt.id)}
+                                    >
+                                      <Check className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" /> 
+                                      <span className="hidden sm:inline">Confirm</span>
+                                      <span className="sm:hidden">Yes</span>
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="flex-1 sm:flex-initial text-red-700 border-red-600/40 hover:bg-red-600/10 hover:border-red-600/60 transition-all duration-300 text-xs sm:text-sm h-8 sm:h-9" 
+                                      onClick={() => handleDeclineAppointment(appt.id)}
+                                    >
+                                      <X className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" /> 
+                                      <span className="hidden sm:inline">Decline</span>
+                                      <span className="sm:hidden">No</span>
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CollapsibleContent>
+                    </>
+                  )}
+                </Collapsible>
+              );
+            })()}
           </CardContent>
         </Card>
 
@@ -300,7 +434,7 @@ const BuyerDashboardNewComponent = () => {
           <div className="grid grid-cols-4 gap-1 p-2">
             {/* Inquiries */}
             <button
-              onClick={() => { clearCardNotifications('inquiries'); navigate('/buyer-account-settings?tab=favorites'); }}
+              onClick={() => { clearCardNotifications('inquiries'); navigate('/buyer-messages'); }}
               className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-50 transition-colors relative"
             >
               <div className="relative">
@@ -375,7 +509,7 @@ const BuyerDashboardNewComponent = () => {
             className={`relative bg-white text-card-foreground border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 dashboard-animate-fade-up dashboard-delay-600 overflow-hidden ${
               hasNewNotification('inquiries') ? 'animate-pulse-border' : ''
             }`}
-            onClick={() => { clearCardNotifications('inquiries'); navigate('/buyer-account-settings?tab=favorites'); }}
+            onClick={() => { clearCardNotifications('inquiries'); navigate('/buyer-messages'); }}
           >
             {/* Yellow Overlay */}
             <div className="absolute inset-0 bg-pickfirst-yellow/5 pointer-events-none"></div>

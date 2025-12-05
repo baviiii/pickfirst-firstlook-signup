@@ -20,6 +20,7 @@ import { PropertyService, PropertyListing } from '@/services/propertyService';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useViewMode } from '@/hooks/useViewMode';
 import { PageWrapper } from '@/components/ui/page-wrapper';
 
 const OffMarketListings = () => {

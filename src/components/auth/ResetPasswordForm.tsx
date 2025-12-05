@@ -49,12 +49,59 @@ export const ResetPasswordForm = () => {
 
   useEffect(() => {
     const validateResetToken = async () => {
-      const accessToken = searchParams.get('access_token');
-      const refreshToken = searchParams.get('refresh_token');
-      const type = searchParams.get('type');
+      // First, check URL hash for recovery tokens (Supabase sends them in hash)
+      let accessToken: string | null = null;
+      let refreshToken: string | null = null;
+      let type: string | null = null;
+
+      // Check hash first (Supabase puts tokens in hash)
+      if (window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+        accessToken = hashParams.get('access_token');
+        refreshToken = hashParams.get('refresh_token');
+        type = hashParams.get('type');
+        
+        // Immediately clear hash to prevent Supabase from auto-creating session
+        if (accessToken && refreshToken && type === 'recovery') {
+          // Store tokens before clearing hash
+          const tokens = { accessToken, refreshToken };
+          
+          // Clear hash immediately to prevent auto-login
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          
+          // Sign out any existing session
+          await supabase.auth.signOut();
+          
+          // Small delay to ensure sign out completes
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          try {
+            // Validate token without creating a session
+            const { data, error } = await supabase.auth.getUser(tokens.accessToken);
+
+            if (error || !data.user) {
+              throw error || new Error('Unable to validate recovery token');
+            }
+
+            setRecoveryTokens(tokens);
+            setHasValidToken(true);
+            setValidatingToken(false);
+            return;
+          } catch (error) {
+            console.error('Token validation error:', error);
+            setHasValidToken(false);
+            setValidatingToken(false);
+            return;
+          }
+        }
+      }
+
+      // Fallback to search params (for direct navigation)
+      accessToken = searchParams.get('access_token');
+      refreshToken = searchParams.get('refresh_token');
+      type = searchParams.get('type');
       
       // Skip validation if we're not on the reset password page
-      // (component might be pre-loaded by React Router)
       if (!accessToken && !refreshToken && !type) {
         console.debug('Reset password form loaded but no reset params present, skipping validation');
         setValidatingToken(false);
@@ -71,6 +118,9 @@ export const ResetPasswordForm = () => {
 
       // Ensure user is signed out before validating token (prevent auto-login)
       await supabase.auth.signOut();
+      
+      // Small delay to ensure sign out completes
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       try {
         const { data, error } = await supabase.auth.getUser(accessToken);
@@ -158,43 +208,55 @@ export const ResetPasswordForm = () => {
     setLoading(true);
     
     try {
-      const { error: sessionError } = await supabase.auth.setSession({
+      // Set session temporarily ONLY to update password (not for login)
+      const { error: sessionError, data: sessionData } = await supabase.auth.setSession({
         access_token: recoveryTokens.accessToken,
         refresh_token: recoveryTokens.refreshToken,
       });
 
-      if (sessionError) {
-        throw sessionError;
+      if (sessionError || !sessionData.session) {
+        throw sessionError || new Error('Failed to establish recovery session');
       }
 
       toggleRecoverySession(true);
 
+      // Update password using the temporary session
       const { error } = await resetPassword(formData.password);
       
       if (error) {
+        // Sign out on error to prevent any session from persisting
+        await supabase.auth.signOut().catch(() => {});
         throw error;
       }
       
+      // Get user ID before signing out (for audit log)
+      const userId = sessionData.session?.user?.id || user?.id || 'unknown';
+      
       // Log successful password reset
-      await auditService.log(user?.id || 'unknown', 'PASSWORD_RESET_SUCCESS', 'password_reset', {
+      await auditService.log(userId, 'PASSWORD_RESET_SUCCESS', 'password_reset', {
         userAgent: navigator.userAgent,
         ipAddress: await getClientIP()
       });
       
-      // Sign out immediately after password reset to prevent auto-login
-      await supabase.auth.signOut();
-      
-      toast.success('Password updated successfully! Please log in with your new password.');
-      
-      // Clear sensitive data from state
+      // Clear sensitive data immediately
       setFormData({ password: '', confirmPassword: '' });
       setRecoveryTokens(null);
       toggleRecoverySession(false);
       
-      // Small delay to ensure sign out completes before navigation
-      setTimeout(() => {
-        navigate('/auth', { replace: true });
-      }, 100);
+      // Sign out IMMEDIATELY and FORCEFULLY to prevent auto-login
+      // Clear all auth state and session data
+      await supabase.auth.signOut();
+      
+      // Clear any remaining session data
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Force another sign out to be sure
+      await supabase.auth.signOut().catch(() => {});
+      
+      toast.success('Password updated successfully! Please log in with your new password.');
+      
+      // Navigate to login page immediately
+      navigate('/auth?tab=signin', { replace: true });
       
     } catch (error: any) {
       console.error('Error resetting password:', error);

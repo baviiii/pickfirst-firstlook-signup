@@ -110,6 +110,20 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
         console.log('Original filters:', filters);
         console.log('Cleaned filters:', cleanFilters);
         
+        // Fetch an off-market property to show first (for marketing/upsell)
+        let offMarketProperty: any = null;
+        try {
+          const { data: offMarketData } = await PropertyService.getApprovedListings(undefined, { includeOffMarket: true });
+          const offMarketListings = offMarketData?.filter((listing: any) => listing.listing_source === 'agent_posted') || [];
+          if (offMarketListings.length > 0) {
+            // Pick a random off-market property or the first one
+            offMarketProperty = offMarketListings[Math.floor(Math.random() * offMarketListings.length)];
+          }
+        } catch (error) {
+          console.error('Error fetching off-market property:', error);
+          // Continue without off-market property
+        }
+
         // Get filtered properties
         const result = await FilterService.applyFilters(cleanFilters);
         
@@ -240,7 +254,35 @@ export const PersonalizedPropertyRecommendations: React.FC = () => {
             })
             .slice(0, 6);
 
-          setRecommendations(sortedProperties);
+          // Add off-market property as first item if available
+          let finalRecommendations = sortedProperties;
+          if (offMarketProperty) {
+            // Create a recommended property object for the off-market property
+            const offMarketRecommended: RecommendedProperty = {
+              ...offMarketProperty,
+              matchCriteria: {
+                priceMatch: true,
+                bedroomsMatch: true,
+                bathroomsMatch: true,
+                garagesMatch: true,
+                featuresMatch: true,
+                locationMatch: true,
+                propertyTypeMatch: true,
+                score: 0.5, // Medium score to show it's available
+                matchedCriteria: ['Off-Market Exclusive']
+              },
+              matchPercentage: 50 // Show as available but premium
+            };
+            
+            // Check if off-market property is already in recommendations (avoid duplicates)
+            const isDuplicate = sortedProperties.some(p => p.id === offMarketProperty.id);
+            if (!isDuplicate) {
+              // Prepend off-market property to the beginning
+              finalRecommendations = [offMarketRecommended, ...sortedProperties].slice(0, 6);
+            }
+          }
+
+          setRecommendations(finalRecommendations);
           setTotalMatches(result.totalCount);
         }
       } catch (error) {

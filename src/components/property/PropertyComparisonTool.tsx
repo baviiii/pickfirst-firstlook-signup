@@ -164,10 +164,10 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
       >
         <div className="space-y-6">
           {/* Search and Add Properties */}
-          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+          <Card className="pickfirst-glass bg-card/90 border-pickfirst-yellow/30 backdrop-blur-xl">
             <CardHeader>
               <CardTitle className="text-foreground flex items-center gap-2">
-                <GitCompare className="h-5 w-5 text-primary" />
+                <GitCompare className="h-5 w-5 text-pickfirst-yellow" />
                 Property Comparison Tool
               </CardTitle>
               <CardDescription className="text-muted-foreground">
@@ -181,7 +181,7 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
                   placeholder="Search properties by city or address..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full"
+                  className="w-full bg-background/50 border-border text-foreground"
                 />
                 {loading && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -190,16 +190,16 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
                 )}
                 
                 {searchTerm && searchResults.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                  <div className="absolute z-10 w-full mt-1 bg-popover border border-pickfirst-yellow/30 rounded-md shadow-lg max-h-60 overflow-auto">
                     {searchResults.map((property) => {
                       const priceDisplay = PropertyService.getDisplayPrice(property);
                       return (
                         <div
                           key={property.id}
-                          className="p-2 hover:bg-muted cursor-pointer flex items-center gap-2"
+                          className="p-2 hover:bg-muted/30 cursor-pointer flex items-center gap-2 text-foreground"
                           onClick={() => addPropertyToComparison(property)}
                         >
-                          <div className="flex-shrink-0 w-10 h-10 bg-muted rounded overflow-hidden">
+                          <div className="flex-shrink-0 w-10 h-10 bg-muted/30 rounded overflow-hidden">
                             {property.images?.[0] ? (
                               <img 
                                 src={property.images[0]} 
@@ -207,17 +207,17 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-muted">
+                              <div className="w-full h-full flex items-center justify-center bg-muted/30">
                                 <Home className="h-4 w-4 text-muted-foreground" />
                               </div>
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">{property.title}</p>
+                            <p className="text-sm font-medium truncate text-foreground">{property.title}</p>
                             <p className="text-xs text-muted-foreground truncate">
                               {property.address}, {property.city}
                             </p>
-                            <p className="text-xs font-semibold text-primary">
+                            <p className="text-xs font-semibold text-pickfirst-yellow">
                               {priceDisplay}
                             </p>
                           </div>
@@ -228,14 +228,14 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
                 )}
                 
                 {searchTerm && searchResults.length === 0 && !loading && (
-                  <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg p-4 text-sm text-muted-foreground">
+                  <div className="absolute z-10 w-full mt-1 bg-popover border border-pickfirst-yellow/30 rounded-md shadow-lg p-4 text-sm text-muted-foreground">
                     No properties found matching "{searchTerm}"
                   </div>
                 )}
               </div>
 
               {selectedProperties.length > 0 && (
-                <Button variant="outline" onClick={clearComparison}>
+                <Button variant="outline" onClick={clearComparison} className="border-pickfirst-yellow/40 text-pickfirst-yellow hover:bg-pickfirst-yellow/10">
                   Clear All
                 </Button>
               )}
@@ -244,7 +244,7 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
 
           {/* Comparison Table */}
           {selectedProperties.length > 0 && (
-            <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+            <Card className="pickfirst-glass bg-card/90 border-pickfirst-yellow/30 backdrop-blur-xl">
               <CardHeader>
                 <CardTitle className="text-foreground">Property Comparison</CardTitle>
                 <CardDescription className="text-muted-foreground">
@@ -255,8 +255,8 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left p-3 text-muted-foreground">Feature</th>
+                      <tr className="border-b border-pickfirst-yellow/20">
+                        <th className="text-left p-3 text-foreground font-semibold">Feature</th>
                         {selectedProperties.map((property) => (
                           <th key={property.id} className="text-left p-3 min-w-[200px]">
                             <div className="space-y-2">
@@ -268,6 +268,7 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => removePropertyFromComparison(property.id)}
+                                  className="text-muted-foreground hover:text-foreground"
                                 >
                                   <X className="h-4 w-4" />
                                 </Button>
@@ -282,14 +283,14 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
                     </thead>
                     <tbody>
                       {/* Price */}
-                      <tr className="border-b border-border/50">
+                      <tr className="border-b border-pickfirst-yellow/10">
                         <td className="p-3 font-medium text-foreground">Price</td>
                         {selectedProperties.map((property) => (
                           <td key={property.id} className="p-3">
-                            <div className={`font-bold text-lg ${isHighlighted(property, 'price', false) ? 'text-green-400' : 'text-foreground'}`}>
+                            <div className={`font-bold text-lg ${isHighlighted(property, 'price', false) ? 'text-pickfirst-yellow' : 'text-foreground'}`}>
                               {getComparisonValue(property, 'price')}
                               {isHighlighted(property, 'price', false) && (
-                                <Star className="h-4 w-4 inline ml-1 text-green-400" />
+                                <Star className="h-4 w-4 inline ml-1 text-pickfirst-yellow" />
                               )}
                             </div>
                           </td>
@@ -297,15 +298,15 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
                       </tr>
 
                       {/* Bedrooms */}
-                      <tr className="border-b border-border/50">
+                      <tr className="border-b border-pickfirst-yellow/10">
                         <td className="p-3 font-medium text-foreground">Bedrooms</td>
                         {selectedProperties.map((property) => (
                           <td key={property.id} className="p-3">
-                            <div className={`flex items-center gap-1 ${isHighlighted(property, 'bedrooms', true) ? 'text-green-400' : 'text-foreground'}`}>
+                            <div className={`flex items-center gap-1 ${isHighlighted(property, 'bedrooms', true) ? 'text-pickfirst-yellow' : 'text-foreground'}`}>
                               <Bed className="h-4 w-4" />
                               {getComparisonValue(property, 'bedrooms')}
                               {isHighlighted(property, 'bedrooms', true) && (
-                                <Star className="h-4 w-4 text-green-400" />
+                                <Star className="h-4 w-4 text-pickfirst-yellow" />
                               )}
                             </div>
                           </td>
@@ -313,15 +314,15 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
                       </tr>
 
                       {/* Bathrooms */}
-                      <tr className="border-b border-border/50">
+                      <tr className="border-b border-pickfirst-yellow/10">
                         <td className="p-3 font-medium text-foreground">Bathrooms</td>
                         {selectedProperties.map((property) => (
                           <td key={property.id} className="p-3">
-                            <div className={`flex items-center gap-1 ${isHighlighted(property, 'bathrooms', true) ? 'text-green-400' : 'text-foreground'}`}>
+                            <div className={`flex items-center gap-1 ${isHighlighted(property, 'bathrooms', true) ? 'text-pickfirst-yellow' : 'text-foreground'}`}>
                               <Bath className="h-4 w-4" />
                               {getComparisonValue(property, 'bathrooms')}
                               {isHighlighted(property, 'bathrooms', true) && (
-                                <Star className="h-4 w-4 text-green-400" />
+                                <Star className="h-4 w-4 text-pickfirst-yellow" />
                               )}
                             </div>
                           </td>
@@ -329,15 +330,15 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
                       </tr>
 
                       {/* Square Feet */}
-                      <tr className="border-b border-border/50">
+                      <tr className="border-b border-pickfirst-yellow/10">
                         <td className="p-3 font-medium text-foreground">Square Feet</td>
                         {selectedProperties.map((property) => (
                           <td key={property.id} className="p-3">
-                            <div className={`flex items-center gap-1 ${isHighlighted(property, 'square_feet', true) ? 'text-green-400' : 'text-foreground'}`}>
+                            <div className={`flex items-center gap-1 ${isHighlighted(property, 'square_feet', true) ? 'text-pickfirst-yellow' : 'text-foreground'}`}>
                               <Square className="h-4 w-4" />
                               {getComparisonValue(property, 'square_feet')}
                               {isHighlighted(property, 'square_feet', true) && (
-                                <Star className="h-4 w-4 text-green-400" />
+                                <Star className="h-4 w-4 text-pickfirst-yellow" />
                               )}
                             </div>
                           </td>
@@ -345,15 +346,15 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
                       </tr>
 
                       {/* Year Built */}
-                      <tr className="border-b border-border/50">
+                      <tr className="border-b border-pickfirst-yellow/10">
                         <td className="p-3 font-medium text-foreground">Year Built</td>
                         {selectedProperties.map((property) => (
                           <td key={property.id} className="p-3">
-                            <div className={`flex items-center gap-1 ${isHighlighted(property, 'year_built', true) ? 'text-green-400' : 'text-foreground'}`}>
+                            <div className={`flex items-center gap-1 ${isHighlighted(property, 'year_built', true) ? 'text-pickfirst-yellow' : 'text-foreground'}`}>
                               <Calendar className="h-4 w-4" />
                               {getComparisonValue(property, 'year_built')}
                               {isHighlighted(property, 'year_built', true) && (
-                                <Star className="h-4 w-4 text-green-400" />
+                                <Star className="h-4 w-4 text-pickfirst-yellow" />
                               )}
                             </div>
                           </td>
@@ -381,7 +382,7 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
                             <div className="space-y-2">
                               <Button
                                 size="sm"
-                                className="w-full"
+                                className="w-full bg-pickfirst-yellow hover:bg-amber-500 text-black"
                                 onClick={() => navigate(`/property/${property.id}`)}
                               >
                                 View Details
@@ -389,7 +390,7 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="w-full"
+                                className="w-full border-pickfirst-yellow/40 text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
                                 onClick={() => navigate(`/property/${property.id}?action=inquiry`)}
                               >
                                 Contact Agent
@@ -406,14 +407,14 @@ export const PropertyComparisonTool: React.FC<PropertyComparisonToolProps> = ({ 
           )}
 
           {selectedProperties.length === 0 && (
-            <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-primary/20">
+            <Card className="pickfirst-glass bg-card/90 border-pickfirst-yellow/30 backdrop-blur-xl">
               <CardContent className="text-center py-12">
-                <GitCompare className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <GitCompare className="h-16 w-16 text-pickfirst-yellow/50 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-foreground mb-2">Start Comparing Properties</h3>
                 <p className="text-muted-foreground mb-4">
                   Search and add properties above to see a detailed side-by-side comparison
                 </p>
-                <Badge variant="secondary" className="bg-primary/10 text-primary">
+                <Badge variant="secondary" className="bg-pickfirst-yellow/10 text-pickfirst-yellow border-pickfirst-yellow/30">
                   <TrendingUp className="h-3 w-3 mr-1" />
                   Premium Feature
                 </Badge>

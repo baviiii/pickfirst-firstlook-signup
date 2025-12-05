@@ -310,24 +310,23 @@ const PropertyDetailsComponent = () => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Back Button */}
-      <Button
-        variant="ghost"
-        onClick={() => navigate(-1)}
-        className="text-muted-foreground hover:text-primary"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back
-      </Button>
-      <div className="space-y-6">
-        {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-2">
+      {/* Header with Back Button and Action Buttons */}
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          onClick={() => navigate(-1)}
+          className="text-muted-foreground hover:text-pickfirst-yellow"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        <div className="flex items-center gap-2">
           <Button 
             variant="ghost" 
             size="icon"
             onClick={handleToggleFavorite}
-            className={`rounded-full hover:bg-primary/10 ${
-              isFavorited ? 'text-primary' : 'text-muted-foreground'
+            className={`rounded-full hover:bg-pickfirst-yellow/10 ${
+              isFavorited ? 'text-pickfirst-yellow' : 'text-muted-foreground'
             }`}
           >
             <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
@@ -336,11 +335,13 @@ const PropertyDetailsComponent = () => {
             variant="ghost" 
             size="icon"
             onClick={handleShare}
-            className="text-muted-foreground hover:text-primary hover:bg-primary/10"
+            className="text-muted-foreground hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
           >
             <Share2 className="h-4 w-4" />
           </Button>
         </div>
+      </div>
+      <div className="space-y-6">
         {/* Image Gallery */}
         <div className="relative">
           <div className="aspect-video w-full bg-gradient-to-br from-gray-800/90 to-black/90 backdrop-blur-xl rounded-xl border border-yellow-400/20 shadow-2xl overflow-hidden">

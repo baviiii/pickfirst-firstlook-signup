@@ -758,11 +758,11 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
                 <div className="text-green-300 text-sm mt-2">average days</div>
               </div>
               <div className="bg-green-800/50 rounded-xl p-6 border border-green-600/30 text-center">
-                <div className="text-green-200 text-lg mb-2">Price per Sq Ft</div>
+                <div className="text-green-200 text-lg mb-2">Price per Square Meter</div>
                 <div className="text-3xl font-bold text-white">
-                  ${Math.round(areaAnalytics.pricePerSqft)}
+                  ${Math.round(areaAnalytics.pricePerSqft / 10.764)}
                 </div>
-                <div className="text-green-300 text-sm mt-2">per square foot</div>
+                <div className="text-green-300 text-sm mt-2">per square meter</div>
               </div>
             </div>
           </div>
@@ -899,11 +899,11 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
             </div>
           </div>
           <div className="bg-purple-900/30 rounded-lg p-3 text-center border border-purple-700/30">
-            <div className="text-purple-300 text-xs">Price per Sq Ft</div>
+            <div className="text-purple-300 text-xs">Price per Square Meter</div>
             <div className="text-white font-bold">
               {analyticsView === 'area' && selectedAreaAnalytics 
-                ? `~$${Math.round(selectedAreaAnalytics.pricePerSqft)}`
-                : `~$${Math.round(overallAnalytics.averagePrice / 1500)}`}
+                ? `~$${Math.round(selectedAreaAnalytics.pricePerSqft / 10.764)}`
+                : `~$${Math.round((overallAnalytics.averagePrice / 1500) / 10.764)}`}
             </div>
           </div>
         </div>

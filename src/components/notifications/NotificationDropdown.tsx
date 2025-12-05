@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -32,6 +33,9 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [position, setPosition] = useState({ top: 0, right: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   // Use hook to get real-time unread count (includes all notifications)
@@ -57,10 +61,26 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
     }
   }, []);
 
+  // Update dropdown position when opening
+  useEffect(() => {
+    if (isOpen && buttonRef.current && !isMobile) {
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      setPosition({
+        top: buttonRect.bottom + 8,
+        right: window.innerWidth - buttonRect.right
+      });
+    }
+  }, [isOpen, isMobile]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(event.target as Node) &&
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -207,34 +227,46 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      {/* Bell Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className={`relative text-muted-foreground hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-colors ${
-          isOpen ? 'text-pickfirst-yellow' : ''
-        } h-10 w-10 rounded-full sm:h-auto sm:w-auto sm:rounded-lg`}
-        onClick={() => setIsOpen(!isOpen)}
-        title={`${unreadCount} notification${unreadCount !== 1 ? 's' : ''}`}
-      >
-        <Bell className="h-5 w-5" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold animate-pulse">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
-      </Button>
+    <>
+      <div className="relative shrink-0" ref={containerRef}>
+        {/* Bell Button */}
+        <Button
+          ref={buttonRef}
+          variant="ghost"
+          size="icon"
+          className={`relative text-muted-foreground hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-colors ${
+            isOpen ? 'text-pickfirst-yellow' : ''
+          } h-9 w-9 rounded-full sm:h-10 sm:w-10 overflow-visible`}
+          onClick={() => setIsOpen(!isOpen)}
+          title={`${unreadCount} notification${unreadCount !== 1 ? 's' : ''}`}
+        >
+          <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+          {unreadCount > 0 && (
+            <span className="absolute top-0 right-0 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold animate-pulse translate-x-1/2 -translate-y-1/2">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </Button>
+      </div>
 
-      {/* Dropdown Panel */}
-      {isOpen && (
+      {/* Dropdown Panel - Rendered via Portal to appear above all elements */}
+      {isOpen && typeof document !== 'undefined' && createPortal(
         <div
+          ref={dropdownRef}
           className={`${
             isMobile
-              ? 'fixed inset-x-4 top-16 z-50 w-auto mx-auto'
-              : 'absolute right-0 mt-2 w-96'
-          } max-w-[calc(100vw-2rem)] pickfirst-glass bg-card/95 text-card-foreground border border-pickfirst-yellow/30 rounded-xl shadow-2xl overflow-hidden`}
-          style={isMobile ? { maxHeight: '75vh' } : {}}
+              ? 'fixed inset-x-4 top-16 w-auto mx-auto'
+              : 'fixed w-96'
+          } max-w-[calc(100vw-2rem)] pickfirst-glass bg-card/95 text-card-foreground border border-pickfirst-yellow/30 rounded-xl shadow-2xl overflow-hidden z-[9999]`}
+          style={
+            isMobile 
+              ? { maxHeight: '75vh' }
+              : {
+                  top: `${position.top}px`,
+                  right: `${position.right}px`,
+                  maxHeight: '75vh'
+                }
+          }
         >
           {/* Header */}
           <div className="p-4 border-b border-pickfirst-yellow/20 bg-gradient-to-r from-pickfirst-yellow/10 to-transparent">
@@ -368,8 +400,9 @@ export const NotificationDropdown = ({ unreadCount: externalUnreadCount, onUnrea
               </Button>
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 };

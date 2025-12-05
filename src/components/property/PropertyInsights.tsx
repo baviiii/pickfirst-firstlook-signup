@@ -304,37 +304,37 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
 
   // Memoized components
   const PlaceCard = useMemo(() => ({ place, icon: Icon }: { place: NearbyPlace; icon: any }) => (
-  <div className="p-4 pickfirst-glass bg-card/90 rounded-lg border border-border hover:border-pickfirst-yellow/50 transition-all duration-200 group">
+  <div className="p-4 pickfirst-glass bg-card/95 rounded-lg border-2 border-pickfirst-yellow/40 hover:border-pickfirst-yellow/60 transition-all duration-200 group shadow-md">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2 flex-1">
-          <Icon className="h-4 w-4 text-primary flex-shrink-0" />
-          <h4 className="text-sm font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+          <Icon className="h-5 w-5 text-pickfirst-yellow flex-shrink-0" />
+          <h4 className="text-sm font-bold text-foreground line-clamp-2 group-hover:text-pickfirst-yellow transition-colors">
             {place.name}
           </h4>
         </div>
         {place.rating && (
-          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-            <Star className="h-3 w-3 text-yellow-400 fill-current" />
-            <span className="text-xs text-yellow-400 font-medium">{place.rating.toFixed(1)}</span>
+          <div className="flex items-center gap-1 flex-shrink-0 ml-2 bg-pickfirst-yellow/20 px-2 py-1 rounded-full">
+            <Star className="h-3.5 w-3.5 text-pickfirst-yellow fill-current" />
+            <span className="text-xs text-pickfirst-yellow font-bold">{place.rating.toFixed(1)}</span>
           </div>
         )}
       </div>
       
-      <div className="space-y-1">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span className="line-clamp-1">{place.vicinity || 'Nearby'}</span>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-foreground line-clamp-1">{place.vicinity || 'Nearby'}</span>
           {place.distance && (
-            <span className="text-primary/80 font-medium">
+            <span className="text-xs text-pickfirst-yellow font-bold bg-pickfirst-yellow/10 px-2 py-0.5 rounded">
               {place.distance < 1 ? `${Math.round(place.distance * 1000)}m` : `${place.distance.toFixed(1)}km`}
             </span>
           )}
         </div>
         
         {place.user_ratings_total && (
-          <div className="text-xs text-muted-foreground/80">
+          <div className="text-xs text-foreground/90 font-semibold">
             {place.user_ratings_total.toLocaleString()} reviews
             {place.price_level && (
-              <span className="ml-2">
+              <span className="ml-2 text-pickfirst-yellow font-bold">
                 {'$'.repeat(place.price_level)}
               </span>
             )}
@@ -358,18 +358,18 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
     return (
       <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
         <CardHeader>
-          <CardTitle className="text-foreground flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-primary" />
+          <CardTitle className="text-foreground flex items-center gap-2 font-bold">
+            <MapPin className="h-5 w-5 text-pickfirst-yellow" />
             Neighborhood Insights
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 space-y-4">
-            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+            <Loader2 className="h-8 w-8 text-pickfirst-yellow animate-spin" />
             <div className="text-muted-foreground text-center">
-              <p>Loading real data from Google Maps...</p>
+              <p className="font-medium">Loading real data from Google Maps...</p>
               {retryCount > 0 && (
-                <p className="text-sm text-yellow-400 mt-1">
+                <p className="text-sm text-pickfirst-yellow mt-1 font-semibold">
                   Retry attempt {retryCount} of {maxRetries}
                 </p>
               )}
@@ -451,61 +451,61 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
       {/* Quick Stats from Real Data */}
       <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
         <CardHeader>
-          <CardTitle className="text-foreground flex items-center gap-2">
-            <Star className="h-5 w-5 text-primary" />
+          <CardTitle className="text-foreground flex items-center gap-2 font-bold">
+            <Star className="h-5 w-5 text-pickfirst-yellow" />
             Neighborhood at a Glance
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Schools */}
-            <div className="p-4 rounded-lg border border-border bg-card/80">
+            <div className="p-4 rounded-lg border border-pickfirst-yellow/30 bg-card/80 hover:bg-card/90 transition-colors">
               <div className="flex items-center gap-2 mb-2">
-                <GraduationCap className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-foreground">Schools</span>
+                <GraduationCap className="h-4 w-4 text-pickfirst-yellow" />
+                <span className="text-sm font-semibold text-foreground">Schools</span>
               </div>
-              <div className="text-2xl font-bold text-primary">
+              <div className="text-2xl font-bold text-pickfirst-yellow">
                 {avgSchoolRating > 0 ? avgSchoolRating.toFixed(1) : 'N/A'}
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground font-medium">
                 {nearbyPlaces.schools.length > 0 ? `${nearbyPlaces.schools.length} nearby` : 'avg rating'}
               </div>
             </div>
 
             {/* Restaurants */}
-            <div className="p-4 rounded-lg border border-border bg-card/80">
+            <div className="p-4 rounded-lg border border-pickfirst-yellow/30 bg-card/80 hover:bg-card/90 transition-colors">
               <div className="flex items-center gap-2 mb-2">
-                <Coffee className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-foreground">Dining</span>
+                <Coffee className="h-4 w-4 text-pickfirst-yellow" />
+                <span className="text-sm font-semibold text-foreground">Dining</span>
               </div>
-              <div className="text-2xl font-bold text-primary">
+              <div className="text-2xl font-bold text-pickfirst-yellow">
                 {topRatedRestaurants}
               </div>
-              <div className="text-xs text-muted-foreground">top-rated spots</div>
+              <div className="text-xs text-muted-foreground font-medium">top-rated spots</div>
             </div>
 
             {/* Transit */}
-            <div className="p-4 rounded-lg border border-border bg-card/80">
+            <div className="p-4 rounded-lg border border-pickfirst-yellow/30 bg-card/80 hover:bg-card/90 transition-colors">
               <div className="flex items-center gap-2 mb-2">
-                <Train className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-foreground">Transit</span>
+                <Train className="h-4 w-4 text-pickfirst-yellow" />
+                <span className="text-sm font-semibold text-foreground">Transit</span>
               </div>
-              <div className="text-2xl font-bold text-primary">
+              <div className="text-2xl font-bold text-pickfirst-yellow">
                 {transitOptions}
               </div>
-              <div className="text-xs text-muted-foreground">stations nearby</div>
+              <div className="text-xs text-muted-foreground font-medium">stations nearby</div>
             </div>
 
             {/* Parks */}
-            <div className="p-4 rounded-lg border border-border bg-card/80">
+            <div className="p-4 rounded-lg border border-pickfirst-yellow/30 bg-card/80 hover:bg-card/90 transition-colors">
               <div className="flex items-center gap-2 mb-2">
-                <TreePine className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-foreground">Parks</span>
+                <TreePine className="h-4 w-4 text-pickfirst-yellow" />
+                <span className="text-sm font-semibold text-foreground">Parks</span>
               </div>
-              <div className="text-2xl font-bold text-primary">
+              <div className="text-2xl font-bold text-pickfirst-yellow">
                 {parksNearby}
               </div>
-              <div className="text-xs text-muted-foreground">green spaces</div>
+              <div className="text-xs text-muted-foreground font-medium">green spaces</div>
             </div>
 
             {/* Air Quality */}
@@ -513,7 +513,7 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
               <div className={`p-4 rounded-lg border border-border ${aqInfo.bgColor}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">{aqInfo.icon}</span>
-                  <span className="text-sm font-medium text-white">Air Quality</span>
+                  <span className="text-sm font-semibold text-foreground">Air Quality</span>
                 </div>
                 <div className={`text-2xl font-bold ${aqInfo.color}`}>
                   {airQuality.aqi || 'N/A'}
@@ -527,7 +527,7 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
 
           {/* Air Quality Details */}
           {airQuality && airQuality.aqi && (
-            <div className={`mt-4 p-3 rounded-lg border ${aqInfo.bgColor} border-gray-700`}>
+            <div className={`mt-4 p-3 rounded-lg border ${aqInfo.bgColor} border-pickfirst-yellow/30`}>
               <div className="flex items-start gap-2">
                 <Info className={`h-4 w-4 ${aqInfo.color} flex-shrink-0 mt-0.5`} />
                 <div className="text-sm space-y-1">
@@ -552,10 +552,10 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
       </Card>
 
       {/* Data Source Notice */}
-      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-primary/30">
+      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+            <Info className="h-5 w-5 text-pickfirst-yellow flex-shrink-0 mt-0.5" />
             <div className="text-sm space-y-2">
               <p className="text-foreground font-medium">
                 100% Real Data from Google (Cached for 30 Days)
@@ -567,16 +567,16 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-primary hover:text-primary/80 p-0 h-auto font-normal"
+                className="text-pickfirst-yellow hover:text-pickfirst-yellow/80 p-0 h-auto font-normal"
                 onClick={() => setShowMethodology(!showMethodology)}
               >
                 {showMethodology ? <ChevronUp className="h-4 w-4 inline mr-1" /> : <ChevronDown className="h-4 w-4 inline mr-1" />}
                 How we calculate this data
               </Button>
               {showMethodology && (
-                <div className="mt-3 p-4 bg-card/80 rounded-lg border border-border space-y-2 text-muted-foreground">
+                <div className="mt-3 p-4 bg-card/90 rounded-lg border border-pickfirst-yellow/30 space-y-2 text-foreground">
                   <p className="font-medium text-foreground">Calculation Methodology:</p>
-                  <ul className="space-y-1 text-xs list-disc list-inside">
+                  <ul className="space-y-1 text-xs list-disc list-inside text-foreground/90">
                     <li><strong>Distance:</strong> Calculated using the Haversine formula, which determines the great-circle distance between two points on Earth using their latitude and longitude coordinates.</li>
                     <li><strong>Ratings:</strong> Pulled directly from Google Maps user reviews (out of 5 stars).</li>
                     <li><strong>Filtering:</strong> We only show places with at least a 3.0 rating and 10+ reviews to ensure quality.</li>
@@ -599,12 +599,12 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
       {/* Nearby Places */}
       <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
         <CardHeader>
-          <CardTitle className="text-foreground flex items-center justify-between">
+          <CardTitle className="text-foreground flex items-center justify-between font-bold">
             <div className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-primary" />
+              <MapPin className="h-5 w-5 text-pickfirst-yellow" />
               Nearby Places
             </div>
-            <Badge variant="outline" className="text-primary border-primary/40 bg-primary/10">
+            <Badge variant="outline" className="text-pickfirst-yellow border-pickfirst-yellow/40 bg-pickfirst-yellow/10">
               {totalPlaces} verified places
             </Badge>
           </CardTitle>
@@ -618,20 +618,20 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
           ) : (
             <div className="space-y-4">
               {categories.map(category => (
-                <div key={category.key} className="border-b border-border/60 last:border-b-0 pb-4 last:pb-0">
-                  <Button
+                <div key={category.key} className="border-b border-pickfirst-yellow/20 last:border-b-0 pb-4 last:pb-0">
+                    <Button
                     variant="ghost"
-                    className="w-full justify-between text-left p-3 h-auto hover:bg-card/80 rounded-lg"
+                    className="w-full justify-between text-left p-3 h-auto hover:bg-pickfirst-yellow/10 rounded-lg border border-transparent hover:border-pickfirst-yellow/30 transition-all"
                     onClick={() => setExpandedCategory(
                       expandedCategory === category.key ? '' : category.key
                     )}
                   >
                     <div className="flex items-center gap-3">
-                      <category.icon className="h-5 w-5 text-primary" />
-                      <span className="text-foreground font-medium">{category.label}</span>
+                      <category.icon className="h-5 w-5 text-pickfirst-yellow" />
+                      <span className="text-foreground font-semibold">{category.label}</span>
                       <Badge 
                         variant="outline" 
-                        className={`${category.places.length > 0 ? 'text-primary border-primary/40 bg-primary/5' : 'text-muted-foreground border-border'}`}
+                        className={`${category.places.length > 0 ? 'text-pickfirst-yellow border-pickfirst-yellow/40 bg-pickfirst-yellow/10' : 'text-muted-foreground border-border'}`}
                       >
                         {category.places.length}
                       </Badge>

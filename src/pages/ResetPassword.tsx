@@ -3,10 +3,29 @@ import { useNavigate } from 'react-router-dom';
 import { ResetPasswordForm } from '@/components/auth/ResetPasswordForm';
 import { useAuth } from '@/hooks/useAuth';
 import AuthLayout from '@/components/layouts/AuthLayout';
+import { supabase } from '@/integrations/supabase/client';
 
 const ResetPassword = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+
+  // Sign out immediately when page loads if there's a recovery hash
+  // This prevents Supabase from auto-creating a session
+  useEffect(() => {
+    const checkForRecoveryHash = async () => {
+      if (window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+        const type = hashParams.get('type');
+        
+        if (type === 'recovery') {
+          // Sign out immediately to prevent auto-login from recovery tokens
+          await supabase.auth.signOut();
+        }
+      }
+    };
+    
+    checkForRecoveryHash();
+  }, []);
 
   // Don't auto-redirect logged in users during password reset flow
   // They need to complete the password reset first

@@ -42,39 +42,46 @@ export const FeatureManagement = () => {
 
   const getFeatureDescription = (featureKey: string): string => {
     const descriptions: { [key: string]: string } = {
-      // === NEW CLEAN FEATURE GATES ===
-      // Search & Discovery
-      'browse_listings': 'View all public property listings',
+      // === CORE FEATURES ===
+      'browse_properties': 'View and search property listings',
+      'browse_listings': 'View all public property listings (alias for browse_properties)',
       'basic_search': 'Standard property search functionality',
       'save_searches': 'Save search criteria and get alerts',
-      'early_access_listings': '24-hour early access to new listings',
-      'property_insights': 'Detailed property analytics and market data',
-      'investor_filters': 'Advanced filters for investment properties',
-      'advanced_search_filters': 'Advanced property filtering options',
-      'market_insights': 'Access to market analytics and insights',
+      'property_alerts': 'Get notified when properties match your criteria',
+      'agent_messaging': 'Communicate with real estate agents',
       
-      // Property Management
+      // === LIMITED FEATURES ===
+      'favorites': 'Save favorite properties (Free: 10, Premium: unlimited)',
       'favorites_basic': 'Save up to 10 favorite properties',
       'favorites_unlimited': 'Save unlimited favorite properties',
+      'unlimited_favorites': 'Save unlimited favorite properties (legacy alias)',
+      'property_comparison': 'Compare properties side by side (Free: 2, Premium: unlimited)',
       'property_comparison_basic': 'Compare up to 2 properties side by side',
       'property_comparison_unlimited': 'Compare unlimited properties side by side',
-      'property_alerts_basic': 'Up to 3 customized property alerts',
-      'property_alerts_unlimited': 'Unlimited customized property alerts',
       
-      // Communication
-      'agent_messaging': 'Chat with agents about properties (Premium only)',
-      'priority_support': 'Get priority response from agents',
-      
-      // Premium Features
-      'exclusive_offmarket': 'Access to agent-posted off-market properties',
-      'vendor_details': 'View ownership duration and special conditions',
+      // === PREMIUM FEATURES ===
+      'off_market_properties': 'Access to exclusive off-market listings',
+      'exclusive_offmarket': 'Access to agent-posted off-market properties (alias)',
+      'advanced_search': 'Advanced filtering and search capabilities',
+      'advanced_search_filters': 'Advanced property filtering and search options',
+      'market_insights': 'Access to market analytics and trends',
+      'property_insights': 'Detailed property analytics and market data',
+      'investor_filters': 'Advanced filters for investment properties',
+      'early_access_listings': '24-hour early access to new listings',
+      'vendor_details': 'Access detailed vendor/seller information including ownership duration, motivation, and special conditions',
+      'priority_support': 'Priority customer support',
       'schedule_appointments': 'Book appointments directly with agents',
-      'direct_chat_agents': 'In-app messaging with agents',
       
-      // Notifications
-      'email_notifications': 'Receive email notifications',
+      // === MESSAGING & NOTIFICATIONS ===
+      'direct_chat_agents': 'Direct messaging with agents (alias for agent_messaging)',
+      'personalized_property_notifications': 'Custom property alerts based on preferences',
       'personalized_alerts': 'Enhanced property recommendations based on search preferences',
-      'instant_notifications': 'Real-time push notifications',
+      'instant_notifications': 'Real-time property notifications',
+      'message_history_30days': 'Access to 30 days of message history',
+      'message_history_unlimited': 'Access to all message history',
+      
+      // === LEGACY FEATURES (for backward compatibility) ===
+      'email_notifications': 'Receive email notifications',
       
       // === LEGACY FEATURE GATES (for backward compatibility) ===
       'limited_favorites': '[LEGACY] Save up to 10 favorite properties',

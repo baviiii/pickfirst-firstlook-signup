@@ -2,17 +2,20 @@ import { useEffect, useState } from 'react';
 import PropertyMap from '@/components/maps/PropertyMap';
 import { MapAnalyticsService } from '@/services/mapAnalyticsService';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Crown, Lock, MapPin } from 'lucide-react';
 import { Tables } from '@/integrations/supabase/types';
 import { useSubscription } from '@/hooks/useSubscription';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 type PropertyListing = Tables<'property_listings'>;
 
 const PropertyMapPage = () => {
+  const navigate = useNavigate();
   const [properties, setProperties] = useState<PropertyListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { canAccessOffMarketListings } = useSubscription();
+  const { canAccessOffMarketListings, subscriptionTier } = useSubscription();
 
   // Fetch real properties from the database
   const fetchProperties = async () => {
@@ -90,10 +93,9 @@ const PropertyMapPage = () => {
     ? properties // Premium users see ALL properties (including off-market with listing_source = 'agent_posted')
     : properties.filter(property => (property as any).listing_source !== 'agent_posted'); // Non-premium: exclude off-market
   
-  // Count off-market properties for premium users
-  const offMarketCount = hasOffMarketAccess 
-    ? properties.filter(p => (p as any).listing_source === 'agent_posted').length 
-    : 0;
+  // Count off-market properties (for both premium and non-premium to show what's available)
+  const totalOffMarketCount = properties.filter(p => (p as any).listing_source === 'agent_posted').length;
+  const offMarketCount = hasOffMarketAccess ? totalOffMarketCount : 0;
 
   return (
     <div className="space-y-6">
@@ -119,11 +121,35 @@ const PropertyMapPage = () => {
             )}
           </div>
         )}
-        {!hasOffMarketAccess && (
-          <div className="mt-4 inline-flex items-center px-4 py-2 bg-pink-500/10 text-foreground rounded-full text-sm border border-pink-500/40">
-            Premium tip: upgrade to access exclusive off-market listings on the map.
-          </div>
-        )}
+        
+        {/* Premium Off-Market Button */}
+        <div className="mt-4 flex justify-center">
+          {hasOffMarketAccess ? (
+            <Button
+              onClick={() => navigate('/off-market')}
+              className="bg-gradient-to-r from-pickfirst-yellow to-pickfirst-amber hover:from-pickfirst-amber hover:to-pickfirst-yellow text-black font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
+            >
+              <Crown className="w-5 h-5" />
+              <span>View {totalOffMarketCount > 0 ? `${totalOffMarketCount} ` : ''}Exclusive Off-Market Properties</span>
+              <MapPin className="w-5 h-5" />
+            </Button>
+          ) : (
+            <Button
+              onClick={() => navigate('/pricing')}
+              className="bg-gradient-to-r from-pickfirst-yellow/90 to-pickfirst-amber/90 hover:from-pickfirst-yellow hover:to-pickfirst-amber text-black font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 relative overflow-hidden group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+              <Lock className="w-5 h-5 relative z-10" />
+              <span className="relative z-10">
+                {totalOffMarketCount > 0 
+                  ? `Unlock ${totalOffMarketCount} Exclusive Off-Market ${totalOffMarketCount === 1 ? 'Listing' : 'Listings'} - Upgrade to Premium`
+                  : 'Upgrade to Premium - Access Exclusive Off-Market Listings'
+                }
+              </span>
+              <Crown className="w-5 h-5 relative z-10" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Property Map Component */}

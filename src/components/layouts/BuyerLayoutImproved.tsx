@@ -294,7 +294,7 @@ export const BuyerLayoutImproved = ({ children, showSearchBar = false }: BuyerLa
       <main className="flex-1 transition-all duration-500 ease-out overflow-y-auto h-screen flex flex-col relative">
         {/* Elegant Floating Header */}
         <header className="sticky top-0 z-50 mx-4 mt-4 mb-1 rounded-2xl bg-white shadow-md border border-gray-200">
-          <div className="flex items-center justify-between gap-4 px-5 py-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-5 py-4 min-w-0 overflow-hidden">
             {/* Left: Logo (when sidebar collapsed) + Menu Toggle */}
             <div className="flex items-center gap-3">
               {!sidebarOpen && (
@@ -327,36 +327,47 @@ export const BuyerLayoutImproved = ({ children, showSearchBar = false }: BuyerLa
             </div>
 
             {/* Right: Agent Mode Toggle (if agent), Notifications & Premium Profile */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
               {/* Beautiful Agent Mode Toggle Button (only show if agent in buyer mode) */}
               {canSwitchToBuyer && viewMode === 'buyer' && (
-                <Button
-                  onClick={() => {
-                    toggleViewMode();
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="relative overflow-hidden bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300/50 text-amber-700 hover:from-amber-100 hover:to-yellow-100 hover:border-amber-400/70 hover:text-amber-800 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/20 group"
-                >
-                  {/* Animated background shimmer */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                  
-                  <div className="relative flex items-center gap-2">
-                    <UserCog className="h-4 w-4 transition-transform group-hover:scale-110" />
-                    <span className="hidden sm:inline font-medium">Agent Mode</span>
+                <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                  {/* Desktop: Full label + button */}
+                  <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-pickfirst-yellow/10 border border-pickfirst-yellow/30">
+                    <span className="text-sm font-medium text-foreground">Currently:</span>
+                    <span className="text-base font-bold text-pickfirst-yellow">Buyer</span>
                   </div>
-                </Button>
+                  {/* Mobile: Compact badge with smaller text + icon-only button */}
+                  <div className="sm:hidden flex items-center gap-1 px-1.5 py-1 rounded-lg bg-pickfirst-yellow/10 border border-pickfirst-yellow/30">
+                    <span className="text-[10px] font-medium text-pickfirst-yellow">Buyer</span>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      toggleViewMode();
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="relative overflow-hidden bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300/50 text-amber-700 hover:from-amber-100 hover:to-yellow-100 hover:border-amber-400/70 hover:text-amber-800 rounded-lg transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/20 group shrink-0 h-7 sm:h-9 px-2 sm:px-3"
+                  >
+                    {/* Animated background shimmer */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                    
+                    <div className="relative flex items-center">
+                      <UserCog className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform group-hover:scale-110" />
+                      <span className="hidden sm:inline font-medium text-sm ml-2">Switch to Agent Mode</span>
+                    </div>
+                  </Button>
+                </div>
               )}
 
               <NotificationDropdown />
 
             <div
-              className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card/80 border border-border shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
+              className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 rounded-xl bg-card/80 border border-border shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer shrink-0"
               onClick={() => navigate('/buyer-account-settings')}
             >
-                <div className="relative">
+                <div className="relative shrink-0">
                   {/* Avatar */}
-                  <div className="relative h-9 w-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-sm ring-2 ring-primary/20">
+                  <div className="relative h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-sm ring-2 ring-primary/20">
                     {profile?.full_name?.charAt(0) || 'B'}
                   </div>
                 </div>

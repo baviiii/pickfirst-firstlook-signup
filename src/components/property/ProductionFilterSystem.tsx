@@ -358,9 +358,9 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
     children: React.ReactNode;
     badge?: number;
   }) => (
-    <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+    <Card className="pickfirst-glass bg-card/90 backdrop-blur-xl border border-pickfirst-yellow/30 shadow-lg">
       <CardHeader 
-        className="cursor-pointer hover:bg-yellow-400/5 transition-colors p-3 sm:p-4 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 rounded-lg"
+        className="cursor-pointer hover:bg-pickfirst-yellow/10 transition-colors p-3 sm:p-4 focus:outline-none focus:ring-2 focus:ring-pickfirst-yellow/50 rounded-lg"
         onClick={() => toggleSection(sectionKey)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -376,15 +376,15 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {icon}
-            <CardTitle className="text-white text-sm sm:text-base">{title}</CardTitle>
+            <CardTitle className="text-foreground text-sm sm:text-base font-semibold">{title}</CardTitle>
             {badge !== undefined && badge > 0 && (
-              <Badge className="bg-yellow-400 text-black text-xs" aria-label={`${badge} active filters`}>
+              <Badge className="bg-pickfirst-yellow text-black text-xs font-semibold" aria-label={`${badge} active filters`}>
                 {badge}
               </Badge>
             )}
           </div>
           <ChevronDown 
-            className={`h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 transition-transform ${
+            className={`h-4 w-4 sm:h-5 sm:w-5 text-pickfirst-yellow transition-transform ${
               expandedSections[sectionKey] ? 'rotate-180' : ''
             }`} 
             aria-hidden="true"
@@ -392,7 +392,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
         </div>
       </CardHeader>
       {expandedSections[sectionKey] && (
-        <CardContent className="border-t border-yellow-400/10 p-3 sm:p-4">
+        <CardContent className="border-t border-pickfirst-yellow/20 bg-card/50 p-3 sm:p-4">
           {children}
         </CardContent>
       )}
@@ -413,15 +413,15 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
   const MobileFilterOverlay = () => (
     isMobileFiltersOpen && (
       <div className="sm:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm">
-        <div className="absolute inset-y-0 right-0 w-full max-w-sm bg-gray-900 border-l border-yellow-400/20 overflow-y-auto">
-          <div className="p-4 border-b border-yellow-400/20">
+        <div className="absolute inset-y-0 right-0 w-full max-w-sm pickfirst-glass bg-card/95 border-l border-pickfirst-yellow/30 overflow-y-auto">
+          <div className="p-4 border-b border-pickfirst-yellow/30">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">Filters</h2>
+              <h2 className="text-lg font-bold text-foreground">Filters</h2>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsMobileFiltersOpen(false)}
-                className="text-gray-300 hover:text-yellow-400"
+                className="text-foreground hover:text-pickfirst-yellow"
               >
                 <X className="h-5 w-5" />
               </Button>
@@ -447,44 +447,44 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
         <div className="space-y-4">
           {/* Search */}
           <div>
-            <Label className="text-gray-300 mb-2 block text-sm">Search Keywords</Label>
+            <Label className="text-foreground mb-2 block text-sm font-medium">Search Keywords</Label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Enter keywords..."
                 value={filters.searchTerm || ''}
                 onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
-                className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder-gray-400 text-sm"
+                className="pl-10 bg-background/50 border-pickfirst-yellow/30 text-foreground placeholder-muted-foreground text-sm"
               />
             </div>
           </div>
 
           {/* Location with Autocomplete */}
           <div>
-            <Label className="text-gray-300 mb-2 block text-sm">Location</Label>
+            <Label className="text-foreground mb-2 block text-sm font-medium">Location</Label>
             <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Enter city, suburb, or address..."
                 value={filters.location || ''}
                 onChange={(e) => handleFilterChange('location', e.target.value)}
-                className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder-gray-400 text-sm"
+                className="pl-10 bg-background/50 border-pickfirst-yellow/30 text-foreground placeholder-muted-foreground text-sm"
               />
               
               {/* Location Suggestions */}
               {showLocationSuggestions && locationSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-pickfirst-yellow/30 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
                   {locationSuggestions.map((suggestion, index) => (
                     <button
                       key={index}
-                      className="w-full px-4 py-2 text-left text-white hover:bg-yellow-400/10 transition-colors text-sm"
+                      className="w-full px-4 py-2 text-left text-popover-foreground hover:bg-pickfirst-yellow/10 transition-colors text-sm"
                       onClick={() => {
                         handleFilterChange('location', suggestion.description);
                         setShowLocationSuggestions(false);
                       }}
                     >
                       <div className="font-medium">{suggestion.structured_formatting.main_text}</div>
-                      <div className="text-xs text-gray-400">{suggestion.structured_formatting.secondary_text}</div>
+                      <div className="text-xs text-muted-foreground">{suggestion.structured_formatting.secondary_text}</div>
                     </button>
                   ))}
                 </div>
@@ -503,7 +503,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
       >
         <div className="space-y-4">
           <div>
-            <Label className="text-gray-300 mb-4 block text-sm">
+            <Label className="text-foreground mb-4 block text-sm font-medium">
               Price Range: ${(filters.priceMin || 0).toLocaleString()} - ${(filters.priceMax || 2000000).toLocaleString()}
             </Label>
             <Slider
@@ -522,44 +522,44 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
           {/* Manual price inputs */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-gray-300 mb-1 block text-sm">Min Price</Label>
+              <Label className="text-foreground mb-1 block text-sm font-medium">Min Price</Label>
               <Input
                 type="number"
                 placeholder="0"
                 value={filters.priceMin || ''}
                 onChange={(e) => handleFilterChange('priceMin', e.target.value ? parseInt(e.target.value) : undefined)}
-                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+                className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm"
               />
             </div>
             <div>
-              <Label className="text-gray-300 mb-1 block text-sm">Max Price</Label>
+              <Label className="text-foreground mb-1 block text-sm font-medium">Max Price</Label>
               <Input
                 type="number"
                 placeholder="2000000"
                 value={filters.priceMax || ''}
                 onChange={(e) => handleFilterChange('priceMax', e.target.value ? parseInt(e.target.value) : undefined)}
-                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+                className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm"
               />
             </div>
           </div>
 
           {/* HOA Fees */}
           <div>
-            <Label className="text-gray-300 mb-2 block text-sm">HOA Fees (Monthly)</Label>
+            <Label className="text-foreground mb-2 block text-sm font-medium">HOA Fees (Monthly)</Label>
             <div className="grid grid-cols-2 gap-3">
               <Input
                 type="number"
                 placeholder="Min HOA"
                 value={filters.hoaMin || ''}
                 onChange={(e) => handleFilterChange('hoaMin', e.target.value ? parseInt(e.target.value) : undefined)}
-                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+                className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm"
               />
               <Input
                 type="number"
                 placeholder="Max HOA"
                 value={filters.hoaMax || ''}
                 onChange={(e) => handleFilterChange('hoaMax', e.target.value ? parseInt(e.target.value) : undefined)}
-                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+                className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm"
               />
             </div>
           </div>
@@ -576,12 +576,12 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
         <div className="space-y-4">
           {/* Property Type */}
           <div>
-            <Label className="text-gray-300 mb-2 block text-sm">Property Type</Label>
+            <Label className="text-foreground mb-2 block text-sm font-medium">Property Type</Label>
             <Select
               value={filters.propertyType || ''}
               onValueChange={(value) => handleFilterChange('propertyType', value === 'any' ? undefined : value)}
             >
-              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white text-sm">
+              <SelectTrigger className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm">
                 <SelectValue placeholder="Any Type" />
               </SelectTrigger>
               <SelectContent>
@@ -599,12 +599,12 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
           {/* Bedrooms & Bathrooms */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-gray-300 mb-2 block text-sm">Bedrooms</Label>
+              <Label className="text-foreground mb-2 block text-sm font-medium">Bedrooms</Label>
               <Select
                 value={filters.bedrooms?.toString() || ''}
                 onValueChange={(value) => handleFilterChange('bedrooms', value === 'any' ? undefined : parseInt(value))}
               >
-                <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white text-sm">
+                <SelectTrigger className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm">
                   <SelectValue placeholder="Any" />
                 </SelectTrigger>
                 <SelectContent>
@@ -617,12 +617,12 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
             </div>
             
             <div>
-              <Label className="text-gray-300 mb-2 block text-sm">Bathrooms</Label>
+              <Label className="text-foreground mb-2 block text-sm font-medium">Bathrooms</Label>
               <Select
                 value={filters.bathrooms?.toString() || ''}
                 onValueChange={(value) => handleFilterChange('bathrooms', value === 'any' ? undefined : parseFloat(value))}
               >
-                <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white text-sm">
+                <SelectTrigger className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm">
                   <SelectValue placeholder="Any" />
                 </SelectTrigger>
                 <SelectContent>
@@ -637,28 +637,28 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
 
           {/* Square Footage */}
           <div>
-            <Label className="text-gray-300 mb-2 block text-sm">Square Footage</Label>
+            <Label className="text-foreground mb-2 block text-sm font-medium">Square Footage</Label>
             <div className="grid grid-cols-2 gap-3">
               <Input
                 type="number"
                 placeholder="Min sqft"
                 value={filters.squareFootageMin || ''}
                 onChange={(e) => handleFilterChange('squareFootageMin', e.target.value ? parseInt(e.target.value) : undefined)}
-                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+                className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm"
               />
               <Input
                 type="number"
                 placeholder="Max sqft"
                 value={filters.squareFootageMax || ''}
                 onChange={(e) => handleFilterChange('squareFootageMax', e.target.value ? parseInt(e.target.value) : undefined)}
-                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+                className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm"
               />
             </div>
           </div>
 
           {/* Lot Size */}
           <div>
-            <Label className="text-gray-300 mb-2 block text-sm">Lot Size (acres)</Label>
+            <Label className="text-foreground mb-2 block text-sm font-medium">Lot Size (acres)</Label>
             <div className="grid grid-cols-2 gap-3">
               <Input
                 type="number"
@@ -666,7 +666,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                 placeholder="Min acres"
                 value={filters.lotSizeMin || ''}
                 onChange={(e) => handleFilterChange('lotSizeMin', e.target.value ? parseFloat(e.target.value) : undefined)}
-                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+                className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm"
               />
               <Input
                 type="number"
@@ -674,14 +674,14 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                 placeholder="Max acres"
                 value={filters.lotSizeMax || ''}
                 onChange={(e) => handleFilterChange('lotSizeMax', e.target.value ? parseFloat(e.target.value) : undefined)}
-                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+                className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm"
               />
             </div>
           </div>
 
           {/* Year Built */}
           <div>
-            <Label className="text-gray-300 mb-2 block text-sm">Year Built</Label>
+            <Label className="text-foreground mb-2 block text-sm font-medium">Year Built</Label>
             <div className="grid grid-cols-2 gap-3">
               <Input
                 type="number"
@@ -690,7 +690,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                 max={new Date().getFullYear()}
                 value={filters.yearBuiltMin || ''}
                 onChange={(e) => handleFilterChange('yearBuiltMin', e.target.value ? parseInt(e.target.value) : undefined)}
-                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+                className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm"
               />
               <Input
                 type="number"
@@ -699,19 +699,19 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                 max={new Date().getFullYear()}
                 value={filters.yearBuiltMax || ''}
                 onChange={(e) => handleFilterChange('yearBuiltMax', e.target.value ? parseInt(e.target.value) : undefined)}
-                className="bg-gray-800/50 border-gray-700 text-white text-sm"
+                className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm"
               />
             </div>
           </div>
 
           {/* Garage Spaces */}
           <div>
-            <Label className="text-gray-300 mb-2 block text-sm">Garage Spaces</Label>
+            <Label className="text-foreground mb-2 block text-sm font-medium">Garage Spaces</Label>
             <Select
               value={filters.garageSpaces?.toString() || ''}
               onValueChange={(value) => handleFilterChange('garageSpaces', value === 'any' ? undefined : parseInt(value))}
             >
-              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white text-sm">
+              <SelectTrigger className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm">
                 <SelectValue placeholder="Any" />
               </SelectTrigger>
               <SelectContent>
@@ -734,7 +734,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
         badge={filters.features?.length || 0}
       >
         <div className="space-y-3">
-          <Label className="text-gray-300 mb-3 block text-sm">Select Features</Label>
+          <Label className="text-foreground mb-3 block text-sm font-medium">Select Features</Label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {[
               'Pool', 'Spa/Hot Tub', 'Garden/Landscaping', 'Balcony/Patio', 'Fireplace', 
@@ -744,7 +744,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
               'High Ceilings', 'Bay Windows', 'Skylight', 'Wine Cellar', 'Home Office',
               'Gym/Exercise Room', 'Media Room', 'Game Room', 'Workshop', 'Guest House'
             ].map(feature => (
-              <label key={feature} className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-gray-800/30 transition-colors">
+              <label key={feature} className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-pickfirst-yellow/10 transition-colors border border-transparent hover:border-pickfirst-yellow/20">
                 <Checkbox
                   checked={filters.features?.includes(feature) || false}
                   onCheckedChange={(checked) => {
@@ -756,7 +756,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                     }
                   }}
                 />
-                <span className="text-sm text-gray-300">{feature}</span>
+                <span className="text-sm text-foreground">{feature}</span>
               </label>
             ))}
           </div>
@@ -771,7 +771,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
         badge={filters.nearbyAmenities ? Object.values(filters.nearbyAmenities).filter(Boolean).length : 0}
       >
         <div className="space-y-4">
-          <Label className="text-gray-300 mb-3 block text-sm">Find properties near:</Label>
+          <Label className="text-foreground mb-3 block text-sm font-medium">Find properties near:</Label>
           <div className="grid grid-cols-1 gap-3">
             {[
               { key: 'schools', icon: GraduationCap, label: 'Good Schools' },
@@ -784,7 +784,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
               { key: 'airports', icon: Plane, label: 'Airports' },
               { key: 'entertainment', icon: Music, label: 'Entertainment' }
             ].map(({ key, icon: Icon, label }) => (
-              <label key={key} className="flex items-center space-x-3 cursor-pointer p-2 rounded hover:bg-gray-800/30 transition-colors">
+              <label key={key} className="flex items-center space-x-3 cursor-pointer p-2 rounded hover:bg-pickfirst-yellow/10 transition-colors border border-transparent hover:border-pickfirst-yellow/20">
                 <Checkbox
                   checked={filters.nearbyAmenities?.[key] || false}
                   onCheckedChange={(checked) => {
@@ -795,8 +795,8 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                     });
                   }}
                 />
-                <Icon className="h-4 w-4 text-yellow-400" />
-                <span className="text-sm text-gray-300">{label}</span>
+                <Icon className="h-4 w-4 text-pickfirst-yellow" />
+                <span className="text-sm text-foreground">{label}</span>
               </label>
             ))}
           </div>
@@ -812,7 +812,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
         <div className="space-y-4">
           {/* Listing Status */}
           <div>
-            <Label className="text-gray-300 mb-2 block text-sm">Listing Status</Label>
+            <Label className="text-foreground mb-2 block text-sm font-medium">Listing Status</Label>
             <div className="grid grid-cols-2 gap-2">
               {[
                 { key: 'active', label: 'Active' },
@@ -820,7 +820,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                 { key: 'sold', label: 'Recently Sold' },
                 { key: 'new', label: 'New Listings' }
               ].map(({ key, label }) => (
-                <label key={key} className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-gray-800/30 transition-colors">
+                <label key={key} className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-pickfirst-yellow/10 transition-colors border border-transparent hover:border-pickfirst-yellow/20">
                   <Checkbox
                     checked={filters.listingStatus?.includes(key) || false}
                     onCheckedChange={(checked) => {
@@ -832,7 +832,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                       }
                     }}
                   />
-                  <span className="text-sm text-gray-300">{label}</span>
+                  <span className="text-sm text-foreground">{label}</span>
                 </label>
               ))}
             </div>
@@ -840,12 +840,12 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
 
           {/* Days on Market */}
           <div>
-            <Label className="text-gray-300 mb-2 block text-sm">Days on Market</Label>
+            <Label className="text-foreground mb-2 block text-sm font-medium">Days on Market</Label>
             <Select
               value={filters.daysOnMarket?.toString() || ''}
               onValueChange={(value) => handleFilterChange('daysOnMarket', value === 'any' ? undefined : parseInt(value))}
             >
-              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white text-sm">
+              <SelectTrigger className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm">
                 <SelectValue placeholder="Any" />
               </SelectTrigger>
               <SelectContent>
@@ -861,44 +861,44 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
 
           {/* Advanced Checkboxes */}
           <div className="space-y-2">
-            <label className="flex items-center space-x-2 cursor-pointer">
+            <label className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-pickfirst-yellow/10 transition-colors border border-transparent hover:border-pickfirst-yellow/20">
               <Checkbox
                 checked={filters.openHouse || false}
                 onCheckedChange={(checked) => handleFilterChange('openHouse', checked)}
               />
-              <span className="text-sm text-gray-300">Open House Available</span>
+              <span className="text-sm text-foreground">Open House Available</span>
             </label>
 
-            <label className="flex items-center space-x-2 cursor-pointer">
+            <label className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-pickfirst-yellow/10 transition-colors border border-transparent hover:border-pickfirst-yellow/20">
               <Checkbox
                 checked={filters.virtualTour || false}
                 onCheckedChange={(checked) => handleFilterChange('virtualTour', checked)}
               />
-              <span className="text-sm text-gray-300">Virtual Tour Available</span>
+              <span className="text-sm text-foreground">Virtual Tour Available</span>
             </label>
 
-            <label className="flex items-center space-x-2 cursor-pointer">
+            <label className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-pickfirst-yellow/10 transition-colors border border-transparent hover:border-pickfirst-yellow/20">
               <Checkbox
                 checked={filters.priceReduced || false}
                 onCheckedChange={(checked) => handleFilterChange('priceReduced', checked)}
               />
-              <span className="text-sm text-gray-300">Price Recently Reduced</span>
+              <span className="text-sm text-foreground">Price Recently Reduced</span>
             </label>
 
-            <label className="flex items-center space-x-2 cursor-pointer">
+            <label className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-pickfirst-yellow/10 transition-colors border border-transparent hover:border-pickfirst-yellow/20">
               <Checkbox
                 checked={filters.foreclosure || false}
                 onCheckedChange={(checked) => handleFilterChange('foreclosure', checked)}
               />
-              <span className="text-sm text-gray-300">Foreclosure Properties</span>
+              <span className="text-sm text-foreground">Foreclosure Properties</span>
             </label>
 
-            <label className="flex items-center space-x-2 cursor-pointer">
+            <label className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-pickfirst-yellow/10 transition-colors border border-transparent hover:border-pickfirst-yellow/20">
               <Checkbox
                 checked={filters.shortSale || false}
                 onCheckedChange={(checked) => handleFilterChange('shortSale', checked)}
               />
-              <span className="text-sm text-gray-300">Short Sale Properties</span>
+              <span className="text-sm text-foreground">Short Sale Properties</span>
             </label>
           </div>
         </div>
@@ -912,7 +912,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
         badge={filters.accessibilityFeatures?.length || 0}
       >
         <div className="space-y-3">
-          <Label className="text-gray-300 mb-3 block text-sm">Accessibility Features</Label>
+          <Label className="text-foreground mb-3 block text-sm font-medium">Accessibility Features</Label>
           <div className="grid grid-cols-1 gap-2">
             {[
               'Wheelchair Accessible',
@@ -926,7 +926,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
               'Visual Alarms',
               'Hearing Loop System'
             ].map(feature => (
-              <label key={feature} className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-gray-800/30 transition-colors">
+              <label key={feature} className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-pickfirst-yellow/10 transition-colors border border-transparent hover:border-pickfirst-yellow/20">
                 <Checkbox
                   checked={filters.accessibilityFeatures?.includes(feature) || false}
                   onCheckedChange={(checked) => {
@@ -938,7 +938,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                     }
                   }}
                 />
-                <span className="text-sm text-gray-300">{feature}</span>
+                <span className="text-sm text-foreground">{feature}</span>
               </label>
             ))}
           </div>
@@ -951,17 +951,17 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
     return (
       <div className="space-y-4 sm:space-y-6">
         {/* Loading skeleton for filter stats */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+        <Card className="pickfirst-glass bg-card/90 backdrop-blur-xl border border-pickfirst-yellow/30">
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="h-4 w-4 bg-gray-700 rounded animate-pulse"></div>
-                <div className="h-4 w-32 bg-gray-700 rounded animate-pulse"></div>
+                <div className="h-4 w-4 bg-muted rounded animate-pulse"></div>
+                <div className="h-4 w-32 bg-muted rounded animate-pulse"></div>
               </div>
               <div className="flex gap-2">
-                <div className="h-8 w-16 bg-gray-700 rounded animate-pulse"></div>
-                <div className="h-8 w-16 bg-gray-700 rounded animate-pulse"></div>
-                <div className="h-8 w-16 bg-gray-700 rounded animate-pulse"></div>
+                <div className="h-8 w-16 bg-muted rounded animate-pulse"></div>
+                <div className="h-8 w-16 bg-muted rounded animate-pulse"></div>
+                <div className="h-8 w-16 bg-muted rounded animate-pulse"></div>
               </div>
             </div>
           </CardContent>
@@ -969,14 +969,14 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
 
         {/* Loading skeleton for filter sections */}
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+          <Card key={i} className="pickfirst-glass bg-card/90 backdrop-blur-xl border border-pickfirst-yellow/30">
             <CardHeader className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 bg-gray-700 rounded animate-pulse"></div>
-                  <div className="h-4 w-24 bg-gray-700 rounded animate-pulse"></div>
+                  <div className="h-4 w-4 bg-muted rounded animate-pulse"></div>
+                  <div className="h-4 w-24 bg-muted rounded animate-pulse"></div>
                 </div>
-                <div className="h-4 w-4 bg-gray-700 rounded animate-pulse"></div>
+                <div className="h-4 w-4 bg-muted rounded animate-pulse"></div>
               </div>
             </CardHeader>
           </Card>
@@ -988,18 +988,18 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
   return (
     <div className={`space-y-4 sm:space-y-6 ${className}`}>
       {/* Filter Stats and Actions */}
-      <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+      <Card className="pickfirst-glass bg-card/90 backdrop-blur-xl border border-pickfirst-yellow/30">
         <CardContent className="p-3 sm:p-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
               <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400" />
-                <span className="text-white font-medium text-sm sm:text-base">
+                <Filter className="h-4 w-4 sm:h-5 sm:w-5 text-pickfirst-yellow" />
+                <span className="text-foreground font-semibold text-sm sm:text-base">
                   {results ? `${results.filterStats.matchingProperties} of ${results.filterStats.totalProperties} properties` : 'Loading...'}
                 </span>
               </div>
               {getActiveFilterCount() > 0 && (
-                <Badge className="bg-yellow-400 text-black text-xs">
+                <Badge className="bg-pickfirst-yellow text-black text-xs font-semibold">
                   {getActiveFilterCount()} filters active
                 </Badge>
               )}
@@ -1015,7 +1015,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowSaveDialog(true)}
-                className="text-gray-300 hover:text-yellow-400 border-gray-600 text-xs sm:text-sm"
+                className="text-foreground hover:text-pickfirst-yellow border-pickfirst-yellow/40 hover:bg-pickfirst-yellow/10 text-xs sm:text-sm"
               >
                 <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 Save
@@ -1024,7 +1024,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={handleShareFilter}
-                className="text-gray-300 hover:text-yellow-400 border-gray-600 text-xs sm:text-sm"
+                className="text-foreground hover:text-pickfirst-yellow border-pickfirst-yellow/40 hover:bg-pickfirst-yellow/10 text-xs sm:text-sm"
               >
                 <Share2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 Share
@@ -1033,7 +1033,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={clearFilters}
-                className="text-gray-300 hover:text-yellow-400 border-gray-600 text-xs sm:text-sm"
+                className="text-foreground hover:text-pickfirst-yellow border-pickfirst-yellow/40 hover:bg-pickfirst-yellow/10 text-xs sm:text-sm"
               >
                 <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 Clear
@@ -1045,10 +1045,10 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
 
       {/* Saved Filters */}
       {savedFilters.length > 0 && (
-        <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl border border-yellow-400/20">
+        <Card className="pickfirst-glass bg-card/90 backdrop-blur-xl border border-pickfirst-yellow/30">
           <CardHeader className="p-3 sm:p-4">
-            <CardTitle className="text-white flex items-center gap-2 text-sm sm:text-base">
-              <Bookmark className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400" />
+            <CardTitle className="text-foreground flex items-center gap-2 text-sm sm:text-base font-semibold">
+              <Bookmark className="h-4 w-4 sm:h-5 sm:w-5 text-pickfirst-yellow" />
               Saved Filters
             </CardTitle>
           </CardHeader>
@@ -1060,7 +1060,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={() => handleLoadSavedFilter(filter)}
-                    className="text-gray-300 hover:text-yellow-400 border-gray-600 text-xs sm:text-sm"
+                    className="text-foreground hover:text-pickfirst-yellow border-pickfirst-yellow/40 hover:bg-pickfirst-yellow/10 text-xs sm:text-sm"
                   >
                     {filter.name}
                   </Button>
@@ -1068,7 +1068,7 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDeleteSavedFilter(filter.id)}
-                    className="text-gray-400 hover:text-red-400 p-1"
+                    className="text-muted-foreground hover:text-red-400 p-1"
                   >
                     <X className="h-3 w-3" />
                   </Button>
@@ -1091,31 +1091,31 @@ const ProductionFilterSystem: React.FC<ProductionFilterSystemProps> = ({
       {/* Save Filter Dialog */}
       {showSaveDialog && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md bg-gray-900 border border-yellow-400/20">
+          <Card className="w-full max-w-md pickfirst-glass bg-card/95 border border-pickfirst-yellow/30">
             <CardHeader className="p-4">
-              <CardTitle className="text-white text-lg">Save Filter</CardTitle>
+              <CardTitle className="text-foreground text-lg font-semibold">Save Filter</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 p-4 pt-0">
               <div>
-                <Label className="text-gray-300 mb-2 block text-sm">Filter Name</Label>
+                <Label className="text-foreground mb-2 block text-sm font-medium">Filter Name</Label>
                 <Input
                   placeholder="Enter filter name..."
                   value={filterName}
                   onChange={(e) => setFilterName(e.target.value)}
-                  className="bg-gray-800/50 border-gray-700 text-white text-sm"
+                  className="bg-background/50 border-pickfirst-yellow/30 text-foreground text-sm"
                 />
               </div>
               <div className="flex gap-2">
                 <Button
                   onClick={handleSaveFilter}
-                  className="bg-yellow-400 hover:bg-amber-500 text-black text-sm flex-1"
+                  className="bg-pickfirst-yellow hover:bg-amber-500 text-black text-sm flex-1 font-semibold"
                 >
                   Save
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => setShowSaveDialog(false)}
-                  className="text-gray-300 border-gray-600 text-sm flex-1"
+                  className="text-foreground border-pickfirst-yellow/40 hover:bg-pickfirst-yellow/10 text-sm flex-1"
                 >
                   Cancel
                 </Button>

@@ -7,7 +7,7 @@ import AuthLayout from '@/components/layouts/AuthLayout';
 import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -19,6 +19,23 @@ const Auth = () => {
     const type = hashParams?.get('type');
     const isVerificationFlow = type === 'signup' || type === 'invite' || type === 'email';
     const showConfirm = searchParams.get('showConfirm');
+    const deletedParam = searchParams.get('deleted');
+
+    // If account was just deleted, clear any cached state
+    if (deletedParam === 'true') {
+      // Clear all cached auth state
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.includes('supabase') || key.includes('auth') || key.startsWith('sb-') || key.includes('viewMode')) {
+          localStorage.removeItem(key);
+        }
+      });
+      sessionStorage.clear();
+      // Remove the deleted param from URL
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('deleted');
+      navigate(`/auth${newParams.toString() ? '?' + newParams.toString() : ''}`, { replace: true });
+    }
 
     // If this is a verification flow, sign out immediately (even before user state loads)
     // This prevents Supabase from auto-creating a session
@@ -40,10 +57,11 @@ const Auth = () => {
     }
 
     // Normal flow: redirect authenticated users to dashboard (unless it's a verification flow)
+    // Redirect as soon as user is authenticated - ProtectedRoute will handle profile loading
     if (user && !loading && !isVerificationFlow && !showConfirm) {
       navigate('/dashboard', { replace: true });
     }
-  }, [user, loading, navigate, searchParams]);
+  }, [user, profile, loading, navigate, searchParams]);
 
   if (loading) {
     return (

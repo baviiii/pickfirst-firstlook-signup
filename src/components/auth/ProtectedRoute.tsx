@@ -2,6 +2,7 @@ import { ReactNode, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
+import { supabase, clearAuthTokens } from '@/integrations/supabase/client';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -30,6 +31,10 @@ export const ProtectedRoute = ({
         navigate(fallbackPath, { replace: true });
         return;
       }
+
+      // Note: Profile loading is handled in useAuth hook
+      // We only check for deletion here if loading is complete and profile still missing
+      // The useAuth hook already handles the deletion check with retries
 
       // If a specific role is required, check user's role
       if (requiredRole && profile) {
@@ -80,9 +85,10 @@ export const ProtectedRoute = ({
     );
   }
 
-  // If role is required, check permissions
+  // If role is required, we MUST wait for profile to load before allowing access
+  // This prevents security issues where unauthorized users could see protected content
   if (requiredRole) {
-    // Wait for profile to load
+    // Wait for profile to load before checking role permissions
     if (!profile) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-black">
@@ -94,6 +100,7 @@ export const ProtectedRoute = ({
       );
     }
 
+    // Profile is loaded, now check role permissions
     const userRole = profile.role;
     const hasPermission = 
       userRole === 'super_admin' || 

@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AgentLayoutSidebar } from '@/components/layouts/AgentLayoutSidebar';
 import { useAuth } from '@/hooks/useAuth';
-import { Home, Users, MessageSquare, Settings, PlusCircle, BarChart3, Calendar, Phone, FileText, Edit3, Trash2, Eye, UserPlus, Mail } from 'lucide-react';
+import { Home, Users, MessageSquare, Settings, PlusCircle, BarChart3, Calendar, Phone, FileText, Edit3, Trash2, Eye, UserPlus, Mail, Clock, MapPin, User, Mail as MailIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PropertyListingModal } from '@/components/property/PropertyListingModal';
 import { analyticsService, AgentMetrics } from '@/services/analyticsService';
@@ -12,6 +13,8 @@ import { AgentSpecialtyManager } from '@/components/agent/AgentSpecialtyManager'
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { supabase } from '@/integrations/supabase/client';
 import { useCardNotifications } from '@/hooks/useCardNotifications';
+import { appointmentService, AppointmentWithDetails } from '@/services/appointmentService';
+import { format } from 'date-fns';
 
 export const AgentDashboard = () => {
   const { profile } = useAuth();
@@ -20,6 +23,9 @@ export const AgentDashboard = () => {
   const [metrics, setMetrics] = useState<AgentMetrics | null>(null);
   const [loadingMetrics, setLoadingMetrics] = useState(true);
   const { cardCounts, hasNewNotification, clearCardNotifications } = useCardNotifications();
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithDetails | null>(null);
+  const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
+  const [loadingAppointmentDetails, setLoadingAppointmentDetails] = useState(false);
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -50,6 +56,48 @@ export const AgentDashboard = () => {
 
   const handleListingCreated = () => {
     setShowModal(false);
+  };
+
+  const handleViewAppointmentDetails = async (appointmentId: string) => {
+    setLoadingAppointmentDetails(true);
+    setAppointmentModalOpen(true);
+    
+    try {
+      // Fetch full appointment details with property and client info
+      const { data: appointments } = await appointmentService.getMyAppointments();
+      const appointment = appointments?.find(apt => apt.id === appointmentId);
+      
+      if (appointment) {
+        setSelectedAppointment(appointment);
+      } else {
+        // Fallback: fetch from appointments table directly
+        const { data: appointmentData } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            property:property_listings!appointments_property_id_fkey (
+              id,
+              title,
+              address,
+              city,
+              state,
+              price,
+              images,
+              property_type
+            )
+          `)
+          .eq('id', appointmentId)
+          .single();
+        
+        if (appointmentData) {
+          setSelectedAppointment(appointmentData as AppointmentWithDetails);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching appointment details:', error);
+    } finally {
+      setLoadingAppointmentDetails(false);
+    }
   };
 
   const agentActions = [
@@ -289,31 +337,53 @@ export const AgentDashboard = () => {
       {/* Upcoming Appointments */}
       <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30 shadow-lg dashboard-animate-fade-up dashboard-delay-300">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-foreground">Upcoming Appointments</CardTitle>
-            <Button variant="outline" size="sm" className="text-muted-foreground hover:text-foreground border-border">
-              View Calendar
-            </Button>
-          </div>
+          <CardTitle className="text-foreground text-base sm:text-lg truncate flex-1 min-w-0">Upcoming Appointments</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {loadingMetrics ? (
               <div className="text-muted-foreground">Loading appointments...</div>
             ) : metrics?.upcomingAppointments && metrics.upcomingAppointments.length > 0 ? (
-              metrics.upcomingAppointments.map((appointment, index) => (
-                <div key={index} className="flex items-center gap-4 p-4 rounded-lg bg-card/80 border border-border hover:bg-card transition-colors">
-                  <div className="text-center min-w-[80px]">
-                    <div className="text-sm font-bold text-primary">{appointment.time}</div>
+              metrics.upcomingAppointments.map((appointment: any, index: number) => (
+                <div key={appointment?.id || `appt-${index}`} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 sm:p-4 rounded-lg bg-card/80 border border-border hover:bg-card transition-colors">
+                  {/* Mobile: Time badge on top, Desktop: Time on left */}
+                  <div className="flex items-center justify-between sm:justify-start gap-3 sm:gap-4">
+                    <div className="text-center sm:min-w-[80px]">
+                      <div className="text-xs sm:text-sm font-bold text-primary">{appointment.time}</div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground/80 mt-1 sm:hidden">
+                        {appointment.date ? new Date(appointment.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                      </div>
+                    </div>
+                    {appointment.id && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-muted-foreground hover:text-foreground border-border shrink-0 sm:hidden h-8 text-xs"
+                        onClick={() => handleViewAppointmentDetails(appointment.id)}
+                      >
+                        View
+                      </Button>
+                    )}
                   </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-foreground">{appointment.client_name}</h4>
-                    <p className="text-sm text-muted-foreground">{appointment.appointment_type} - {appointment.property_address}</p>
-                    <p className="text-xs text-muted-foreground/80">{new Date(appointment.date).toLocaleDateString()}</p>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-sm sm:text-base text-foreground truncate">{appointment.client_name || 'Unknown Client'}</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
+                      {appointment.appointment_type ? appointment.appointment_type.replace('_', ' ') : 'Appointment'} - {appointment.property_address || 'Virtual/Office Meeting'}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground/80 mt-1 hidden sm:block">
+                      {appointment.date ? new Date(appointment.date).toLocaleDateString() : ''}
+                    </p>
                   </div>
-                  <Button variant="outline" size="sm" className="text-muted-foreground hover:text-foreground border-border">
-                    View Details
-                  </Button>
+                  {appointment.id && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-muted-foreground hover:text-foreground border-border shrink-0 hidden sm:inline-flex"
+                      onClick={() => handleViewAppointmentDetails(appointment.id)}
+                    >
+                      View Details
+                    </Button>
+                  )}
                 </div>
               ))
             ) : (
@@ -327,6 +397,199 @@ export const AgentDashboard = () => {
       <div className="dashboard-animate-fade-scale dashboard-delay-400">
         <AgentSpecialtyManager />
       </div>
+
+      {/* Appointment Details Modal */}
+      <Dialog open={appointmentModalOpen} onOpenChange={setAppointmentModalOpen}>
+        <DialogContent className="pickfirst-glass bg-card text-card-foreground border border-pickfirst-yellow/30 max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-foreground text-xl">Appointment Details</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              View all information about this appointment
+            </DialogDescription>
+          </DialogHeader>
+          
+          {loadingAppointmentDetails ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pickfirst-yellow"></div>
+            </div>
+          ) : selectedAppointment ? (
+            <div className="space-y-6">
+              {/* Status Badge */}
+              <div className="flex items-center justify-between">
+                <Badge 
+                  className={`${
+                    selectedAppointment.status === 'confirmed' ? 'bg-green-500/20 text-green-600 border-green-500/30' :
+                    selectedAppointment.status === 'scheduled' ? 'bg-blue-500/20 text-blue-600 border-blue-500/30' :
+                    selectedAppointment.status === 'completed' ? 'bg-purple-500/20 text-purple-600 border-purple-500/30' :
+                    selectedAppointment.status === 'cancelled' ? 'bg-red-500/20 text-red-600 border-red-500/30' :
+                    'bg-gray-500/20 text-gray-600 border-gray-500/30'
+                  }`}
+                >
+                  {selectedAppointment.status?.charAt(0).toUpperCase() + selectedAppointment.status?.slice(1).replace('_', ' ') || 'Scheduled'}
+                </Badge>
+              </div>
+
+              {/* Date & Time */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-card/80 border border-border">
+                  <div className="p-2 rounded-lg bg-pickfirst-yellow/20">
+                    <Calendar className="h-5 w-5 text-pickfirst-yellow" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Date</p>
+                    <p className="font-semibold text-foreground">
+                      {selectedAppointment.date ? format(new Date(selectedAppointment.date), 'EEEE, MMMM d, yyyy') : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-card/80 border border-border">
+                  <div className="p-2 rounded-lg bg-pickfirst-yellow/20">
+                    <Clock className="h-5 w-5 text-pickfirst-yellow" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Time</p>
+                    <p className="font-semibold text-foreground">
+                      {selectedAppointment.time || 'N/A'}
+                      {selectedAppointment.duration && ` (${selectedAppointment.duration} min)`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Appointment Type */}
+              <div className="p-4 rounded-lg bg-card/80 border border-border">
+                <p className="text-sm text-muted-foreground mb-1">Appointment Type</p>
+                <p className="font-semibold text-foreground capitalize">
+                  {selectedAppointment.appointment_type?.replace('_', ' ') || 'N/A'}
+                </p>
+              </div>
+
+              {/* Client Information */}
+              <div className="p-4 rounded-lg bg-card/80 border border-border">
+                <div className="flex items-center gap-2 mb-3">
+                  <User className="h-5 w-5 text-pickfirst-yellow" />
+                  <h3 className="font-semibold text-foreground">Client Information</h3>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Name:</span>
+                    <span className="text-sm font-medium text-foreground">
+                      {selectedAppointment.client_name || selectedAppointment.client?.name || 'N/A'}
+                    </span>
+                  </div>
+                  {selectedAppointment.client_email && (
+                    <div className="flex items-center gap-2">
+                      <MailIcon className="h-4 w-4 text-muted-foreground" />
+                      <a 
+                        href={`mailto:${selectedAppointment.client_email}`}
+                        className="text-sm text-pickfirst-yellow hover:underline"
+                      >
+                        {selectedAppointment.client_email}
+                      </a>
+                    </div>
+                  )}
+                  {selectedAppointment.client_phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <a 
+                        href={`tel:${selectedAppointment.client_phone}`}
+                        className="text-sm text-pickfirst-yellow hover:underline"
+                      >
+                        {selectedAppointment.client_phone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Property Information */}
+              {(selectedAppointment.property || selectedAppointment.property_address) && (
+                <div className="p-4 rounded-lg bg-card/80 border border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <MapPin className="h-5 w-5 text-pickfirst-yellow" />
+                    <h3 className="font-semibold text-foreground">Property Information</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {selectedAppointment.property?.title && (
+                      <div>
+                        <span className="text-sm text-muted-foreground">Title: </span>
+                        <span className="text-sm font-medium text-foreground">
+                          {selectedAppointment.property.title}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-sm text-muted-foreground">Address: </span>
+                      <span className="text-sm font-medium text-foreground">
+                        {selectedAppointment.property?.address || selectedAppointment.property_address || 'N/A'}
+                        {selectedAppointment.property?.city && `, ${selectedAppointment.property.city}`}
+                        {selectedAppointment.property?.state && ` ${selectedAppointment.property.state}`}
+                      </span>
+                    </div>
+                    {selectedAppointment.property?.price && (
+                      <div>
+                        <span className="text-sm text-muted-foreground">Price: </span>
+                        <span className="text-sm font-medium text-foreground">
+                          ${selectedAppointment.property.price.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    {selectedAppointment.property_id && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setAppointmentModalOpen(false);
+                          navigate(`/property/${selectedAppointment.property_id}`);
+                        }}
+                        className="mt-2"
+                      >
+                        View Property
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {selectedAppointment.notes && (
+                <div className="p-4 rounded-lg bg-card/80 border border-border">
+                  <h3 className="font-semibold text-foreground mb-2">Notes</h3>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {selectedAppointment.notes}
+                  </p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/appointments')}
+                  className="flex-1"
+                >
+                  View All Appointments
+                </Button>
+                {selectedAppointment.property_id && (
+                  <Button
+                    onClick={() => {
+                      setAppointmentModalOpen(false);
+                      navigate(`/property/${selectedAppointment.property_id}`);
+                    }}
+                    className="flex-1 bg-pickfirst-yellow hover:bg-pickfirst-amber text-black"
+                  >
+                    View Property
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Unable to load appointment details
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
     </AgentLayoutSidebar>
   );

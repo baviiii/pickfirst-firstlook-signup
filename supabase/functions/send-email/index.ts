@@ -7,19 +7,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type"
 };
 
-// Brand colors
+// Brand colors - PickFirst Yellowish Theme
 const BRAND_COLORS = {
-  primary: '#FFD700',      // Gold
-  secondary: '#000000',    // Black
-  accent: '#FFC700',       // Darker gold
-  text: '#1a1a1a',         // Dark text
-  textLight: '#666666',    // Light text
-  background: '#ffffff',   // White
-  lightBg: '#FFFEF0',      // Light gold background
+  primary: '#EAB308',      // PickFirst Yellow
+  secondary: '#1F2937',    // Dark text
+  accent: '#F59E0B',       // Amber
+  text: '#374151',         // Dark text
+  textLight: '#78350F',    // Yellowish brown text
+  background: '#FFFFFF',   // White
+  lightBg: '#FFFBEB',      // Light yellowish background
+  lighterBg: '#FEF9E7',    // Very light yellowish
+  yellowBg: '#FEF3C7',     // Yellow background
   success: '#10B981',      // Green
-  warning: '#F59E0B',      // Orange
+  warning: '#F59E0B',      // Amber/Orange
   error: '#EF4444',        // Red
-  info: '#3B82F6'          // Blue
+  info: '#EAB308'          // Yellow (replacing blue)
 };
 
 // Enhanced email styles
@@ -34,9 +36,9 @@ const commonStyles = `
   </style>
 `;
 
-// Enhanced email header with gradient
+// Enhanced email header with yellowish gradient
 const getEmailHeader = () => `
-  <div style="background: linear-gradient(135deg, ${BRAND_COLORS.secondary} 0%, #2a2a2a 100%); padding: 30px 20px; text-align: center; border-bottom: 4px solid ${BRAND_COLORS.primary};">
+  <div style="background: linear-gradient(135deg, #EAB308 0%, #F59E0B 100%); padding: 40px 20px; text-align: center; border-bottom: 4px solid #FCD34D;">
     <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
       <tr>
         <td style="text-align: center; padding-bottom: 12px;">
@@ -46,7 +48,7 @@ const getEmailHeader = () => `
                 <img src="https://rkwvgqozbpqgmpbvujgz.supabase.co/storage/v1/object/public/logo/logo.jpg" alt="PickFirst" style="max-width: 80px; height: auto; max-height: 50px; border-radius: 6px; display: block; vertical-align: middle;" />
               </td>
               <td style="vertical-align: middle;">
-                <h1 style="color: ${BRAND_COLORS.primary}; margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 1px; line-height: 1.2; vertical-align: middle;">PickFirst</h1>
+                <h1 style="color: #1F2937; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 1px; line-height: 1.2; vertical-align: middle;">PickFirst</h1>
               </td>
             </tr>
           </table>
@@ -54,26 +56,26 @@ const getEmailHeader = () => `
       </tr>
       <tr>
         <td style="text-align: center;">
-          <p style="color: ${BRAND_COLORS.primary}; margin: 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.9;">Your Trusted Property Partner</p>
+          <p style="color: #78350F; margin: 5px 0 0 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-weight: 600;">Your Trusted Property Partner</p>
         </td>
       </tr>
     </table>
   </div>
 `;
 
-// Enhanced email footer
+// Enhanced email footer with yellowish theme
 const getEmailFooter = () => `
-  <div style="background: ${BRAND_COLORS.lightBg}; padding: 30px 20px; margin-top: 40px; border-top: 3px solid ${BRAND_COLORS.primary};">
+  <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 30px 20px; margin-top: 40px; border-top: 3px solid #EAB308;">
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
       <tr>
         <td style="text-align: center; padding-bottom: 20px;">
           <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
             <tr>
               <td style="vertical-align: middle; padding-right: 10px;">
-                <img src="https://rkwvgqozbpqgmpbvujgz.supabase.co/storage/v1/object/public/logo/logo.jpg" alt="PickFirst" style="max-width: 60px; height: auto; max-height: 40px; opacity: 0.8; border-radius: 4px; display: block; vertical-align: middle;" />
+                <img src="https://rkwvgqozbpqgmpbvujgz.supabase.co/storage/v1/object/public/logo/logo.jpg" alt="PickFirst" style="max-width: 60px; height: auto; max-height: 40px; opacity: 0.9; border-radius: 4px; display: block; vertical-align: middle;" />
               </td>
               <td style="vertical-align: middle;">
-                <p style="margin: 0; color: ${BRAND_COLORS.text}; font-size: 18px; font-weight: bold; line-height: 1.2; vertical-align: middle;">
+                <p style="margin: 0; color: #1F2937; font-size: 18px; font-weight: 700; line-height: 1.2; vertical-align: middle;">
                   PickFirst Real Estate
                 </p>
               </td>
@@ -83,7 +85,7 @@ const getEmailFooter = () => `
       </tr>
       <tr>
         <td style="text-align: center;">
-          <p style="margin: 0 0 20px 0; color: ${BRAND_COLORS.textLight}; font-size: 14px; line-height: 1.6;">
+          <p style="margin: 0 0 20px 0; color: #78350F; font-size: 14px; line-height: 1.6; font-weight: 500;">
             Your trusted partner in finding the perfect property
           </p>
         </td>
@@ -93,13 +95,13 @@ const getEmailFooter = () => `
           <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
             <tr>
               <td style="padding: 0 10px;">
-                <a href="mailto:info@pickfirst.com.au" style="color: ${BRAND_COLORS.textLight}; text-decoration: none; font-size: 14px;">
+                <a href="mailto:support@pickfirst.com.au" style="color: #EAB308; text-decoration: none; font-size: 14px; font-weight: 600;">
                   📧 Email Us
                 </a>
               </td>
-              <td style="padding: 0 10px; color: ${BRAND_COLORS.textLight};">|</td>
+              <td style="padding: 0 10px; color: #FCD34D;">|</td>
               <td style="padding: 0 10px;">
-                <a href="https://pickfirst.com.au" style="color: ${BRAND_COLORS.textLight}; text-decoration: none; font-size: 14px;">
+                <a href="https://pickfirst.com.au" style="color: #EAB308; text-decoration: none; font-size: 14px; font-weight: 600;">
                   🌐 Visit Website
                 </a>
               </td>
@@ -109,7 +111,7 @@ const getEmailFooter = () => `
       </tr>
       <tr>
         <td style="text-align: center; padding-top: 20px;">
-          <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
+          <p style="margin: 0; color: #92400E; font-size: 12px; font-weight: 500;">
             © 2025 PickFirst Real Estate. All rights reserved.
           </p>
         </td>
@@ -118,9 +120,9 @@ const getEmailFooter = () => `
   </div>
 `;
 
-// Enhanced button style with hover effect
+// Enhanced button style with yellowish theme
 const getButton = (url: string, text: string, isPrimary = true) => `
-  <a href="${url}" style="display: inline-block; background: ${isPrimary ? BRAND_COLORS.primary : BRAND_COLORS.secondary}; color: ${isPrimary ? BRAND_COLORS.secondary : BRAND_COLORS.primary}; font-weight: bold; text-align: center; padding: 16px 40px; border-radius: 8px; text-decoration: none; margin: 20px 0; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.3s ease;">
+  <a href="${url}" style="display: inline-block; background: ${isPrimary ? 'linear-gradient(135deg, #EAB308 0%, #F59E0B 100%)' : '#1F2937'}; color: ${isPrimary ? '#1F2937' : '#EAB308'}; font-weight: 700; text-align: center; padding: 16px 40px; border-radius: 8px; text-decoration: none; margin: 20px 0; font-size: 16px; box-shadow: 0 4px 16px rgba(234, 179, 8, 0.35); transition: all 0.3s ease;">
     ${text} →
   </a>
 `;
@@ -143,7 +145,7 @@ const getPropertyCard = (property: any) => {
       <div style="position: relative; width: 100%; height: 300px; overflow: hidden; background: #f0f0f0;">
         <img src="${imageUrl}" alt="${property.title || 'Property'}" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
         ${property.badge ? `
-          <div style="position: absolute; top: 16px; right: 16px; background: linear-gradient(135deg, #FFCC00, #FFB800); color: #1a1a1a; padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+          <div style="position: absolute; top: 16px; right: 16px; background: linear-gradient(135deg, #EAB308, #F59E0B); color: #1F2937; padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(234, 179, 8, 0.4);">
             ${property.badge}
           </div>
         ` : ''}
@@ -188,7 +190,7 @@ const getPropertyCard = (property: any) => {
       ` : ''}
       ${property.url ? `
         <div style="margin-top: 20px;">
-          <a href="${property.url}" style="display: inline-block; background: linear-gradient(135deg, #FFCC00, #FFB800); color: #1a1a1a; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">View Property</a>
+          <a href="${property.url}" style="display: inline-block; background: linear-gradient(135deg, #EAB308, #F59E0B); color: #1F2937; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(234, 179, 8, 0.3);">View Property</a>
         </div>
       ` : ''}
     </div>
@@ -229,8 +231,8 @@ PickFirst Real Estate Team`,
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         ${commonStyles}
       </head>
-      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5;">
-        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #FEF9E7;">
+        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
           ${getEmailHeader()}
           <div class="mobile-padding" style="padding: 40px 30px;">
             <div style="text-align: center; margin-bottom: 30px;">
@@ -250,35 +252,35 @@ PickFirst Real Estate Team`,
               <p style="color: white; font-size: 14px; margin: 0 0 25px 0; opacity: 0.95;">
                 Click the button below to verify your email and activate your account
               </p>
-              <a href="${data.verificationUrl}" style="display: inline-block; background: white; color: ${BRAND_COLORS.info}; font-weight: bold; text-align: center; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <a href="${data.verificationUrl}" style="display: inline-block; background: #1F2937; color: #EAB308; font-weight: 700; text-align: center; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-size: 16px; box-shadow: 0 4px 12px rgba(31, 41, 55, 0.3);">
                 Verify Email Address →
               </a>
-              <p style="color: white; font-size: 12px; margin: 20px 0 0 0; opacity: 0.85;">
-                This link expires in 24 hours
+              <p style="color: #78350F; font-size: 12px; margin: 20px 0 0 0; font-weight: 500;">
+                ⏰ This link expires in 24 hours
               </p>
             </div>
             
-            <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
-              <h2 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 20px;">What's Next After Verification?</h2>
-              <ul style="margin: 0; padding-left: 20px; color: ${BRAND_COLORS.text};">
-                <li style="margin-bottom: 10px;">✓ Set up your property preferences</li>
-                <li style="margin-bottom: 10px;">✓ Browse our curated property listings</li>
-                <li style="margin-bottom: 10px;">✓ Get instant alerts for new matches</li>
-                <li style="margin-bottom: 10px;">✓ Connect with our expert agents</li>
+            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid #EAB308; box-shadow: 0 2px 8px rgba(234, 179, 8, 0.1);">
+              <h2 style="color: #EAB308; margin: 0 0 15px 0; font-size: 20px; font-weight: 700;">What's Next After Verification?</h2>
+              <ul style="margin: 0; padding-left: 20px; color: #374151; line-height: 1.8;">
+                <li style="margin-bottom: 10px; font-size: 15px;">✓ Set up your property preferences</li>
+                <li style="margin-bottom: 10px; font-size: 15px;">✓ Browse our curated property listings</li>
+                <li style="margin-bottom: 10px; font-size: 15px;">✓ Get instant alerts for new matches</li>
+                <li style="margin-bottom: 10px; font-size: 15px;">✓ Connect with our expert agents</li>
               </ul>
             </div>
             
-            <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 30px 0; border-left: 4px solid ${BRAND_COLORS.warning};">
+            <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); padding: 20px; border-radius: 8px; margin: 30px 0; border-left: 4px solid ${BRAND_COLORS.warning};">
               <p style="margin: 0; color: ${BRAND_COLORS.text}; font-size: 14px;">
                 <strong>💡 Tip:</strong> If the button doesn't work, copy and paste this link into your browser:<br/>
-                <a href="${data.verificationUrl}" style="color: ${BRAND_COLORS.info}; word-break: break-all; font-size: 12px;">${data.verificationUrl}</a>
+                <a href="${data.verificationUrl}" style="color: #EAB308; word-break: break-all; font-size: 12px; font-weight: 600; text-decoration: underline;">${data.verificationUrl}</a>
               </p>
             </div>
             
-            <div style="background: ${BRAND_COLORS.lightBg}; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid ${BRAND_COLORS.primary};">
-              <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
+            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid #FEF3C7;">
+              <p style="margin: 0; color: #374151; font-size: 14px; line-height: 1.6;">
                 Need help getting started? Contact our support team at 
-                <a href="mailto:support@pickfirst.com.au" style="color: ${BRAND_COLORS.textLight}; text-decoration: underline;">support@pickfirst.com.au</a>
+                <a href="mailto:support@pickfirst.com.au" style="color: #EAB308; text-decoration: none; font-weight: 600;">support@pickfirst.com.au</a>
               </p>
             </div>
           </div>
@@ -320,8 +322,8 @@ PickFirst Real Estate Team`,
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         ${commonStyles}
       </head>
-      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5;">
-        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #FEF9E7;">
+        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
           ${getEmailHeader()}
           <div class="mobile-padding" style="padding: 40px 30px;">
             <div style="text-align: center; margin-bottom: 30px;">
@@ -336,35 +338,35 @@ PickFirst Real Estate Team`,
             </p>
             
             ${data.verificationUrl ? `
-            <div style="background: linear-gradient(135deg, ${BRAND_COLORS.info}, #60A5FA); padding: 30px; border-radius: 12px; margin: 25px 0; text-align: center; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+            <div style="background: linear-gradient(135deg, #EAB308 0%, #F59E0B 100%); padding: 30px; border-radius: 12px; margin: 25px 0; text-align: center; box-shadow: 0 4px 16px rgba(234, 179, 8, 0.35);">
               <div style="font-size: 48px; margin-bottom: 15px;">✉️</div>
-              <h2 style="color: white; margin: 0 0 15px 0; font-size: 20px;">Verify Your Email Address</h2>
-              <p style="color: white; font-size: 14px; margin: 0 0 25px 0; opacity: 0.95;">
+              <h2 style="color: #1F2937; margin: 0 0 15px 0; font-size: 20px; font-weight: 700;">Verify Your Email Address</h2>
+              <p style="color: #78350F; font-size: 14px; margin: 0 0 25px 0; font-weight: 500;">
                 Click the button below to verify your email and activate your account
               </p>
-              <a href="${data.verificationUrl}" style="display: inline-block; background: white; color: ${BRAND_COLORS.info}; font-weight: bold; text-align: center; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+              <a href="${data.verificationUrl}" style="display: inline-block; background: #1F2937; color: #EAB308; font-weight: 700; text-align: center; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-size: 16px; box-shadow: 0 4px 12px rgba(31, 41, 55, 0.3);">
                 Verify Email Address →
               </a>
-              <p style="color: white; font-size: 12px; margin: 20px 0 0 0; opacity: 0.85;">
-                This link expires in 24 hours
+              <p style="color: #78350F; font-size: 12px; margin: 20px 0 0 0; font-weight: 500;">
+                ⏰ This link expires in 24 hours
               </p>
             </div>
             
-            <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 30px 0; border-left: 4px solid ${BRAND_COLORS.warning};">
-              <p style="margin: 0; color: ${BRAND_COLORS.text}; font-size: 14px;">
-                <strong>💡 Tip:</strong> If the button doesn't work, copy and paste this link into your browser:<br/>
-                <a href="${data.verificationUrl}" style="color: ${BRAND_COLORS.info}; word-break: break-all; font-size: 12px;">${data.verificationUrl}</a>
+            <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); padding: 20px; border-radius: 8px; margin: 30px 0; border-left: 4px solid #EAB308;">
+              <p style="margin: 0; color: #78350F; font-size: 14px; line-height: 1.6;">
+                <strong style="color: #92400E;">💡 Tip:</strong> If the button doesn't work, copy and paste this link into your browser:<br/>
+                <a href="${data.verificationUrl}" style="color: #EAB308; word-break: break-all; font-size: 12px; font-weight: 600; text-decoration: underline;">${data.verificationUrl}</a>
               </p>
             </div>
             ` : ''}
             
-            <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
-              <h2 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 20px;">What's Next${data.verificationUrl ? ' After Verification' : ''}?</h2>
-              <ul style="margin: 0; padding-left: 20px; color: ${BRAND_COLORS.text};">
-                <li style="margin-bottom: 10px;">✓ Set up your property preferences</li>
-                <li style="margin-bottom: 10px;">✓ Browse our curated property listings</li>
-                <li style="margin-bottom: 10px;">✓ Get instant alerts for new matches</li>
-                <li style="margin-bottom: 10px;">✓ Connect with our expert agents</li>
+            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid #EAB308; box-shadow: 0 2px 8px rgba(234, 179, 8, 0.1);">
+              <h2 style="color: #EAB308; margin: 0 0 15px 0; font-size: 20px; font-weight: 700;">What's Next${data.verificationUrl ? ' After Verification' : ''}?</h2>
+              <ul style="margin: 0; padding-left: 20px; color: #374151; line-height: 1.8;">
+                <li style="margin-bottom: 10px; font-size: 15px;">✓ Set up your property preferences</li>
+                <li style="margin-bottom: 10px; font-size: 15px;">✓ Browse our curated property listings</li>
+                <li style="margin-bottom: 10px; font-size: 15px;">✓ Get instant alerts for new matches</li>
+                <li style="margin-bottom: 10px; font-size: 15px;">✓ Connect with our expert agents</li>
               </ul>
             </div>
             
@@ -372,10 +374,10 @@ PickFirst Real Estate Team`,
               ${getButton(data.platformUrl || 'https://pickfirst.com.au', 'Get Started')}
             </div>
             
-            <div style="background: ${BRAND_COLORS.lightBg}; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid ${BRAND_COLORS.primary};">
-              <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
+            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid #FEF3C7;">
+              <p style="margin: 0; color: #374151; font-size: 14px; line-height: 1.6;">
                 Need help getting started? Contact our support team at 
-                <a href="mailto:support@pickfirst.com.au" style="color: ${BRAND_COLORS.textLight}; text-decoration: underline;">support@pickfirst.com.au</a>
+                <a href="mailto:support@pickfirst.com.au" style="color: #EAB308; text-decoration: none; font-weight: 600;">support@pickfirst.com.au</a>
               </p>
             </div>
           </div>
@@ -389,7 +391,7 @@ PickFirst Real Estate Team`,
   agentWelcome: (data: any) => ({
     subject: 'Welcome to PickFirst Real Estate - Agent Portal',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Welcome Agent ${data.name}!</h1>
@@ -397,7 +399,7 @@ PickFirst Real Estate Team`,
             Your agent account has been activated. Start managing your listings and connecting with clients.
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 8px; margin: 30px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 8px; margin: 30px 0; border-left: 4px solid #EAB308;">
             <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0;">Agent Features:</h3>
             <ul style="color: ${BRAND_COLORS.text}; line-height: 1.8;">
               <li>Manage property listings</li>
@@ -419,7 +421,7 @@ PickFirst Real Estate Team`,
   buyerWelcome: (data: any) => ({
     subject: 'Welcome to PickFirst Real Estate - Find Your Dream Home',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Welcome ${data.name}!</h1>
@@ -427,7 +429,7 @@ PickFirst Real Estate Team`,
             Start your property search with PickFirst Real Estate's comprehensive platform.
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 8px; margin: 30px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 8px; margin: 30px 0; border-left: 4px solid #EAB308;">
             <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0;">Buyer Features:</h3>
             <ul style="color: ${BRAND_COLORS.text}; line-height: 1.8;">
               <li>Advanced property search</li>
@@ -477,8 +479,8 @@ Questions? Contact your agent ${data.agentName || ''} directly.
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         ${commonStyles}
       </head>
-      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5;">
-        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #FEF9E7;">
+        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
           ${getEmailHeader()}
           <div class="mobile-padding" style="padding: 40px 30px;">
             <div style="text-align: center; margin-bottom: 30px;">
@@ -496,7 +498,7 @@ Questions? Contact your agent ${data.agentName || ''} directly.
               ${data.agentName || 'Your agent'} has added you as a client and would like to invite you to join our property platform.
             </p>
             
-            <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
+            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 12px; margin: 25px 0; border-left: 4px solid #EAB308;">
               <h2 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 20px;">Why join?</h2>
               <ul style="margin: 0; padding-left: 20px; color: ${BRAND_COLORS.text}; line-height: 1.8;">
                 <li style="margin-bottom: 10px;">Browse exclusive property listings</li>
@@ -511,18 +513,18 @@ Questions? Contact your agent ${data.agentName || ''} directly.
               ${getButton(data.signupUrl || 'https://pickfirst.com.au/auth?signup=true', 'Accept Invitation & Create Account')}
             </div>
             
-            <p style="color: ${BRAND_COLORS.textLight}; font-size: 14px; margin: 20px 0;">
+            <p style="color: #78350F; font-size: 14px; margin: 20px 0;">
               This invitation will link your account with ${data.agentName || 'your agent'}'s client records, making it easier to manage your property search journey.
             </p>
             
-            <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 30px 0; border-left: 4px solid ${BRAND_COLORS.warning};">
+            <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); padding: 20px; border-radius: 8px; margin: 30px 0; border-left: 4px solid ${BRAND_COLORS.warning};">
               <p style="margin: 0; color: ${BRAND_COLORS.text}; font-size: 14px;">
                 If you didn't expect this invitation, you can safely ignore this email.
               </p>
             </div>
             
-            <div style="background: ${BRAND_COLORS.lightBg}; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid ${BRAND_COLORS.primary};">
-              <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
+            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid #FEF3C7;">
+              <p style="margin: 0; color: #78350F; font-size: 12px;">
                 Questions? Contact your agent ${data.agentName || ''} directly.
               </p>
             </div>
@@ -531,47 +533,6 @@ Questions? Contact your agent ${data.agentName || ''} directly.
         </div>
       </body>
       </html>
-    `
-  }),
-
-  passwordReset: (data: any) => ({
-    subject: 'Password Reset Request - PickFirst Real Estate',
-    text: `Password Reset Request
-
-Hi ${data.name},
-
-We received a request to reset your password for your PickFirst Real Estate account.
-
-To reset your password, click the link below:
-${data.resetUrl}
-
-This link will expire in 1 hour for security reasons.
-
-If you didn't request this reset, please ignore this email. Your account remains secure.
-
-Best regards,
-PickFirst Real Estate Team`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
-        ${getEmailHeader()}
-        <div style="padding: 40px 20px;">
-          <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Password Reset Request</h1>
-          <p style="color: ${BRAND_COLORS.text}; font-size: 16px;">
-            We received a request to reset your password for your PickFirst Real Estate account.
-          </p>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            ${getButton(data.resetUrl, 'Reset Password')}
-          </div>
-          
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 20px; border-radius: 8px; border: 1px solid ${BRAND_COLORS.primary};">
-            <p style="color: ${BRAND_COLORS.text}; font-size: 14px; margin: 0;">
-              If you didn't request this reset, please ignore this email. This link will expire in 24 hours and can only be used once.
-            </p>
-          </div>
-        </div>
-        ${getEmailFooter()}
-      </div>
     `
   }),
 
@@ -611,12 +572,12 @@ PickFirst Real Estate Team`,
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         ${commonStyles}
       </head>
-      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5;">
-        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #FEF9E7;">
+        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
           ${getEmailHeader()}
           <div class="mobile-padding" style="padding: 40px 30px;">
             <div style="text-align: center; margin-bottom: 30px;">
-              <div style="display: inline-block; background: ${BRAND_COLORS.lightBg}; padding: 10px 20px; border-radius: 25px; border: 2px solid ${BRAND_COLORS.primary};">
+              <div style="display: inline-block; background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 10px 20px; border-radius: 25px; border: 2px solid #EAB308;">
                 <span style="font-size: 24px; margin-right: 8px;">🏠</span>
                 <span style="color: ${BRAND_COLORS.secondary}; font-weight: bold;">Property Alert</span>
               </div>
@@ -630,7 +591,7 @@ PickFirst Real Estate Team`,
             </p>
             
             ${data.matchingFeatures?.length > 0 ? `
-              <div style="background: linear-gradient(135deg, ${BRAND_COLORS.primary}20, ${BRAND_COLORS.secondary}20); padding: 15px 20px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid ${BRAND_COLORS.primary};">
+              <div style="background: linear-gradient(135deg, ${BRAND_COLORS.primary}20, ${BRAND_COLORS.secondary}20); padding: 15px 20px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid #EAB308;">
                 <div style="color: ${BRAND_COLORS.secondary}; font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                   <span style="font-size: 20px;">✨</span>
                   <span>Matching Your Preferences:</span>
@@ -664,10 +625,10 @@ PickFirst Real Estate Team`,
               ${getButton(data.propertyUrl || '#', 'View Full Details')}
             </div>
             
-            <div style="background: ${BRAND_COLORS.lightBg}; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid ${BRAND_COLORS.primary};">
-              <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
+            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid #FEF3C7;">
+              <p style="margin: 0; color: #78350F; font-size: 12px;">
                 This property was found based on your saved search preferences. 
-                <a href="${data.unsubscribeUrl || '#'}" style="color: ${BRAND_COLORS.textLight}; text-decoration: underline;">Update preferences</a>
+                <a href="${data.unsubscribeUrl || '#'}" style="color: #78350F; text-decoration: underline;">Update preferences</a>
               </p>
             </div>
           </div>
@@ -689,12 +650,12 @@ PickFirst Real Estate Team`,
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         ${commonStyles}
       </head>
-      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5;">
-        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #FEF9E7;">
+        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
           ${getEmailHeader()}
           <div class="mobile-padding" style="padding: 40px 30px;">
             <div style="text-align: center; margin-bottom: 30px;">
-              <div style="display: inline-block; background: ${BRAND_COLORS.lightBg}; padding: 10px 20px; border-radius: 25px; border: 2px solid ${BRAND_COLORS.primary};">
+              <div style="display: inline-block; background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 10px 20px; border-radius: 25px; border: 2px solid #EAB308;">
                 <span style="font-size: 24px; margin-right: 8px;">📊</span>
                 <span style="color: ${BRAND_COLORS.secondary}; font-weight: bold;">Weekly Update</span>
               </div>
@@ -721,10 +682,10 @@ PickFirst Real Estate Team`,
               url: match.url,
               badge: 'NEW'
             })).join('') || `
-              <div style="text-align: center; padding: 40px; background: ${BRAND_COLORS.lightBg}; border-radius: 12px; border: 2px solid ${BRAND_COLORS.primary};">
+              <div style="text-align: center; padding: 40px; background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border-radius: 12px; border: 2px solid #EAB308;">
                 <div style="font-size: 48px; margin-bottom: 20px;">🔍</div>
                 <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 10px 0;">No New Matches This Week</h3>
-                <p style="color: ${BRAND_COLORS.textLight}; margin: 0;">We'll keep searching for properties that match your criteria.</p>
+                <p style="color: #78350F; margin: 0;">We'll keep searching for properties that match your criteria.</p>
               </div>
             `}
             
@@ -732,10 +693,10 @@ PickFirst Real Estate Team`,
               ${getButton((data.platformUrl || 'https://pickfirst.com.au') + '/browse', 'Browse All Properties')}
             </div>
             
-            <div style="background: ${BRAND_COLORS.lightBg}; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid ${BRAND_COLORS.primary};">
-              <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
+            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid #FEF3C7;">
+              <p style="margin: 0; color: #78350F; font-size: 12px;">
                 These properties were found based on your saved search preferences. 
-                <a href="${data.unsubscribeUrl || '#'}" style="color: ${BRAND_COLORS.textLight}; text-decoration: underline;">Update preferences</a>
+                <a href="${data.unsubscribeUrl || '#'}" style="color: #78350F; text-decoration: underline;">Update preferences</a>
               </p>
             </div>
           </div>
@@ -766,7 +727,7 @@ If you need to reschedule or cancel, please contact us at info@pickfirst.com.au
 Best regards,
 PickFirst Real Estate Team`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Appointment Confirmed</h1>
@@ -774,7 +735,7 @@ PickFirst Real Estate Team`,
             Hi ${data.name}, your property viewing has been confirmed:
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #EAB308;">
             <h3 style="margin: 0 0 15px 0; color: ${BRAND_COLORS.secondary};">${data.propertyTitle}</h3>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Date:</strong> ${data.date}</p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Time:</strong> ${data.time}</p>
@@ -782,11 +743,11 @@ PickFirst Real Estate Team`,
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Contact:</strong> ${data.agentPhone}</p>
           </div>
           
-          <div style="background: #FFF9E6; padding: 20px; border-radius: 6px; margin: 20px 0; border: 1px solid ${BRAND_COLORS.primary};">
+          <div style="background: #FFF9E6; padding: 20px; border-radius: 6px; margin: 20px 0; border: 1px solid #FEF3C7;">
             <p style="margin: 0; color: ${BRAND_COLORS.text};"><strong>Reminder:</strong> Please arrive 5 minutes early and bring valid ID.</p>
           </div>
           
-          <p style="color: ${BRAND_COLORS.textLight}; font-size: 14px;">
+          <p style="color: #78350F; font-size: 14px;">
             If you need to reschedule, please contact your agent directly.
           </p>
         </div>
@@ -798,7 +759,7 @@ PickFirst Real Estate Team`,
   appointmentNotification: (data: any) => ({
     subject: `New Appointment: ${data.clientName} - ${data.appointmentType}`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">New Appointment Scheduled</h1>
@@ -806,7 +767,7 @@ PickFirst Real Estate Team`,
             Hi ${data.agentName}, you have a new appointment:
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #EAB308;">
             <h3 style="margin: 0 0 15px 0; color: ${BRAND_COLORS.secondary};">${data.appointmentType}</h3>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Client:</strong> ${data.clientName}</p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Email:</strong> ${data.clientEmail}</p>
@@ -830,7 +791,7 @@ PickFirst Real Estate Team`,
   appointmentStatusUpdate: (data: any) => ({
     subject: `Appointment ${data.status.charAt(0).toUpperCase() + data.status.slice(1)} - ${data.appointmentType}`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Appointment Update</h1>
@@ -838,7 +799,7 @@ PickFirst Real Estate Team`,
             Hi ${data.name}, your appointment status has been updated:
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #EAB308;">
             <h3 style="margin: 0 0 15px 0; color: ${BRAND_COLORS.secondary};">${data.appointmentType}</h3>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Status:</strong> <span style="color: ${data.status === 'confirmed' ? '#059669' : data.status === 'cancelled' ? '#dc2626' : BRAND_COLORS.secondary};">${data.status.toUpperCase()}</span></p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Date:</strong> ${data.date}</p>
@@ -860,7 +821,7 @@ PickFirst Real Estate Team`,
   propertyViewing: (data: any) => ({
     subject: `Property Viewing Reminder - ${data.propertyTitle}`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Property Viewing Reminder</h1>
@@ -868,14 +829,14 @@ PickFirst Real Estate Team`,
             Hi ${data.name}, this is a reminder of your upcoming property viewing:
           </p>
           
-          <div style="background: #FFF9E6; padding: 25px; border-radius: 8px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
+          <div style="background: #FFF9E6; padding: 25px; border-radius: 8px; margin: 25px 0; border: 2px solid #EAB308;">
             <h3 style="margin: 0 0 15px 0; color: ${BRAND_COLORS.secondary};">${data.propertyTitle}</h3>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0; font-size: 18px;"><strong>Tomorrow at ${data.time}</strong></p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Address:</strong> ${data.address}</p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Agent:</strong> ${data.agentName} - ${data.agentPhone}</p>
           </div>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 20px; border-radius: 6px; margin: 20px 0;">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 20px; border-radius: 6px; margin: 20px 0;">
             <p style="margin: 0 0 10px 0; color: ${BRAND_COLORS.secondary};"><strong>What to bring:</strong></p>
             <ul style="margin: 10px 0; color: ${BRAND_COLORS.text};">
               <li>Valid photo ID</li>
@@ -928,7 +889,7 @@ PickFirst Real Estate Team`,
     return {
       subject: 'Property Search Preferences Updated',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+        <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
           ${getEmailHeader()}
           <div style="padding: 40px 20px;">
             <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0; font-size: 24px;">Property Search Preferences Updated</h1>
@@ -947,7 +908,7 @@ PickFirst Real Estate Team`,
                 <table style="width: 100%; border-collapse: collapse;">
                   ${formattedPrefs.map((pref: any) => `
                     <tr style="border-bottom: 1px solid #f3f4f6;">
-                      <td style="padding: 12px 0; color: ${BRAND_COLORS.textLight}; font-size: 14px; width: 45%;">${pref.label}:</td>
+                      <td style="padding: 12px 0; color: #78350F; font-size: 14px; width: 45%;">${pref.label}:</td>
                       <td style="padding: 12px 0; color: ${BRAND_COLORS.text}; font-size: 14px; font-weight: 500;">${pref.displayValue}</td>
                     </tr>
                   `).join('')}
@@ -955,7 +916,7 @@ PickFirst Real Estate Team`,
               </div>
             ` : ''}
             
-            <div style="background: #f0fdf4; border-left: 4px solid ${BRAND_COLORS.primary}; padding: 20px; border-radius: 4px; margin: 25px 0;">
+            <div style="background: #f0fdf4; border-left: 4px solid #EAB308; padding: 20px; border-radius: 4px; margin: 25px 0;">
               <p style="color: ${BRAND_COLORS.text}; font-size: 14px; margin: 0;">
                 <strong>What happens next:</strong> We'll automatically notify you when new properties matching these criteria become available.
               </p>
@@ -967,7 +928,7 @@ PickFirst Real Estate Team`,
               </a>
             </div>
             
-            <p style="color: ${BRAND_COLORS.textLight}; font-size: 13px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <p style="color: #78350F; font-size: 13px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
               If you didn't make these changes, please <a href="mailto:support@pickfirst.com.au" style="color: ${BRAND_COLORS.primary}; text-decoration: none;">contact support</a> immediately.
             </p>
           </div>
@@ -980,7 +941,7 @@ PickFirst Real Estate Team`,
   searchPreferencesSaved: (data: any) => ({
     subject: 'Search Preferences Saved',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Search Preferences Saved</h1>
@@ -988,7 +949,7 @@ PickFirst Real Estate Team`,
             Hi ${data.name}, your search preferences have been saved and property alerts are now active.
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #EAB308;">
             <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0;">Your Search Criteria:</h3>
             ${data.location ? `<p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Location:</strong> ${data.location}</p>` : ''}
             ${data.minPrice ? `<p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Price Range:</strong> $${data.minPrice?.toLocaleString()} - $${data.maxPrice?.toLocaleString()}</p>` : ''}
@@ -1010,7 +971,7 @@ PickFirst Real Estate Team`,
   marketUpdate: (data: any) => ({
     subject: `Market Update: ${data.area}`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Market Update: ${data.area}</h1>
@@ -1018,7 +979,7 @@ PickFirst Real Estate Team`,
             Hi ${data.name}, here's your latest market update for ${data.area}:
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #EAB308;">
             ${data.avgPrice ? `<p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Average Price:</strong> $${data.avgPrice.toLocaleString()}</p>` : ''}
             ${data.newListings ? `<p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>New Listings:</strong> ${data.newListings}</p>` : ''}
             ${data.trend ? `<p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Market Trend:</strong> ${data.trend}</p>` : ''}
@@ -1026,7 +987,7 @@ PickFirst Real Estate Team`,
           </div>
           
           ${data.recommendation ? `
-            <div style="background: #E8F5E9; padding: 20px; border-radius: 6px; margin: 20px 0; border: 1px solid ${BRAND_COLORS.primary};">
+            <div style="background: #E8F5E9; padding: 20px; border-radius: 6px; margin: 20px 0; border: 1px solid #FEF3C7;">
               <p style="margin: 0; color: ${BRAND_COLORS.text};"><strong>Our Recommendation:</strong> ${data.recommendation}</p>
             </div>
           ` : ''}
@@ -1040,7 +1001,7 @@ PickFirst Real Estate Team`,
   securityAlert: (data: any) => ({
     subject: 'Security Alert - Unusual Account Activity',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <div style="background: #FEE; padding: 25px; border-radius: 8px; border-left: 4px solid #dc2626;">
@@ -1076,7 +1037,7 @@ PickFirst Real Estate Team`,
   messageNotification: (data: any) => ({
     subject: `New Message from ${data.senderName || 'PickFirst User'}`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">New Message</h1>
@@ -1084,7 +1045,7 @@ PickFirst Real Estate Team`,
             Hi ${data.recipientName}, you have a new message from ${data.senderName}:
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #EAB308;">
             <p style="margin: 0; font-style: italic; color: ${BRAND_COLORS.text};">"${data.messagePreview || data.messageContent || 'You have a new message waiting for you.'}"</p>
           </div>
           
@@ -1138,8 +1099,8 @@ PickFirst Real Estate Team`,
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         ${commonStyles}
       </head>
-      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5;">
-        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #FEF9E7;">
+        <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
           ${getEmailHeader()}
           <div class="mobile-padding" style="padding: 40px 30px;">
             <div style="text-align: center; margin-bottom: 30px;">
@@ -1165,11 +1126,11 @@ PickFirst Real Estate Team`,
               badge: 'YOUR LISTING'
             })}
             
-            <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 30px 0; border: 2px solid ${BRAND_COLORS.primary};">
+            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 12px; margin: 30px 0; border: 2px solid #EAB308;">
               <h2 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 20px;">Buyer Information</h2>
               <div style="color: ${BRAND_COLORS.text}; line-height: 1.8;">
                 <p style="margin: 8px 0;"><strong>👤 Name:</strong> ${data.buyerName}</p>
-                <p style="margin: 8px 0;"><strong>✉️ Email:</strong> <a href="mailto:${data.buyerEmail}" style="color: ${BRAND_COLORS.info}; text-decoration: none;">${data.buyerEmail}</a></p>
+                <p style="margin: 8px 0;"><strong>✉️ Email:</strong> <a href="mailto:${data.buyerEmail}" style="color: #EAB308; text-decoration: none;">${data.buyerEmail}</a></p>
                 <p style="margin: 8px 0;"><strong>📱 Phone:</strong> ${data.buyerPhone}</p>
               </div>
             </div>
@@ -1191,8 +1152,8 @@ PickFirst Real Estate Team`,
               ${getButton(data.dashboardUrl || 'https://pickfirst.com.au/agent-dashboard', 'Go to Dashboard')}
             </div>
             
-            <div style="background: ${BRAND_COLORS.lightBg}; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid ${BRAND_COLORS.primary};">
-              <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
+            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid #FEF3C7;">
+              <p style="margin: 0; color: #78350F; font-size: 12px;">
                 💡 Quick tip: Respond quickly to increase your chances of converting this lead!
               </p>
             </div>
@@ -1208,7 +1169,7 @@ PickFirst Real Estate Team`,
   leadAssignment: (data: any) => ({
     subject: `New Lead Assigned: ${data.clientName}`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">New Lead Assigned</h1>
@@ -1216,7 +1177,7 @@ PickFirst Real Estate Team`,
             Hi ${data.agentName}, you have been assigned a new lead:
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #EAB308;">
             <h3 style="margin: 0 0 15px 0; color: ${BRAND_COLORS.secondary};">${data.clientName}</h3>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Email:</strong> ${data.clientEmail}</p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Phone:</strong> ${data.clientPhone}</p>
@@ -1237,7 +1198,7 @@ PickFirst Real Estate Team`,
   followUp: (data: any) => ({
     subject: `Follow-up: ${data.subject}`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Follow-up Reminder</h1>
@@ -1245,7 +1206,7 @@ PickFirst Real Estate Team`,
             Hi ${data.name}, this is a follow-up regarding ${data.subject}:
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #EAB308;">
             <p style="color: ${BRAND_COLORS.text};">${data.message}</p>
             ${data.nextSteps ? `
               <h4 style="color: ${BRAND_COLORS.secondary}; margin: 20px 0 10px 0;">Next Steps:</h4>
@@ -1268,7 +1229,7 @@ PickFirst Real Estate Team`,
   subscriptionUpgrade: (data: any) => ({
     subject: 'Subscription Upgraded Successfully',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Subscription Upgraded!</h1>
@@ -1276,7 +1237,7 @@ PickFirst Real Estate Team`,
             Hi ${data.name}, your subscription has been successfully upgraded to ${data.planName}.
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #EAB308;">
             <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0;">Your New Benefits:</h3>
             <ul style="color: ${BRAND_COLORS.text}; line-height: 1.8;">
               ${data.features?.map((feature: string) => `<li>${feature}</li>`).join('') || ''}
@@ -1298,10 +1259,10 @@ PickFirst Real Estate Team`,
   subscriptionExpiry: (data: any) => ({
     subject: 'Your Subscription Expires Soon',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
-          <div style="background: #FFF9E6; padding: 25px; border-radius: 8px; border-left: 4px solid ${BRAND_COLORS.primary};">
+          <div style="background: #FFF9E6; padding: 25px; border-radius: 8px; border-left: 4px solid #EAB308;">
             <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0;">Subscription Expiring</h1>
             <p style="color: ${BRAND_COLORS.text}; font-size: 16px;">
               Hi ${data.name}, your ${data.planName} subscription expires in ${data.daysLeft} days.
@@ -1345,7 +1306,7 @@ Questions? Contact billing@pickfirst.com.au
 Best regards,
 PickFirst Real Estate Team`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Payment Successful</h1>
@@ -1353,7 +1314,7 @@ PickFirst Real Estate Team`,
             Hi ${data.name}, thank you for your payment!
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #EAB308;">
             <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0;">Payment Details:</h3>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Amount:</strong> ${data.amount}</p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Plan:</strong> ${data.planName}</p>
@@ -1378,7 +1339,7 @@ PickFirst Real Estate Team`,
   paymentFailed: (data: any) => ({
     subject: 'Payment Failed - Action Required',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <div style="background: #FEE; padding: 25px; border-radius: 8px; border-left: 4px solid #dc2626;">
@@ -1412,7 +1373,7 @@ PickFirst Real Estate Team`,
   accountSuspension: (data: any) => ({
     subject: 'Account Suspension Notice',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <div style="background: #FEE; padding: 25px; border-radius: 8px; border-left: 4px solid #dc2626;">
@@ -1446,7 +1407,7 @@ PickFirst Real Estate Team`,
   bulkCampaign: (data: any) => ({
     subject: data.subject || 'Important Update from PickFirst Real Estate',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">${data.title}</h1>
@@ -1462,10 +1423,10 @@ PickFirst Real Estate Team`,
             </div>
           ` : ''}
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 15px; border-radius: 6px; margin: 20px 0; text-align: center;">
-            <p style="margin: 0; color: ${BRAND_COLORS.textLight}; font-size: 12px;">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 15px; border-radius: 6px; margin: 20px 0; text-align: center;">
+            <p style="margin: 0; color: #78350F; font-size: 12px;">
               You're receiving this email because you're a valued member of PickFirst Real Estate. 
-              ${data.unsubscribeUrl ? `<a href="${data.unsubscribeUrl}" style="color: ${BRAND_COLORS.textLight};">Unsubscribe</a>` : ''}
+              ${data.unsubscribeUrl ? `<a href="${data.unsubscribeUrl}" style="color: #78350F;">Unsubscribe</a>` : ''}
             </p>
           </div>
         </div>
@@ -1477,7 +1438,7 @@ PickFirst Real Estate Team`,
   subscriptionWelcome: (data: any) => ({
     subject: 'Welcome to Your New Subscription! 🎉',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
@@ -1489,11 +1450,11 @@ PickFirst Real Estate Team`,
             Thank you for subscribing to PickFirst ${data.plan} plan!
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid #EAB308;">
             <p style="color: ${BRAND_COLORS.text}; margin: 0 0 15px 0;">
               Your subscription is now <strong>active</strong> and you have access to all ${data.plan} features.
             </p>
-            <p style="color: ${BRAND_COLORS.textLight}; margin: 0;"><strong>Start Date:</strong> ${data.startDate}</p>
+            <p style="color: #78350F; margin: 0;"><strong>Start Date:</strong> ${data.startDate}</p>
           </div>
           
           <div style="background: linear-gradient(135deg, ${BRAND_COLORS.primary}, ${BRAND_COLORS.accent}); padding: 30px; border-radius: 12px; margin: 25px 0;">
@@ -1517,7 +1478,7 @@ PickFirst Real Estate Team`,
   subscriptionChanged: (data: any) => ({
     subject: 'Your Subscription Has Been Updated',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Subscription Updated</h1>
@@ -1527,7 +1488,7 @@ PickFirst Real Estate Team`,
             Your subscription has been successfully updated.
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid #EAB308;">
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Previous Plan:</strong> ${data.oldPlan}</p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>New Plan:</strong> ${data.newPlan}</p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Change Date:</strong> ${data.changeDate}</p>
@@ -1545,7 +1506,7 @@ PickFirst Real Estate Team`,
   subscriptionCancelled: (data: any) => ({
     subject: 'Your Subscription Has Been Cancelled',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">Subscription Cancelled</h1>
@@ -1555,11 +1516,11 @@ PickFirst Real Estate Team`,
             We're sorry to see you go. Your subscription has been cancelled.
           </p>
           
-          <div style="background: #FEF3C7; padding: 25px; border-radius: 12px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.warning};">
+          <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); padding: 25px; border-radius: 12px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.warning};">
             <p style="color: ${BRAND_COLORS.text}; margin: 0 0 10px 0;">
               <strong>Your access will continue until:</strong> ${data.endDate}
             </p>
-            <p style="color: ${BRAND_COLORS.textLight}; margin: 0; font-size: 14px;">
+            <p style="color: #78350F; margin: 0; font-size: 14px;">
               After this date, your account will revert to the free plan.
             </p>
           </div>
@@ -1590,7 +1551,7 @@ PickFirst Real Estate Team`,
     return ({
       subject: `Property Listing Submitted: ${data.propertyTitle}`,
       html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 20px 0;">🏠 Property Listing Submitted!</h1>
@@ -1600,7 +1561,7 @@ PickFirst Real Estate Team`,
             Great news! Your property listing has been successfully submitted and is now awaiting admin approval.
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid #EAB308;">
             <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 18px;">📋 Property Details</h3>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Title:</strong> ${data.propertyTitle}</p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Address:</strong> ${data.propertyAddress}</p>
@@ -1627,7 +1588,7 @@ PickFirst Real Estate Team`,
             ${getButton(data.dashboardUrl || 'https://pickfirst.com.au/dashboard', 'View My Listings')}
           </div>
           
-          <p style="color: ${BRAND_COLORS.textLight}; font-size: 14px; text-align: center;">
+          <p style="color: #78350F; font-size: 14px; text-align: center;">
             Thank you for choosing PickFirst Real Estate!
           </p>
         </div>
@@ -1649,7 +1610,7 @@ PickFirst Real Estate Team`,
     return ({
       subject: `🎉 Property Approved: ${data.propertyTitle} is Now Live!`,
       html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.success}; margin: 0 0 20px 0;">🎉 Congratulations! Your Property is Live!</h1>
@@ -1666,7 +1627,7 @@ PickFirst Real Estate Team`,
             </p>
           </div>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid #EAB308;">
             <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 18px;">🏠 Your Live Property</h3>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Title:</strong> ${data.propertyTitle}</p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Address:</strong> ${data.propertyAddress}</p>
@@ -1677,7 +1638,7 @@ PickFirst Real Estate Team`,
             ` : ''}
           </div>
           
-          <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.warning};">
+          <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid ${BRAND_COLORS.warning};">
             <h4 style="color: ${BRAND_COLORS.text}; margin: 0 0 10px 0;">🚀 What you can expect now:</h4>
             <ul style="color: ${BRAND_COLORS.text}; margin: 0; padding-left: 20px;">
               <li><strong>Visibility:</strong> Your property is now searchable by all buyers</li>
@@ -1696,7 +1657,7 @@ PickFirst Real Estate Team`,
             <strong>Pro Tip:</strong> Share your property link on social media and with your network to maximize exposure!
           </p>
           
-          <p style="color: ${BRAND_COLORS.textLight}; font-size: 14px; text-align: center;">
+          <p style="color: #78350F; font-size: 14px; text-align: center;">
             Best of luck with your sale! 🏡
           </p>
         </div>
@@ -1709,7 +1670,7 @@ PickFirst Real Estate Team`,
   propertyListingRejected: (data: any) => ({
     subject: `Property Listing Requires Updates: ${data.propertyTitle}`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background};">
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
         ${getEmailHeader()}
         <div style="padding: 40px 20px;">
           <h1 style="color: ${BRAND_COLORS.warning}; margin: 0 0 20px 0;">📝 Property Listing Needs Updates</h1>
@@ -1719,7 +1680,7 @@ PickFirst Real Estate Team`,
             We've reviewed your property listing and need some updates before we can approve it for publication.
           </p>
           
-          <div style="background: ${BRAND_COLORS.lightBg}; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid ${BRAND_COLORS.primary};">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid #EAB308;">
             <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 18px;">🏠 Property Details</h3>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Title:</strong> ${data.propertyTitle}</p>
             <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Address:</strong> ${data.propertyAddress}</p>
@@ -1751,7 +1712,7 @@ PickFirst Real Estate Team`,
             ${getButton(data.editUrl || 'https://pickfirst.com.au/dashboard', 'Edit My Listing')}
           </div>
           
-          <p style="color: ${BRAND_COLORS.textLight}; font-size: 14px; text-align: center;">
+          <p style="color: #78350F; font-size: 14px; text-align: center;">
             Need help? Contact our support team - we're here to help you succeed!
           </p>
         </div>
@@ -1766,12 +1727,12 @@ PickFirst Real Estate Team`,
       subject: data.subject || `PickFirst Weekly Digest`,
       text: data.text || `Your PickFirst weekly digest is ready.`,
       html: data.html || `
-      <div style="font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:40px;background:#f7fafc;">
-        <div style="max-width:680px;margin:0 auto;background:#ffffff;border-radius:16px;padding:40px;text-align:center;">
-          <h1 style="color:#1a202c;margin-bottom:16px;">Your Weekly Property Digest</h1>
-          <p style="color:#4a5568;">We couldn't load the full content of this digest. Please log in to view the latest properties.</p>
+      <div style="font-family: 'Inter', -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:40px;background:#FEF9E7;">
+        <div style="max-width:680px;margin:0 auto;background:#ffffff;border-radius:16px;padding:40px;text-align:center;box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
+          <h1 style="color:#EAB308;margin-bottom:16px;font-weight:700;">Your Weekly Property Digest</h1>
+          <p style="color:#374151;">We couldn't load the full content of this digest. Please log in to view the latest properties.</p>
           <div style="margin-top:32px;">
-            <a href="https://pickfirst.com.au/login" style="display:inline-block;background:#FFCC00;color:#1a1a1a;padding:14px 32px;border-radius:8px;font-weight:600;text-decoration:none;">
+            <a href="https://pickfirst.com.au/login" style="display:inline-block;background:linear-gradient(135deg, #EAB308 0%, #F59E0B 100%);color:#1F2937;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;box-shadow: 0 4px 16px rgba(234, 179, 8, 0.35);">
               View Properties
             </a>
           </div>
@@ -1814,7 +1775,7 @@ const handler = async (req: Request) => {
     
     // Define which templates should be treated as transactional vs promotional
     const transactionalTemplates = [
-      'welcome', 'agentWelcome', 'buyerWelcome', 'passwordReset', 
+      'welcome', 'agentWelcome', 'buyerWelcome', 
       'appointmentConfirmation', 'appointmentNotification', 'appointmentStatusUpdate',
       'paymentSuccess', 'paymentFailed', 'accountSuspension', 'securityAlert',
       'messageNotification', 'leadAssignment', 'propertyViewing', 'followUp',

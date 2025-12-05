@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Settings, User, Bell, Lock, CreditCard, Eye, EyeOff, Heart, Activity, Home, Calendar, Check, X } from 'lucide-react';
+import { ArrowLeft, Settings, User, Bell, Lock, CreditCard, Eye, EyeOff, Heart, Activity, Home, Calendar, Check, X, Crown, Sparkles, MapPin, Zap } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -26,7 +26,7 @@ const BuyerAccountSettingsPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { profile, user, updateProfile } = useAuth();
-  const { isFeatureEnabled } = useSubscription();
+  const { isFeatureEnabled, subscriptionTier, canAccessOffMarketListings } = useSubscription();
   
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -456,7 +456,7 @@ const BuyerAccountSettingsPage = () => {
                       <p className="text-muted-foreground/80 text-sm">Once an agent schedules, it will appear here</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-3 max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-pickfirst-yellow/30 scrollbar-track-transparent">
                       {appointments.map((appt: any) => (
                         <div key={appt.id} className="p-4 bg-card/80 rounded-lg border border-pickfirst-yellow/30 hover:border-pickfirst-yellow/50 transition-colors">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -548,6 +548,67 @@ const BuyerAccountSettingsPage = () => {
 
             {/* Profile Tab */}
             <TabsContent value="profile" className="space-y-6">
+              {/* Premium Upgrade Teaser - Only show if not premium */}
+              {subscriptionTier !== 'premium' && (
+                <Card className="bg-gradient-to-br from-pickfirst-yellow/10 via-pickfirst-amber/5 to-pickfirst-yellow/10 border-2 border-pickfirst-yellow/30 shadow-xl overflow-hidden relative">
+                  {/* Decorative background pattern */}
+                  <div className="absolute inset-0 opacity-5">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-pickfirst-yellow rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-pickfirst-amber rounded-full blur-3xl"></div>
+                  </div>
+                  
+                  <CardContent className="p-6 sm:p-8 relative z-10">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Crown className="h-5 w-5 sm:h-6 sm:w-6 text-pickfirst-yellow" />
+                          <h3 className="text-lg sm:text-xl font-bold text-foreground">Unlock Premium Features</h3>
+                        </div>
+                        <p className="text-sm sm:text-base text-muted-foreground">
+                          Upgrade to Premium and get exclusive access to advanced features
+                        </p>
+                        
+                        {/* Premium Benefits Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                          <div className="flex items-center gap-2 text-sm text-foreground">
+                            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-pickfirst-yellow/20 flex items-center justify-center">
+                              <MapPin className="h-3 w-3 text-pickfirst-yellow" />
+                            </div>
+                            <span>Exclusive Off-Market Properties</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-foreground">
+                            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-pickfirst-yellow/20 flex items-center justify-center">
+                              <Sparkles className="h-3 w-3 text-pickfirst-yellow" />
+                            </div>
+                            <span>Advanced Search Filters</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-foreground">
+                            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-pickfirst-yellow/20 flex items-center justify-center">
+                              <Zap className="h-3 w-3 text-pickfirst-yellow" />
+                            </div>
+                            <span>Priority Support</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-foreground">
+                            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-pickfirst-yellow/20 flex items-center justify-center">
+                              <Calendar className="h-3 w-3 text-pickfirst-yellow" />
+                            </div>
+                            <span>Schedule Appointments</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <Button
+                        onClick={() => navigate('/pricing')}
+                        className="bg-gradient-to-r from-pickfirst-yellow to-pickfirst-amber hover:from-pickfirst-amber hover:to-pickfirst-yellow text-black font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 shrink-0 whitespace-nowrap"
+                      >
+                        <Crown className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="text-sm sm:text-base">Upgrade Now</span>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
               {/* Personal Information */}
               <Card className="bg-card border border-border shadow-lg">
                 <CardHeader>
@@ -990,21 +1051,33 @@ const BuyerAccountSettingsPage = () => {
 
                         setIsLoading(true);
                         try {
-                          // Delete profile (this will cascade delete related data due to foreign keys)
+                          // Use Edge Function to completely delete account (including auth user)
                           const result = await ProfileService.deleteProfile(user.id);
                           
                           if (result.success) {
-                            toast.success('Account deleted successfully');
-                            // Sign out and redirect
+                            // Immediately clear all auth tokens and cache BEFORE signing out
                             await supabase.auth.signOut();
-                            navigate('/');
+                            
+                            // Clear all localStorage items
+                            const keys = Object.keys(localStorage);
+                            keys.forEach(key => {
+                              if (key.includes('supabase') || key.includes('auth') || key.startsWith('sb-') || key.includes('viewMode')) {
+                                localStorage.removeItem(key);
+                              }
+                            });
+                            
+                            // Clear sessionStorage
+                            sessionStorage.clear();
+                            
+                            // Force full page reload to clear all state
+                            window.location.href = '/auth?deleted=true';
                           } else {
                             toast.error(result.error || 'Failed to delete account');
+                            setIsLoading(false);
                           }
                         } catch (error: any) {
                           console.error('Account deletion error:', error);
                           toast.error(error.message || 'Failed to delete account. Please try again.');
-                        } finally {
                           setIsLoading(false);
                         }
                       }}

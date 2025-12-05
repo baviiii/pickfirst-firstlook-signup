@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Bell, BellOff, Settings, Mail, MapPin, Home, DollarSign } from 'lucide-react';
+import { Bell, BellOff, Settings, Mail, MapPin, Home, DollarSign, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import BuyerProfileService, { BuyerPreferences } from '@/services/buyerProfileService';
@@ -16,11 +17,14 @@ interface PropertyAlertsProps {
 
 const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
   const { profile } = useAuth();
-  const { isFeatureEnabled } = useSubscription();
+  const { isFeatureEnabled, subscriptionTier } = useSubscription();
+  const navigate = useNavigate();
   const [preferences, setPreferences] = useState<BuyerPreferences | null>(null);
   const [alertHistory, setAlertHistory] = useState<PropertyAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [expandedAlerts, setExpandedAlerts] = useState<Set<string>>(new Set());
+  const [showAllAlerts, setShowAllAlerts] = useState(false);
 
   useEffect(() => {
     if (profile?.id) {
@@ -33,15 +37,19 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
     
     setLoading(true);
     try {
+      console.log('[PropertyAlerts] Loading alert data for user:', profile.id);
       const [prefs, history] = await Promise.all([
         BuyerProfileService.getBuyerPreferences(profile.id),
         PropertyAlertService.getBuyerAlertHistory(profile.id, 10)
       ]);
       
+      console.log('[PropertyAlerts] Alert history received:', history);
+      console.log('[PropertyAlerts] Number of alerts:', history?.length || 0);
+      
       setPreferences(prefs);
-      setAlertHistory(history);
+      setAlertHistory(history || []);
     } catch (error) {
-      console.error('Error loading property alerts data:', error);
+      console.error('[PropertyAlerts] Error loading property alerts data:', error);
       toast.error('Failed to load property alerts');
     } finally {
       setLoading(false);
@@ -176,9 +184,20 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
             <CardDescription className="text-muted-foreground">
               Get notified when new on-market properties match your preferences.
               <br />
-              <span className="text-primary font-medium mt-1 inline-block">
-                🔐 Premium subscribers get exclusive OFF-MARKET property alerts
-              </span>
+              <button
+                onClick={() => {
+                  if (subscriptionTier === 'premium') {
+                    navigate('/off-market');
+                  } else {
+                    navigate('/pricing');
+                  }
+                }}
+                className="text-primary font-medium mt-1 inline-block hover:text-pickfirst-yellow underline cursor-pointer transition-colors"
+              >
+                🔐 {subscriptionTier === 'premium' 
+                  ? 'You can also see off-market properties' 
+                  : 'Premium subscribers get exclusive OFF-MARKET property alerts'}
+              </button>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -207,6 +226,19 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
                 onCheckedChange={handleToggleAlerts}
                 disabled={updating}
               />
+            </div>
+
+            {/* Adjust Preferences Button */}
+            <div className="flex justify-end pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/buyer-account-settings?tab=search')}
+                className="border-pickfirst-yellow/40 text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Adjust Preferences
+              </Button>
             </div>
 
             {/* Current Preferences Summary */}
@@ -281,60 +313,202 @@ const PropertyAlerts: React.FC<PropertyAlertsProps> = ({ className }) => {
               </div>
             ) : (
               <div className="space-y-4">
-                {alertHistory.map((alert) => {
+                {/* Show first alert, then rest if expanded */}
+                {(showAllAlerts ? alertHistory : alertHistory.slice(0, 1)).map((alert, index) => {
                   const isOffMarket = alert.alert_type === 'off_market';
+                  const isExpanded = expandedAlerts.has(alert.id);
+                  const property = alert.property;
+                  
                   return (
-                    <div key={alert.id} className="p-4 rounded-lg bg-gray-800/50 border border-gray-700">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-white font-medium">
-                              {isOffMarket ? 'Off-Market Property Alert' : 'Property Alert'}
-                            </h4>
-                            {isOffMarket && (
-                              <Badge className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                                🔐 Premium Exclusive
+                    <div 
+                      key={alert.id} 
+                      className="pickfirst-glass bg-card/90 border border-primary/30 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
+                    >
+                      {/* Alert Header - Always Visible */}
+                      <div 
+                        className="p-4 cursor-pointer hover:bg-pickfirst-yellow/5 transition-colors"
+                        onClick={() => {
+                          const newExpanded = new Set(expandedAlerts);
+                          if (isExpanded) {
+                            newExpanded.delete(alert.id);
+                          } else {
+                            newExpanded.add(alert.id);
+                          }
+                          setExpandedAlerts(newExpanded);
+                        }}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-2">
+                              <h4 className="text-foreground font-bold text-lg">
+                                {property?.title || 'Property Alert'}
+                              </h4>
+                              {isOffMarket && (
+                                <Badge className="bg-pickfirst-yellow/20 text-pickfirst-yellow border border-pickfirst-yellow/40 shrink-0">
+                                  🔐 Premium
+                                </Badge>
+                              )}
+                              <Badge 
+                                className={`${
+                                  alert.status === 'sent' || alert.status === 'delivered' 
+                                    ? 'bg-green-500/20 text-green-400 border-green-500/40' 
+                                    : alert.status === 'failed'
+                                    ? 'bg-red-500/20 text-red-400 border-red-500/40'
+                                    : 'bg-gray-500/20 text-gray-400 border-gray-500/40'
+                                } shrink-0`}
+                              >
+                                {alert.status}
                               </Badge>
-                            )}
+                            </div>
+                            
+                            {/* Property Details - Always Visible */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                              {property?.location && (
+                                <div className="flex items-center gap-2 text-foreground/90">
+                                  <MapPin className="h-4 w-4 text-primary shrink-0" />
+                                  <span className="truncate">{property.location}</span>
+                                </div>
+                              )}
+                              {property?.price_display && (
+                                <div className="flex items-center gap-2 text-foreground/90">
+                                  <DollarSign className="h-4 w-4 text-primary shrink-0" />
+                                  <span className="font-semibold text-pickfirst-yellow">{property.price_display}</span>
+                                </div>
+                              )}
+                              {property?.bedrooms && (
+                                <div className="flex items-center gap-2 text-foreground/90">
+                                  <Home className="h-4 w-4 text-primary shrink-0" />
+                                  <span>{property.bedrooms} bed{property.bedrooms !== 1 ? 's' : ''}</span>
+                                </div>
+                              )}
+                              {property?.bathrooms && (
+                                <div className="flex items-center gap-2 text-foreground/90">
+                                  <Home className="h-4 w-4 text-primary shrink-0" />
+                                  <span>{property.bathrooms} bath{property.bathrooms !== 1 ? 's' : ''}</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <p className="text-xs text-muted-foreground mt-2">
+                              Sent: {formatDate(alert.sent_at)}
+                            </p>
                           </div>
-                          <p className="text-sm text-gray-400 mt-1">
-                            {formatDate(alert.sent_at)}
-                          </p>
+                          
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/property/${alert.property_id}`);
+                              }}
+                              className="text-primary hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-primary hover:text-pickfirst-yellow"
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="h-5 w-5" />
+                              ) : (
+                                <ChevronDown className="h-5 w-5" />
+                              )}
+                            </Button>
+                          </div>
                         </div>
-                        <Badge className={`${getStatusColor(alert.status)} text-white`}>
-                          {alert.status}
-                        </Badge>
                       </div>
                       
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-400">Type:</span>
-                          <p className="text-white font-medium">
-                            {isOffMarket ? 'Off-Market' : 'On-Market'}
-                          </p>
+                      {/* Expanded Content */}
+                      {isExpanded && (
+                        <div className="px-4 pb-4 pt-0 border-t border-primary/20 bg-pickfirst-yellow/5">
+                          <div className="pt-4 space-y-4">
+                            {/* Matched Criteria */}
+                            {alert.matched_criteria && alert.matched_criteria.length > 0 && (
+                              <div>
+                                <h5 className="text-foreground font-semibold mb-2 flex items-center gap-2">
+                                  <Bell className="h-4 w-4 text-primary" />
+                                  Matched Your Preferences:
+                                </h5>
+                                <div className="flex flex-wrap gap-2">
+                                  {alert.matched_criteria.map((criteria, idx) => (
+                                    <Badge 
+                                      key={idx}
+                                      className="bg-pickfirst-yellow/20 text-pickfirst-yellow border border-pickfirst-yellow/40"
+                                    >
+                                      ✓ {criteria}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Additional Property Details */}
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <span className="text-muted-foreground">Property Type:</span>
+                                <p className="text-foreground font-medium mt-1">
+                                  {property?.property_type || 'N/A'}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Alert Type:</span>
+                                <p className="text-foreground font-medium mt-1">
+                                  {isOffMarket ? 'Off-Market' : 'On-Market'}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Status:</span>
+                                <p className="text-foreground font-medium capitalize mt-1">
+                                  {alert.status}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            {/* View Property Button */}
+                            <div className="pt-2">
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/property/${alert.property_id}`);
+                                }}
+                                className="w-full bg-gradient-to-r from-pickfirst-yellow to-pickfirst-amber hover:from-pickfirst-amber hover:to-pickfirst-yellow text-black font-semibold"
+                              >
+                                View Full Property Details
+                                <ExternalLink className="h-4 w-4 ml-2" />
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-gray-400">Status:</span>
-                          <p className="text-white font-medium capitalize">
-                            {alert.status}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">Property ID:</span>
-                          <p className="text-white text-xs">
-                            {alert.property_id.slice(0, 8)}...
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">Sent:</span>
-                          <p className="text-white">
-                            {formatDate(alert.sent_at)}
-                          </p>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   );
                 })}
+                
+                {/* Show More/Collapse Button */}
+                {alertHistory.length > 1 && (
+                  <div className="text-center pt-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAllAlerts(!showAllAlerts)}
+                      className="border-pickfirst-yellow/40 text-pickfirst-yellow hover:bg-pickfirst-yellow/10"
+                    >
+                      {showAllAlerts ? (
+                        <>
+                          <ChevronUp className="h-4 w-4 mr-2" />
+                          Show Less ({alertHistory.length - 1} hidden)
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-4 w-4 mr-2" />
+                          View All Alerts ({alertHistory.length - 1} more)
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

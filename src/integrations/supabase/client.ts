@@ -19,12 +19,25 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 export const clearAuthTokens = async (): Promise<void> => {
   try {
     await supabase.auth.signOut();
-    // Clear any additional auth-related data from localStorage if needed
-    ['sb-access-token', 'sb-refresh-token'].forEach(key => {
-      localStorage.removeItem(key);
+    // Clear all Supabase-related localStorage items
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.includes('supabase') || key.includes('auth') || key.startsWith('sb-')) {
+        localStorage.removeItem(key);
+      }
     });
+    // Clear sessionStorage as well
+    sessionStorage.clear();
   } catch (error) {
     console.error('Error clearing auth tokens:', error);
+    // Even if signOut fails, clear localStorage
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.includes('supabase') || key.includes('auth') || key.startsWith('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+    sessionStorage.clear();
     throw error;
   }
 };

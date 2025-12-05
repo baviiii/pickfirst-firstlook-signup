@@ -87,9 +87,18 @@ const AuthHashRedirect = () => {
           window.location.replace(`${window.location.origin}${targetPath}`);
         });
       } else if (isRecoveryFlow) {
-        // Password reset flow - redirect to reset password page
-        const targetPath = `${basePath}/reset-password`;
-        window.location.replace(`${window.location.origin}${targetPath}${window.location.hash}`);
+        // Password reset flow - prevent auto-login by signing out first
+        // Sign out immediately to prevent Supabase from creating a session from hash tokens
+        supabase.auth.signOut().then(() => {
+          const targetPath = `${basePath}/reset-password`;
+          // Keep hash in URL so ResetPasswordForm can extract tokens
+          window.location.replace(`${window.location.origin}${targetPath}${window.location.hash}`);
+        }).catch((error) => {
+          console.error('Error signing out before password reset:', error);
+          // Still redirect even if sign out fails
+          const targetPath = `${basePath}/reset-password`;
+          window.location.replace(`${window.location.origin}${targetPath}${window.location.hash}`);
+        });
       } else {
         // Other auth flows (e.g., magic link) - redirect to dashboard
         const targetPath = `${basePath}/dashboard`;
@@ -118,7 +127,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/signup" element={<Registration />} />
               <Route path="/pricing" element={<Pricing />} />
-              <Route path="/about" element={<About />} />
+              <Route path="/about" element={<RoleBasedLayout><About /></RoleBasedLayout>} />
               <Route path="/browse-properties" element={<RoleBasedLayout><BrowsePropertiesPage /></RoleBasedLayout>} />
               <Route path="/property-map" element={<RoleBasedLayout><PropertyMapPage /></RoleBasedLayout>} />
               <Route path="/property/:id" element={<RoleBasedLayout><PropertyDetails /></RoleBasedLayout>} />

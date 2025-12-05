@@ -5,6 +5,7 @@ import { useViewMode } from '@/hooks/useViewMode';
 import { BuyerDashboardNew } from './BuyerDashboardNew';
 import { AgentDashboard } from './AgentDashboard';
 import { SuperAdminDashboard } from './SuperAdminDashboard';
+import { RoleBasedLayout } from '@/components/layouts/RoleBasedLayout';
 
 export const UserDashboard = () => {
   const { profile, refetchProfile, user } = useAuth();
@@ -49,7 +50,11 @@ export const UserDashboard = () => {
     case 'buyer':
       return <BuyerDashboardNew />;
     case 'super_admin':
-      return <SuperAdminDashboard />;
+      return (
+        <RoleBasedLayout>
+          <SuperAdminDashboard />
+        </RoleBasedLayout>
+      );
     default:
       return <BuyerDashboardNew />; // Default to buyer dashboard
   }

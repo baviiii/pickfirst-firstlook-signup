@@ -53,6 +53,10 @@ export const ViewModeProvider = ({ children }: { children: ReactNode }) => {
     if (canSwitchToBuyer) {
       const newMode = viewMode === 'agent' ? 'buyer' : 'agent';
       setViewMode(newMode);
+      // Full page reload and redirect to dashboard to refresh everything
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 100);
     }
   };
 

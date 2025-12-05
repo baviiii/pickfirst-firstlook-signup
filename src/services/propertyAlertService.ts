@@ -33,6 +33,19 @@ export interface PropertyAlert {
   email_template: string;
   alert_type: 'on_market' | 'off_market';
   created_at: string;
+  // Property details for display
+  property?: {
+    title?: string;
+    price?: number | null;
+    price_display?: string;
+    location?: string;
+    city?: string;
+    state?: string;
+    property_type?: string;
+    bedrooms?: number;
+    bathrooms?: number;
+  };
+  matched_criteria?: string[]; // What matched in the alert
 }
 
 export interface AlertMatch {
@@ -666,40 +679,148 @@ export class PropertyAlertService {
   }
 
   /**
-   * Get alert history for a buyer - ALL users can see their alert history
+   * Get alert history for a buyer - Query email_queue for propertyAlert templates
    */
   static async getBuyerAlertHistory(buyerId: string, limit: number = 20): Promise<PropertyAlert[]> {
     try {
       // ALL users can view their alert history (both free and premium)
       await logFeatureAccessAttempt(buyerId, 'alert_history_access', true);
 
-      const { data, error } = await supabase
-        .from('property_alerts')
-        .select(`
-          *,
-          property_listings (
-            id,
-            title,
-            price,
-            city,
-            state,
-            property_type,
-            bedrooms,
-            bathrooms
-          )
-        `)
-        .eq('buyer_id', buyerId)
-        .order('created_at', { ascending: false })
-        .limit(limit);
+      console.log(`[PropertyAlertService] Fetching alert history for buyer: ${buyerId}`);
 
-      if (error) {
-        console.error('Error fetching alert history:', error);
+      // Get buyer's email to query email_queue
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', buyerId)
+        .single();
+
+      if (!profile?.email) {
+        console.error('[PropertyAlertService] Buyer profile not found');
         return [];
       }
 
-      return (data || []) as PropertyAlert[];
+      const userEmail = profile.email;
+
+      // Query email_queue for property alert emails (both propertyAlert and offMarketPropertyAlert templates)
+      // Use case-insensitive comparison to match emails
+      const { data: emailQueue, error: emailQueueError } = await supabase
+        .from('email_queue')
+        .select('*')
+        .ilike('email', userEmail) // Case-insensitive email match
+        .in('template', ['propertyAlert', 'offMarketPropertyAlert'])
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (emailQueueError) {
+        console.error('[PropertyAlertService] Error fetching email_queue:', emailQueueError);
+        return [];
+      }
+
+      console.log(`[PropertyAlertService] Found ${emailQueue?.length || 0} property alert emails for buyer ${buyerId}`);
+
+      if (!emailQueue || emailQueue.length === 0) {
+        return [];
+      }
+
+      // Extract property IDs from email payloads
+      const propertyIds: string[] = [];
+      const emailToPropertyMap = new Map<string, string>(); // Map email_queue id to property_id
+      
+      for (const email of emailQueue) {
+        const payload = email.payload as any;
+        const propertyUrl = payload?.property?.propertyUrl || payload?.propertyUrl;
+        
+        if (propertyUrl) {
+          // Extract property ID from URL like "https://pickfirst.com.au/property/{id}" or "/property/{id}"
+          const propertyIdMatch = propertyUrl.match(/\/property\/([a-f0-9-]+)/i);
+          if (propertyIdMatch && propertyIdMatch[1]) {
+            const propertyId = propertyIdMatch[1];
+            propertyIds.push(propertyId);
+            emailToPropertyMap.set(email.id, propertyId);
+          }
+        }
+      }
+
+      console.log(`[PropertyAlertService] Extracted ${propertyIds.length} property IDs from email payloads`);
+
+      // Fetch property details for all properties
+      let propertiesMap = new Map<string, any>();
+      if (propertyIds.length > 0) {
+        const { data: properties } = await supabase
+          .from('property_listings')
+          .select('*')
+          .in('id', propertyIds);
+
+        if (properties) {
+          propertiesMap = new Map(properties.map(p => [p.id, p]));
+        }
+      }
+
+      // Convert email_queue entries to PropertyAlert format
+      const alerts: PropertyAlert[] = [];
+
+      for (const email of emailQueue) {
+        const propertyId = emailToPropertyMap.get(email.id);
+        if (!propertyId) {
+          console.warn(`[PropertyAlertService] Could not extract property ID from email ${email.id}`);
+          continue;
+        }
+
+        const property = propertiesMap.get(propertyId);
+        if (!property) {
+          console.warn(`[PropertyAlertService] Property ${propertyId} not found for email ${email.id}`);
+          continue;
+        }
+
+        // Determine alert type from template name
+        const isOffMarket = email.template === 'offMarketPropertyAlert';
+        const payload = email.payload as any;
+        const status = email.status === 'sent' || email.status === 'delivered' ? 'sent' as const : 
+                      email.status === 'failed' ? 'failed' as const : 'sent' as const;
+
+        // Extract matched criteria from email payload if available
+        const matchedCriteria = payload?.matchingFeatures || payload?.matchedCriteria || [];
+
+        // Extract property details from email payload or use fetched property
+        const propertyTitle = payload?.property?.title || payload?.propertyTitle || property.title || 'Property';
+        const propertyLocation = payload?.property?.location || payload?.location || 
+                                (property.city && property.state ? `${property.city}, ${property.state}` : 'Location not available');
+        const propertyPrice = payload?.property?.price || property.price;
+        const propertyPriceDisplay = payload?.property?.priceDisplay || payload?.priceDisplay || getPropertyPriceDisplay(property);
+
+        alerts.push({
+          id: email.id,
+          buyer_id: buyerId,
+          property_id: propertyId,
+          sent_at: email.created_at || new Date().toISOString(),
+          status: status,
+          email_template: email.template,
+          alert_type: isOffMarket ? 'off_market' : 'on_market',
+          created_at: email.created_at || new Date().toISOString(),
+          property: {
+            title: propertyTitle,
+            price: propertyPrice,
+            price_display: propertyPriceDisplay,
+            location: propertyLocation,
+            city: property.city,
+            state: property.state,
+            property_type: property.property_type,
+            bedrooms: property.bedrooms,
+            bathrooms: property.bathrooms
+          },
+          matched_criteria: Array.isArray(matchedCriteria) ? matchedCriteria : []
+        });
+      }
+
+      console.log(`[PropertyAlertService] Returning ${alerts.length} alerts for buyer ${buyerId}`);
+      if (alerts.length > 0) {
+        console.log('[PropertyAlertService] Sample alert:', JSON.stringify(alerts[0], null, 2));
+      }
+
+      return alerts;
     } catch (error) {
-      console.error('Error getting buyer alert history:', error);
+      console.error('[PropertyAlertService] Exception getting buyer alert history:', error);
       return [];
     }
   }

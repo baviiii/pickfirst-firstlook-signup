@@ -530,7 +530,8 @@ class AppointmentService {
           }
 
           // Send email notifications for status changes
-          await this.sendStatusChangeNotifications(data, currentAppointment.status, updates.status as string, profile?.role as string);
+          // Pass isAppointmentClient to correctly identify if buyer is making the change (even if they're an agent in buyer mode)
+          await this.sendStatusChangeNotifications(data, currentAppointment.status, updates.status as string, isAppointmentClient);
         }
       }
 
@@ -953,9 +954,17 @@ class AppointmentService {
     appointment: Appointment,
     oldStatus: string,
     newStatus: string,
-    userRole?: string
+    isClientMakingChange: boolean
   ): Promise<void> {
     try {
+      console.log('[AppointmentService] Sending status change notifications:', {
+        appointmentId: appointment.id,
+        oldStatus,
+        newStatus,
+        isClientMakingChange,
+        agentId: appointment.agent_id
+      });
+
       // Get agent information
       const { data: agentProfile } = await supabase
         .from('profiles')
@@ -964,17 +973,31 @@ class AppointmentService {
         .single();
 
       if (!agentProfile) {
-        console.error('Agent profile not found for status change notifications');
+        console.error('[AppointmentService] Agent profile not found for status change notifications:', appointment.agent_id);
         return;
       }
+
+      console.log('[AppointmentService] Agent profile found:', {
+        email: agentProfile.email,
+        name: agentProfile.full_name
+      });
+
       // Determine who should receive the notification based on who made the change
-      const isAgentMakingChange = userRole === 'agent';
-      const isBuyerMakingChange = userRole === 'buyer';
+      // If client is making change, notify agent. If agent is making change, notify client.
+      const isBuyerMakingChange = isClientMakingChange;
+      const isAgentMakingChange = !isClientMakingChange;
+
+      console.log('[AppointmentService] Notification decision:', {
+        isBuyerMakingChange,
+        isAgentMakingChange,
+        newStatus
+      });
       // Send appropriate email based on status change
       switch (newStatus) {
         case 'confirmed':
           if (isBuyerMakingChange) {
-            // Buyer confirmed - notify agent
+            // Buyer confirmed - ALWAYS notify agent
+            console.log('[AppointmentService] Buyer confirmed appointment - sending email to agent:', agentProfile.email);
             await EmailService.sendAppointmentStatusUpdate(
               agentProfile.email,
               agentProfile.full_name,
@@ -988,9 +1011,12 @@ class AppointmentService {
                 status: 'confirmed',
                 statusMessage: 'Your client has confirmed the appointment'
               }
-            );
+            ).catch(err => {
+              console.error('[AppointmentService] Failed to send confirmed email to agent:', err);
+            });
           } else if (isAgentMakingChange) {
             // Agent confirmed - notify client
+            console.log('[AppointmentService] Agent confirmed appointment - sending email to client:', appointment.client_email);
             await EmailService.sendAppointmentStatusUpdate(
               appointment.client_email,
               appointment.client_name,
@@ -1004,12 +1030,15 @@ class AppointmentService {
                 status: 'confirmed',
                 statusMessage: 'Your appointment has been confirmed'
               }
-            );
+            ).catch(err => {
+              console.error('[AppointmentService] Failed to send confirmed email to client:', err);
+            });
           }
           break;
 
         case 'declined':
-          // Notify agent that buyer declined
+          // Always notify agent when buyer declines (regardless of who made the change)
+          console.log('[AppointmentService] Buyer declined appointment - sending email to agent:', agentProfile.email);
           await EmailService.sendAppointmentStatusUpdate(
             agentProfile.email,
             agentProfile.full_name,
@@ -1023,7 +1052,9 @@ class AppointmentService {
               status: 'declined',
               statusMessage: 'Your client has declined the appointment'
             }
-          );
+          ).catch(err => {
+            console.error('[AppointmentService] Failed to send declined email to agent:', err);
+          });
           break;
 
         case 'scheduled':

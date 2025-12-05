@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -34,13 +35,13 @@ interface SubscriptionContextType {
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
-export const useSubscription = () => {
+export function useSubscription() {
   const context = useContext(SubscriptionContext);
   if (!context) {
     throw new Error('useSubscription must be used within a SubscriptionProvider');
   }
   return context;
-};
+}
 
 interface SubscriptionProviderProps {
   children: ReactNode;
@@ -517,7 +518,7 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
   };
 
   const getMessageHistoryDays = (): number => {
-    return subscriptionTier === 'premium' ? -1 : 30; // Premium: unlimited, Free: 30 days
+    return -1; // Unlimited message history for all users
   };
 
   const canAccessOffMarketListings = useCallback((): boolean => {
