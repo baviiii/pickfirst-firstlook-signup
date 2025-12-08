@@ -115,38 +115,32 @@ const EnhancedSearchFiltersPage = () => {
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate(-1)}
-                className="text-yellow-400 hover:bg-yellow-400/10"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-xl font-bold text-yellow-400">Advanced Search</h1>
-                <p className="text-sm text-gray-400">
-                  Find properties with intelligent insights and ratings
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowResults(!showResults)}
-                className="text-gray-300 hover:text-yellow-400 border-gray-600"
-              >
-                <Search className="h-4 w-4 mr-2" />
-                {showResults ? 'Hide Results' : 'View Results'}
-              </Button>
-            </div>
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="text-yellow-400 hover:bg-yellow-400/10"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold text-yellow-400">Advanced Search</h1>
+            <p className="text-sm text-gray-400">
+              Find properties with intelligent insights and ratings
+            </p>
           </div>
         </div>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowResults(!showResults)}
+          className="text-gray-300 hover:text-yellow-400 border-gray-600"
+        >
+          <Search className="h-4 w-4 mr-2" />
+          {showResults ? 'Hide Results' : 'View Results'}
+        </Button>
       </div>
 
       {/* Content */}
@@ -171,7 +165,7 @@ const EnhancedSearchFiltersPage = () => {
             <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-white flex items-center gap-2">
+                  <CardTitle className="text-black flex items-center gap-2">
                     <Search className="h-5 w-5 text-yellow-400" />
                     Search Results
                   </CardTitle>
@@ -193,8 +187,8 @@ const EnhancedSearchFiltersPage = () => {
                 ) : results && results.properties.length > 0 ? (
                   <>
                     <div className="mb-6 p-4 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
-                      <p className="text-gray-300 text-center">
-                        Found <span className="text-yellow-400 font-bold text-lg">{results.filterStats.matchingProperties}</span> of <span className="text-yellow-400 font-semibold">{results.filterStats.totalProperties}</span> properties
+                      <p className="text-black text-center font-medium">
+                        Found <span className="text-yellow-600 font-bold text-lg">{results.filterStats.matchingProperties}</span> of <span className="text-yellow-600 font-semibold">{results.filterStats.totalProperties}</span> properties
                       </p>
                     </div>
                     

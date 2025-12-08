@@ -90,7 +90,6 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
   const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string>('');
   const [retryCount, setRetryCount] = useState(0);
-  const [showMethodology, setShowMethodology] = useState(false);
 
   const maxRetries = 3;
 
@@ -447,154 +446,65 @@ const PropertyInsights: React.FC<PropertyInsightsProps> = ({
   const aqInfo = getAirQualityInfo(airQuality?.category);
 
   return (
-    <div className="space-y-6">
-      {/* Quick Stats from Real Data */}
-      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
-        <CardHeader>
-          <CardTitle className="text-foreground flex items-center gap-2 font-bold">
-            <Star className="h-5 w-5 text-pickfirst-yellow" />
-            Neighborhood at a Glance
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Schools */}
-            <div className="p-4 rounded-lg border border-pickfirst-yellow/30 bg-card/80 hover:bg-card/90 transition-colors">
-              <div className="flex items-center gap-2 mb-2">
-                <GraduationCap className="h-4 w-4 text-pickfirst-yellow" />
-                <span className="text-sm font-semibold text-foreground">Schools</span>
-              </div>
-              <div className="text-2xl font-bold text-pickfirst-yellow">
-                {avgSchoolRating > 0 ? avgSchoolRating.toFixed(1) : 'N/A'}
-              </div>
-              <div className="text-xs text-muted-foreground font-medium">
-                {nearbyPlaces.schools.length > 0 ? `${nearbyPlaces.schools.length} nearby` : 'avg rating'}
-              </div>
+    <div className="space-y-4">
+      {/* Quick Stats - Compact Row Layout */}
+      <div className="p-4 rounded-lg border border-pickfirst-yellow/30 bg-card/90">
+        <div className="flex items-center gap-2 mb-4">
+          <Star className="h-5 w-5 text-pickfirst-yellow" />
+          <h3 className="text-base font-bold text-foreground">Neighborhood at a Glance</h3>
+        </div>
+        
+        {/* Stats Row */}
+        <div className="flex flex-wrap gap-3">
+          {/* Schools */}
+          <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-pickfirst-yellow/30 bg-card/80">
+            <GraduationCap className="h-5 w-5 text-pickfirst-yellow flex-shrink-0" />
+            <div>
+              <div className="text-xl font-bold text-pickfirst-yellow">{avgSchoolRating > 0 ? avgSchoolRating.toFixed(1) : 'N/A'}</div>
+              <div className="text-xs text-foreground">{nearbyPlaces.schools.length} schools</div>
             </div>
-
-            {/* Restaurants */}
-            <div className="p-4 rounded-lg border border-pickfirst-yellow/30 bg-card/80 hover:bg-card/90 transition-colors">
-              <div className="flex items-center gap-2 mb-2">
-                <Coffee className="h-4 w-4 text-pickfirst-yellow" />
-                <span className="text-sm font-semibold text-foreground">Dining</span>
-              </div>
-              <div className="text-2xl font-bold text-pickfirst-yellow">
-                {topRatedRestaurants}
-              </div>
-              <div className="text-xs text-muted-foreground font-medium">top-rated spots</div>
-            </div>
-
-            {/* Transit */}
-            <div className="p-4 rounded-lg border border-pickfirst-yellow/30 bg-card/80 hover:bg-card/90 transition-colors">
-              <div className="flex items-center gap-2 mb-2">
-                <Train className="h-4 w-4 text-pickfirst-yellow" />
-                <span className="text-sm font-semibold text-foreground">Transit</span>
-              </div>
-              <div className="text-2xl font-bold text-pickfirst-yellow">
-                {transitOptions}
-              </div>
-              <div className="text-xs text-muted-foreground font-medium">stations nearby</div>
-            </div>
-
-            {/* Parks */}
-            <div className="p-4 rounded-lg border border-pickfirst-yellow/30 bg-card/80 hover:bg-card/90 transition-colors">
-              <div className="flex items-center gap-2 mb-2">
-                <TreePine className="h-4 w-4 text-pickfirst-yellow" />
-                <span className="text-sm font-semibold text-foreground">Parks</span>
-              </div>
-              <div className="text-2xl font-bold text-pickfirst-yellow">
-                {parksNearby}
-              </div>
-              <div className="text-xs text-muted-foreground font-medium">green spaces</div>
-            </div>
-
-            {/* Air Quality */}
-            {airQuality && (
-              <div className={`p-4 rounded-lg border border-border ${aqInfo.bgColor}`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">{aqInfo.icon}</span>
-                  <span className="text-sm font-semibold text-foreground">Air Quality</span>
-                </div>
-                <div className={`text-2xl font-bold ${aqInfo.color}`}>
-                  {airQuality.aqi || 'N/A'}
-                </div>
-                <div className={`text-xs ${aqInfo.color}`}>
-                  {aqInfo.label}
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Air Quality Details */}
-          {airQuality && airQuality.aqi && (
-            <div className={`mt-4 p-3 rounded-lg border ${aqInfo.bgColor} border-pickfirst-yellow/30`}>
-              <div className="flex items-start gap-2">
-                <Info className={`h-4 w-4 ${aqInfo.color} flex-shrink-0 mt-0.5`} />
-                <div className="text-sm space-y-1">
-                  <p className={`font-medium ${aqInfo.color}`}>
-                    Air Quality Index: {airQuality.aqi} ({aqInfo.label})
-                  </p>
-                  {airQuality.dominantPollutant && (
-                    <p className="text-muted-foreground text-xs">
-                      Primary pollutant: {airQuality.dominantPollutant}
-                    </p>
-                  )}
-                  {airQuality.healthRecommendations?.generalPopulation && (
-                    <p className="text-muted-foreground/80 text-xs mt-2">
-                      {airQuality.healthRecommendations.generalPopulation}
-                    </p>
-                  )}
-                </div>
+          {/* Dining */}
+          <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-pickfirst-yellow/30 bg-card/80">
+            <Coffee className="h-5 w-5 text-pickfirst-yellow flex-shrink-0" />
+            <div>
+              <div className="text-xl font-bold text-pickfirst-yellow">{topRatedRestaurants}</div>
+              <div className="text-xs text-foreground">top dining</div>
+            </div>
+          </div>
+
+          {/* Transit */}
+          <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-pickfirst-yellow/30 bg-card/80">
+            <Train className="h-5 w-5 text-pickfirst-yellow flex-shrink-0" />
+            <div>
+              <div className="text-xl font-bold text-pickfirst-yellow">{transitOptions}</div>
+              <div className="text-xs text-foreground">transit</div>
+            </div>
+          </div>
+
+          {/* Parks */}
+          <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-pickfirst-yellow/30 bg-card/80">
+            <TreePine className="h-5 w-5 text-pickfirst-yellow flex-shrink-0" />
+            <div>
+              <div className="text-xl font-bold text-pickfirst-yellow">{parksNearby}</div>
+              <div className="text-xs text-foreground">parks</div>
+            </div>
+          </div>
+
+          {/* Air Quality */}
+          {airQuality && (
+            <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border border-border ${aqInfo.bgColor}`}>
+              <span className="text-lg flex-shrink-0">{aqInfo.icon}</span>
+              <div>
+                <div className={`text-xl font-bold ${aqInfo.color}`}>{airQuality.aqi || 'N/A'}</div>
+                <div className={`text-xs ${aqInfo.color}`}>{aqInfo.label}</div>
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Data Source Notice */}
-      <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <Info className="h-5 w-5 text-pickfirst-yellow flex-shrink-0 mt-0.5" />
-            <div className="text-sm space-y-2">
-              <p className="text-foreground font-medium">
-                100% Real Data from Google (Cached for 30 Days)
-              </p>
-              <p className="text-muted-foreground">
-                All information is sourced from <strong>Google Maps Places API</strong> and <strong>Google Air Quality API</strong>. 
-                Data is cached for 30 days to optimize performance. First-time views fetch fresh data, subsequent views use cached results for instant loading.
-              </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-pickfirst-yellow hover:text-pickfirst-yellow/80 p-0 h-auto font-normal"
-                onClick={() => setShowMethodology(!showMethodology)}
-              >
-                {showMethodology ? <ChevronUp className="h-4 w-4 inline mr-1" /> : <ChevronDown className="h-4 w-4 inline mr-1" />}
-                How we calculate this data
-              </Button>
-              {showMethodology && (
-                <div className="mt-3 p-4 bg-card/90 rounded-lg border border-pickfirst-yellow/30 space-y-2 text-foreground">
-                  <p className="font-medium text-foreground">Calculation Methodology:</p>
-                  <ul className="space-y-1 text-xs list-disc list-inside text-foreground/90">
-                    <li><strong>Distance:</strong> Calculated using the Haversine formula, which determines the great-circle distance between two points on Earth using their latitude and longitude coordinates.</li>
-                    <li><strong>Ratings:</strong> Pulled directly from Google Maps user reviews (out of 5 stars).</li>
-                    <li><strong>Filtering:</strong> We only show places with at least a 3.0 rating and 10+ reviews to ensure quality.</li>
-                    <li><strong>Sorting:</strong> Places are ranked by a weighted score: 70% rating quality + 30% proximity to property.</li>
-                    <li><strong>Search Radius:</strong> Schools (2km), Restaurants (1km), Shopping (1.5km), Healthcare (3km), Parks (1.5km), Transit (1km), Gyms (1.5km).</li>
-                    <li><strong>Air Quality:</strong> Real-time AQI (Air Quality Index) from Google's Air Quality API, based on official monitoring stations. Scale: 0-50 (Good), 51-100 (Moderate), 101-150 (Unhealthy for Sensitive), 151-200 (Unhealthy), 201-300 (Very Unhealthy), 301+ (Hazardous).</li>
-                    <li><strong>Caching:</strong> Data is stored in our database and refreshed every 30 days. This means instant loading for cached properties and zero duplicate API calls.</li>
-                    <li><strong>Data Freshness:</strong> First-time property views fetch fresh data from Google APIs. Subsequent views use cached data (max 30 days old) for instant performance.</li>
-                  </ul>
-                  <p className="text-xs text-muted-foreground/80 italic mt-2">
-                    Note: Air Quality data is from official monitoring stations. We do NOT use estimated metrics for noise levels or crime data. Cached data ensures fast, cost-effective insights.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Nearby Places */}
       <Card className="pickfirst-glass bg-card/90 text-card-foreground border border-pickfirst-yellow/30">
