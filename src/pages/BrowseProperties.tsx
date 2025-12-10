@@ -499,18 +499,40 @@ const BrowsePropertiesPageComponent = () => {
     setIsInquiryDialogOpen(true);
   };
 
+  // Robust sanitization helper for inquiries
+  function sanitizeInquiryMessage(input: string): string {
+    // Remove script tags, repeatedly
+    let prev: string;
+    do {
+      prev = input;
+      input = input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    } while (input !== prev);
+    // Remove all HTML tags, repeatedly
+    do {
+      prev = input;
+      input = input.replace(/<[^>]*>/g, '');
+    } while (input !== prev);
+    // Remove javascript: URLs, repeatedly
+    do {
+      prev = input;
+      input = input.replace(/javascript:/gi, '');
+    } while (input !== prev);
+    // Remove inline event handlers like onClick=, repeatedly
+    do {
+      prev = input;
+      input = input.replace(/on\w+\s*=/gi, '');
+    } while (input !== prev);
+    return input;
+  }
+
   const handleSubmitInquiry = async () => {
     if (!selectedProperty || !inquiryMessage.trim()) {
       toast.error('Please enter a message');
       return;
     }
 
-    // Input validation and basic sanitization
-    const sanitizedMessage = inquiryMessage.trim()
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
-      .replace(/<[^>]*>/g, '') // Remove HTML tags
-      .replace(/javascript:/gi, '') // Remove javascript: URLs
-      .replace(/on\w+\s*=/gi, ''); // Remove event handlers
+    // Input validation and robust sanitization
+    const sanitizedMessage = sanitizeInquiryMessage(inquiryMessage.trim());
     if (sanitizedMessage.length < 10) {
       toast.error('Message must be at least 10 characters long');
       return;
