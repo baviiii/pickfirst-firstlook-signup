@@ -49,46 +49,83 @@ export const ResetPasswordForm = () => {
 
   useEffect(() => {
     const validateResetToken = async () => {
-      // First, check URL hash for recovery tokens (Supabase sends them in hash)
+      console.log('[ResetPassword] Starting token validation...');
+      console.log('[ResetPassword] Hash:', window.location.hash);
+      console.log('[ResetPassword] Search:', window.location.search);
+      
+      // Method 1: PKCE flow - Check for 'code' parameter (modern Supabase)
+      const code = searchParams.get('code');
+      if (code) {
+        console.log('[ResetPassword] Found PKCE code, exchanging...');
+        try {
+          // Exchange the code for a session
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          
+          if (error) {
+            console.error('[ResetPassword] PKCE code exchange error:', error);
+            setHasValidToken(false);
+            setValidatingToken(false);
+            return;
+          }
+          
+          if (data.session) {
+            console.log('[ResetPassword] PKCE session created successfully');
+            setRecoveryTokens({
+              accessToken: data.session.access_token,
+              refreshToken: data.session.refresh_token,
+            });
+            setHasValidToken(true);
+            setValidatingToken(false);
+            // Clear the code from URL to prevent reuse
+            window.history.replaceState(null, '', window.location.pathname);
+            return;
+          }
+        } catch (error) {
+          console.error('[ResetPassword] PKCE exchange exception:', error);
+          setHasValidToken(false);
+          setValidatingToken(false);
+          return;
+        }
+      }
+      
+      // Method 2: Check URL hash for recovery tokens (legacy/implicit flow)
       let accessToken: string | null = null;
       let refreshToken: string | null = null;
       let type: string | null = null;
 
-      // Check hash first (Supabase puts tokens in hash)
       if (window.location.hash) {
         const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
         accessToken = hashParams.get('access_token');
         refreshToken = hashParams.get('refresh_token');
         type = hashParams.get('type');
         
-        // Immediately clear hash to prevent Supabase from auto-creating session
+        console.log('[ResetPassword] Hash params - type:', type, 'hasAccessToken:', !!accessToken);
+        
         if (accessToken && refreshToken && type === 'recovery') {
-          // Store tokens before clearing hash
           const tokens = { accessToken, refreshToken };
           
-          // Clear hash immediately to prevent auto-login
+          // Clear hash immediately
           window.history.replaceState(null, '', window.location.pathname + window.location.search);
           
           // Sign out any existing session
           await supabase.auth.signOut();
-          
-          // Small delay to ensure sign out completes
           await new Promise(resolve => setTimeout(resolve, 100));
 
           try {
-            // Validate token without creating a session
+            // Validate token
             const { data, error } = await supabase.auth.getUser(tokens.accessToken);
 
             if (error || !data.user) {
               throw error || new Error('Unable to validate recovery token');
             }
 
+            console.log('[ResetPassword] Hash token validated successfully');
             setRecoveryTokens(tokens);
             setHasValidToken(true);
             setValidatingToken(false);
             return;
           } catch (error) {
-            console.error('Token validation error:', error);
+            console.error('[ResetPassword] Hash token validation error:', error);
             setHasValidToken(false);
             setValidatingToken(false);
             return;
@@ -96,30 +133,27 @@ export const ResetPasswordForm = () => {
         }
       }
 
-      // Fallback to search params (for direct navigation)
+      // Method 3: Check search params for tokens (direct navigation/fallback)
       accessToken = searchParams.get('access_token');
       refreshToken = searchParams.get('refresh_token');
       type = searchParams.get('type');
       
-      // Skip validation if we're not on the reset password page
-      if (!accessToken && !refreshToken && !type) {
-        console.debug('Reset password form loaded but no reset params present, skipping validation');
+      // Skip validation if no reset params present
+      if (!accessToken && !refreshToken && !type && !code) {
+        console.debug('[ResetPassword] No reset params present');
         setValidatingToken(false);
         setHasValidToken(false);
         return;
       }
       
-      // Basic URL parameter validation
       if (!accessToken || !refreshToken || type !== 'recovery') {
+        console.debug('[ResetPassword] Invalid params - missing required fields');
         setValidatingToken(false);
         setHasValidToken(false);
         return;
       }
 
-      // Ensure user is signed out before validating token (prevent auto-login)
       await supabase.auth.signOut();
-      
-      // Small delay to ensure sign out completes
       await new Promise(resolve => setTimeout(resolve, 100));
 
       try {
@@ -129,6 +163,7 @@ export const ResetPasswordForm = () => {
           throw error || new Error('Unable to validate recovery token');
         }
 
+        console.log('[ResetPassword] Search param token validated successfully');
         setRecoveryTokens({
           accessToken,
           refreshToken,
@@ -137,7 +172,7 @@ export const ResetPasswordForm = () => {
         setHasValidToken(true);
         setValidatingToken(false);
       } catch (error) {
-        console.error('Token validation error:', error);
+        console.error('[ResetPassword] Search param token validation error:', error);
         setHasValidToken(false);
         setValidatingToken(false);
       }
@@ -187,14 +222,17 @@ export const ResetPasswordForm = () => {
     
     if (!validateForm()) return;
 
-    if (!recoveryTokens) {
+    // For PKCE flow, check if session is already active (no recoveryTokens needed)
+    const { data: { session: existingSession } } = await supabase.auth.getSession();
+    
+    if (!recoveryTokens && !existingSession) {
       toast.error('Recovery link is invalid or has expired. Please request a new one.');
       return;
     }
     
     // Check rate limit
     const rateLimitResult = await rateLimitService.checkRateLimit(
-      user?.id || 'unknown',
+      existingSession?.user?.id || user?.id || 'unknown',
       'password_reset'
     );
     
@@ -208,19 +246,25 @@ export const ResetPasswordForm = () => {
     setLoading(true);
     
     try {
-      // Set session temporarily ONLY to update password (not for login)
-      const { error: sessionError, data: sessionData } = await supabase.auth.setSession({
-        access_token: recoveryTokens.accessToken,
-        refresh_token: recoveryTokens.refreshToken,
-      });
+      let sessionData: { session: any } = { session: existingSession };
+      
+      // If we have recovery tokens (legacy/implicit flow), set session manually
+      // For PKCE flow, session is already active from exchangeCodeForSession
+      if (recoveryTokens && !existingSession) {
+        const { error: sessionError, data } = await supabase.auth.setSession({
+          access_token: recoveryTokens.accessToken,
+          refresh_token: recoveryTokens.refreshToken,
+        });
 
-      if (sessionError || !sessionData.session) {
-        throw sessionError || new Error('Failed to establish recovery session');
+        if (sessionError || !data.session) {
+          throw sessionError || new Error('Failed to establish recovery session');
+        }
+        sessionData = data;
       }
 
       toggleRecoverySession(true);
 
-      // Update password using the temporary session
+      // Update password using the active session
       const { error } = await resetPassword(formData.password);
       
       if (error) {
@@ -230,7 +274,7 @@ export const ResetPasswordForm = () => {
       }
       
       // Get user ID before signing out (for audit log)
-      const userId = sessionData.session?.user?.id || user?.id || 'unknown';
+      const userId = sessionData.session?.user?.id || existingSession?.user?.id || user?.id || 'unknown';
       
       // Log successful password reset
       await auditService.log(userId, 'PASSWORD_RESET_SUCCESS', 'password_reset', {

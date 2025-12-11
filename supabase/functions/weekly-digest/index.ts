@@ -343,44 +343,58 @@ async function sendWeeklyDigestEmail(supabaseClient, digest, userEmail, userName
         <title>Your Weekly Property Digest - PickFirst</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #2d3748; background: #f7fafc; }
-          .email-wrapper { background: #f7fafc; padding: 40px 20px; }
-          .container { max-width: 680px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.08); }
-          .header { background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 50px 40px; text-align: center; }
-          .logo { width: 160px; height: auto; display: block; margin: 0 auto 20px; }
-          .header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
-          .header .subtitle { font-size: 16px; opacity: 0.9; }
-          .stats-section { padding: 40px; background: linear-gradient(to bottom, #fff 0%, #f8f9fa 100%); }
-          .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-top: 20px; }
-          .stat-card { background: white; padding: 24px; border-radius: 12px; text-align: center; border: 2px solid #f0f0f0; }
-          .stat-number { font-size: 36px; font-weight: 700; color: #FFCC00; display: block; margin-bottom: 8px; }
-          .stat-label { font-size: 14px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
-          .properties-section { padding: 40px; }
-          .section-title { font-size: 24px; font-weight: 700; margin-bottom: 24px; color: #1a202c; }
-          .property-card { background: white; border-radius: 16px; overflow: hidden; margin-bottom: 32px; border: 1px solid #e2e8f0; }
-          .property-image { width: 100%; height: 300px; object-fit: cover; display: block; }
-          .property-content { padding: 28px; }
-          .property-price { font-size: 28px; font-weight: 700; color: #1a202c; margin-bottom: 12px; }
-          .property-address { font-size: 18px; color: #4a5568; margin-bottom: 16px; font-weight: 500; }
-          .property-features { display: flex; gap: 20px; margin: 20px 0; padding: 16px 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
-          .feature { font-size: 15px; color: #4a5568; }
-          .view-button { display: inline-block; background: linear-gradient(135deg, #FFCC00 0%, #FFB800 100%); color: #1a1a1a; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; margin-top: 16px; }
-          .insights-section { padding: 40px; background: #f8f9fa; }
-          .trend { display: inline-block; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; line-height: 1.6; color: #000000; background: #FEF9E7; }
+          .email-wrapper { background: linear-gradient(135deg, #FEF9E7 0%, #FEF3C7 50%, #FFFBEB 100%); padding: 24px 16px; }
+          .container { max-width: 600px; margin: 0 auto; background: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(234, 179, 8, 0.2); }
+          .header { background: linear-gradient(135deg, #EAB308 0%, #F59E0B 100%); color: #000000; padding: 32px 24px; text-align: center; border-bottom: 3px solid #FCD34D; }
+          .logo { width: 70px; height: auto; display: block; margin: 0 auto 16px; border-radius: 8px; }
+          .header h1 { font-size: 24px; font-weight: 800; margin-bottom: 6px; color: #000000; letter-spacing: -0.5px; }
+          .header .subtitle { font-size: 13px; color: #000000; opacity: 0.9; font-weight: 500; }
+          .greeting-section { padding: 24px 24px 20px; background: linear-gradient(to bottom, #FFFBEB 0%, #FEF3C7 100%); border-bottom: 1px solid #EAB308; }
+          .greeting-section h2 { font-size: 18px; margin-bottom: 8px; color: #000000; font-weight: 700; }
+          .greeting-section p { font-size: 13px; color: #000000; line-height: 1.5; }
+          .stats-section { padding: 24px; background: #FFFFFF; }
+          .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+          .stat-card { background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 16px 12px; border-radius: 12px; text-align: center; border: 2px solid #EAB308; box-shadow: 0 2px 8px rgba(234, 179, 8, 0.15); transition: transform 0.2s; }
+          .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(234, 179, 8, 0.25); }
+          .stat-number { font-size: 22px; font-weight: 800; color: #EAB308; display: block; margin-bottom: 4px; line-height: 1.2; }
+          .stat-label { font-size: 10px; color: #000000; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+          .properties-section { padding: 24px; background: #FFFFFF; }
+          .section-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; color: #000000; display: flex; align-items: center; gap: 8px; }
+          .property-card { background: #FFFFFF; border-radius: 14px; overflow: hidden; margin-bottom: 20px; border: 2px solid #EAB308; box-shadow: 0 4px 12px rgba(234, 179, 8, 0.15); transition: all 0.3s; }
+          .property-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(234, 179, 8, 0.25); border-color: #F59E0B; }
+          .property-image { width: 100%; height: 180px; object-fit: cover; display: block; }
+          .property-content { padding: 18px; }
+          .property-price { font-size: 20px; font-weight: 800; color: #EAB308; margin-bottom: 8px; }
+          .property-address { font-size: 14px; color: #000000; margin-bottom: 12px; font-weight: 600; }
+          .property-features { display: flex; gap: 16px; margin: 12px 0; padding: 12px 0; border-top: 1px solid #FEF3C7; border-bottom: 1px solid #FEF3C7; }
+          .feature { font-size: 12px; color: #000000; font-weight: 500; }
+          .view-button { display: inline-block; background: linear-gradient(135deg, #EAB308 0%, #F59E0B 100%); color: #000000; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13px; margin-top: 12px; box-shadow: 0 3px 10px rgba(234, 179, 8, 0.3); transition: all 0.2s; }
+          .view-button:hover { box-shadow: 0 5px 15px rgba(234, 179, 8, 0.4); transform: translateY(-1px); }
+          .insights-section { padding: 20px 24px; background: linear-gradient(135deg, #FEF3C7 0%, #FFFBEB 100%); border-top: 2px solid #EAB308; border-bottom: 2px solid #EAB308; }
+          .insights-section h2 { font-size: 16px; font-weight: 800; margin-bottom: 12px; color: #000000; }
+          .insight-item { margin-bottom: 10px; font-size: 13px; color: #000000; }
+          .insight-item strong { font-weight: 700; }
+          .trend { display: inline-block; padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 8px; }
           .trend-up { background: #dcfce7; color: #166534; }
           .trend-down { background: #fee2e2; color: #991b1b; }
-          .trend-stable { background: #f3f4f6; color: #374151; }
-          .footer { background: #1a202c; color: white; padding: 40px; text-align: center; }
-          .footer-link { color: #FFCC00; text-decoration: none; margin: 0 16px; font-size: 14px; }
-          .footer-text { font-size: 13px; color: #a0aec0; margin-top: 20px; }
+          .trend-stable { background: #f3f4f6; color: #000000; }
+          .footer { background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); color: #000000; padding: 24px; text-align: center; border-top: 3px solid #EAB308; }
+          .footer-links { margin-bottom: 12px; }
+          .footer-link { color: #000000; text-decoration: none; margin: 0 16px; font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 6px; display: inline-block; transition: background 0.2s; }
+          .footer-link:hover { background: rgba(234, 179, 8, 0.2); }
+          .footer-text { font-size: 11px; color: #000000; margin-top: 16px; opacity: 0.8; }
           @media only screen and (max-width: 600px) {
-            .email-wrapper { padding: 20px 10px; }
-            .header { padding: 40px 24px; }
-            .header h1 { font-size: 24px; }
-            .properties-section, .stats-section { padding: 24px; }
-            .stats-grid { grid-template-columns: 1fr 1fr; }
-            .property-features { flex-wrap: wrap; }
-            .property-content { padding: 20px; }
+            .email-wrapper { padding: 16px 12px; }
+            .header { padding: 24px 20px; }
+            .header h1 { font-size: 20px; }
+            .greeting-section, .properties-section, .stats-section { padding: 20px; }
+            .stats-grid { grid-template-columns: 1fr; gap: 10px; }
+            .stat-card { padding: 14px; }
+            .property-image { height: 160px; }
+            .property-features { flex-wrap: wrap; gap: 10px; }
+            .property-content { padding: 16px; }
+            .footer-link { display: block; margin: 6px 0; }
           }
         </style>
       </head>
@@ -398,53 +412,60 @@ async function sendWeeklyDigestEmail(supabaseClient, digest, userEmail, userName
                   </td>
                 </tr>
               </table>
-              <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 8px;">Your Weekly Property Digest</h2>
-              <p class="subtitle">${digest.week_start} - ${digest.week_end}</p>
+              <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 4px; color: #000000;">Your Weekly Property Digest</h2>
+              <p class="subtitle" style="font-size: 11px; color: #000000;">${digest.week_start} - ${digest.week_end}</p>
+            </div>
+            
+            <div class="greeting-section">
+              <h2>Hello ${userName}! 👋</h2>
+              <p>Here's your weekly property market update</p>
             </div>
             
             <div class="stats-section">
-              <h2 style="font-size: 20px; margin-bottom: 8px;">Hello ${userName}!</h2>
-              <p style="color: #718096;">Here's what's happening in the property market this week</p>
-            
               <div class="stats-grid">
                 <div class="stat-card">
                   <div class="stat-number">${newPropertiesCount}</div>
-                  <div class="stat-label">New Properties This Week</div>
+                  <div class="stat-label">New Properties</div>
                 </div>
                 <div class="stat-card">
                   <div class="stat-number">$${averagePriceDisplay}</div>
-                  <div class="stat-label">Average Property Price</div>
+                  <div class="stat-label">Avg Price</div>
                 </div>
                 <div class="stat-card">
                   <div class="stat-number">${totalPropertiesCount}</div>
-                  <div class="stat-label">Total Active Listings</div>
+                  <div class="stat-label">Active Listings</div>
                 </div>
               </div>
             </div>
             
             <div class="insights-section">
-              <h2 class="section-title">📊 Market Insights</h2>
-              <p style="margin-bottom: 12px; font-size: 15px;"><strong>Price Trend:</strong> 
+              <h2>📊 Market Insights</h2>
+              <div class="insight-item">
+                <strong>Price Trend:</strong> 
                 <span class="trend trend-${digest.market_insights.price_trend}">
                   ${digest.market_insights.price_trend}
                 </span>
-              </p>
-              <p style="font-size: 15px;"><strong>New Listings:</strong> 
+              </div>
+              <div class="insight-item">
+                <strong>New Listings:</strong> 
                 <span class="trend trend-${digest.market_insights.inventory_trend}">
                   ${digest.market_insights.inventory_trend}
                 </span>
-              </p>
+              </div>
             </div>
             
             <div class="properties-section">
-              <h2 class="section-title">🏠 New Properties This Week</h2>
+              <h2 class="section-title">🏠 <span>New Properties This Week</span></h2>
               ${propertiesHtml}
             </div>
             
             <div class="footer">
-              <p style="font-size: 16px; margin-bottom: 16px;">Thank you for using PickFirst! 🏠</p>
-              <a href="https://pickfirst.com.au" class="footer-link">Visit pickfirst.com.au</a>
-              <p class="footer-text">You're receiving this because you signed up for weekly property updates.</p>
+              <p style="font-size: 15px; margin-bottom: 16px; color: #000000; font-weight: 700;">Thank you for using PickFirst! 🏠</p>
+              <div class="footer-links">
+                <a href="https://pickfirst.com.au" class="footer-link">Visit Website</a>
+                <a href="https://pickfirst.com.au/browse" class="footer-link">Browse Properties</a>
+              </div>
+              <p class="footer-text">You're receiving this because you signed up for weekly property updates. You can update your preferences anytime in your account settings.</p>
             </div>
           </div>
         </div>
@@ -458,28 +479,53 @@ async function sendWeeklyDigestEmail(supabaseClient, digest, userEmail, userName
     console.log('Preparing weekly digest email', {
       userEmail,
       propertyCount: digest.featured_properties.length,
-      htmlLength: emailHtml.length
+      htmlLength: emailHtml.length,
+      subject
     });
 
-    const { error: queueError } = await supabaseClient
-      .from('email_queue')
-      .insert({
-        email: userEmail,
+    // Validate email before queuing
+    if (!userEmail || !userEmail.includes('@')) {
+      throw new Error(`Invalid email address: ${userEmail}`);
+    }
+
+    const queueData = {
+      email: userEmail,
+      subject,
+      template: 'weeklyDigest',
+      payload: {
+        html: emailHtml,
         subject,
-        template: 'weeklyDigest',
-        payload: {
-          html: emailHtml,
-          subject,
-          text: textContent
-        }
-      });
+        text: textContent
+      }
+    };
+
+    console.log('Attempting to insert into email_queue:', {
+      email: queueData.email,
+      template: queueData.template,
+      subjectLength: queueData.subject.length,
+      payloadSize: JSON.stringify(queueData.payload).length
+    });
+
+    const { data: insertedData, error: queueError } = await supabaseClient
+      .from('email_queue')
+      .insert(queueData)
+      .select();
 
     if (queueError) {
-      console.error(`Failed to queue weekly digest for ${userEmail}:`, queueError);
+      console.error(`Failed to queue weekly digest for ${userEmail}:`, {
+        error: queueError,
+        message: queueError.message,
+        details: queueError.details,
+        hint: queueError.hint,
+        code: queueError.code
+      });
       throw queueError;
     }
 
-    console.log(`Weekly digest queued for ${userEmail}`);
+    console.log(`✅ Weekly digest queued successfully for ${userEmail}`, {
+      insertedId: insertedData?.[0]?.id,
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
     console.error(`Error sending weekly digest to ${userEmail}:`, error);
     throw error;
@@ -508,10 +554,12 @@ serve(async (req) => {
     const { digest_type, send_to_all_users, user_id } = await req.json();
 
     // Calculate rolling 7-day window (inclusive of today)
+    const daysBack = 6; // 6 days back + today = 7 days total
+    // Calculate rolling date window (inclusive of today)
     const now = new Date();
     const weekEnd = new Date(now);
     weekEnd.setUTCHours(23, 59, 59, 999);
-    const weekStart = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+    const weekStart = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
     weekStart.setUTCHours(0, 0, 0, 0);
 
     const weekStartISO = weekStart.toISOString();
@@ -542,26 +590,42 @@ serve(async (req) => {
     // Determine recipient list
     let usersToSend = [];
     
+    console.log('Request parameters:', { send_to_all_users, user_id, digest_type });
+    
     if (send_to_all_users) {
-      // Send to all buyers with email addresses
+      // Send to all buyers and agents with email addresses (agents can act as buyers too)
       const { data: allUsers, error: usersError } = await supabaseClient
         .from('profiles')
-        .select('email, full_name')
-        .eq('role', 'buyer')
+        .select('email, full_name, role, id')
+        .in('role', ['buyer', 'agent'])
         .not('email', 'is', null);
       
-      if (usersError) throw usersError;
+      if (usersError) {
+        console.error('Error fetching all users:', usersError);
+        throw usersError;
+      }
       usersToSend = allUsers || [];
+      console.log(`Found ${usersToSend.length} users to send digest to`);
     } else if (user_id) {
       // Send to specific user
       const { data: user, error: userError } = await supabaseClient
         .from('profiles')
-        .select('email, full_name')
+        .select('email, full_name, role, id')
         .eq('id', user_id)
         .single();
       
-      if (userError) throw userError;
-      if (user) usersToSend = [user];
+      if (userError) {
+        console.error(`Error fetching user ${user_id}:`, userError);
+        throw userError;
+      }
+      if (user) {
+        usersToSend = [user];
+        console.log(`Found user to send digest to: ${user.email} (role: ${user.role})`);
+      } else {
+        console.warn(`User ${user_id} not found`);
+      }
+    } else {
+      console.warn('No recipients specified - need either send_to_all_users=true or user_id');
     }
 
     // Send emails to all recipients

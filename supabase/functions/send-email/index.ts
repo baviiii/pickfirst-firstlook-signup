@@ -122,12 +122,12 @@ const getEmailFooter = () => `
 
 // Enhanced button style with yellowish theme
 const getButton = (url: string, text: string, isPrimary = true) => `
-  <a href="${url}" style="display: inline-block; background: ${isPrimary ? 'linear-gradient(135deg, #EAB308 0%, #F59E0B 100%)' : '#1F2937'}; color: ${isPrimary ? '#1F2937' : '#EAB308'}; font-weight: 700; text-align: center; padding: 16px 40px; border-radius: 8px; text-decoration: none; margin: 20px 0; font-size: 16px; box-shadow: 0 4px 16px rgba(234, 179, 8, 0.35); transition: all 0.3s ease;">
+  <a href="${url}" style="display: inline-block; background: ${isPrimary ? 'linear-gradient(135deg, #EAB308 0%, #F59E0B 100%)' : '#1F2937'}; color: ${isPrimary ? '#000000' : '#EAB308'}; font-weight: 700; text-align: center; padding: 16px 40px; border-radius: 8px; text-decoration: none; margin: 20px 0; font-size: 16px; box-shadow: 0 4px 16px rgba(234, 179, 8, 0.35); transition: all 0.3s ease;">
     ${text} →
   </a>
 `;
 
-// Property card component with image
+// Property card component with image (full size - for single property emails)
 const getPropertyCard = (property: any) => {
   // Get the first image from images array or use the image property
   const imageUrl = property.images?.[0] || property.image || '';
@@ -152,36 +152,36 @@ const getPropertyCard = (property: any) => {
       </div>
     ` : ''}
     <div style="padding: 28px;">
-      <div style="font-size: 28px; font-weight: 700; color: #1a202c; margin-bottom: 12px;">
+      <div style="font-size: 28px; font-weight: 700; color: #000000; margin-bottom: 12px;">
         ${priceDisplay}
       </div>
-      <div style="font-size: 18px; color: #4a5568; margin-bottom: 16px; font-weight: 500;">
+      <div style="font-size: 18px; color: #000000; margin-bottom: 16px; font-weight: 500;">
         ${property.location}
       </div>
       ${property.description ? `
-        <p style="margin: 0 0 20px 0; color: #718096; font-size: 15px; line-height: 1.7;">
+        <p style="margin: 0 0 20px 0; color: #000000; font-size: 15px; line-height: 1.7;">
           ${property.description}
         </p>
       ` : ''}
       <div style="display: flex; gap: 20px; margin: 20px 0; padding: 16px 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
         ${property.bedrooms ? `
-          <span style="font-size: 15px; color: #4a5568;">🛏️ ${property.bedrooms} bed</span>
+          <span style="font-size: 15px; color: #000000;">🛏️ ${property.bedrooms} bed</span>
         ` : ''}
         ${property.bathrooms ? `
-          <span style="font-size: 15px; color: #4a5568;">🛁 ${property.bathrooms} bath</span>
+          <span style="font-size: 15px; color: #000000;">🛁 ${property.bathrooms} bath</span>
         ` : ''}
         ${property.parking ? `
-          <span style="font-size: 15px; color: #4a5568;">🚗 ${property.parking} car</span>
+          <span style="font-size: 15px; color: #000000;">🚗 ${property.parking} car</span>
         ` : ''}
         ${property.landSize ? `
-          <span style="font-size: 15px; color: #4a5568;">📐 ${property.landSize}</span>
+          <span style="font-size: 15px; color: #000000;">📐 ${property.landSize}</span>
         ` : ''}
       </div>
       ${property.features?.length > 0 ? `
         <div style="margin: 20px 0;">
           <div style="display: flex; flex-wrap: wrap; gap: 8px;">
             ${property.features.map((feature: string) => `
-              <span style="background: #f7fafc; color: #2d3748; padding: 6px 12px; border-radius: 6px; font-size: 13px; border: 1px solid #e2e8f0;">
+              <span style="background: #FEF3C7; color: #000000; padding: 6px 12px; border-radius: 6px; font-size: 13px; border: 1px solid #EAB308;">
                 ✓ ${feature}
               </span>
             `).join('')}
@@ -190,10 +190,59 @@ const getPropertyCard = (property: any) => {
       ` : ''}
       ${property.url ? `
         <div style="margin-top: 20px;">
-          <a href="${property.url}" style="display: inline-block; background: linear-gradient(135deg, #EAB308, #F59E0B); color: #1F2937; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(234, 179, 8, 0.3);">View Property</a>
+          <a href="${property.url}" style="display: inline-block; background: linear-gradient(135deg, #EAB308, #F59E0B); color: #000000; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(234, 179, 8, 0.3);">View Property</a>
         </div>
       ` : ''}
     </div>
+  </div>
+`;
+};
+
+// Compact property card for digest emails (smaller, cleaner)
+const getCompactPropertyCard = (property: any) => {
+  const imageUrl = property.images?.[0] || property.image || '';
+  
+  const priceDisplay =
+    typeof property.priceDisplay === 'string' && property.priceDisplay.trim().length > 0
+      ? property.priceDisplay.trim()
+      : typeof property.price === 'number' && property.price > 0
+        ? `$${property.price.toLocaleString()}`
+        : property.priceText || 'Contact for price';
+
+  return `
+  <div style="background: #FFFBEB; border-radius: 10px; overflow: hidden; margin: 12px 0; border: 1px solid #EAB308; box-shadow: 0 2px 6px rgba(234, 179, 8, 0.15);">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        ${imageUrl ? `
+          <td style="width: 120px; vertical-align: top;">
+            <div style="position: relative; width: 120px; height: 100px; overflow: hidden; background: #FEF3C7;">
+              <img src="${imageUrl}" alt="${property.title || 'Property'}" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+              ${property.badge ? `
+                <div style="position: absolute; top: 6px; left: 6px; background: linear-gradient(135deg, #EAB308, #F59E0B); color: #000000; padding: 3px 8px; border-radius: 10px; font-weight: 700; font-size: 9px; text-transform: uppercase;">
+                  ${property.badge}
+                </div>
+              ` : ''}
+            </div>
+          </td>
+        ` : ''}
+        <td style="padding: 12px 14px; vertical-align: top;">
+          <div style="font-size: 16px; font-weight: 700; color: #000000; margin-bottom: 4px;">
+            ${priceDisplay}
+          </div>
+          <div style="font-size: 12px; color: #000000; margin-bottom: 6px; font-weight: 500;">
+            ${property.location}
+          </div>
+          <div style="margin-bottom: 8px;">
+            ${property.bedrooms ? `<span style="font-size: 11px; color: #000000; margin-right: 10px;">🛏️ ${property.bedrooms}</span>` : ''}
+            ${property.bathrooms ? `<span style="font-size: 11px; color: #000000; margin-right: 10px;">🛁 ${property.bathrooms}</span>` : ''}
+            ${property.parking ? `<span style="font-size: 11px; color: #000000;">🚗 ${property.parking}</span>` : ''}
+          </div>
+          ${property.url ? `
+            <a href="${property.url}" style="display: inline-block; background: linear-gradient(135deg, #EAB308, #F59E0B); color: #000000; padding: 6px 14px; border-radius: 5px; text-decoration: none; font-weight: 600; font-size: 11px;">View →</a>
+          ` : ''}
+        </td>
+      </tr>
+    </table>
   </div>
 `;
 };
@@ -579,26 +628,26 @@ PickFirst Real Estate Team`,
             <div style="text-align: center; margin-bottom: 30px;">
               <div style="display: inline-block; background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 10px 20px; border-radius: 25px; border: 2px solid #EAB308;">
                 <span style="font-size: 24px; margin-right: 8px;">🏠</span>
-                <span style="color: ${BRAND_COLORS.secondary}; font-weight: bold;">Property Alert</span>
+                <span style="color: #000000; font-weight: bold;">Property Alert</span>
               </div>
             </div>
             
-            <h1 class="mobile-heading" style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 28px; text-align: center;">
+            <h1 class="mobile-heading" style="color: #000000; margin: 0 0 15px 0; font-size: 28px; text-align: center;">
               New Property Match
             </h1>
-            <p style="color: ${BRAND_COLORS.text}; font-size: 16px; text-align: center; margin-bottom: 30px;">
+            <p style="color: #000000; font-size: 16px; text-align: center; margin-bottom: 30px;">
               Hi ${data.name}, a property matching your search criteria has been found
             </p>
             
             ${data.matchingFeatures?.length > 0 ? `
-              <div style="background: linear-gradient(135deg, ${BRAND_COLORS.primary}20, ${BRAND_COLORS.secondary}20); padding: 15px 20px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid #EAB308;">
-                <div style="color: ${BRAND_COLORS.secondary}; font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+              <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FFFBEB 100%); padding: 15px 20px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid #EAB308;">
+                <div style="color: #000000; font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                   <span style="font-size: 20px;">✨</span>
                   <span>Matching Your Preferences:</span>
                 </div>
                 <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                   ${data.matchingFeatures.map((feature: string) => `
-                    <span style="background: ${BRAND_COLORS.primary}; color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;">
+                    <span style="background: ${BRAND_COLORS.primary}; color: #000000; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;">
                       ✓ ${feature}
                     </span>
                   `).join('')}
@@ -625,10 +674,10 @@ PickFirst Real Estate Team`,
               ${getButton(data.propertyUrl || '#', 'View Full Details')}
             </div>
             
-            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid #FEF3C7;">
-              <p style="margin: 0; color: #78350F; font-size: 12px;">
+            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid #EAB308;">
+              <p style="margin: 0; color: #000000; font-size: 12px;">
                 This property was found based on your saved search preferences. 
-                <a href="${data.unsubscribeUrl || '#'}" style="color: #78350F; text-decoration: underline;">Update preferences</a>
+                <a href="${data.unsubscribeUrl || '#'}" style="color: #000000; text-decoration: underline; font-weight: 600;">Update preferences</a>
               </p>
             </div>
           </div>
@@ -639,7 +688,7 @@ PickFirst Real Estate Team`,
     `
   }),
 
-  // Enhanced Weekly Property Digest
+  // Enhanced Weekly Property Digest - Compact Layout
   newMatchesDigest: (data: any) => ({
     subject: `Weekly Property Update: ${data.matches?.length || 0} New Properties Found`,
     html: `
@@ -653,50 +702,50 @@ PickFirst Real Estate Team`,
       <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #FEF9E7;">
         <div style="max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
           ${getEmailHeader()}
-          <div class="mobile-padding" style="padding: 40px 30px;">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <div style="display: inline-block; background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 10px 20px; border-radius: 25px; border: 2px solid #EAB308;">
-                <span style="font-size: 24px; margin-right: 8px;">📊</span>
-                <span style="color: ${BRAND_COLORS.secondary}; font-weight: bold;">Weekly Update</span>
+          <div class="mobile-padding" style="padding: 25px 20px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <div style="display: inline-block; background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 8px 16px; border-radius: 20px; border: 2px solid #EAB308;">
+                <span style="font-size: 18px; margin-right: 6px;">📊</span>
+                <span style="color: #000000; font-weight: bold; font-size: 14px;">Weekly Update</span>
               </div>
             </div>
             
-            <h1 class="mobile-heading" style="color: ${BRAND_COLORS.secondary}; margin: 0 0 15px 0; font-size: 28px; text-align: center;">
+            <h1 class="mobile-heading" style="color: #000000; margin: 0 0 10px 0; font-size: 22px; text-align: center;">
               Property Search Update
             </h1>
-            <p style="color: ${BRAND_COLORS.text}; font-size: 16px; text-align: center; margin-bottom: 30px;">
-              Hi ${data.name}, ${data.matches?.length || 0} new properties matching your criteria have been found
+            <p style="color: #000000; font-size: 14px; text-align: center; margin-bottom: 20px;">
+              Hi ${data.name}, <strong>${data.matches?.length || 0}</strong> new properties matching your criteria
             </p>
             
-            ${data.matches?.map((match: any) => getPropertyCard({
+            ${data.matches?.map((match: any) => getCompactPropertyCard({
               title: match.title,
               price: match.price,
               priceDisplay: match.priceDisplay,
               location: `${match.city}, ${match.state}`,
               bedrooms: match.bedrooms,
               bathrooms: match.bathrooms,
-              propertyType: match.propertyType,
+              parking: match.parking,
               image: match.image || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&h=400&fit=crop&crop=center',
-              description: match.description || 'A beautiful property that matches your search criteria.',
-              features: match.features || ['Great Location', 'Modern Features'],
               url: match.url,
               badge: 'NEW'
             })).join('') || `
-              <div style="text-align: center; padding: 40px; background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border-radius: 12px; border: 2px solid #EAB308;">
-                <div style="font-size: 48px; margin-bottom: 20px;">🔍</div>
-                <h3 style="color: ${BRAND_COLORS.secondary}; margin: 0 0 10px 0;">No New Matches This Week</h3>
-                <p style="color: #78350F; margin: 0;">We'll keep searching for properties that match your criteria.</p>
+              <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border-radius: 10px; border: 2px solid #EAB308;">
+                <div style="font-size: 36px; margin-bottom: 15px;">🔍</div>
+                <h3 style="color: #000000; margin: 0 0 8px 0; font-size: 16px;">No New Matches This Week</h3>
+                <p style="color: #000000; margin: 0; font-size: 13px;">We'll keep searching for properties that match your criteria.</p>
               </div>
             `}
             
-            <div style="text-align: center; margin: 40px 0;">
-              ${getButton((data.platformUrl || 'https://pickfirst.com.au') + '/browse', 'Browse All Properties')}
+            <div style="text-align: center; margin: 25px 0 20px 0;">
+              <a href="${(data.platformUrl || 'https://pickfirst.com.au') + '/browse'}" style="display: inline-block; background: linear-gradient(135deg, #EAB308 0%, #F59E0B 100%); color: #000000; font-weight: 700; text-align: center; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-size: 14px; box-shadow: 0 3px 10px rgba(234, 179, 8, 0.3);">
+                Browse All Properties →
+              </a>
             </div>
             
-            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 1px solid #FEF3C7;">
-              <p style="margin: 0; color: #78350F; font-size: 12px;">
-                These properties were found based on your saved search preferences. 
-                <a href="${data.unsubscribeUrl || '#'}" style="color: #78350F; text-decoration: underline;">Update preferences</a>
+            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 12px; border-radius: 6px; text-align: center; border: 1px solid #EAB308;">
+              <p style="margin: 0; color: #000000; font-size: 11px;">
+                Based on your saved search preferences. 
+                <a href="${data.unsubscribeUrl || '#'}" style="color: #000000; text-decoration: underline; font-weight: 600;">Update preferences</a>
               </p>
             </div>
           </div>

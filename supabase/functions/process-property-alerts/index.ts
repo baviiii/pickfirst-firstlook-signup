@@ -215,7 +215,7 @@ serve(async (req) => {
           continue
         }
 
-        // Find buyers with property alerts enabled - FIXED QUERY
+        // Find users with property alerts enabled (buyers AND agents - agents can act as buyers too)
         const { data: buyersWithAlerts, error: buyersError } = await supabaseClient
           .from('user_preferences')
           .select(`
@@ -235,7 +235,7 @@ serve(async (req) => {
           `)
           .eq('property_alerts', true)
           .eq('email_notifications', true)
-          .filter('profiles.role', 'eq', 'buyer');
+          .or('profiles.role.eq.buyer,profiles.role.eq.agent');
 
         if (buyersError || !buyersWithAlerts) {
           await supabaseClient
@@ -248,23 +248,24 @@ serve(async (req) => {
 
         const matches: AlertMatch[] = []
 
-        // Check each buyer's preferences against the property
-        for (const buyerPref of buyersWithAlerts) {
-          const buyerId = buyerPref.user_id
-          const profiles = buyerPref.profiles as any
-          const buyerEmail = profiles.email
-          const buyerName = profiles.full_name || 'User'
+          // Check each user's preferences against the property (buyers AND agents)
+        for (const userPref of buyersWithAlerts) {
+          const userId = userPref.user_id
+          const profiles = userPref.profiles as any
+          const userEmail = profiles.email
+          const userName = profiles.full_name || 'User'
+          const userRole = profiles.role || 'buyer'
 
-          console.log(`Checking buyer ${buyerId} (${buyerEmail}) with subscription: ${profiles.subscription_tier}`);
+          console.log(`Checking user ${userId} (${userEmail}, role: ${userRole}) with subscription: ${profiles.subscription_tier}`);
 
-          // SECURITY: Check if buyer has access to this alert type
-          const hasAccess = await checkPropertyAlertsAccess(supabaseClient, buyerId, job.alert_type);
-          console.log(`Access check result for buyer ${buyerId}: ${hasAccess}`);
+          // SECURITY: Check if user has access to this alert type
+          const hasAccess = await checkPropertyAlertsAccess(supabaseClient, userId, job.alert_type);
+          console.log(`Access check result for user ${userId}: ${hasAccess}`);
           
           if (!hasAccess) {
             accessDeniedCount++;
-            console.log(`Access denied for buyer ${buyerId}: ${job.alert_type} alerts not available for ${profiles.subscription_tier} tier`);
-            await logFeatureAccessAttempt(supabaseClient, buyerId, 'edge_function_processing', false, {
+            console.log(`Access denied for user ${userId}: ${job.alert_type} alerts not available for ${profiles.subscription_tier} tier`);
+            await logFeatureAccessAttempt(supabaseClient, userId, 'edge_function_processing', false, {
               property_id: job.property_id,
               alert_type: job.alert_type,
               reason: job.alert_type === 'off_market' 
@@ -275,19 +276,19 @@ serve(async (req) => {
           }
 
           // Log successful feature access
-          await logFeatureAccessAttempt(supabaseClient, buyerId, 'edge_function_processing', true, {
+          await logFeatureAccessAttempt(supabaseClient, userId, 'edge_function_processing', true, {
             property_id: job.property_id,
             alert_type: job.alert_type
           });
 
-          // Check if property matches buyer preferences
-          const matchResult = checkPropertyMatch(property as PropertyListing, buyerPref as BuyerPreferences)
+          // Check if property matches user preferences
+          const matchResult = checkPropertyMatch(property as PropertyListing, userPref as BuyerPreferences)
           
           if (matchResult.isMatch) {
             matches.push({
-              buyerId,
-              buyerEmail,
-              buyerName,
+              buyerId: userId,
+              buyerEmail: userEmail,
+              buyerName: userName,
               property: property as PropertyListing,
               matchScore: matchResult.score,
               matchedCriteria: matchResult.matchedCriteria
@@ -295,7 +296,7 @@ serve(async (req) => {
           }
         }
 
-        // Send alerts to matching buyers
+        // Send alerts to matching users (buyers and agents)
         let alertsSent = 0
         for (const match of matches) {
           try {
@@ -303,7 +304,7 @@ serve(async (req) => {
             await createAlertRecord(supabaseClient, match.buyerId, property.id, 'sent', job.alert_type)
             alertsSent++
           } catch (error) {
-            console.error(`Failed to send alert to buyer ${match.buyerId}:`, error)
+            console.error(`Failed to send alert to user ${match.buyerId}:`, error)
             await createAlertRecord(supabaseClient, match.buyerId, property.id, 'failed', job.alert_type)
           }
         }

@@ -28,6 +28,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useViewMode } from '@/hooks/useViewMode';
 import { useSubscription } from '@/hooks/useSubscription';
 import SimplePropertyFilters from '@/components/property/SimplePropertyFilters';
+import { InputSanitizer } from '@/utils/inputSanitization';
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'price-low' | 'price-high' | 'newest' | 'oldest';
@@ -147,37 +148,67 @@ const BrowsePropertiesPageComponent = () => {
     console.log('Current filters:', currentFilters);
     let filtered = [...listings];
 
-    // Apply search term filter
+    // Apply search term filter (with security sanitization)
     if (currentFilters.searchTerm) {
-      const term = currentFilters.searchTerm.toLowerCase();
-      filtered = filtered.filter(listing =>
-        listing.title.toLowerCase().includes(term) ||
-        listing.address.toLowerCase().includes(term) ||
-        listing.city.toLowerCase().includes(term) ||
-        listing.state.toLowerCase().includes(term) ||
-        listing.description?.toLowerCase().includes(term) ||
-        listing.property_type.toLowerCase().includes(term)
-      );
+      const searchValidation = InputSanitizer.sanitizeText(currentFilters.searchTerm, 200);
+      if (!searchValidation.isValid) {
+        console.warn('Invalid search term:', searchValidation.error);
+        // Don't filter if search term is invalid
+      } else {
+        const term = (searchValidation.sanitizedValue || '').toLowerCase();
+        filtered = filtered.filter(listing =>
+          listing.title.toLowerCase().includes(term) ||
+          listing.address.toLowerCase().includes(term) ||
+          listing.city.toLowerCase().includes(term) ||
+          listing.state.toLowerCase().includes(term) ||
+          listing.description?.toLowerCase().includes(term) ||
+          listing.property_type.toLowerCase().includes(term)
+        );
+      }
     }
 
-    // Apply location filter
+    // Apply location filter (with security sanitization)
     if (currentFilters.location) {
-      const location = currentFilters.location.toLowerCase();
-      filtered = filtered.filter(listing =>
-        listing.address.toLowerCase().includes(location) ||
-        listing.city.toLowerCase().includes(location) ||
-        listing.state.toLowerCase().includes(location)
-      );
+      const locationValidation = InputSanitizer.sanitizeText(currentFilters.location, 200);
+      if (!locationValidation.isValid) {
+        console.warn('Invalid location filter:', locationValidation.error);
+        // Don't filter if location is invalid
+      } else {
+        const location = (locationValidation.sanitizedValue || '').toLowerCase();
+        filtered = filtered.filter(listing =>
+          listing.address.toLowerCase().includes(location) ||
+          listing.city.toLowerCase().includes(location) ||
+          listing.state.toLowerCase().includes(location)
+        );
+      }
     }
 
-    // Apply property type filter
+    // Apply property type filter (with security validation)
     if (currentFilters.propertyType) {
-      filtered = filtered.filter(listing => listing.property_type === currentFilters.propertyType);
+      const propertyTypeValidation = InputSanitizer.sanitizeText(String(currentFilters.propertyType), 50);
+      if (propertyTypeValidation.isValid && propertyTypeValidation.sanitizedValue) {
+        const safePropertyType = propertyTypeValidation.sanitizedValue;
+        filtered = filtered.filter(listing => listing.property_type === safePropertyType);
+      }
     }
 
-    // Apply bedroom filter
-    if (currentFilters.bedrooms !== undefined && currentFilters.bedrooms !== null && currentFilters.bedrooms > 0) {
-      filtered = filtered.filter(listing => {
+    // Apply bedroom filter (with numeric validation)
+    if (currentFilters.bedrooms !== undefined && currentFilters.bedrooms !== null) {
+      // Validate that bedrooms is a safe number
+      let safeBedrooms: number | null = null;
+      if (typeof currentFilters.bedrooms === 'number') {
+        if (isFinite(currentFilters.bedrooms) && currentFilters.bedrooms >= 0 && currentFilters.bedrooms <= 20) {
+          safeBedrooms = Math.floor(currentFilters.bedrooms);
+        }
+      } else if (typeof currentFilters.bedrooms === 'string') {
+        const num = parseFloat(currentFilters.bedrooms);
+        if (isFinite(num) && num >= 0 && num <= 20) {
+          safeBedrooms = Math.floor(num);
+        }
+      }
+      
+      if (safeBedrooms !== null && safeBedrooms > 0) {
+        filtered = filtered.filter(listing => {
         // Handle string values like "any", null, undefined
         if (listing.bedrooms === null || listing.bedrooms === undefined) {
           return false; // No bedrooms specified, exclude from filter
@@ -205,13 +236,28 @@ const BrowsePropertiesPageComponent = () => {
           return false;
         }
         
-        return bedrooms !== null && bedrooms >= currentFilters.bedrooms;
+        return bedrooms !== null && bedrooms >= safeBedrooms;
       });
+      }
     }
 
-    // Apply bathroom filter
-    if (currentFilters.bathrooms !== undefined && currentFilters.bathrooms !== null && currentFilters.bathrooms > 0) {
-      filtered = filtered.filter(listing => {
+    // Apply bathroom filter (with numeric validation)
+    if (currentFilters.bathrooms !== undefined && currentFilters.bathrooms !== null) {
+      // Validate that bathrooms is a safe number
+      let safeBathrooms: number | null = null;
+      if (typeof currentFilters.bathrooms === 'number') {
+        if (isFinite(currentFilters.bathrooms) && currentFilters.bathrooms >= 0 && currentFilters.bathrooms <= 20) {
+          safeBathrooms = Math.floor(currentFilters.bathrooms);
+        }
+      } else if (typeof currentFilters.bathrooms === 'string') {
+        const num = parseFloat(currentFilters.bathrooms);
+        if (isFinite(num) && num >= 0 && num <= 20) {
+          safeBathrooms = Math.floor(num);
+        }
+      }
+      
+      if (safeBathrooms !== null && safeBathrooms > 0) {
+        filtered = filtered.filter(listing => {
         // Handle string values like "any", null, undefined
         if (listing.bathrooms === null || listing.bathrooms === undefined) {
           return false; // No bathrooms specified, exclude from filter
@@ -239,15 +285,37 @@ const BrowsePropertiesPageComponent = () => {
           return false;
         }
         
-        return bathrooms !== null && bathrooms >= currentFilters.bathrooms;
+        return bathrooms !== null && bathrooms >= safeBathrooms;
       });
+      }
     }
 
-    // Apply price range filter
+    // Apply price range filter (with numeric validation)
+    // Validate and sanitize price filters
+    let safePriceMin: number | null = null;
+    let safePriceMax: number | null = null;
+    
+    if (currentFilters.priceMin !== undefined && currentFilters.priceMin !== null) {
+      const priceMin = typeof currentFilters.priceMin === 'number' 
+        ? currentFilters.priceMin 
+        : parseFloat(String(currentFilters.priceMin));
+      if (isFinite(priceMin) && priceMin >= 0 && priceMin <= 100000000) {
+        safePriceMin = Math.floor(priceMin);
+      }
+    }
+    
+    if (currentFilters.priceMax !== undefined && currentFilters.priceMax !== null) {
+      const priceMax = typeof currentFilters.priceMax === 'number'
+        ? currentFilters.priceMax
+        : parseFloat(String(currentFilters.priceMax));
+      if (isFinite(priceMax) && priceMax >= 0 && priceMax <= 100000000) {
+        safePriceMax = Math.floor(priceMax);
+      }
+    }
+    
     // Only apply if user has explicitly set a price filter (not default/empty values)
-    // Must have priceMin > 0 OR priceMax < 1000000 (not the default slider range)
-    const hasExplicitPriceFilter = (currentFilters.priceMin !== undefined && currentFilters.priceMin !== null && currentFilters.priceMin > 0) || 
-                                   (currentFilters.priceMax !== undefined && currentFilters.priceMax !== null && currentFilters.priceMax > 0 && currentFilters.priceMax < 1000000);
+    const hasExplicitPriceFilter = (safePriceMin !== null && safePriceMin > 0) || 
+                                   (safePriceMax !== null && safePriceMax > 0 && safePriceMax < 1000000);
     
     if (hasExplicitPriceFilter) {
       filtered = filtered.filter(listing => {
@@ -331,9 +399,9 @@ const BrowsePropertiesPageComponent = () => {
           return true;
         }
         
-        // Get filter range
-        const filterMinPrice = (currentFilters.priceMin !== undefined && currentFilters.priceMin !== null && currentFilters.priceMin > 0) ? currentFilters.priceMin : 0;
-        const filterMaxPrice = (currentFilters.priceMax !== undefined && currentFilters.priceMax !== null && currentFilters.priceMax > 0) ? currentFilters.priceMax : 1000000000;
+        // Get filter range (using validated safe values)
+        const filterMinPrice = safePriceMin !== null && safePriceMin > 0 ? safePriceMin : 0;
+        const filterMaxPrice = safePriceMax !== null && safePriceMax > 0 ? safePriceMax : 1000000000;
         
         // For price ranges, check if ranges overlap
         // Property range overlaps filter range if:
@@ -361,10 +429,31 @@ const BrowsePropertiesPageComponent = () => {
       });
     }
 
-    // Apply square footage filter
+    // Apply square footage filter (with numeric validation)
+    let safeMinSqft: number | null = null;
+    let safeMaxSqft: number | null = null;
+    
+    if (currentFilters.minSquareFootage !== undefined && currentFilters.minSquareFootage !== null) {
+      const minSqft = typeof currentFilters.minSquareFootage === 'number'
+        ? currentFilters.minSquareFootage
+        : parseFloat(String(currentFilters.minSquareFootage));
+      if (isFinite(minSqft) && minSqft >= 0 && minSqft <= 100000) {
+        safeMinSqft = Math.floor(minSqft);
+      }
+    }
+    
+    if (currentFilters.maxSquareFootage !== undefined && currentFilters.maxSquareFootage !== null) {
+      const maxSqft = typeof currentFilters.maxSquareFootage === 'number'
+        ? currentFilters.maxSquareFootage
+        : parseFloat(String(currentFilters.maxSquareFootage));
+      if (isFinite(maxSqft) && maxSqft >= 0 && maxSqft <= 100000) {
+        safeMaxSqft = Math.floor(maxSqft);
+      }
+    }
+    
     // Only apply if user has explicitly set a square footage filter (not default/empty values)
-    const hasExplicitSqftFilter = (currentFilters.minSquareFootage !== undefined && currentFilters.minSquareFootage !== null && currentFilters.minSquareFootage > 0) || 
-                                   (currentFilters.maxSquareFootage !== undefined && currentFilters.maxSquareFootage !== null && currentFilters.maxSquareFootage > 0 && currentFilters.maxSquareFootage < 5000);
+    const hasExplicitSqftFilter = (safeMinSqft !== null && safeMinSqft > 0) || 
+                                   (safeMaxSqft !== null && safeMaxSqft > 0 && safeMaxSqft < 5000);
     
     if (hasExplicitSqftFilter) {
       filtered = filtered.filter(listing => {
@@ -399,8 +488,9 @@ const BrowsePropertiesPageComponent = () => {
           return true; // Include if we couldn't determine square footage
         }
         
-        const minSqft = (currentFilters.minSquareFootage !== undefined && currentFilters.minSquareFootage !== null && currentFilters.minSquareFootage > 0) ? currentFilters.minSquareFootage : 0;
-        const maxSqft = (currentFilters.maxSquareFootage !== undefined && currentFilters.maxSquareFootage !== null && currentFilters.maxSquareFootage > 0) ? currentFilters.maxSquareFootage : 5000;
+        // Use validated safe values
+        const minSqft = safeMinSqft !== null && safeMinSqft > 0 ? safeMinSqft : 0;
+        const maxSqft = safeMaxSqft !== null && safeMaxSqft > 0 ? safeMaxSqft : 5000;
         
         // If maxSqft is 0 or invalid, don't filter by max
         if (maxSqft <= 0) {
@@ -505,18 +595,18 @@ const BrowsePropertiesPageComponent = () => {
       return;
     }
 
-    // Input validation and basic sanitization
-    const sanitizedMessage = inquiryMessage.trim()
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
-      .replace(/<[^>]*>/g, '') // Remove HTML tags
-      .replace(/javascript:/gi, '') // Remove javascript: URLs
-      .replace(/on\w+\s*=/gi, ''); // Remove event handlers
-    if (sanitizedMessage.length < 10) {
-      toast.error('Message must be at least 10 characters long');
+    // Input validation and sanitization using InputSanitizer service
+    const messageValidation = InputSanitizer.sanitizeText(inquiryMessage, 1000);
+    if (!messageValidation.isValid) {
+      toast.error(messageValidation.error || 'Invalid message content. Please check for prohibited characters.');
       return;
     }
-    if (sanitizedMessage.length > 1000) {
-      toast.error('Message must be less than 1000 characters');
+    
+    const sanitizedMessage = messageValidation.sanitizedValue || '';
+    
+    // Additional length validation
+    if (sanitizedMessage.length < 10) {
+      toast.error('Message must be at least 10 characters long');
       return;
     }
 
