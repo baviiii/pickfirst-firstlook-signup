@@ -589,32 +589,6 @@ const BrowsePropertiesPageComponent = () => {
     setIsInquiryDialogOpen(true);
   };
 
-  // Robust sanitization helper for inquiries
-  function sanitizeInquiryMessage(input: string): string {
-    // Remove script tags, repeatedly
-    let prev: string;
-    do {
-      prev = input;
-      input = input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    } while (input !== prev);
-    // Remove all HTML tags, repeatedly
-    do {
-      prev = input;
-      input = input.replace(/<[^>]*>/g, '');
-    } while (input !== prev);
-    // Remove javascript: URLs, repeatedly
-    do {
-      prev = input;
-      input = input.replace(/javascript:/gi, '');
-    } while (input !== prev);
-    // Remove inline event handlers like onClick=, repeatedly
-    do {
-      prev = input;
-      input = input.replace(/on\w+\s*=/gi, '');
-    } while (input !== prev);
-    return input;
-  }
-
   const handleSubmitInquiry = async () => {
     if (!selectedProperty || !inquiryMessage.trim()) {
       toast.error('Please enter a message');
