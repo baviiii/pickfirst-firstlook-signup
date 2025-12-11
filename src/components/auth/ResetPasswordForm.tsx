@@ -53,42 +53,8 @@ export const ResetPasswordForm = () => {
       console.log('[ResetPassword] Hash:', window.location.hash);
       console.log('[ResetPassword] Search:', window.location.search);
       
-      // Method 1: PKCE flow - Check for 'code' parameter (modern Supabase)
-      const code = searchParams.get('code');
-      if (code) {
-        console.log('[ResetPassword] Found PKCE code, exchanging...');
-        try {
-          // Exchange the code for a session
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-          
-          if (error) {
-            console.error('[ResetPassword] PKCE code exchange error:', error);
-            setHasValidToken(false);
-            setValidatingToken(false);
-            return;
-          }
-          
-          if (data.session) {
-            console.log('[ResetPassword] PKCE session created successfully');
-            setRecoveryTokens({
-              accessToken: data.session.access_token,
-              refreshToken: data.session.refresh_token,
-            });
-            setHasValidToken(true);
-            setValidatingToken(false);
-            // Clear the code from URL to prevent reuse
-            window.history.replaceState(null, '', window.location.pathname);
-            return;
-          }
-        } catch (error) {
-          console.error('[ResetPassword] PKCE exchange exception:', error);
-          setHasValidToken(false);
-          setValidatingToken(false);
-          return;
-        }
-      }
-      
-      // Method 2: Check URL hash for recovery tokens (legacy/implicit flow)
+      // Method 1 (PRIMARY): Check URL hash for recovery tokens (implicit flow)
+      // This is the most reliable method as it works across devices/browsers
       let accessToken: string | null = null;
       let refreshToken: string | null = null;
       let type: string | null = null;
@@ -104,7 +70,7 @@ export const ResetPasswordForm = () => {
         if (accessToken && refreshToken && type === 'recovery') {
           const tokens = { accessToken, refreshToken };
           
-          // Clear hash immediately
+          // Clear hash immediately to prevent reprocessing
           window.history.replaceState(null, '', window.location.pathname + window.location.search);
           
           // Sign out any existing session
@@ -130,6 +96,34 @@ export const ResetPasswordForm = () => {
             setValidatingToken(false);
             return;
           }
+        }
+      }
+      
+      // Method 2 (FALLBACK): PKCE flow - Check for 'code' parameter
+      // Note: PKCE only works if opened in the SAME browser that requested the reset
+      const code = searchParams.get('code');
+      if (code) {
+        console.log('[ResetPassword] Found PKCE code, attempting exchange...');
+        try {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          
+          if (error) {
+            console.error('[ResetPassword] PKCE code exchange error:', error);
+            // Don't return - fall through to check other methods
+          } else if (data.session) {
+            console.log('[ResetPassword] PKCE session created successfully');
+            setRecoveryTokens({
+              accessToken: data.session.access_token,
+              refreshToken: data.session.refresh_token,
+            });
+            setHasValidToken(true);
+            setValidatingToken(false);
+            window.history.replaceState(null, '', window.location.pathname);
+            return;
+          }
+        } catch (error) {
+          console.error('[ResetPassword] PKCE exchange exception:', error);
+          // Don't return - fall through to check other methods
         }
       }
 

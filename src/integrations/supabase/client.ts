@@ -10,8 +10,10 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 // Check if we're on a password reset page with recovery hash BEFORE initializing client
 // This prevents Supabase from auto-consuming the recovery tokens
-const isRecoveryFlow = typeof window !== 'undefined' && 
-  window.location.hash.includes('type=recovery');
+const isRecoveryFlow = typeof window !== 'undefined' && (
+  window.location.hash.includes('type=recovery') ||
+  window.location.search.includes('type=recovery')
+);
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
@@ -21,8 +23,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     // CRITICAL: Disable auto-detection of session in URL for recovery flows
     // This allows ResetPasswordForm to manually handle the tokens
     detectSessionInUrl: !isRecoveryFlow,
-    // Use PKCE flow for better security
-    flowType: 'pkce',
+    // Use implicit flow for password reset compatibility across devices/browsers
+    // PKCE requires code_verifier from the same browser that initiated the request
+    flowType: 'implicit',
   }
 });
 
