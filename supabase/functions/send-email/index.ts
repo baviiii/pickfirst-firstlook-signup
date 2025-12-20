@@ -1046,39 +1046,78 @@ PickFirst Real Estate Team`,
     `
   }),
 
-  // Security & Messaging
+  // Security & Messaging - User facing
   securityAlert: (data: any) => ({
-    subject: 'Security Alert - Unusual Account Activity',
+    subject: data.alertTitle || 'Security Alert - Unusual Account Activity',
     html: `
-      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${BRAND_COLORS.background}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);">
-        ${getEmailHeader()}
-        <div style="padding: 40px 20px;">
-          <div style="background: #FEE; padding: 25px; border-radius: 8px; border-left: 4px solid #dc2626;">
-            <h1 style="color: #dc2626; margin: 0 0 15px 0;">Security Alert</h1>
-            <p style="color: ${BRAND_COLORS.text}; font-size: 16px;">
-              Hi ${data.name}, we detected unusual activity on your account:
-            </p>
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(220, 38, 38, 0.3);">
+        <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 30px 20px; text-align: center;">
+          <div style="font-size: 48px; margin-bottom: 10px;">🚨</div>
+          <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">${data.alertTitle || 'Security Alert'}</h1>
+          <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">PickFirst Real Estate - Admin Notification</p>
+        </div>
+        
+        <div style="padding: 30px 20px;">
+          <div style="background: #2d2d44; border: 1px solid #dc2626; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+            <h2 style="color: #dc2626; margin: 0 0 15px 0; font-size: 18px;">⚠️ Suspicious Activity Detected</h2>
             
-            <div style="background: white; padding: 20px; border-radius: 6px; margin: 15px 0;">
-              <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Activity:</strong> ${data.activity}</p>
-              <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Time:</strong> ${data.timestamp}</p>
-              <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Location:</strong> ${data.location}</p>
-              <p style="color: ${BRAND_COLORS.text}; margin: 8px 0;"><strong>Device:</strong> ${data.device}</p>
-            </div>
-            
-            <p style="color: ${BRAND_COLORS.text}; font-weight: bold;">Was this you?</p>
-            <p style="color: ${BRAND_COLORS.text};">
-              If this was you, no action is needed. If not, please secure your account immediately.
-            </p>
-            
-            <div style="text-align: center;">
-              <a href="${(data.platformUrl || 'https://pickfirst.com.au') + '/security'}" style="display: inline-block; background: #dc2626; color: white; font-weight: bold; text-align: center; padding: 14px 32px; border-radius: 4px; text-decoration: none; margin: 20px 0; font-size: 16px;">
-                Secure My Account
-              </a>
-            </div>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #3d3d5c; color: #9ca3af; font-size: 14px;">Target Account:</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #3d3d5c; color: white; font-size: 14px; font-weight: bold;">${data.targetEmail || 'Unknown'}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #3d3d5c; color: #9ca3af; font-size: 14px;">IP Address:</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #3d3d5c; color: white; font-size: 14px; font-family: monospace;">${data.ipAddress || 'Unknown'}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #3d3d5c; color: #9ca3af; font-size: 14px;">Location:</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #3d3d5c; color: white; font-size: 14px;">${data.location || 'Unknown'}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #3d3d5c; color: #9ca3af; font-size: 14px;">Device:</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #3d3d5c; color: white; font-size: 14px;">${data.device || 'Unknown'}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #3d3d5c; color: #9ca3af; font-size: 14px;">Attempts (Last Hour):</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #3d3d5c; color: #dc2626; font-size: 14px; font-weight: bold;">${data.attemptsLastHour || 0}</td>
+              </tr>
+              ${data.failureReason && data.failureReason !== 'N/A' ? `
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #3d3d5c; color: #9ca3af; font-size: 14px;">Failure Reason:</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #3d3d5c; color: #f59e0b; font-size: 14px;">${data.failureReason}</td>
+              </tr>
+              ` : ''}
+              <tr>
+                <td style="padding: 10px 0; color: #9ca3af; font-size: 14px;">Detected At:</td>
+                <td style="padding: 10px 0; color: white; font-size: 14px;">${new Date(data.timestamp).toLocaleString()}</td>
+              </tr>
+            </table>
+          </div>
+          
+          <div style="background: #2d2d44; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+            <h3 style="color: #EAB308; margin: 0 0 10px 0; font-size: 16px;">🔐 Recommended Actions</h3>
+            <ul style="color: #d1d5db; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
+              <li>Review the login history for this account</li>
+              <li>Consider temporarily suspending the account if suspicious</li>
+              <li>Block the IP address if brute force is confirmed</li>
+              <li>Notify the user if their account may be compromised</li>
+            </ul>
+          </div>
+          
+          <div style="text-align: center;">
+            <a href="${data.dashboardUrl || 'https://pickfirst.com.au/admin/login-history'}" style="display: inline-block; background: linear-gradient(135deg, #EAB308 0%, #CA8A04 100%); color: #000; font-weight: bold; text-align: center; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-size: 16px;">
+              View Login History Dashboard
+            </a>
           </div>
         </div>
-        ${getEmailFooter()}
+        
+        <div style="background: #0f0f1a; padding: 20px; text-align: center; border-top: 1px solid #2d2d44;">
+          <p style="color: #6b7280; margin: 0; font-size: 12px;">
+            This is an automated security alert from PickFirst Real Estate.<br/>
+            You received this because you are a Super Admin.
+          </p>
+        </div>
       </div>
     `
   }),

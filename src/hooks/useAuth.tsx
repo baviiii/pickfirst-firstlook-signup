@@ -6,6 +6,7 @@ import { ipTrackingService } from '@/services/ipTrackingService';
 import { rateLimitService } from '@/services/rateLimitService';
 import { InputSanitizer } from '@/utils/inputSanitization';
 import { auditService } from '@/services/auditService';
+import { EmailService } from '@/services/emailService';
 
 type Profile = Tables<'profiles'>;
 
@@ -287,6 +288,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
+      // Check if IP is blocked
+      const clientInfo = await ipTrackingService.getClientInfo();
+      if (clientInfo?.ip) {
+        const isBlocked = await EmailService.isIPBlocked(clientInfo.ip);
+        if (isBlocked) {
+          const blockError = new Error('Access denied. Your IP has been blocked due to suspicious activity. Contact support for assistance.');
+          setError(prev => ({ ...prev, signIn: blockError }));
+          
+          // Log the blocked IP attempt for audit trail
+          await ipTrackingService.logLoginActivity({
+            email: emailValidation.sanitizedValue!,
+            login_type: 'signin',
+            success: false,
+            failure_reason: 'IP address blocked'
+          });
+          
+          return { error: blockError };
+        }
+      }
+
+      // Check if user account is suspended
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('subscription_status')
+        .eq('email', emailValidation.sanitizedValue!)
+        .single();
+
+      if (userProfile?.subscription_status === 'suspended') {
+        const suspendedError = new Error('Your account has been suspended. Contact support for assistance.');
+        setError(prev => ({ ...prev, signIn: suspendedError }));
+        
+        // Log the blocked attempt
+        await ipTrackingService.logLoginActivity({
+          email: emailValidation.sanitizedValue!,
+          login_type: 'signin',
+          success: false,
+          failure_reason: 'Account suspended'
+        });
+        
+        return { error: suspendedError };
+      }
+
       const rateLimitResult = await rateLimitService.checkRateLimit(emailValidation.sanitizedValue!, 'signIn');
       if (!rateLimitResult.allowed) {
         setError(prev => ({ ...prev, signIn: new Error('Too many login attempts. Please try again later.') }));

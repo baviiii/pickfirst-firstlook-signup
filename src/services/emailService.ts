@@ -7,6 +7,24 @@ export interface EmailTemplate {
   subject?: string;
 }
 
+export interface SuspiciousLoginData {
+  email: string;
+  ip_address: string;
+  location_info?: {
+    city?: string;
+    country?: string;
+    region?: string;
+  };
+  device_info?: {
+    browser?: string;
+    os?: string;
+    device?: string;
+  };
+  attempts_last_hour?: number;
+  failure_reason?: string;
+  created_at: string;
+}
+
 export class EmailService {
   static async queueEmail(params: {
     to: string;
@@ -827,6 +845,371 @@ export class EmailService {
       }
     } catch (error) {
       console.error('Error sending bulk marketing emails:', error);
+    }
+  }
+
+  /**
+   * Get all super admin emails
+   */
+  static async getSuperAdminEmails(): Promise<string[]> {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('role', 'super_admin');
+
+      if (error) {
+        console.error('Error fetching super admin emails:', error);
+        return [];
+      }
+
+      return data?.map(admin => admin.email).filter(Boolean) || [];
+    } catch (error) {
+      console.error('Error fetching super admin emails:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Send security alert to all super admins
+   */
+  static async sendSecurityAlertToAdmins(
+    alertType: 'suspicious_login' | 'brute_force' | 'new_location' | 'multiple_failures',
+    alertData: SuspiciousLoginData
+  ): Promise<void> {
+    try {
+      const superAdminEmails = await this.getSuperAdminEmails();
+      
+      if (superAdminEmails.length === 0) {
+        console.warn('[EmailService] No super admins found to send security alert');
+        return;
+      }
+
+      console.log(`[EmailService] Sending security alert to ${superAdminEmails.length} super admins`);
+
+      const alertTitles: Record<string, string> = {
+        suspicious_login: '🚨 Suspicious Login Detected',
+        brute_force: '🔴 Brute Force Attack Detected',
+        new_location: '⚠️ Login from New Location',
+        multiple_failures: '⚠️ Multiple Failed Login Attempts'
+      };
+
+      const subject = alertTitles[alertType] || '🚨 Security Alert';
+
+      // Send to all super admins
+      const promises = superAdminEmails.map(adminEmail => 
+        supabase.functions.invoke('send-email', {
+          body: {
+            to: adminEmail,
+            template: 'securityAlert',
+            data: {
+              alertType,
+              alertTitle: subject,
+              targetEmail: alertData.email,
+              ipAddress: alertData.ip_address,
+              location: alertData.location_info 
+                ? `${alertData.location_info.city || 'Unknown'}, ${alertData.location_info.region || ''} ${alertData.location_info.country || ''}`
+                : 'Unknown location',
+              device: alertData.device_info
+                ? `${alertData.device_info.browser || 'Unknown'} on ${alertData.device_info.os || 'Unknown'} (${alertData.device_info.device || 'Unknown'})`
+                : 'Unknown device',
+              attemptsLastHour: alertData.attempts_last_hour || 0,
+              failureReason: alertData.failure_reason || 'N/A',
+              timestamp: alertData.created_at,
+              platformName: 'PickFirst Real Estate',
+              platformUrl: 'https://pickfirst.com.au',
+              dashboardUrl: 'https://pickfirst.com.au/admin/login-history'
+            }
+          }
+        })
+      );
+
+      const results = await Promise.allSettled(promises);
+      
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
+      console.log(`[EmailService] Security alerts sent: ${successful} successful, ${failed} failed`);
+      
+      if (failed > 0) {
+        console.error('[EmailService] Some security alerts failed to send');
+      }
+    } catch (error) {
+      console.error('[EmailService] Error sending security alerts:', error);
+    }
+  }
+
+  /**
+   * Check for suspicious login activity and alert admins
+   * Auto-blocks user, IP, and device after 10 failed attempts
+   */
+  static async checkAndAlertSuspiciousLogin(loginData: {
+    email: string;
+    ip_address: string;
+    success: boolean;
+    failure_reason?: string;
+    location_info?: any;
+    device_info?: any;
+  }): Promise<void> {
+    try {
+      // Check if this IP has multiple failed attempts
+      const { data: recentAttempts, error } = await supabase
+        .from('login_history')
+        .select('*')
+        .eq('ip_address', loginData.ip_address)
+        .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString()) // Last hour
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('[EmailService] Error checking recent login attempts:', error);
+        return;
+      }
+
+      const failedAttempts = recentAttempts?.filter(a => !a.success) || [];
+      const totalAttempts = recentAttempts?.length || 0;
+
+      // Alert conditions:
+      // 1. More than 5 failed attempts from same IP in last hour
+      // 2. More than 10 total attempts from same IP in last hour (auto-block)
+      // 3. Failed login with no prior successful logins from this IP
+
+      let shouldAlert = false;
+      let shouldAutoBlock = false;
+      let alertType: 'suspicious_login' | 'brute_force' | 'new_location' | 'multiple_failures' = 'suspicious_login';
+
+      if (failedAttempts.length >= 10) {
+        shouldAlert = true;
+        shouldAutoBlock = true;
+        alertType = 'brute_force';
+      } else if (failedAttempts.length >= 5) {
+        shouldAlert = true;
+        alertType = 'multiple_failures';
+      } else if (totalAttempts >= 10) {
+        shouldAlert = true;
+        shouldAutoBlock = true;
+        alertType = 'brute_force';
+      } else if (!loginData.success && failedAttempts.length >= 3) {
+        shouldAlert = true;
+        alertType = 'multiple_failures';
+      }
+
+      // Auto-block after 10 failed attempts
+      if (shouldAutoBlock) {
+        console.log(`[EmailService] Auto-blocking due to ${failedAttempts.length} failed attempts`);
+        await this.autoBlockUserAndIP(loginData.email, loginData.ip_address, loginData.device_info);
+      }
+
+      if (shouldAlert) {
+        console.log(`[EmailService] Suspicious activity detected: ${alertType}`);
+        
+        await this.sendSecurityAlertToAdmins(alertType, {
+          email: loginData.email,
+          ip_address: loginData.ip_address,
+          location_info: loginData.location_info,
+          device_info: loginData.device_info,
+          attempts_last_hour: totalAttempts,
+          failure_reason: loginData.failure_reason,
+          created_at: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('[EmailService] Error checking suspicious login:', error);
+    }
+  }
+
+  /**
+   * Auto-block user, IP, and device after 10 failed attempts
+   */
+  static async autoBlockUserAndIP(
+    email: string, 
+    ipAddress: string, 
+    deviceInfo?: any
+  ): Promise<void> {
+    try {
+      console.log(`[EmailService] Auto-blocking user: ${email}, IP: ${ipAddress}`);
+
+      // 1. Suspend the user account
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('id, subscription_status')
+        .eq('email', email)
+        .single();
+
+      if (userProfile && userProfile.subscription_status !== 'suspended') {
+        await supabase
+          .from('profiles')
+          .update({ 
+            subscription_status: 'suspended',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userProfile.id);
+        
+        console.log(`[EmailService] User ${email} suspended`);
+      }
+
+      // 2. Block the IP address
+      await this.blockIP(ipAddress, `Brute force attack targeting: ${email}`, 'system');
+
+      // 3. Block the device if device info is available
+      if (deviceInfo?.browser && deviceInfo?.os) {
+        await this.blockDevice(deviceInfo, `Brute force attack targeting: ${email}`, 'system');
+      }
+
+      console.log(`[EmailService] Auto-block completed for ${email}`);
+    } catch (error) {
+      console.error('[EmailService] Error auto-blocking:', error);
+    }
+  }
+
+  /**
+   * Block an IP address
+   */
+  static async blockIP(
+    ipAddress: string, 
+    reason: string, 
+    blockedBy: string = 'system'
+  ): Promise<{ error: any }> {
+    try {
+      // Check if already blocked (using 'as any' - types generated after migration)
+      const { data: existing } = await (supabase as any)
+        .from('blocked_ips')
+        .select('id')
+        .eq('ip_address', ipAddress)
+        .single();
+
+      if (existing) {
+        console.log(`[EmailService] IP ${ipAddress} already blocked`);
+        return { error: null };
+      }
+
+      const { error } = await (supabase as any)
+        .from('blocked_ips')
+        .insert({
+          ip_address: ipAddress,
+          reason,
+          blocked_by: blockedBy,
+          blocked_at: new Date().toISOString(),
+          is_active: true
+        });
+
+      if (error) {
+        // If table doesn't exist, log but don't fail
+        if (error.code === '42P01') {
+          console.warn('[EmailService] blocked_ips table does not exist, skipping IP block');
+          return { error: null };
+        }
+        throw error;
+      }
+
+      console.log(`[EmailService] IP ${ipAddress} blocked successfully`);
+      return { error: null };
+    } catch (error) {
+      console.error('[EmailService] Error blocking IP:', error);
+      return { error };
+    }
+  }
+
+  /**
+   * Block a device
+   */
+  static async blockDevice(
+    deviceInfo: any, 
+    reason: string, 
+    blockedBy: string = 'system'
+  ): Promise<{ error: any }> {
+    try {
+      const deviceFingerprint = `${deviceInfo.browser || 'unknown'}_${deviceInfo.os || 'unknown'}_${deviceInfo.device || 'unknown'}`;
+
+      // Using 'as any' - types generated after migration
+      const { error } = await (supabase as any)
+        .from('blocked_devices')
+        .insert({
+          device_fingerprint: deviceFingerprint,
+          device_info: deviceInfo,
+          reason,
+          blocked_by: blockedBy,
+          blocked_at: new Date().toISOString(),
+          is_active: true
+        });
+
+      if (error) {
+        // If table doesn't exist, log but don't fail
+        if (error.code === '42P01') {
+          console.warn('[EmailService] blocked_devices table does not exist, skipping device block');
+          return { error: null };
+        }
+        throw error;
+      }
+
+      console.log(`[EmailService] Device ${deviceFingerprint} blocked successfully`);
+      return { error: null };
+    } catch (error) {
+      console.error('[EmailService] Error blocking device:', error);
+      return { error };
+    }
+  }
+
+  /**
+   * Check if an IP is blocked
+   */
+  static async isIPBlocked(ipAddress: string): Promise<boolean> {
+    try {
+      // Using 'as any' - types generated after migration
+      const { data, error } = await (supabase as any)
+        .from('blocked_ips')
+        .select('id')
+        .eq('ip_address', ipAddress)
+        .eq('is_active', true)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        // PGRST116 = no rows found, which is fine
+        if (error.code === '42P01') {
+          // Table doesn't exist
+          return false;
+        }
+        console.error('[EmailService] Error checking blocked IP:', error);
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error('[EmailService] Error checking blocked IP:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Unblock an IP address (for admin use)
+   */
+  static async unblockIP(ipAddress: string): Promise<{ error: any }> {
+    try {
+      // Using 'as any' - types generated after migration
+      const { error } = await (supabase as any)
+        .from('blocked_ips')
+        .update({ is_active: false, unblocked_at: new Date().toISOString() })
+        .eq('ip_address', ipAddress);
+
+      return { error };
+    } catch (error) {
+      return { error };
+    }
+  }
+
+  /**
+   * Get all blocked IPs (for admin use)
+   */
+  static async getBlockedIPs(): Promise<{ data: any[]; error: any }> {
+    try {
+      // Using 'as any' - types generated after migration
+      const { data, error } = await (supabase as any)
+        .from('blocked_ips')
+        .select('*')
+        .eq('is_active', true)
+        .order('blocked_at', { ascending: false });
+
+      return { data: data || [], error };
+    } catch (error) {
+      return { data: [], error };
     }
   }
 }

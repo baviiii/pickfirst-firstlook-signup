@@ -22,17 +22,30 @@ import {
   Search,
   RefreshCw,
   Clock,
-  Activity
+  Activity,
+  Ban,
+  Unlock
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { securityService, SecurityUser, SecurityRole, SecurityPermission, SecurityPolicy } from '@/services/securityService';
 import { useAuth } from '@/hooks/useAuth';
+import { EmailService } from '@/services/emailService';
+
+interface BlockedIP {
+  id: string;
+  ip_address: string;
+  reason: string;
+  blocked_by: string;
+  blocked_at: string;
+  is_active: boolean;
+}
 
 export const SecurityPermissions = () => {
   const { user: authUser } = useAuth();
   const [users, setUsers] = useState<SecurityUser[]>([]);
   const [roles, setRoles] = useState<SecurityRole[]>([]);
   const [permissions, setPermissions] = useState<SecurityPermission[]>([]);
+  const [blockedIPs, setBlockedIPs] = useState<BlockedIP[]>([]);
   const [securityPolicy, setSecurityPolicy] = useState<SecurityPolicy | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,15 +60,17 @@ export const SecurityPermissions = () => {
   const loadSecurityData = async () => {
     setLoading(true);
     try {
-      const [usersRes, rolesRes, policyRes] = await Promise.all([
+      const [usersRes, rolesRes, policyRes, blockedIPsRes] = await Promise.all([
         securityService.getAllUsers({ limit: 100 }),
         securityService.getRoles(),
-        securityService.getSecurityPolicy()
+        securityService.getSecurityPolicy(),
+        EmailService.getBlockedIPs()
       ]);
 
       if (!usersRes.error) setUsers(usersRes.data);
       if (!rolesRes.error) setRoles(rolesRes.data);
       if (!policyRes.error && policyRes.data) setSecurityPolicy(policyRes.data);
+      if (!blockedIPsRes.error) setBlockedIPs(blockedIPsRes.data);
       
       setPermissions(securityService.getPermissions());
     } catch (error) {
@@ -63,6 +78,19 @@ export const SecurityPermissions = () => {
       toast.error('Failed to load security data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUnblockIP = async (ipAddress: string) => {
+    try {
+      const { error } = await EmailService.unblockIP(ipAddress);
+      if (error) throw error;
+      
+      toast.success(`IP ${ipAddress} unblocked successfully`);
+      await loadSecurityData();
+    } catch (error) {
+      console.error('Error unblocking IP:', error);
+      toast.error('Failed to unblock IP');
     }
   };
 
@@ -153,6 +181,13 @@ export const SecurityPermissions = () => {
           <TabsTrigger value="users" className="data-[state=active]:bg-pickfirst-yellow data-[state=active]:text-black">
             <Users className="h-4 w-4 mr-2" />
             Users
+          </TabsTrigger>
+          <TabsTrigger value="blocked" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">
+            <Ban className="h-4 w-4 mr-2" />
+            Blocked IPs
+            {blockedIPs.length > 0 && (
+              <Badge className="ml-2 bg-red-600 text-white text-xs">{blockedIPs.length}</Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="roles" className="data-[state=active]:bg-pickfirst-yellow data-[state=active]:text-black">
             <UserCheck className="h-4 w-4 mr-2" />
@@ -263,6 +298,120 @@ export const SecurityPermissions = () => {
                    </div>
                  ))}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Blocked IPs Tab */}
+        <TabsContent value="blocked" className="space-y-6">
+          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-red-500/30">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Ban className="h-5 w-5 text-red-500" />
+                    Blocked IP Addresses
+                  </CardTitle>
+                  <CardDescription className="text-gray-300 mt-1">
+                    IPs automatically blocked after 10+ failed login attempts. Unblock to restore access.
+                  </CardDescription>
+                </div>
+                <Badge className="bg-red-500 text-white">
+                  {blockedIPs.length} Blocked
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {blockedIPs.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No blocked IP addresses</p>
+                  <p className="text-sm mt-1">IPs will appear here after 10+ failed login attempts</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {blockedIPs.map((blocked) => (
+                    <div 
+                      key={blocked.id}
+                      className="flex items-center justify-between p-4 bg-red-900/20 border border-red-500/30 rounded-lg"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-red-500/20 rounded-full">
+                          <Ban className="h-5 w-5 text-red-500" />
+                        </div>
+                        <div>
+                          <div className="font-mono text-white font-medium">{blocked.ip_address}</div>
+                          <div className="text-sm text-gray-400">
+                            {blocked.reason || 'No reason specified'}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Blocked: {new Date(blocked.blocked_at).toLocaleString()} by {blocked.blocked_by}
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-green-500 border-green-500/50 hover:bg-green-500/10"
+                        onClick={() => handleUnblockIP(blocked.ip_address)}
+                      >
+                        <Unlock className="h-4 w-4 mr-2" />
+                        Unblock
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Suspended Users Card */}
+          <Card className="bg-gradient-to-br from-gray-900/90 to-black/90 border border-orange-500/30">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-orange-500" />
+                Suspended Users
+              </CardTitle>
+              <CardDescription className="text-gray-300">
+                Users whose accounts have been suspended due to security concerns or policy violations.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {users.filter(u => u.status === 'suspended').length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <UserCheck className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No suspended users</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {users.filter(u => u.status === 'suspended').map((user) => (
+                    <div 
+                      key={user.id}
+                      className="flex items-center justify-between p-4 bg-orange-900/20 border border-orange-500/30 rounded-lg"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-orange-500/20 rounded-full">
+                          <AlertTriangle className="h-5 w-5 text-orange-500" />
+                        </div>
+                        <div>
+                          <div className="text-white font-medium">{user.full_name || 'No Name'}</div>
+                          <div className="text-sm text-gray-400">{user.email}</div>
+                          <Badge className="mt-1 bg-gray-700 text-gray-300 text-xs">{user.role}</Badge>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-green-500 border-green-500/50 hover:bg-green-500/10"
+                        onClick={() => handleUserAction('activate', user.id)}
+                      >
+                        <UserCheck className="h-4 w-4 mr-2" />
+                        Activate
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

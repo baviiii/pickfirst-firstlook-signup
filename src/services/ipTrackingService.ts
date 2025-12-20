@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { EmailService } from './emailService';
 
 export interface IPTrackingData {
   ip: string;
@@ -173,8 +174,42 @@ class IPTrackingService {
       if (error) {
         throw error;
       }
+
+      // Check for suspicious activity and alert super admins if needed
+      // Only check for signin attempts (not logout, signup, etc.)
+      if (activityData.login_type === 'signin') {
+        // Run async - don't block the login flow
+        this.checkAndAlertSuspiciousActivity({
+          email: activityData.email,
+          ip_address: clientInfo.ip,
+          success: activityData.success,
+          failure_reason: activityData.failure_reason,
+          location_info: clientInfo.locationInfo,
+          device_info: clientInfo.deviceInfo
+        }).catch(err => {
+          console.error('[IPTracking] Error checking suspicious activity:', err);
+        });
+      }
     } catch (error) {
       // Error logging login activity - silently fail
+    }
+  }
+
+  /**
+   * Check for suspicious login activity and alert super admins
+   */
+  private async checkAndAlertSuspiciousActivity(loginData: {
+    email: string;
+    ip_address: string;
+    success: boolean;
+    failure_reason?: string;
+    location_info?: any;
+    device_info?: any;
+  }): Promise<void> {
+    try {
+      await EmailService.checkAndAlertSuspiciousLogin(loginData);
+    } catch (error) {
+      console.error('[IPTracking] Error in suspicious activity check:', error);
     }
   }
 
