@@ -201,3 +201,53 @@ COMMENT ON FUNCTION public.is_ip_blocked IS 'Checks if an IP address is currentl
 COMMENT ON FUNCTION public.block_ip IS 'Blocks an IP address and returns the block record ID';
 COMMENT ON FUNCTION public.unblock_ip IS 'Unblocks an IP address';
 
+-- Step 13: Create function to check suspicious login activity (bypasses RLS)
+CREATE OR REPLACE FUNCTION public.check_suspicious_login_activity(
+  ip_address_to_check TEXT,
+  email_to_check TEXT DEFAULT NULL
+)
+RETURNS TABLE(
+  total_attempts BIGINT,
+  failed_attempts BIGINT,
+  should_block BOOLEAN,
+  should_alert BOOLEAN
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO public
+AS $$
+DECLARE
+  total_count BIGINT;
+  failed_count BIGINT;
+  should_block_result BOOLEAN := false;
+  should_alert_result BOOLEAN := false;
+BEGIN
+  -- Count total attempts from this IP in last hour (bypasses RLS)
+  SELECT 
+    COUNT(*)::BIGINT,
+    COUNT(*) FILTER (WHERE success = false)::BIGINT
+  INTO total_count, failed_count
+  FROM public.login_history
+  WHERE ip_address = ip_address_to_check
+    AND created_at > NOW() - INTERVAL '1 hour';
+  
+  -- Determine if we should block or alert
+  IF failed_count >= 10 OR total_count >= 10 THEN
+    should_block_result := true;
+    should_alert_result := true;
+  ELSIF failed_count >= 5 OR total_count >= 5 THEN
+    should_alert_result := true;
+  ELSIF failed_count >= 3 THEN
+    should_alert_result := true;
+  END IF;
+  
+  RETURN QUERY SELECT total_count, failed_count, should_block_result, should_alert_result;
+END;
+$$;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.check_suspicious_login_activity TO authenticated;
+GRANT EXECUTE ON FUNCTION public.check_suspicious_login_activity TO anon;
+
+COMMENT ON FUNCTION public.check_suspicious_login_activity IS 'Checks suspicious login activity for an IP address, bypassing RLS';
+

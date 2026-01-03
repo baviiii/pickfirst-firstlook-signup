@@ -971,6 +971,43 @@ export class EmailService {
       
       console.log(`[EmailService] Checking suspicious activity for IP: ${cleanIP}, Email: ${loginData.email}`);
       
+      // Use database function to bypass RLS (this is the key fix!)
+      const { data: suspiciousCheck, error: functionError } = await (supabase as any)
+        .rpc('check_suspicious_login_activity', {
+          ip_address_to_check: cleanIP,
+          email_to_check: loginData.email
+        });
+      
+      if (!functionError && suspiciousCheck && suspiciousCheck.length > 0) {
+        const result = suspiciousCheck[0];
+        console.log(`[EmailService] Suspicious check result (via RPC):`, result);
+        
+        const totalAttempts = Number(result.total_attempts) || 0;
+        const failedAttempts = Number(result.failed_attempts) || 0;
+        const shouldBlock = result.should_block === true;
+        const shouldAlert = result.should_alert === true;
+        
+        if (shouldBlock) {
+          console.log(`[EmailService] Auto-blocking: ${failedAttempts} failed, ${totalAttempts} total attempts`);
+          await this.autoBlockUserAndIP(loginData.email, loginData.ip_address, loginData.device_info);
+        } else if (shouldAlert) {
+          console.log(`[EmailService] Alerting: ${failedAttempts} failed, ${totalAttempts} total attempts`);
+          await this.sendSecurityAlertToAdmins('multiple_failures', {
+            email: loginData.email,
+            ip_address: loginData.ip_address,
+            location_info: loginData.location_info,
+            device_info: loginData.device_info,
+            attempts_last_hour: totalAttempts,
+            failure_reason: loginData.failure_reason,
+            created_at: new Date().toISOString()
+          });
+        }
+        return; // Exit early since we handled it via RPC
+      }
+      
+      // Fallback to direct queries if RPC function doesn't exist or fails
+      console.warn(`[EmailService] RPC function failed or doesn't exist, using fallback queries:`, functionError);
+      
       // First, try using the suspicious_logins view (more efficient and already filtered)
       const { data: suspiciousData, error: suspiciousError } = await supabase
         .from('suspicious_logins')
