@@ -172,23 +172,32 @@ class IPTrackingService {
         });
 
       if (error) {
+        console.error('[IPTracking] Error logging login activity:', error);
         throw error;
       }
 
       // Check for suspicious activity and alert super admins if needed
       // Only check for signin attempts (not logout, signup, etc.)
       if (activityData.login_type === 'signin') {
-        // Run async - don't block the login flow
-        this.checkAndAlertSuspiciousActivity({
-          email: activityData.email,
-          ip_address: clientInfo.ip,
-          success: activityData.success,
-          failure_reason: activityData.failure_reason,
-          location_info: clientInfo.locationInfo,
-          device_info: clientInfo.deviceInfo
-        }).catch(err => {
-          console.error('[IPTracking] Error checking suspicious activity:', err);
-        });
+        // Wait longer to ensure the insert is committed and visible
+        // Run async - don't block the login flow, but log errors properly
+        if (clientInfo.ip && clientInfo.ip !== 'unknown' && clientInfo.ip !== 'invalid-format') {
+          // Use longer delay to ensure database consistency
+          setTimeout(() => {
+            this.checkAndAlertSuspiciousActivity({
+              email: activityData.email,
+              ip_address: clientInfo.ip,
+              success: activityData.success,
+              failure_reason: activityData.failure_reason,
+              location_info: clientInfo.locationInfo,
+              device_info: clientInfo.deviceInfo
+            }).catch(err => {
+              console.error('[IPTracking] Error checking suspicious activity:', err);
+            });
+          }, 500); // Increased delay to 500ms for better DB consistency
+        } else {
+          console.warn(`[IPTracking] Skipping suspicious activity check - invalid IP: ${clientInfo?.ip || 'null'}`);
+        }
       }
     } catch (error) {
       // Error logging login activity - silently fail

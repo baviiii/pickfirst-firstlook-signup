@@ -952,27 +952,127 @@ export class EmailService {
     device_info?: any;
   }): Promise<void> {
     try {
-      // Check if this IP has multiple failed attempts
-      const { data: recentAttempts, error } = await supabase
-        .from('login_history')
-        .select('*')
-        .eq('ip_address', loginData.ip_address)
-        .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString()) // Last hour
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('[EmailService] Error checking recent login attempts:', error);
+      console.log(`[EmailService] checkAndAlertSuspiciousLogin called:`, {
+        email: loginData.email,
+        ip: loginData.ip_address,
+        success: loginData.success,
+        failure_reason: loginData.failure_reason
+      });
+      
+      // Skip check if IP is unknown or invalid
+      if (!loginData.ip_address || loginData.ip_address === 'unknown' || loginData.ip_address === 'invalid-format') {
+        console.warn(`[EmailService] Skipping suspicious login check - invalid IP: ${loginData.ip_address}`);
         return;
       }
 
-      const failedAttempts = recentAttempts?.filter(a => !a.success) || [];
-      const totalAttempts = recentAttempts?.length || 0;
+      // Check if this IP has multiple failed attempts
+      // Trim IP to handle any whitespace issues
+      const cleanIP = loginData.ip_address.trim();
+      
+      console.log(`[EmailService] Checking suspicious activity for IP: ${cleanIP}, Email: ${loginData.email}`);
+      
+      // First, try using the suspicious_logins view (more efficient and already filtered)
+      const { data: suspiciousData, error: suspiciousError } = await supabase
+        .from('suspicious_logins')
+        .select('*')
+        .eq('ip_address', cleanIP)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      console.log(`[EmailService] Suspicious logins view query:`, {
+        found: suspiciousData?.length || 0,
+        data: suspiciousData?.slice(0, 3), // Show first 3
+        error: suspiciousError
+      });
+      
+      // Also query login_history directly as fallback
+      const { data: recentAttempts, error } = await supabase
+        .from('login_history')
+        .select('id, ip_address, email, success, failure_reason, created_at')
+        .eq('ip_address', cleanIP)
+        .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString()) // Last hour
+        .order('created_at', { ascending: false });
+
+      console.log(`[EmailService] Query result for IP ${cleanIP}:`, {
+        foundAttempts: recentAttempts?.length || 0,
+        attempts: recentAttempts,
+        error: error ? {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        } : null
+      });
+
+      if (error) {
+        console.error('[EmailService] Error checking recent login attempts:', {
+          error,
+          ip: cleanIP,
+          code: error.code,
+          message: error.message
+        });
+        // Don't return - continue to check if we can still get some data
+        // Sometimes RLS errors still return partial data
+      }
+
+      // Use suspicious_logins view data if available, otherwise use direct query
+      const attemptsToCheck = suspiciousData && suspiciousData.length > 0 
+        ? suspiciousData 
+        : recentAttempts;
+      
+      // If query returned empty, try a broader query to debug
+      if (!attemptsToCheck || attemptsToCheck.length === 0) {
+        console.warn(`[EmailService] No attempts found for IP ${cleanIP} in last hour, checking all time...`);
+        const { data: allAttempts, error: allError } = await supabase
+          .from('login_history')
+          .select('id, ip_address, email, success, created_at')
+          .eq('ip_address', cleanIP)
+          .order('created_at', { ascending: false })
+          .limit(20);
+        
+        console.log(`[EmailService] All-time query for IP ${cleanIP}:`, {
+          foundAttempts: allAttempts?.length || 0,
+          attempts: allAttempts,
+          error: allError
+        });
+        
+        // If we found attempts in all-time but not in last hour, use all-time for now
+        if (allAttempts && allAttempts.length > 0) {
+          console.warn(`[EmailService] Found ${allAttempts.length} attempts in all-time but 0 in last hour - possible timezone/query issue`);
+          // Use all-time data but filter to last hour manually
+          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+          const recentFromAll = allAttempts.filter(a => new Date(a.created_at) >= oneHourAgo);
+          if (recentFromAll.length > 0) {
+            console.log(`[EmailService] After manual filtering: ${recentFromAll.length} attempts in last hour`);
+            // Use the manually filtered data
+            const failedAttempts = recentFromAll.filter(a => !a.success) || [];
+            const totalAttempts = recentFromAll.length;
+            
+            // Continue with the logic below using these values
+            const shouldAlert = failedAttempts.length >= 3 || totalAttempts >= 5;
+            const shouldAutoBlock = failedAttempts.length >= 10 || totalAttempts >= 10;
+            
+            if (shouldAutoBlock) {
+              console.log(`[EmailService] Auto-blocking based on all-time query: ${failedAttempts.length} failed, ${totalAttempts} total`);
+              await this.autoBlockUserAndIP(loginData.email, loginData.ip_address, loginData.device_info);
+            } else if (shouldAlert) {
+              console.log(`[EmailService] Alerting based on all-time query: ${failedAttempts.length} failed, ${totalAttempts} total`);
+            }
+            return; // Exit early since we handled it
+          }
+        }
+      }
+
+      const failedAttempts = attemptsToCheck?.filter(a => !a.success) || [];
+      const totalAttempts = attemptsToCheck?.length || 0;
 
       // Debug logging
       console.log(`[EmailService] Suspicious login check for IP ${loginData.ip_address}:`, {
         totalAttempts,
         failedAttempts: failedAttempts.length,
-        email: loginData.email
+        email: loginData.email,
+        attemptsToCheck: attemptsToCheck?.slice(0, 5), // Show first 5 for debugging
+        usingSuspiciousView: suspiciousData && suspiciousData.length > 0
       });
 
       // Alert conditions:

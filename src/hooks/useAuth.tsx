@@ -399,10 +399,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) {
         await handleAuthError(error);
+        setError(prev => ({ ...prev, signIn: error }));
+        return { error };
+      }
+
+      // CRITICAL: Check if user is suspended AFTER successful authentication
+      // This prevents suspended users from staying logged in
+      if (data.user) {
+        const { data: postAuthProfile } = await supabase
+          .from('profiles')
+          .select('subscription_status')
+          .eq('id', data.user.id)
+          .single();
+
+        if (postAuthProfile?.subscription_status === 'suspended') {
+          console.warn('[useAuth] User authenticated but account is suspended, signing out immediately');
+          await supabase.auth.signOut();
+          const suspendedError = new Error('Your account has been suspended. Contact support for assistance.');
+          setError(prev => ({ ...prev, signIn: suspendedError }));
+          return { error: suspendedError };
+        }
       }
       
-      setError(prev => ({ ...prev, signIn: error }));
-      return { error };
+      setError(prev => ({ ...prev, signIn: null }));
+      return { error: null };
     } catch (error) {
       // Log failed signin attempt
       await ipTrackingService.logLoginActivity({
