@@ -1154,6 +1154,15 @@ export class EmailService {
    */
   static async isIPBlocked(ipAddress: string): Promise<boolean> {
     try {
+      // First try using the database function (more secure)
+      const { data: functionResult, error: functionError } = await (supabase as any)
+        .rpc('is_ip_blocked', { ip_address_to_check: ipAddress });
+
+      if (!functionError && functionResult !== null) {
+        return functionResult === true;
+      }
+
+      // Fallback to direct table query if function doesn't exist yet
       // Using 'as any' - types generated after migration
       const { data, error } = await (supabase as any)
         .from('blocked_ips')
@@ -1163,9 +1172,15 @@ export class EmailService {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        // PGRST116 = no rows found, which is fine
+        // PGRST116 = no rows found, which is fine (IP not blocked)
         if (error.code === '42P01') {
-          // Table doesn't exist
+          // Table doesn't exist - migration hasn't been run
+          console.warn('[EmailService] blocked_ips table does not exist. Run migration 20251213_fix_suspend_and_ip_blocking.sql');
+          return false;
+        }
+        if (error.code === '42883') {
+          // Function doesn't exist - migration hasn't been run
+          console.warn('[EmailService] is_ip_blocked function does not exist. Run migration 20251213_fix_suspend_and_ip_blocking.sql');
           return false;
         }
         console.error('[EmailService] Error checking blocked IP:', error);

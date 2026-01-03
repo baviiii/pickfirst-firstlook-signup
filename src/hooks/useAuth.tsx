@@ -184,6 +184,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               }, 3000))
             ]);
             
+            // Check if user is suspended or IP is blocked AFTER authentication
+            if (profileData) {
+              // Check if account is suspended
+              if (profileData.subscription_status === 'suspended') {
+                console.warn('[useAuth] User account is suspended, signing out');
+                await supabase.auth.signOut();
+                setError(prev => ({ 
+                  ...prev, 
+                  signIn: new Error('Your account has been suspended. Contact support for assistance.') 
+                }));
+                if (mounted) {
+                  setLoading(false);
+                  clearTimeout(safetyTimeout);
+                }
+                return;
+              }
+
+              // Check if IP is blocked
+              const clientInfo = await ipTrackingService.getClientInfo();
+              if (clientInfo?.ip) {
+                const isBlocked = await EmailService.isIPBlocked(clientInfo.ip);
+                if (isBlocked) {
+                  console.warn('[useAuth] IP address is blocked, signing out');
+                  await supabase.auth.signOut();
+                  setError(prev => ({ 
+                    ...prev, 
+                    signIn: new Error('Access denied. Your IP has been blocked due to suspicious activity. Contact support for assistance.') 
+                  }));
+                  if (mounted) {
+                    setLoading(false);
+                    clearTimeout(safetyTimeout);
+                  }
+                  return;
+                }
+              }
+            }
+            
             // Always set loading to false after profile fetch attempt
             if (mounted) {
               setLoading(false);
