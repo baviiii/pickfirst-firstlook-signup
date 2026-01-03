@@ -968,6 +968,13 @@ export class EmailService {
       const failedAttempts = recentAttempts?.filter(a => !a.success) || [];
       const totalAttempts = recentAttempts?.length || 0;
 
+      // Debug logging
+      console.log(`[EmailService] Suspicious login check for IP ${loginData.ip_address}:`, {
+        totalAttempts,
+        failedAttempts: failedAttempts.length,
+        email: loginData.email
+      });
+
       // Alert conditions:
       // 1. More than 5 failed attempts from same IP in last hour
       // 2. More than 10 total attempts from same IP in last hour (auto-block)
@@ -981,21 +988,23 @@ export class EmailService {
         shouldAlert = true;
         shouldAutoBlock = true;
         alertType = 'brute_force';
-      } else if (failedAttempts.length >= 5) {
-        shouldAlert = true;
-        alertType = 'multiple_failures';
+        console.log(`[EmailService] Triggering auto-block: ${failedAttempts.length} failed attempts >= 10`);
       } else if (totalAttempts >= 10) {
         shouldAlert = true;
         shouldAutoBlock = true;
         alertType = 'brute_force';
+        console.log(`[EmailService] Triggering auto-block: ${totalAttempts} total attempts >= 10`);
+      } else if (failedAttempts.length >= 5) {
+        shouldAlert = true;
+        alertType = 'multiple_failures';
       } else if (!loginData.success && failedAttempts.length >= 3) {
         shouldAlert = true;
         alertType = 'multiple_failures';
       }
 
-      // Auto-block after 10 failed attempts
+      // Auto-block after 10 failed attempts OR 10 total attempts
       if (shouldAutoBlock) {
-        console.log(`[EmailService] Auto-blocking due to ${failedAttempts.length} failed attempts`);
+        console.log(`[EmailService] Auto-blocking due to ${failedAttempts.length} failed attempts (${totalAttempts} total)`);
         await this.autoBlockUserAndIP(loginData.email, loginData.ip_address, loginData.device_info);
       }
 
@@ -1048,7 +1057,26 @@ export class EmailService {
       }
 
       // 2. Block the IP address
-      await this.blockIP(ipAddress, `Brute force attack targeting: ${email}`, 'system');
+      const blockResult = await this.blockIP(ipAddress, `Brute force attack targeting: ${email}`, 'system');
+      if (blockResult.error) {
+        console.error(`[EmailService] Failed to block IP ${ipAddress}:`, blockResult.error);
+        // Try using the database function as fallback
+        try {
+          const { error: rpcError } = await (supabase as any)
+            .rpc('block_ip', { 
+              ip_address_to_block: ipAddress,
+              block_reason: `Brute force attack targeting: ${email}`,
+              blocked_by_user: 'system'
+            });
+          if (rpcError) {
+            console.error(`[EmailService] Failed to block IP via RPC:`, rpcError);
+          } else {
+            console.log(`[EmailService] IP ${ipAddress} blocked via RPC function`);
+          }
+        } catch (rpcErr) {
+          console.error(`[EmailService] RPC block_ip function error:`, rpcErr);
+        }
+      }
 
       // 3. Block the device if device info is available
       if (deviceInfo?.browser && deviceInfo?.os) {

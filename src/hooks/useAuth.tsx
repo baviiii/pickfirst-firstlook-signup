@@ -369,6 +369,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const rateLimitResult = await rateLimitService.checkRateLimit(emailValidation.sanitizedValue!, 'signIn');
       if (!rateLimitResult.allowed) {
+        // Log rate-limited attempt so it counts toward IP blocking threshold
+        const clientInfo = await ipTrackingService.getClientInfo();
+        await ipTrackingService.logLoginActivity({
+          email: emailValidation.sanitizedValue!,
+          login_type: 'signin',
+          success: false,
+          failure_reason: 'Rate limit exceeded'
+        });
+        
         setError(prev => ({ ...prev, signIn: new Error('Too many login attempts. Please try again later.') }));
         return { error: new Error('Too many login attempts. Please try again later.') };
       }
