@@ -9,6 +9,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ipTrackingService } from '@/services/ipTrackingService';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { EmailService } from '@/services/emailService';
+import { securityService } from '@/services/securityService';
+import { toast } from 'sonner';
 import { 
   Shield, 
   MapPin, 
@@ -50,6 +53,8 @@ export const LoginHistoryManager: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [timeRange, setTimeRange] = useState<string>('24h');
+  const [blockingIP, setBlockingIP] = useState<string | null>(null);
+  const [suspendingUser, setSuspendingUser] = useState<string | null>(null);
 
   // Check if user has admin access
   const isAdmin = profile?.role === 'super_admin';
@@ -143,6 +148,56 @@ export const LoginHistoryManager: React.FC = () => {
     
     return matchesSearch && matchesType;
   });
+
+  const handleBlockIP = async (ipAddress: string) => {
+    if (!confirm(`Are you sure you want to block IP address ${ipAddress}? This will prevent all access from this IP.`)) {
+      return;
+    }
+
+    setBlockingIP(ipAddress);
+    try {
+      const result = await EmailService.blockIP(
+        ipAddress,
+        'Blocked by admin due to suspicious activity',
+        profile?.id || 'system'
+      );
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      toast.success(`IP address ${ipAddress} has been blocked`);
+      loadSuspiciousLogins(); // Refresh the list
+    } catch (error: any) {
+      console.error('Error blocking IP:', error);
+      toast.error(`Failed to block IP: ${error.message || 'Unknown error'}`);
+    } finally {
+      setBlockingIP(null);
+    }
+  };
+
+  const handleSuspendUser = async (userId: string, email: string) => {
+    if (!confirm(`Are you sure you want to suspend user ${email}? They will not be able to access their account.`)) {
+      return;
+    }
+
+    setSuspendingUser(userId);
+    try {
+      const result = await securityService.updateUserStatus(userId, 'suspended');
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      toast.success(`User ${email} has been suspended`);
+      loadSuspiciousLogins(); // Refresh the list
+    } catch (error: any) {
+      console.error('Error suspending user:', error);
+      toast.error(`Failed to suspend user: ${error.message || 'Unknown error'}`);
+    } finally {
+      setSuspendingUser(null);
+    }
+  };
 
   const exportToCSV = () => {
     const headers = ['Date', 'Email', 'Name', 'IP Address', 'Location', 'Device', 'Browser', 'OS', 'Type', 'Status', 'Failure Reason'];
@@ -352,8 +407,51 @@ export const LoginHistoryManager: React.FC = () => {
                             Location: {getLocationString(record.location_info)}
                           </div>
                         </div>
-                        <div className="text-right text-sm text-gray-800 dark:text-gray-200">
-                          <div>{new Date(record.created_at).toLocaleString()}</div>
+                        <div className="flex flex-col items-end gap-2">
+                          <div className="text-sm text-gray-800 dark:text-gray-200">
+                            {new Date(record.created_at).toLocaleString()}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleBlockIP(record.ip_address)}
+                              disabled={blockingIP === record.ip_address}
+                            >
+                              {blockingIP === record.ip_address ? (
+                                <>
+                                  <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                                  Blocking...
+                                </>
+                              ) : (
+                                <>
+                                  <Shield className="h-3 w-3 mr-1" />
+                                  Block IP
+                                </>
+                              )}
+                            </Button>
+                            {record.user_id && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                                onClick={() => handleSuspendUser(record.user_id, record.email)}
+                                disabled={suspendingUser === record.user_id}
+                              >
+                                {suspendingUser === record.user_id ? (
+                                  <>
+                                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                                    Suspending...
+                                  </>
+                                ) : (
+                                  <>
+                                    <AlertTriangle className="h-3 w-3 mr-1" />
+                                    Suspend User
+                                  </>
+                                )}
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

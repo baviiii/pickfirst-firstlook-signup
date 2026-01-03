@@ -1,2 +1,3 @@
-
-
+-- This migration has been moved to 20251213_fix_suspend_and_ip_blocking.sql
+-- This file is kept for reference but the actual migration is in the other file
+-- The blocked_ips table and related functionality are now in 20251213_fix_suspend_and_ip_blocking.sql
