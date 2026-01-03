@@ -116,16 +116,19 @@ export const SubscriptionPlans = () => {
         </p>
         <div className="flex items-center justify-center gap-4 mb-8">
           <span className={!isYearly ? 'font-semibold text-foreground' : 'text-muted-foreground'}>Monthly</span>
-          <Button
-            variant="outline"
-            size="sm"
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isYearly}
             onClick={() => setIsYearly(!isYearly)}
-            className="relative h-6 w-11 rounded-full p-0 bg-card border border-pickfirst-yellow/30"
+            className="relative inline-flex h-6 w-11 items-center rounded-full bg-card border border-pickfirst-yellow/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer"
           >
-            <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-primary transition-transform ${
-              isYearly ? 'translate-x-5' : 'translate-x-0.5'
-            }`} />
-          </Button>
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-primary transition-transform duration-200 ease-in-out ${
+                isYearly ? 'translate-x-[22px]' : 'translate-x-[2px]'
+              }`}
+            />
+          </button>
           <span className={isYearly ? 'font-semibold text-foreground' : 'text-muted-foreground'}>
             Yearly
             <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary border-primary/30">Save 17%</Badge>
