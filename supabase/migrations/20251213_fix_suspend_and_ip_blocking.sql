@@ -25,6 +25,13 @@ CREATE TABLE IF NOT EXISTS public.blocked_ips (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+-- Step 3a: Add missing columns if table already exists (for existing installations)
+ALTER TABLE public.blocked_ips 
+ADD COLUMN IF NOT EXISTS unblocked_at TIMESTAMP WITH TIME ZONE,
+ADD COLUMN IF NOT EXISTS unblocked_by TEXT,
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
 -- Step 4: Create indexes for blocked_ips
 CREATE INDEX IF NOT EXISTS idx_blocked_ips_ip_address ON public.blocked_ips(ip_address);
 CREATE INDEX IF NOT EXISTS idx_blocked_ips_is_active ON public.blocked_ips(is_active);
