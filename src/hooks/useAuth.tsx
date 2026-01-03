@@ -256,6 +256,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  // Monitor profile changes and sign out if user becomes suspended
+  useEffect(() => {
+    if (profile && profile.subscription_status === 'suspended' && user) {
+      console.warn('[useAuth] Profile changed to suspended, signing out immediately');
+      supabase.auth.signOut().then(() => {
+        setError(prev => ({ 
+          ...prev, 
+          signIn: new Error('Your account has been suspended. Contact support for assistance.') 
+        }));
+      });
+    }
+  }, [profile, user]);
+
   const signUp = async (email: string, password: string, fullName?: string, userType?: string) => {
     // Input validation and sanitization
     const emailValidation = InputSanitizer.validateEmail(email);

@@ -123,7 +123,7 @@ CREATE TRIGGER update_blocked_ips_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_blocked_ips_updated_at();
 
--- Step 10: Create function to block IP (for use by system)
+-- Step 10: Create function to block IP (for use by system - bypasses RLS)
 CREATE OR REPLACE FUNCTION public.block_ip(
   ip_address_to_block TEXT,
   block_reason TEXT DEFAULT NULL,
@@ -159,14 +159,15 @@ BEGIN
       blocked_by = blocked_by_user,
       reason = COALESCE(block_reason, reason),
       unblocked_at = NULL,
-      unblocked_by = NULL
+      unblocked_by = NULL,
+      updated_at = NOW()
     WHERE id = blocked_id;
     RETURN blocked_id;
   END IF;
   
-  -- Create new block entry
-  INSERT INTO public.blocked_ips (ip_address, reason, blocked_by)
-  VALUES (ip_address_to_block, block_reason, blocked_by_user)
+  -- Create new block entry (SECURITY DEFINER bypasses RLS)
+  INSERT INTO public.blocked_ips (ip_address, reason, blocked_by, blocked_at, is_active)
+  VALUES (ip_address_to_block, block_reason, blocked_by_user, NOW(), true)
   RETURNING id INTO blocked_id;
   
   RETURN blocked_id;
@@ -195,10 +196,14 @@ BEGIN
 END;
 $$;
 
--- Step 12: Add comment
+-- Step 12: Grant execute on block_ip to authenticated and anon (for auto-blocking)
+GRANT EXECUTE ON FUNCTION public.block_ip TO authenticated;
+GRANT EXECUTE ON FUNCTION public.block_ip TO anon;
+
+-- Step 13: Add comment
 COMMENT ON TABLE public.blocked_ips IS 'Stores blocked IP addresses for security purposes';
 COMMENT ON FUNCTION public.is_ip_blocked IS 'Checks if an IP address is currently blocked';
-COMMENT ON FUNCTION public.block_ip IS 'Blocks an IP address and returns the block record ID';
+COMMENT ON FUNCTION public.block_ip IS 'Blocks an IP address and returns the block record ID (bypasses RLS via SECURITY DEFINER)';
 COMMENT ON FUNCTION public.unblock_ip IS 'Unblocks an IP address';
 
 -- Step 13: Create function to check suspicious login activity (bypasses RLS)

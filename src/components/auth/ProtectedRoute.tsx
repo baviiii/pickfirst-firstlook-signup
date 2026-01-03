@@ -32,6 +32,15 @@ export const ProtectedRoute = ({
         return;
       }
 
+      // CRITICAL: Check if user is suspended - block access immediately
+      if (profile && profile.subscription_status === 'suspended') {
+        console.warn('[ProtectedRoute] User is suspended, signing out and redirecting');
+        supabase.auth.signOut().then(() => {
+          navigate('/auth?error=suspended', { replace: true });
+        });
+        return;
+      }
+
       // Note: Profile loading is handled in useAuth hook
       // We only check for deletion here if loading is complete and profile still missing
       // The useAuth hook already handles the deletion check with retries
@@ -85,6 +94,19 @@ export const ProtectedRoute = ({
     );
   }
 
+  // CRITICAL: Check if user is suspended before rendering anything
+  if (profile && profile.subscription_status === 'suspended') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-black">
+        <div className="text-center space-y-4">
+          <div className="text-red-500 text-xl font-bold">Account Suspended</div>
+          <p className="text-white/70">Your account has been suspended. Contact support for assistance.</p>
+          <p className="text-white/50 text-sm">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
+
   // If role is required, we MUST wait for profile to load before allowing access
   // This prevents security issues where unauthorized users could see protected content
   if (requiredRole) {
@@ -119,6 +141,6 @@ export const ProtectedRoute = ({
     }
   }
 
-  // User is authenticated and has required permissions
+  // User is authenticated, not suspended, and has required permissions
   return <>{children}</>;
 };

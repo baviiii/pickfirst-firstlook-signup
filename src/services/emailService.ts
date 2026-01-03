@@ -989,7 +989,13 @@ export class EmailService {
         
         if (shouldBlock) {
           console.log(`[EmailService] Auto-blocking: ${failedAttempts} failed, ${totalAttempts} total attempts`);
-          await this.autoBlockUserAndIP(loginData.email, loginData.ip_address, loginData.device_info);
+          console.log(`[EmailService] Blocking IP: ${loginData.ip_address}, Email: ${loginData.email}`);
+          try {
+            await this.autoBlockUserAndIP(loginData.email, loginData.ip_address, loginData.device_info);
+            console.log(`[EmailService] Auto-block completed for ${loginData.email}`);
+          } catch (blockError) {
+            console.error(`[EmailService] Error in autoBlockUserAndIP:`, blockError);
+          }
         } else if (shouldAlert) {
           console.log(`[EmailService] Alerting: ${failedAttempts} failed, ${totalAttempts} total attempts`);
           await this.sendSecurityAlertToAdmins('multiple_failures', {
@@ -1193,25 +1199,46 @@ export class EmailService {
         console.log(`[EmailService] User ${email} suspended`);
       }
 
-      // 2. Block the IP address
-      const blockResult = await this.blockIP(ipAddress, `Brute force attack targeting: ${email}`, 'system');
-      if (blockResult.error) {
-        console.error(`[EmailService] Failed to block IP ${ipAddress}:`, blockResult.error);
-        // Try using the database function as fallback
-        try {
-          const { error: rpcError } = await (supabase as any)
-            .rpc('block_ip', { 
-              ip_address_to_block: ipAddress,
-              block_reason: `Brute force attack targeting: ${email}`,
-              blocked_by_user: 'system'
-            });
-          if (rpcError) {
-            console.error(`[EmailService] Failed to block IP via RPC:`, rpcError);
+      // 2. Block the IP address - use RPC function first (bypasses RLS)
+      console.log(`[EmailService] Attempting to block IP: ${ipAddress}`);
+      try {
+        const { data: blockId, error: rpcError } = await (supabase as any)
+          .rpc('block_ip', { 
+            ip_address_to_block: ipAddress,
+            block_reason: `Brute force attack targeting: ${email}`,
+            blocked_by_user: 'system'
+          });
+        
+        if (rpcError) {
+          console.error(`[EmailService] RPC block_ip failed:`, {
+            error: rpcError,
+            code: rpcError.code,
+            message: rpcError.message,
+            details: rpcError.details,
+            hint: rpcError.hint
+          });
+          
+          // Fallback to direct method
+          console.log(`[EmailService] Falling back to direct blockIP method`);
+          const blockResult = await this.blockIP(ipAddress, `Brute force attack targeting: ${email}`, 'system');
+          if (blockResult.error) {
+            console.error(`[EmailService] Direct blockIP also failed:`, blockResult.error);
           } else {
-            console.log(`[EmailService] IP ${ipAddress} blocked via RPC function`);
+            console.log(`[EmailService] IP ${ipAddress} blocked via direct method`);
           }
-        } catch (rpcErr) {
-          console.error(`[EmailService] RPC block_ip function error:`, rpcErr);
+        } else {
+          console.log(`[EmailService] IP ${ipAddress} blocked successfully via RPC function, Block ID: ${blockId}`);
+          
+          // Verify the block was created
+          const verifyResult = await this.isIPBlocked(ipAddress);
+          console.log(`[EmailService] Verification: IP ${ipAddress} is now blocked: ${verifyResult}`);
+        }
+      } catch (rpcErr) {
+        console.error(`[EmailService] Exception calling block_ip RPC:`, rpcErr);
+        // Try direct method as last resort
+        const blockResult = await this.blockIP(ipAddress, `Brute force attack targeting: ${email}`, 'system');
+        if (blockResult.error) {
+          console.error(`[EmailService] All blocking methods failed for IP ${ipAddress}`);
         }
       }
 
@@ -1235,18 +1262,70 @@ export class EmailService {
     blockedBy: string = 'system'
   ): Promise<{ error: any }> {
     try {
-      // Check if already blocked (using 'as any' - types generated after migration)
-      const { data: existing } = await (supabase as any)
-        .from('blocked_ips')
-        .select('id')
-        .eq('ip_address', ipAddress)
-        .single();
+      console.log(`[EmailService] Attempting to block IP: ${ipAddress}`);
+      
+      // First try using the database RPC function (bypasses RLS)
+      try {
+        const { data: rpcResult, error: rpcError } = await (supabase as any)
+          .rpc('block_ip', { 
+            ip_address_to_block: ipAddress,
+            block_reason: reason,
+            blocked_by_user: blockedBy
+          });
+        
+        if (!rpcError) {
+          console.log(`[EmailService] IP ${ipAddress} blocked successfully via RPC function, ID: ${rpcResult}`);
+          return { error: null };
+        }
+        
+        // If RPC function doesn't exist, fall back to direct insert
+        if (rpcError.code === '42883') {
+          console.warn('[EmailService] block_ip RPC function does not exist, using direct insert');
+        } else {
+          console.error(`[EmailService] RPC block_ip error:`, rpcError);
+          // Continue to try direct insert as fallback
+        }
+      } catch (rpcErr) {
+        console.warn('[EmailService] RPC block_ip failed, trying direct insert:', rpcErr);
+      }
 
-      if (existing) {
-        console.log(`[EmailService] IP ${ipAddress} already blocked`);
+      // Fallback: Check if already blocked (using 'as any' - types generated after migration)
+      const { data: existing, error: checkError } = await (supabase as any)
+        .from('blocked_ips')
+        .select('id, is_active')
+        .eq('ip_address', ipAddress)
+        .maybeSingle(); // Use maybeSingle instead of single to avoid error on no rows
+
+      if (existing && existing.is_active) {
+        console.log(`[EmailService] IP ${ipAddress} already blocked (ID: ${existing.id})`);
         return { error: null };
       }
 
+      // If exists but inactive, reactivate it
+      if (existing && !existing.is_active) {
+        console.log(`[EmailService] Reactivating blocked IP: ${ipAddress}`);
+        const { error: updateError } = await (supabase as any)
+          .from('blocked_ips')
+          .update({
+            is_active: true,
+            blocked_at: new Date().toISOString(),
+            blocked_by: blockedBy,
+            reason: reason,
+            unblocked_at: null,
+            unblocked_by: null
+          })
+          .eq('id', existing.id);
+        
+        if (updateError) {
+          console.error(`[EmailService] Failed to reactivate blocked IP:`, updateError);
+          return { error: updateError };
+        }
+        
+        console.log(`[EmailService] IP ${ipAddress} reactivated successfully`);
+        return { error: null };
+      }
+
+      // Insert new block
       const { error } = await (supabase as any)
         .from('blocked_ips')
         .insert({
@@ -1260,16 +1339,29 @@ export class EmailService {
       if (error) {
         // If table doesn't exist, log but don't fail
         if (error.code === '42P01') {
-          console.warn('[EmailService] blocked_ips table does not exist, skipping IP block');
+          console.warn('[EmailService] blocked_ips table does not exist, skipping IP block. Run migration 20251213_fix_suspend_and_ip_blocking.sql');
           return { error: null };
         }
+        
+        // If RLS is blocking, try to get more info
+        if (error.code === '42501' || error.message?.includes('permission denied')) {
+          console.error(`[EmailService] RLS policy blocking IP block. Error:`, error);
+          console.error(`[EmailService] This is likely an RLS issue. Check blocked_ips table policies.`);
+        }
+        
         throw error;
       }
 
-      console.log(`[EmailService] IP ${ipAddress} blocked successfully`);
+      console.log(`[EmailService] IP ${ipAddress} blocked successfully via direct insert`);
       return { error: null };
-    } catch (error) {
-      console.error('[EmailService] Error blocking IP:', error);
+    } catch (error: any) {
+      console.error('[EmailService] Error blocking IP:', {
+        error,
+        ip: ipAddress,
+        code: error?.code,
+        message: error?.message,
+        details: error?.details
+      });
       return { error };
     }
   }
@@ -1319,22 +1411,31 @@ export class EmailService {
    */
   static async isIPBlocked(ipAddress: string): Promise<boolean> {
     try {
-      // First try using the database function (more secure)
+      const cleanIP = ipAddress.trim();
+      console.log(`[EmailService] Checking if IP is blocked: ${cleanIP}`);
+      
+      // First try using the database function (bypasses RLS)
       const { data: functionResult, error: functionError } = await (supabase as any)
-        .rpc('is_ip_blocked', { ip_address_to_check: ipAddress });
+        .rpc('is_ip_blocked', { ip_address_to_check: cleanIP });
 
       if (!functionError && functionResult !== null) {
-        return functionResult === true;
+        const isBlocked = functionResult === true;
+        console.log(`[EmailService] is_ip_blocked RPC result for ${cleanIP}: ${isBlocked}`);
+        return isBlocked;
+      }
+      
+      if (functionError) {
+        console.warn(`[EmailService] is_ip_blocked RPC error, using fallback:`, functionError);
       }
 
       // Fallback to direct table query if function doesn't exist yet
       // Using 'as any' - types generated after migration
       const { data, error } = await (supabase as any)
         .from('blocked_ips')
-        .select('id')
-        .eq('ip_address', ipAddress)
+        .select('id, ip_address, is_active')
+        .eq('ip_address', cleanIP)
         .eq('is_active', true)
-        .single();
+        .maybeSingle(); // Use maybeSingle to avoid error on no rows
 
       if (error && error.code !== 'PGRST116') {
         // PGRST116 = no rows found, which is fine (IP not blocked)
@@ -1348,10 +1449,17 @@ export class EmailService {
           console.warn('[EmailService] is_ip_blocked function does not exist. Run migration 20251213_fix_suspend_and_ip_blocking.sql');
           return false;
         }
-        console.error('[EmailService] Error checking blocked IP:', error);
+        console.error('[EmailService] Error checking blocked IP:', {
+          error,
+          ip: cleanIP,
+          code: error.code,
+          message: error.message
+        });
       }
 
-      return !!data;
+      const isBlocked = !!data;
+      console.log(`[EmailService] Direct query result for ${cleanIP}: ${isBlocked ? 'BLOCKED' : 'NOT BLOCKED'}`, data);
+      return isBlocked;
     } catch (error) {
       console.error('[EmailService] Error checking blocked IP:', error);
       return false;
