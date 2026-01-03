@@ -1469,16 +1469,58 @@ export class EmailService {
   /**
    * Unblock an IP address (for admin use)
    */
-  static async unblockIP(ipAddress: string): Promise<{ error: any }> {
+  static async unblockIP(ipAddress: string, unblockedBy: string = 'admin'): Promise<{ error: any }> {
     try {
-      // Using 'as any' - types generated after migration
+      const cleanIP = ipAddress.trim();
+      console.log(`[EmailService] Attempting to unblock IP: ${cleanIP}`);
+      
+      // First try using the RPC function (bypasses RLS)
+      const { error: rpcError } = await (supabase as any)
+        .rpc('unblock_ip', { 
+          ip_address_to_unblock: cleanIP,
+          unblocked_by_user: unblockedBy
+        });
+      
+      if (!rpcError) {
+        console.log(`[EmailService] IP ${cleanIP} unblocked successfully via RPC function`);
+        return { error: null };
+      }
+      
+      // Fallback to direct update if RPC doesn't exist
+      console.warn(`[EmailService] RPC unblock_ip failed, using direct update:`, rpcError);
       const { error } = await (supabase as any)
         .from('blocked_ips')
-        .update({ is_active: false, unblocked_at: new Date().toISOString() })
-        .eq('ip_address', ipAddress);
+        .update({ 
+          is_active: false, 
+          unblocked_at: new Date().toISOString(),
+          unblocked_by: unblockedBy
+        })
+        .eq('ip_address', cleanIP);
+
+      if (error) {
+        console.error(`[EmailService] Direct unblock also failed:`, {
+          error,
+          ip: cleanIP,
+          code: error.code,
+          message: error.message
+        });
+        
+        // If RLS is blocking, log it
+        if (error.code === '42501' || error.message?.includes('permission denied')) {
+          console.error(`[EmailService] RLS policy blocking IP unblock. Check blocked_ips table policies.`);
+        }
+      } else {
+        console.log(`[EmailService] IP ${cleanIP} unblocked via direct update`);
+      }
 
       return { error };
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[EmailService] Error unblocking IP:', {
+        error,
+        ip: ipAddress,
+        code: error?.code,
+        message: error?.message
+      });
       return { error };
     }
   }
@@ -1488,15 +1530,28 @@ export class EmailService {
    */
   static async getBlockedIPs(): Promise<{ data: any[]; error: any }> {
     try {
+      console.log('[EmailService] Fetching blocked IPs...');
       // Using 'as any' - types generated after migration
+      // Only get active blocks
       const { data, error } = await (supabase as any)
         .from('blocked_ips')
         .select('*')
         .eq('is_active', true)
         .order('blocked_at', { ascending: false });
 
-      return { data: data || [], error };
+      if (error) {
+        console.error('[EmailService] Error fetching blocked IPs:', {
+          error,
+          code: error.code,
+          message: error.message
+        });
+        return { data: [], error };
+      }
+
+      console.log(`[EmailService] Found ${data?.length || 0} active blocked IPs`);
+      return { data: data || [], error: null };
     } catch (error) {
+      console.error('[EmailService] Exception fetching blocked IPs:', error);
       return { data: [], error };
     }
   }

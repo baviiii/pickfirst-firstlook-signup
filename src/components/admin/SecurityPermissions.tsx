@@ -83,14 +83,20 @@ export const SecurityPermissions = () => {
 
   const handleUnblockIP = async (ipAddress: string) => {
     try {
-      const { error } = await EmailService.unblockIP(ipAddress);
-      if (error) throw error;
+      // Get current user for unblocked_by field
+      const unblockedBy = authUser?.email || 'admin';
+      const { error } = await EmailService.unblockIP(ipAddress, unblockedBy);
+      if (error) {
+        console.error('Error unblocking IP:', error);
+        throw error;
+      }
       
       toast.success(`IP ${ipAddress} unblocked successfully`);
+      // Force refresh the blocked IPs list
       await loadSecurityData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error unblocking IP:', error);
-      toast.error('Failed to unblock IP');
+      toast.error(`Failed to unblock IP: ${error?.message || 'Unknown error'}`);
     }
   };
 
@@ -316,9 +322,21 @@ export const SecurityPermissions = () => {
                     IPs automatically blocked after 10+ failed login attempts. Unblock to restore access.
                   </CardDescription>
                 </div>
-                <Badge className="bg-red-500 text-white">
-                  {blockedIPs.length} Blocked
-                </Badge>
+                <div className="flex items-center gap-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={loadSecurityData}
+                    disabled={loading}
+                    className="text-white border-gray-600 hover:bg-gray-800"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                  <Badge className="bg-red-500 text-white">
+                    {blockedIPs.length} Blocked
+                  </Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent>

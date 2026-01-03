@@ -41,6 +41,14 @@ CREATE INDEX IF NOT EXISTS idx_blocked_ips_blocked_at ON public.blocked_ips(bloc
 ALTER TABLE public.blocked_ips ENABLE ROW LEVEL SECURITY;
 
 -- Step 6: Create RLS policies for blocked_ips
+-- Drop existing policies first (for idempotency)
+DROP POLICY IF EXISTS "Super admins can view all blocked IPs" ON public.blocked_ips;
+DROP POLICY IF EXISTS "Super admins can block IPs" ON public.blocked_ips;
+DROP POLICY IF EXISTS "Super admins can update blocked IPs" ON public.blocked_ips;
+DROP POLICY IF EXISTS "Super admins can manage blocked IPs" ON public.blocked_ips;
+DROP POLICY IF EXISTS "Service role can manage blocked IPs" ON public.blocked_ips;
+DROP POLICY IF EXISTS "Public can check if IP is blocked" ON public.blocked_ips;
+
 -- Super admins can view all blocked IPs
 CREATE POLICY "Super admins can view all blocked IPs"
   ON public.blocked_ips
@@ -125,6 +133,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Drop trigger if exists (for idempotency)
+DROP TRIGGER IF EXISTS update_blocked_ips_updated_at ON public.blocked_ips;
+
 CREATE TRIGGER update_blocked_ips_updated_at
   BEFORE UPDATE ON public.blocked_ips
   FOR EACH ROW
@@ -181,7 +192,7 @@ BEGIN
 END;
 $$;
 
--- Step 11: Create function to unblock IP
+-- Step 11: Create function to unblock IP (super admin only)
 CREATE OR REPLACE FUNCTION public.unblock_ip(
   ip_address_to_unblock TEXT,
   unblocked_by_user TEXT DEFAULT 'system'
@@ -192,6 +203,11 @@ SECURITY DEFINER
 SET search_path TO public
 AS $$
 BEGIN
+  -- Only allow super admins to unblock IPs
+  IF NOT has_role(auth.uid(), 'super_admin') THEN
+    RAISE EXCEPTION 'Permission denied: Only super admins can unblock IP addresses';
+  END IF;
+
   UPDATE public.blocked_ips
   SET 
     is_active = false,
@@ -203,9 +219,16 @@ BEGIN
 END;
 $$;
 
--- Step 12: Grant execute on block_ip to authenticated and anon (for auto-blocking)
+-- Step 12: Grant execute permissions
+-- block_ip: accessible to authenticated and anon (for auto-blocking during login)
 GRANT EXECUTE ON FUNCTION public.block_ip TO authenticated;
 GRANT EXECUTE ON FUNCTION public.block_ip TO anon;
+
+-- unblock_ip: Only accessible to authenticated users (function itself checks for super_admin)
+-- We don't grant to anon because unblocking should require authentication
+GRANT EXECUTE ON FUNCTION public.unblock_ip TO authenticated;
+-- Note: The function itself enforces super_admin check, so even authenticated users
+-- who aren't super admins will get a permission denied error
 
 -- Step 13: Add comment
 COMMENT ON TABLE public.blocked_ips IS 'Stores blocked IP addresses for security purposes';
