@@ -41,7 +41,7 @@ const TermsAndConditions = () => {
                 2. Description of Service
               </h2>
               <p>
-                PickFirst is an off-market property platform that connects property buyers with real estate agents. We provide a marketplace for exclusive, off-market property listings and facilitate communication between parties.
+                PickFirst is a property platform that connects property buyers with real estate agents. We provide a marketplace for both off-market and on-market property listings, offering early access opportunities and facilitating direct communication between parties.
               </p>
             </section>
 

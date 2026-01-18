@@ -24,7 +24,7 @@ const About = () => {
     {
       icon: <Eye className="w-6 h-6" />,
       title: "First Look Access",
-      description: "See properties before they hit the market"
+      description: "See off-market and newly listed properties before others"
     },
     {
       icon: <Clock className="w-6 h-6" />,
@@ -73,11 +73,11 @@ const About = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">PickFirst</h1>
-                <p className="text-sm text-muted-foreground">Off-Market Property Access</p>
+                <p className="text-sm text-muted-foreground">Property Access Platform</p>
               </div>
             </div>
             <div className="hidden md:flex items-center space-x-8">
-              <span className="text-muted-foreground text-sm">🏆 Australia's Premier Off-Market Platform</span>
+              <span className="text-muted-foreground text-sm">🏆 Australia's Premier Property Access Platform</span>
             </div>
           </div>
         </div>
@@ -98,7 +98,7 @@ const About = () => {
               </span>
             </h1>
             <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed">
-              At PickFirst, we're revolutionizing how Australians discover and secure property by unlocking the exclusive off-market world — traditionally reserved for industry insiders. We believe the best opportunities shouldn't be buried in agent inboxes or delayed by outdated listing systems.
+              At PickFirst, we're revolutionizing how Australians discover and secure property by providing access to both off-market and on-market opportunities. We believe every buyer deserves first access to properties, whether they're exclusive listings or newly available on the market.
             </p>
             {/* Benefits Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
@@ -124,7 +124,19 @@ const About = () => {
           </h2>
           <div className="prose prose-lg prose-invert max-w-none">
             <p className="text-muted-foreground leading-relaxed mb-6">
-              Our platform connects serious buyers directly with off-market properties the moment they become available. No bidding wars. No wasted time. No middlemen charging thousands in fees. Just first access to Australia's hidden property opportunities.
+              Thank you! We are building PickFirst to change the way Australians access property forever.
+            </p>
+            <p className="text-muted-foreground leading-relaxed mb-6">
+              To replace stress with certainty.
+            </p>
+            <p className="text-muted-foreground leading-relaxed mb-6">
+              To replace waiting with opportunity.
+            </p>
+            <p className="text-muted-foreground leading-relaxed mb-6">
+              To replace closed doors with first access.
+            </p>
+            <p className="text-muted-foreground leading-relaxed mb-8">
+              Our mission is to give buyers control, clarity, and confidence — by unlocking off-market and early-access property opportunities, connecting them directly to both exclusive and on-market listings, and ensuring that the next generation of Australians doesn't miss out simply because they were last in line. We're committed to making property more accessible and affordable, giving every buyer an equal chance to find their perfect home without the stress, delays, and barriers that have defined property search for too long.
             </p>
             <p className="text-foreground font-semibold text-center text-xl bg-gradient-to-r from-pickfirst-yellow to-amber-500 bg-clip-text text-transparent">
               PickFirst isn't just another property platform — it's your competitive advantage in the market.
