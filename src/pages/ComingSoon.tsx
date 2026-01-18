@@ -39,9 +39,15 @@ export default function ComingSoon() {
         {/* Logo and Title */}
         <div className="text-center space-y-4">
           <img 
-            src="/logo.jpg" 
+            src="https://pickfirst.com.au/logo.jpg" 
             alt="PickFirst Logo" 
             className="w-24 h-24 mx-auto rounded-full shadow-lg"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              if (target.src !== '/logo.jpg') {
+                target.src = '/logo.jpg';
+              }
+            }}
           />
           <h1 className="text-4xl md:text-5xl font-bold text-foreground">
             PickFirst
@@ -105,7 +111,7 @@ export default function ComingSoon() {
 
         {/* Footer */}
         <p className="text-center text-sm text-muted-foreground">
-          © 2025 PickFirst. All rights reserved.
+          © 2026 PickFirst. All rights reserved.
         </p>
       </div>
     </div>

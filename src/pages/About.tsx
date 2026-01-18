@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,9 +10,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Home, Users, Mail, MapPin, Building, Briefcase, StickyNote, Eye, Clock, Shield, Star, ArrowRight, CheckCircle } from "lucide-react";
 
 const About = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [isVisible, setIsVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('buyer');
+  const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
@@ -48,9 +51,25 @@ const About = () => {
       <nav className="relative z-10 bg-card/80 backdrop-blur-lg border-b border-pickfirst-yellow/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-xl bg-pickfirst-yellow">
-                <Home className="w-6 h-6 text-black" />
+            <div className="flex items-center space-x-4 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/')}>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-xl bg-pickfirst-yellow overflow-hidden">
+                {!logoError ? (
+                  <img 
+                    src="https://pickfirst.com.au/logo.jpg" 
+                    alt="PickFirst Logo" 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (target.src !== '/logo.jpg') {
+                        target.src = '/logo.jpg';
+                      } else {
+                        setLogoError(true);
+                      }
+                    }}
+                  />
+                ) : (
+                  <Home className="w-6 h-6 text-black" />
+                )}
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">PickFirst</h1>
@@ -119,8 +138,8 @@ const About = () => {
         <div className="pickfirst-glass backdrop-blur-lg border border-pickfirst-yellow/30 rounded-2xl p-6 bg-card/80">
           <p className="text-foreground font-medium">
             Questions? We're here to help: 
-            <a href="mailto:hello@pickfirst.com.au" className="font-bold ml-2 text-pickfirst-yellow hover:text-amber-500 transition-colors">
-              hello@pickfirst.com.au
+            <a href="mailto:info@pickfirst.com.au" className="font-bold ml-2 text-pickfirst-yellow hover:text-amber-500 transition-colors">
+              info@pickfirst.com.au
             </a>
           </p>
         </div>

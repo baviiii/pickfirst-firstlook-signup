@@ -68,7 +68,27 @@ const PublicPreview = ({ onSignUpClick, onSignInClick }: PublicPreviewProps) => 
         <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
           Discover premium real estate opportunities with our curated selection of properties
         </p>
-        <div className="flex items-center justify-center gap-2 text-sm text-gray-400 bg-black/30 backdrop-blur-sm rounded-full px-4 py-2 w-fit mx-auto border border-yellow-400/20">
+        
+        {/* Prominent Sign In/Sign Up Buttons */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          <Button
+            onClick={onSignInClick}
+            variant="outline"
+            size="lg"
+            className="w-full sm:w-auto text-lg px-8 py-6 bg-pickfirst-yellow/20 border-2 border-pickfirst-yellow text-white hover:bg-pickfirst-yellow/30 hover:border-pickfirst-yellow font-bold transition-all duration-300 rounded-xl shadow-2xl shadow-pickfirst-yellow/30 hover:shadow-pickfirst-yellow/50"
+          >
+            Sign In
+          </Button>
+          <Button
+            onClick={onSignUpClick}
+            size="lg"
+            className="w-full sm:w-auto text-lg px-8 py-6 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black hover:from-yellow-300 hover:to-yellow-400 font-bold shadow-2xl hover:shadow-3xl hover:shadow-yellow-400/50 transition-all duration-300 transform hover:scale-105 rounded-xl border-0"
+          >
+            Sign Up Free
+          </Button>
+        </div>
+        
+        <div className="flex items-center justify-center gap-2 text-sm text-gray-400 bg-black/30 backdrop-blur-sm rounded-full px-4 py-2 w-fit mx-auto border border-yellow-400/20 mt-4">
           <Eye className="h-4 w-4 text-yellow-400" />
           <span>{1247 + viewedProperties} people viewed properties today</span>
         </div>

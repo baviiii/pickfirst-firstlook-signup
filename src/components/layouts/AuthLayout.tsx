@@ -138,22 +138,32 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
       />
 
       {/* Top nav / logo */}
-      <nav className="relative z-10 backdrop-blur-sm bg-card/80 border-b border-pickfirst-yellow/20 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20">
-            <div className="flex items-center space-x-3 sm:space-x-4">
+      <nav className="relative z-10 backdrop-blur-sm bg-white/80 border-b border-pickfirst-yellow/20 shadow-md sticky top-0">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16 md:h-20">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <button
                 type="button"
                 onClick={() => navigate('/')}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 border border-primary/40 flex items-center justify-center shadow-lg shadow-pickfirst-yellow/20 transition-all duration-300 hover:shadow-pickfirst-yellow/40 hover:scale-105 hover:border-pickfirst-yellow/50"
+                className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl bg-primary/10 border border-primary/40 flex items-center justify-center shadow-lg shadow-pickfirst-yellow/20 transition-all duration-300 hover:shadow-pickfirst-yellow/40 hover:scale-105 hover:border-pickfirst-yellow/50 overflow-hidden"
               >
-                <Home className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                <img
+                  src="https://pickfirst.com.au/logo.jpg"
+                  alt="PickFirst Logo"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (target.src !== '/logo.jpg') {
+                      target.src = '/logo.jpg';
+                    }
+                  }}
+                />
               </button>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
                   PickFirst
                 </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
+                <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 hidden xs:block sm:block">
                   Off-Market Property Access
                 </p>
               </div>
@@ -163,7 +173,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
       </nav>
 
       {/* Content */}
-      <main className="relative z-10 flex items-center justify-center min-h-[80vh] py-10 px-4">
+      <main className="relative z-10 flex items-center justify-center min-h-[calc(100vh-56px)] sm:min-h-[calc(100vh-64px)] md:min-h-[calc(100vh-80px)] py-4 sm:py-6 md:py-10 px-3 sm:px-4">
         {children}
       </main>
     </div>

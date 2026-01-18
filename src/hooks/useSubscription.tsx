@@ -227,7 +227,8 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
       if (error) throw error;
 
       if (data?.url) {
-        window.open(data.url, '_blank');
+        // Use location.href instead of window.open to avoid iOS popup blocker
+        window.location.href = data.url;
       }
     } catch (error) {
       toast.error('Failed to create checkout session');
@@ -260,7 +261,8 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
       }
 
       if (data?.url) {
-        window.open(data.url, '_blank');
+        // Use location.href instead of window.open to avoid iOS popup blocker
+        window.location.href = data.url;
       } else {
         toast.error('Unable to open subscription portal. Please try again.');
       }

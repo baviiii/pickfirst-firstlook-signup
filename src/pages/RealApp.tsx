@@ -114,9 +114,15 @@ const Index = () => {
             <div className="flex items-center space-x-3 sm:space-x-4">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-black/20 border border-pickfirst-yellow/30 flex items-center justify-center shadow-xl shadow-pickfirst-yellow/20 transition-all duration-300 hover:shadow-pickfirst-yellow/40 hover:scale-105 hover:border-pickfirst-yellow/50 p-2">
                 <img 
-                  src="/logo.jpg" 
+                  src="https://pickfirst.com.au/logo.jpg" 
                   alt="PickFirst Logo" 
                   className="w-full h-full object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (target.src !== '/logo.jpg') {
+                      target.src = '/logo.jpg';
+                    }
+                  }}
                 />
               </div>
               <div>
@@ -148,7 +154,7 @@ const Index = () => {
               <Button
                 variant="outline"
                 onClick={handleSignInClick}
-                className="text-pickfirst-yellow border-pickfirst-yellow/50 hover:bg-pickfirst-yellow/10 hover:border-pickfirst-yellow transition-all duration-300 rounded-lg"
+                className="text-white bg-pickfirst-yellow/20 border-2 border-pickfirst-yellow hover:bg-pickfirst-yellow/30 hover:border-pickfirst-yellow hover:text-white font-bold transition-all duration-300 rounded-lg shadow-xl shadow-pickfirst-yellow/30 px-5 py-2.5"
               >
                 <LogIn className="h-4 w-4 mr-2" />
                 Sign In
@@ -156,7 +162,7 @@ const Index = () => {
               
               <Button
                 onClick={handleSignUpClick}
-                className="pickfirst-gradient-yellow-amber text-black font-bold transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl hover:shadow-pickfirst-yellow/50 rounded-xl border-0 hover:pickfirst-yellow-hover px-6 py-2"
+                className="pickfirst-gradient-yellow-amber text-black font-bold transition-all duration-300 transform hover:scale-105 shadow-2xl shadow-pickfirst-yellow/50 hover:shadow-pickfirst-yellow/70 rounded-xl border-0 hover:pickfirst-yellow-hover px-6 py-2.5"
               >
                 <User className="h-4 w-4 mr-2" />
                 Sign Up
@@ -202,13 +208,36 @@ const Index = () => {
                   Pricing
                 </Button>
                 
+                <div className="border-t border-pickfirst-yellow/20 pt-3 mt-3 space-y-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      navigate('/terms');
+                      closeMobileMenu();
+                    }}
+                    className="w-full text-left justify-start text-gray-400 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-all duration-300 text-sm"
+                  >
+                    Terms and Conditions
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      navigate('/privacy');
+                      closeMobileMenu();
+                    }}
+                    className="w-full text-left justify-start text-gray-400 hover:text-pickfirst-yellow hover:bg-pickfirst-yellow/10 transition-all duration-300 text-sm"
+                  >
+                    Privacy Policy
+                  </Button>
+                </div>
+
                 <Button
                   variant="outline"
                   onClick={() => {
                     handleSignInClick();
                     closeMobileMenu();
                   }}
-                  className="w-full justify-start text-pickfirst-yellow border-pickfirst-yellow/50 hover:bg-pickfirst-yellow/10 hover:border-pickfirst-yellow transition-all duration-300"
+                  className="w-full justify-start text-white bg-pickfirst-yellow/20 border-2 border-pickfirst-yellow hover:bg-pickfirst-yellow/30 hover:border-pickfirst-yellow hover:text-white font-bold transition-all duration-300 shadow-lg shadow-pickfirst-yellow/20"
                 >
                   <LogIn className="h-4 w-4 mr-2" />
                   Sign In
@@ -219,7 +248,7 @@ const Index = () => {
                     handleSignUpClick();
                     closeMobileMenu();
                   }}
-                  className="w-full justify-start pickfirst-gradient-yellow-amber text-black font-bold transition-all duration-300 shadow-xl hover:shadow-pickfirst-yellow/50 rounded-lg border-0"
+                  className="w-full justify-start pickfirst-gradient-yellow-amber text-black font-bold transition-all duration-300 shadow-xl shadow-pickfirst-yellow/40 hover:shadow-2xl hover:shadow-pickfirst-yellow/60 rounded-lg border-0"
                 >
                   <User className="h-4 w-4 mr-2" />
                   Sign Up
@@ -256,14 +285,6 @@ const Index = () => {
               </p>
               <div className="w-full max-w-4xl rounded-2xl border border-pickfirst-yellow/40 bg-white p-3 shadow-lg shadow-yellow-500/10 overflow-visible">
                 <AdvancedSearchDropdown />
-              </div>
-              <div className="flex flex-wrap justify-center gap-3">
-                <Button onClick={handleSignInClick} className="bg-gray-900 text-white hover:bg-gray-800 px-6 py-2.5 text-base font-semibold">
-                  Sign In
-                </Button>
-                <Button variant="outline" className="border-2 border-gray-900 text-gray-900 hover:bg-gray-50 px-6 py-2.5 text-base font-semibold" onClick={handleSignUpClick}>
-                  Sign Up Free
-                </Button>
               </div>
             </div>
           </div>
@@ -430,6 +451,31 @@ const Index = () => {
           </div>
         </section>
       </main>
+
+      {/* Footer with Terms and Privacy */}
+      <footer className="relative z-10 border-t-2 border-pickfirst-yellow/40 bg-white/95 backdrop-blur-lg mt-16 shadow-lg shadow-pickfirst-yellow/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-sm font-medium text-gray-700">
+              © {new Date().getFullYear()} PickFirst. All rights reserved.
+            </p>
+            <div className="flex items-center gap-6">
+              <button
+                onClick={() => navigate('/terms')}
+                className="text-sm font-medium text-gray-700 hover:text-pickfirst-yellow transition-colors underline-offset-4 hover:underline"
+              >
+                Terms and Conditions
+              </button>
+              <button
+                onClick={() => navigate('/privacy')}
+                className="text-sm font-medium text-gray-700 hover:text-pickfirst-yellow transition-colors underline-offset-4 hover:underline"
+              >
+                Privacy Policy
+              </button>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

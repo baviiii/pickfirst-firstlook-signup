@@ -112,7 +112,7 @@ const getEmailFooter = () => `
       <tr>
         <td style="text-align: center; padding-top: 20px;">
           <p style="margin: 0; color: #92400E; font-size: 12px; font-weight: 500;">
-            © 2025 PickFirst Real Estate. All rights reserved.
+            © 2026 PickFirst Real Estate. All rights reserved.
           </p>
         </td>
       </tr>
@@ -519,7 +519,7 @@ If you didn't expect this invitation, you can safely ignore this email.
 
 Questions? Contact your agent ${data.agentName || ''} directly.
 
-© 2025 PickFirst Properties. All rights reserved.`,
+© 2026 PickFirst Properties. All rights reserved.`,
     html: `
       <!DOCTYPE html>
       <html>

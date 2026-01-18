@@ -16,6 +16,9 @@ import Dashboard from "./pages/Dashboard";
 import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 import About from "./pages/About";
+import FAQ from "./pages/FAQ";
+import TermsAndConditions from "./pages/TermsAndConditions";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AdminPropertyManagementPage from './pages/AdminPropertyManagement';
@@ -128,6 +131,9 @@ const App = () => (
               <Route path="/signup" element={<Registration />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/about" element={<RoleBasedLayout><About /></RoleBasedLayout>} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/terms" element={<TermsAndConditions />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/browse-properties" element={<RoleBasedLayout><BrowsePropertiesPage /></RoleBasedLayout>} />
               <Route path="/property-map" element={<RoleBasedLayout><PropertyMapPage /></RoleBasedLayout>} />
               <Route path="/property/:id" element={<RoleBasedLayout><PropertyDetails /></RoleBasedLayout>} />
